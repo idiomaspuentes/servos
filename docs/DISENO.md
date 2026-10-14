@@ -195,8 +195,9 @@ sabe hasta dónde incorporó a cada persona, y las decisiones viajan dentro de l
   alineación, porque se hizo sobre ese mismo texto. Si el texto que queda no es exactamente aquel sobre el que se
   alineó (porque alguien lo reescribió al decidir), la alineación de ese versículo queda **por revisar**, no se
   borra en silencio. Taller hace lo mismo con su huella de alineación.
-- Dos alineaciones distintas del mismo texto con la misma referencia son un choque de alineación. **Por decidir:**
-  si se presentan como los choques de texto o se deja la más reciente con aviso.
+- Dos alineaciones distintas del mismo texto con la misma referencia (decidido el 14 de octubre): si las hizo la
+  misma persona, queda la más reciente; si las hicieron personas distintas, es un choque de alineación y se decide
+  como los de texto.
 
 ### 6.9 Dónde se guarda
 
@@ -287,7 +288,6 @@ Propuesta de etapas, para conversar:
 
 - El orden de las fases, y si cada equipo arma el suyo (sección 3).
 - PIN opcional por persona (sección 5).
-- Cómo se presenta un choque de alineación (sección 6.8).
 - El formato de los paquetes (sección 7).
 - A dónde va cada proyecto en Door43 (sección 8).
 - Paquete compartido con Taller o copia adaptada (sección 11).
