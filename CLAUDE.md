@@ -11,7 +11,9 @@ antes de proponer o construir nada.
   que explique el porqué.
 - La interfaz se traduce desde la app (es, pt, en desde el inicio): ningún texto de interfaz suelto en un
   componente.
-- Móvil primero; una sola cosa obvia por pantalla.
+- Móvil primero; una sola cosa obvia por pantalla. Cada pantalla y cada mini app siguen
+  [`docs/FILOSOFIA_DE_DISENO.md`](docs/FILOSOFIA_DE_DISENO.md): el texto en el centro, lo demás en capas, un mismo
+  marco para todas las mini apps, y su lista de comprobación a 375 px antes de darla por hecha.
 - Los choques de texto se resuelven versículo por versículo con el sistema propio de Servos (diseño, sección 6),
   basado en la mezcla de Taller (`src/domain/usfmVerseMerge.ts`, `usfmTrunkPatch.ts`). No se usan los sistemas de
   choques de `usfm-ast`.

@@ -25,7 +25,7 @@ mandan sobre todo lo demás:
 - **Solo los choques reales llegan a una persona.** Lo que se puede unir solo, se une solo (sección 6).
 - **Una decisión de mezcla se toma una vez.** Queda registrada y no vuelve a preguntarse (sección 6.4).
 - **Una sola cosa obvia por pantalla.** Pensada primero para el teléfono, para gente poco habituada a la
-  tecnología. La misma regla que Taller.
+  tecnología. La misma regla que Taller. Cómo se diseña cada pantalla: [`FILOSOFIA_DE_DISENO.md`](FILOSOFIA_DE_DISENO.md).
 - **Preparada para lo que viene sin construirlo antes de tiempo:** traducción oral (sección 10), más idiomas de
   interfaz, más mini apps.
 
