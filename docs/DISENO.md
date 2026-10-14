@@ -215,9 +215,16 @@ sabe hasta dónde incorporó a cada persona, y las decisiones viajan dentro de l
 | **Paquete de interfaz** | La traducción de la app a un idioma (sección 9) | Lo exporta quien tradujo la interfaz |
 | **La app misma** | El instalador (APK, instalador de Windows) | Para instalar sin internet |
 
-- Cada paquete es **un solo archivo** con un manifiesto que dice qué es, de qué versión y para qué libro. **Por
-  decidir:** el formato. Lo natural es apoyarse en Resource Container o Scripture Burrito, que `usfm-ast` ya lee
-  (`project-formats`).
+- Cada paquete es **un solo archivo** con un manifiesto que dice qué es, de qué versión y para qué libro.
+- **El Paquete de Recursos de Traducción es el «paquete de idioma» de tc-study** (decidido el 14 de octubre). Su
+  formato está en `bt-synergy/apps/tc-study/docs/cache-data-structure.md`, sección 6, y lo hace y lo abre el paquete
+  `@bt-synergy/language-pack` (rama `feat/language-pack` de `bt-synergy`). Lleva las filas del catálogo, los recibos,
+  el texto fuente del idioma y el original griego o hebreo, y además lo ya construido: las vistas preparadas, las
+  citas de cada nota resueltas en el original y en cada texto destino, y los títulos de los artículos. Así se abre
+  sin internet y ya listo para leer. Servos guarda esas filas con las mismas claves de caché que tc-study.
+- Falta sacar de la app tc-study a paquetes compartidos el código que construye y muestra las citas y los títulos
+  (`apps/tc-study/src/features/helps`), para que Servos pueda reconstruirlos si un paquete viene sin ellos.
+- **Por decidir:** el formato del paquete de trabajo (el libro y su diario).
 - Al importar, la app dice qué trae y qué cambia antes de aplicarlo.
 - Un paquete de recursos más nuevo puede reemplazar a uno anterior; el trabajo hecho no se toca, pero la app avisa
   qué notas o textos cambiaron en los versículos ya traducidos.
@@ -288,7 +295,7 @@ Propuesta de etapas, para conversar:
 
 - El orden de las fases, y si cada equipo arma el suyo (sección 3).
 - PIN opcional por persona (sección 5).
-- El formato de los paquetes (sección 7).
+- El formato del paquete de trabajo (sección 7).
 - A dónde va cada proyecto en Door43 (sección 8).
 - Paquete compartido con Taller o copia adaptada (sección 11).
 - El nombre de dominio `servos.bible` todavía no está apartado.
