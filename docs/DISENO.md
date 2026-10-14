@@ -148,15 +148,57 @@ La primera vez que se juntan no hay historia común:
 1. Se compara el libro versículo por versículo con las reglas de 6.2. Lo igual y lo que solo tiene un lado se une
    solo.
 2. Lo distinto se presenta una vez, versículo por versículo, en el solucionador.
-3. Cada decisión queda registrada (6.4), y desde ahí los dos proyectos se siguen juntando como uno: la segunda vez
-   solo se miran los cambios nuevos.
+3. Cada decisión queda registrada (6.4), y desde ahí los proyectos se siguen juntando: la segunda vez solo se miran
+   los cambios nuevos.
 
-**Por decidir, para conversar con ejemplos:**
-- Si al juntarse quedan como un solo proyecto, o como dos proyectos que se alimentan mutuamente.
-- Qué pasa con la alineación de un versículo que ganó en la mezcla (en Taller viaja con el versículo ganador).
-- Si un choque lo puede decidir cualquiera del proyecto o solo quien coordina.
+**Siguen siendo proyectos distintos que se alimentan entre sí** (decidido el 14 de octubre). Nadie pierde su
+proyecto al juntarse: cada persona sigue trabajando en el suyo, y cada mezcla le trae lo de los demás.
 
-### 6.6 Dónde se guarda
+### 6.6 Un caso: la reunión
+
+Tres traductores de la misma etnia, Ana, Beto y Carla, trabajan en comunidades distintas, cada uno en su teléfono.
+Para verse viajan horas a un lugar donde probablemente tampoco hay internet. Carla no puede viajar, pero manda su
+traducción en una tarjeta SD.
+
+1. **En la reunión**, alguien toma el papel de quien mezcla: uno de ellos o una persona de fuera (6.7). Importa los
+   paquetes de trabajo de Ana, Beto y Carla.
+2. **Se mezcla.** Lo que no choca se une solo. Los choques reales se deciden ahí, entre los presentes, versículo por
+   versículo; cada decisión queda en el diario con quién la tomó.
+3. **Cada uno se lleva la mezcla**: Ana y Beto la importan en sus teléfonos. A Carla se le devuelve en la misma
+   tarjeta, como un paquete de trabajo más.
+4. **Mientras tanto Carla siguió trabajando.** Cuando importa la mezcla:
+   - lo suyo que ya estaba en la mezcla no se vuelve a mirar;
+   - lo que cambió después de mandar la tarjeta entra solo si nadie tocó esos versículos en la reunión;
+   - solo choca si cambió un versículo que la reunión resolvió de otra manera. Es un choque verdadero (los dos lados
+     cambiaron desde el mismo texto), y lo decide ella, o se deja para la próxima reunión.
+5. **La próxima vez** que alguien traiga la tarjeta de Carla, las decisiones de la reunión ya están: no se vuelven a
+   preguntar.
+
+Lo que hace falta para que esto funcione es lo de 6.3 y 6.4: cada cambio sabe de qué texto partió, cada proyecto
+sabe hasta dónde incorporó a cada persona, y las decisiones viajan dentro de los paquetes.
+
+### 6.7 Quién mezcla y quién decide
+
+- **Cualquiera del proyecto** puede mezclar y decidir un choque.
+- En una reunión, uno de ellos o alguien de fuera toma el papel de quien coordina y hace las mezclas. Entre ellos
+  deciden también quién publica en Door43.
+- Sin internet no hay cómo comprobar permisos, y no hace falta: la app confía en el grupo y **deja constancia**.
+  Cada decisión dice quién la tomó y dónde (en qué aparato, en qué mezcla).
+
+### 6.8 La alineación
+
+- Se alinea por defecto con **la versión de referencia principal**: el TPL o su análogo en otro idioma (por
+  ejemplo, el ULT en inglés). Se puede alinear también con otras.
+- La alineación es una capa aparte, guardada por versículo y por texto de referencia, con la huella del texto del
+  versículo al que pertenece. Puede viajar sola o junto con el libro.
+- **En una mezcla, la alineación sigue a su texto:** si gana la versión de Ana de un versículo, gana con ella su
+  alineación, porque se hizo sobre ese mismo texto. Si el texto que queda no es exactamente aquel sobre el que se
+  alineó (porque alguien lo reescribió al decidir), la alineación de ese versículo queda **por revisar**, no se
+  borra en silencio. Taller hace lo mismo con su huella de alineación.
+- Dos alineaciones distintas del mismo texto con la misma referencia son un choque de alineación. **Por decidir:**
+  si se presentan como los choques de texto o se deja la más reciente con aviso.
+
+### 6.9 Dónde se guarda
 
 - El libro en USFM, como en Door43, para que sea legible fuera de la app.
 - El diario y el registro de lo incorporado, en archivos propios junto al libro.
@@ -245,7 +287,7 @@ Propuesta de etapas, para conversar:
 
 - El orden de las fases, y si cada equipo arma el suyo (sección 3).
 - PIN opcional por persona (sección 5).
-- Qué es un proyecto después de juntarse con otro, y quién decide los choques (sección 6.5).
+- Cómo se presenta un choque de alineación (sección 6.8).
 - El formato de los paquetes (sección 7).
 - A dónde va cada proyecto en Door43 (sección 8).
 - Paquete compartido con Taller o copia adaptada (sección 11).
