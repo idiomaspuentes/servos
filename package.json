@@ -1,0 +1,16 @@
+{
+  "name": "servos",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "App sin internet para traducir la Biblia con los recursos de Taller",
+  "license": "MIT",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.4"
+  }
+}
