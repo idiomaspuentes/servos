@@ -222,6 +222,16 @@ sabe hasta dónde incorporó a cada persona, y las decisiones viajan dentro de l
   el texto fuente del idioma y el original griego o hebreo, y además lo ya construido: las vistas preparadas, las
   citas de cada nota resueltas en el original y en cada texto destino, y los títulos de los artículos. Así se abre
   sin internet y ya listo para leer. Servos guarda esas filas con las mismas claves de caché que tc-study.
+- **Decidido el 14 de octubre:**
+  - Los paquetes se preparan con el mismo código en tres lugares: dentro de la app cuando hay internet, con un
+    comando, y en un servidor que guarda la última versión de cada paquete, con la mayor compresión, para bajarla
+    desde una página de la web oficial.
+  - Un paquete puede ser un idioma entero o un solo libro. Los idiomas originales (griego y hebreo) van en paquetes
+    aparte, porque sirven para todos los idiomas.
+  - Los recursos de un idioma son los mismos que encuentra la página Read de tc-study: lo marcado `tc-ready` en
+    Door43 para ese idioma, de cualquier dueño.
+- El plan para sacar de tc-study la tubería que descubre, descarga y construye los recursos está en
+  `bt-synergy/docs/LANGUAGE_PACKS_PLAN.md`.
 - Falta sacar de la app tc-study a paquetes compartidos el código que construye y muestra las citas y los títulos
   (`apps/tc-study/src/features/helps`), para que Servos pueda reconstruirlos si un paquete viene sin ellos.
 - **Por decidir:** el formato del paquete de trabajo (el libro y su diario).
