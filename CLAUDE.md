@@ -5,6 +5,15 @@ los recursos producidos en Taller (`../gateway-tasks`, GitHub `idiomaspuentes/ta
 sin internet; los paquetes se pasan por SD, USB o Bluetooth. Estado: diseño. Lee [`docs/DISENO.md`](docs/DISENO.md)
 antes de proponer o construir nada.
 
+## Empezar
+
+- `../bt-synergy` (github.com/unfoldingWord/tc-study, rama `feat/language-pack` o posterior) debe estar al lado de
+  este repositorio, con `bun install` hecho: Servos usa sus paquetes desde sus fuentes (`vite.config.ts`), los mismos
+  con que tc-study guarda y lee los recursos. Sus tipos están declarados en `src/resources/btSynergy.d.ts`.
+- `npm install`, luego `npm test` y `npm run typecheck`.
+- Con paquetes reales (los que escribe `bt-synergy/packages/resource-pipeline/cli/prepare-language.ts`):
+  `SERVOS_PAQUETES=<carpeta> npx vitest run src/resources/realPacks.test.ts`.
+
 ## Convenciones
 
 - Interfaz y documentación del producto en español; comentarios y commits en inglés, con título corto y un cuerpo
