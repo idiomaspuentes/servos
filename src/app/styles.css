@@ -280,7 +280,11 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .panes-tab[aria-selected='true'] { color: var(--text); border-block-end-color: var(--accent); font-weight: 600; }
 /* The window clips and cannot be scrolled; the row inside it is moved by a transform (see Panes.tsx). */
 .panes-window { flex: 1; min-height: 0; overflow: hidden; overflow: clip; }
-.panes-track { height: 100%; display: flex; transition: transform 0.25s ease; touch-action: pan-y; }
+.panes-track { height: 100%; display: flex; transition: transform 0.25s ease; }
+/* A finger moving sideways is the swipe's, read in Panes.tsx; the browser keeps the vertical scroll and the pinch.
+   On everything inside, not only the row: touch-action holds only up to the nearest box that scrolls, and each pane
+   (and the boxes' area) scrolls, so a swipe begun inside one was taken by the browser and cancelled. */
+.panes-track, .panes-track * { touch-action: pan-y pinch-zoom; }
 .pane { position: relative; flex: 0 0 100%; min-width: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0.75rem 1rem; }
 @media (prefers-reduced-motion: reduce) { .panes-track { transition: none; } }
 
