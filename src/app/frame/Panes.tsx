@@ -2,6 +2,11 @@
  * Panes side by side, one in sight on a phone: a finger slides from one to the next, or a tab is touched. Neither
  * takes the focus from the box being written in, so the keyboard stays up while the person goes to read the text
  * they translate from and comes back (a phone hides the keyboard when the focus leaves the box).
+ *
+ * The row of panes is moved by a transform inside a box that clips, not scrolled. A phone keeps the focused box in
+ * sight: with the row a scroll container, Chrome on Android scrolled it back to the box as soon as the keyboard moved,
+ * and scroll snapping re-snaps to the pane that holds the focus. A clipped box cannot be scrolled by anyone, so the
+ * swipe is read here from the pointer.
  */
 
 import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react'
@@ -19,20 +24,65 @@ export function keepFocus(event: PointerEvent) {
   if (document.activeElement instanceof HTMLTextAreaElement || document.activeElement instanceof HTMLInputElement) event.preventDefault()
 }
 
+/** How far a finger moves before it counts as a swipe, and how far (of the width) to go to the next pane. */
+const SLOP = 10
+const ENOUGH = 0.2
+
 export function Panes({ panes, label, onPane }: { panes: Pane[]; label: string; onPane?(id: string): void }) {
   const track = useRef<HTMLDivElement>(null)
   const [current, setCurrent] = useState(0)
+  const swipe = useRef<{ id: number; x: number; y: number; t: number; dx: number; horizontal: boolean | null } | null>(null)
+  // A swipe that ends over a word must not touch it.
+  const swiped = useRef(false)
 
-  const go = (index: number) => {
-    const el = track.current
-    if (!el) return
-    el.scrollTo({ left: index * el.clientWidth, behavior: document.visibilityState === 'visible' ? 'smooth' : 'auto' })
-    setCurrent(index)
-  }
+  const go = (index: number) => setCurrent(Math.max(0, Math.min(panes.length - 1, index)))
 
   useEffect(() => {
     onPane?.(panes[current]?.id ?? '')
   }, [current]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Under the finger the row follows it at once; let go, it slides to its pane (the same value React sets).
+  const place = (dx: number, moving: boolean) => {
+    const el = track.current
+    if (!el) return
+    el.style.transition = moving ? 'none' : ''
+    el.style.transform = `translateX(calc(${-current * 100}% + ${dx}px))`
+  }
+
+  const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    keepFocus(event)
+    if (event.pointerType === 'mouse') return
+    swipe.current = { id: event.pointerId, x: event.clientX, y: event.clientY, t: event.timeStamp, dx: 0, horizontal: null }
+    swiped.current = false
+  }
+  const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    const s = swipe.current
+    if (!s || s.id !== event.pointerId) return
+    const dx = event.clientX - s.x
+    const dy = event.clientY - s.y
+    if (s.horizontal === null) {
+      if (Math.abs(dx) < SLOP && Math.abs(dy) < SLOP) return
+      s.horizontal = Math.abs(dx) > Math.abs(dy) * 1.2
+      if (!s.horizontal) return
+      event.currentTarget.setPointerCapture(event.pointerId)
+      swiped.current = true
+    }
+    if (!s.horizontal) return
+    // Past the first and the last pane the row gives a little, and no more.
+    const edge = (dx > 0 && current === 0) || (dx < 0 && current === panes.length - 1)
+    s.dx = edge ? dx / 4 : dx
+    place(s.dx, true)
+  }
+  const onPointerEnd = (event: PointerEvent<HTMLDivElement>) => {
+    const s = swipe.current
+    if (!s || s.id !== event.pointerId) return
+    swipe.current = null
+    if (!s.horizontal) return
+    const width = track.current?.clientWidth ?? 1
+    const fast = Math.abs(s.dx) / Math.max(1, event.timeStamp - s.t) > 0.5
+    place(0, false)
+    if (event.type === 'pointerup' && (Math.abs(s.dx) > width * ENOUGH || (fast && Math.abs(s.dx) > SLOP * 3))) go(current + (s.dx < 0 ? 1 : -1))
+  }
 
   return (
     <div className="panes">
@@ -52,21 +102,34 @@ export function Panes({ panes, label, onPane }: { panes: Pane[]; label: string; 
           </button>
         ))}
       </div>
-      <div
-        ref={track}
-        className="panes-track"
-        onPointerDown={keepFocus}
-        onScroll={(e) => {
-          const el = e.currentTarget
-          const index = Math.round(Math.abs(el.scrollLeft) / Math.max(1, el.clientWidth))
-          if (index !== current) setCurrent(index)
-        }}
-      >
-        {panes.map((pane) => (
-          <section key={pane.id} id={`pane-${pane.id}`} role="tabpanel" aria-labelledby={`pane-tab-${pane.id}`} className="pane">
-            {pane.content}
-          </section>
-        ))}
+      <div className="panes-window">
+        <div
+          ref={track}
+          className="panes-track"
+          style={{ transform: `translateX(${-current * 100}%)` }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerEnd}
+          onPointerCancel={onPointerEnd}
+          onClickCapture={(event) => {
+            if (!swiped.current) return
+            swiped.current = false
+            event.stopPropagation()
+            event.preventDefault()
+          }}
+        >
+          {panes.map((pane) => (
+            <section
+              key={pane.id}
+              id={`pane-${pane.id}`}
+              role="tabpanel"
+              aria-labelledby={`pane-tab-${pane.id}`}
+              className="pane"
+            >
+              {pane.content}
+            </section>
+          ))}
+        </div>
       </div>
     </div>
   )
