@@ -237,5 +237,7 @@
   "ayudas.enEsteVersiculo": "In this verse",
   "ayudas.otrosSentidos": "Other senses ({n})",
   "ayudas.lexicoCredito": "Lexicon adapted from the United Bible Societies' dictionaries (CC BY-SA 4.0).",
-  "marco.volverA": "{app}"
+  "marco.volverA": "{app}",
+  "libro.avanceEn": "Progress in «{app}». Touch a chapter to see each mini app's.",
+  "libro.hechosDe": "{hechos} of {total}"
 }

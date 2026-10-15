@@ -10,7 +10,7 @@ import { useT } from './i18n/i18n'
 import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type Position } from './miniapps/contract'
 import { miniApp } from './miniapps/registry'
 import { loadProjects, saveProjects, type Phase, type Project } from './projects/model'
-import { keepPlace, placeOf } from './projects/work'
+import { keepLastApp, keepPlace, lastAppOf, placeOf } from './projects/work'
 import { AddBookSheet } from './screens/AddBook'
 import { BookScreen } from './screens/BookScreen'
 import { GlossaryScreen } from './screens/GlossaryScreen'
@@ -187,7 +187,9 @@ export function App() {
           book={project(bookScreen.projectId)!.books.find((b) => b.code === bookScreen.book)!}
           chapters={chaptersFor(bookScreen.book)}
           onBack={home}
+          lastApp={lastAppOf(person, bookScreen.book)}
           onOpen={(app, chapter) => {
+            keepLastApp(person, bookScreen.book, app.id)
             openAt(bookScreen.book, app, chapter)
             setScreen({ kind: 'app', projectId: bookScreen.projectId, book: bookScreen.book, id: app.id })
           }}

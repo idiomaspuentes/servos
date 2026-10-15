@@ -103,6 +103,8 @@ export function doneOf<I extends Checkable>(kind: CheckKind<I>) {
   return (at: Position) => {
     const data = chapterOf(at.book, at.chapter)
     const text = verseTextOf(at.book, at.chapter, at.verse)
+    // A verse not translated yet is not checked, whether or not it has anything to check.
+    if (!text.trim()) return false
     return (data ? kind.itemsOf([data]) : []).filter((c) => c.verse === at.verse).every((c) => stateOf(readCheck(at.book, c.id, kind.store), text) === 'bien')
   }
 }

@@ -252,7 +252,16 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .step-apps { list-style: none; margin: 0 0 0.5rem; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
 .app-row { display: flex; flex-direction: column; align-items: flex-start; text-align: start; gap: 0.15rem; width: 100%; }
 .app-row-name { font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; }
-.app-row-progress { font-size: 0.85rem; color: var(--accent); font-weight: 600; }
+.app-row-progress { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.75rem; width: 100%; font-size: 0.85rem; color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+/* A chapter touched: each mini app's progress in it, each a way in */
+.chapters-of { margin: -0.25rem 0 0; font-size: 0.85rem; }
+/* Opened, the chapter and its breakdown are one card */
+.chapter-list > li.is-open { border: 1px solid var(--accent); border-radius: var(--radius); background: var(--surface); }
+.chapter-list > li.is-open > .chapter-row { border: 0; background: none; }
+.chapter-apps { list-style: none; margin: 0; padding: 0 0.5rem 0.5rem; display: flex; flex-direction: column; gap: 0.25rem; }
+.chapter-app { display: grid; grid-template-columns: minmax(0, 9rem) minmax(0, 1fr) auto; align-items: center; gap: 0.75rem; width: 100%; min-height: var(--touch); padding: 0.25rem 0.5rem; border: 0; border-radius: var(--radius); background: none; color: var(--text); text-align: start; font-size: 0.9rem; }
+.chapter-app.is-current { background: var(--accent-soft); font-weight: 600; }
+.chapter-app-name { overflow-wrap: anywhere; }
 
 /* Checking with the notes */
 .translation { font-size: 1.15rem; }

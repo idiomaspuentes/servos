@@ -435,5 +435,7 @@
   "st.joinNext": "Unir com a oração seguinte",
   "st.second": "A segunda oração",
   "st.leftOut": "Este diagrama não tem todas as palavras do versículo. Faltam: {words}. A análise foi feita sobre outra edição do texto, que não as traz.",
-  "marco.volverA": "{app}"
+  "marco.volverA": "{app}",
+  "libro.avanceEn": "Progresso em «{app}». Toque um capítulo para ver o de cada mini app.",
+  "libro.hechosDe": "{hechos} de {total}"
 }

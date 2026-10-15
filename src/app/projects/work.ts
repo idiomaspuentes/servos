@@ -144,6 +144,11 @@ export function placeOf(person: string, book: string, app: string): Place | null
 
 export const keepPlace = (person: string, book: string, app: string, place: Place) => write(placeKey(person, book, app), JSON.stringify(place))
 
+/** The mini app a person last opened from a book: what «Continue» goes back to, and whose progress the chapters show. */
+const lastAppKey = (person: string, book: string) => `servos.prototipo.ultimaApp.${person}.${book}`
+export const lastAppOf = (person: string, book: string): string | null => read(lastAppKey(person, book))
+export const keepLastApp = (person: string, book: string, app: string) => write(lastAppKey(person, book), app)
+
 /**
  * A note the team writes while studying a verse or a section: what it says, who speaks to whom, what will be hard to
  * translate (as translationCore 4's comprehension notes). It is read again while translating those verses. Anyone
