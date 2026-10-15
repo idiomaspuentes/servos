@@ -21,6 +21,8 @@ import { PHASES, bookName, type BookEntry, type Phase, type Project } from '../p
 import { doneIn as doneInBook, percent as pct, placeLabel, stepPercent, versesOf } from '../projects/progress'
 import { versesToChoose } from '../projects/versions'
 import { workOf } from '../projects/work'
+import { saveFile } from '../frame/saveFile'
+import { bookUsfm } from '../projects/usfmExport'
 import { ShareSheet } from './ShareSheet'
 
 type Place = { chapter: number; verse: number }
@@ -74,6 +76,7 @@ export function BookScreen({
   const [byChapter, setByChapter] = useState<string | null>(null)
   const [more, setMore] = useState(false)
   const [sharing, setSharing] = useState(false)
+  const [saidMore, setSaidMore] = useState<string | null>(null)
 
   const isDone = (app: MiniApp, chapter: number, verse: number) => app.done!({ book: book.code, chapter, verse })
   const doneIn = (app: MiniApp, c: PrototypeData) => doneInBook(app, book.code, c)
@@ -249,7 +252,13 @@ export function BookScreen({
       </main>
 
       {more && (
-        <Sheet title={t('libro.mas')} onClose={() => setMore(false)}>
+        <Sheet
+          title={t('libro.mas')}
+          onClose={() => {
+            setMore(false)
+            setSaidMore(null)
+          }}
+        >
           <MenuRow
             label={t('libro.compartir')}
             description={t('libro.compartirAyuda')}
@@ -258,6 +267,21 @@ export function BookScreen({
               setSharing(true)
             }}
           />
+          {chapters.length > 0 && (
+            <MenuRow
+              label={t('libro.usfm')}
+              description={t('libro.usfmAyuda')}
+              onClick={async () => {
+                const saved = await saveFile(`${book.code.toUpperCase()}.usfm`, bookUsfm(book.code, project.name, chapters), 'text/plain')
+                setSaidMore(saved.state === 'saved' ? t('compartir.guardado', { archivo: saved.name }) : saved.state === 'declined' ? null : t('compartir.noGuardado'))
+              }}
+            />
+          )}
+          {saidMore && (
+            <p className="status" role="status">
+              {saidMore}
+            </p>
+          )}
           <MenuRow
             label={t('libro.recibirTrabajo')}
             description={t('libro.recibirTrabajoAyuda')}

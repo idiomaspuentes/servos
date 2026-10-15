@@ -12,13 +12,15 @@ type Host = { use(name: string): Promise<unknown> }
 export type Saved = { state: 'saved' | 'declined' | 'failed'; name: string }
 
 const ALLOWED = /\.(json|txt|md|csv|html|zip)$/i
+/** The extension a file gets where its own is not allowed: data opens as JSON, a text (USFM) as plain text. */
+const fallbackFor = (filename: string) => (/\.servos$/i.test(filename) ? '.json' : '.txt')
 
 export async function saveFile(filename: string, text: string, type = 'application/json'): Promise<Saved> {
   const host = (window as unknown as { claude?: Host }).claude
   if (host?.use) {
     const downloads = (await host.use('downloads').catch(() => null)) as Downloads | null
     if (downloads) {
-      const name = ALLOWED.test(filename) ? filename : `${filename}.json`
+      const name = ALLOWED.test(filename) ? filename : `${filename}${fallbackFor(filename)}`
       try {
         await downloads.save({ filename: name, data: text })
         return { state: 'saved', name }

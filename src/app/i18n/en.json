@@ -582,5 +582,7 @@
   "libroNuevo.usfmOtro": "Choose another file",
   "libroNuevo.usfmQueNo": "Each verse's text comes in; the file's footnotes and alignment do not.",
   "libroNuevo.usfmAgregar": "Add {libro}",
-  "libroNuevo.usfmJuntar": "Join with {libro}"
+  "libroNuevo.usfmJuntar": "Join with {libro}",
+  "libro.usfm": "Save the book as USFM",
+  "libro.usfmAyuda": "To take the text to Paratext, translationCore or Door43: each verse's draft, with the bridge text's paragraphs and poetry"
 }

@@ -582,5 +582,7 @@
   "libroNuevo.usfmOtro": "Escolher outro arquivo",
   "libroNuevo.usfmQueNo": "Traz-se o texto de cada versículo; as notas de rodapé e o alinhamento do arquivo, não.",
   "libroNuevo.usfmAgregar": "Adicionar {libro}",
-  "libroNuevo.usfmJuntar": "Juntar com {libro}"
+  "libroNuevo.usfmJuntar": "Juntar com {libro}",
+  "libro.usfm": "Salvar o livro em USFM",
+  "libro.usfmAyuda": "Para levar o texto ao Paratext, translationCore ou Door43: o rascunho de cada versículo, com os parágrafos e a poesia do texto-ponte"
 }
