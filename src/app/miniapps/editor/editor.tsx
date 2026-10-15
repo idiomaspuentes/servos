@@ -10,7 +10,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Panes, type Pane } from '../../frame/Panes'
 import { glossedPlaces, useWordHelps, type GlossaryTarget } from '../../frame/TouchWords'
-import { keepGlossary, readGlossary, upsertEntry } from '../../projects/glossary'
+import { readGlossaryFor, saveGlossaryEntry } from '../../projects/glossary'
 import { GlossarySheet } from './GlossarySheet'
 import type { MiniApp, MiniAppCenterProps } from '../contract'
 import { authorOf, chooseVersion, otherVersion, readDraft, writeDraft, type OtherVersion } from '../../projects/work'
@@ -88,7 +88,15 @@ function Center({ context }: MiniAppCenterProps) {
   const anyPoem = shown.some((v) => markersOf(v).some(isPoemLine))
 
   // The project's glossary: a touched word shows the team's decision first, and the translator can add one.
-  const [glossary, setGlossary] = useState(() => readGlossary(context.project.id))
+  // Only the entries of this chapter's words are read: one file a word, however big the glossary grows.
+  const chapterStrongs = (data.texts.find((x) => x.original)?.words ?? []).map((w) => w.strong)
+  const readChapterGlossary = () => readGlossaryFor(context.project.id, chapterStrongs)
+  const [glossary, setGlossary] = useState(readChapterGlossary)
+  const [glossaryOf, setGlossaryOf] = useState(`${position.book}.${position.chapter}`)
+  if (glossaryOf !== `${position.book}.${position.chapter}`) {
+    setGlossaryOf(`${position.book}.${position.chapter}`)
+    setGlossary(readChapterGlossary())
+  }
   const [adding, setAdding] = useState<GlossaryTarget | null>(null)
   const glossed = glossedPlaces(data, glossary)
   const { lit, touch, card, helpsOpened } = useWordHelps({
@@ -218,9 +226,8 @@ function Center({ context }: MiniAppCenterProps) {
           written={drafts[adding.verse] ?? readDraft(position.book, position.chapter, adding.verse)}
           person={context.person.name}
           onSave={(entry) => {
-            const next = upsertEntry(glossary, entry)
-            keepGlossary(context.project.id, next)
-            setGlossary(next)
+            saveGlossaryEntry(context.project.id, entry)
+            setGlossary(readChapterGlossary())
             setAdding(null)
           }}
           onClose={() => setAdding(null)}

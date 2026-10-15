@@ -2,14 +2,24 @@
  * The project's glossary: the team's decisions on how words of the original are translated, to look up and to share.
  * Every translator adds to it from the editor, on their own computer; here it is shared without internet (a file to
  * pass on, or its text to copy into a message) and gathered from another computer, nothing lost (two renderings of a
- * word stay, one as an alternative, until the team agrees). Publishing to Door43 puts it in the language's `<lang>_tg`
- * repository, in Taller's format, where other teams and Taller read it.
+ * word stay, one as an alternative, until the team agrees). What is shared is, by default, what changed since the
+ * last time: the glossary may grow to thousands of words. A glossary from Taller (its TSV) is received too. Publishing
+ * to Door43 puts it in the language's `<lang>_tg` repository, one file a word.
  */
 
 import { useRef, useState } from 'react'
 import { useT } from '../i18n/i18n'
 import type { Project } from '../projects/model'
-import { gatherGlossary, keepGlossary, parseGlossary, readGlossary, serializeGlossary, type Gathered } from '../projects/glossary'
+import {
+  gatherGlossary,
+  glossaryBundle,
+  lastShared,
+  markShared,
+  readBundle,
+  readGlossary,
+  saveGlossaryEntry,
+  type Gathered,
+} from '../projects/glossary'
 
 export function GlossaryScreen({ project, onBack }: { project: Project; onBack(): void }) {
   const t = useT()
@@ -19,36 +29,47 @@ export function GlossaryScreen({ project, onBack }: { project: Project; onBack()
   const [pasting, setPasting] = useState(false)
   const [pasted, setPasted] = useState('')
   const file = useRef<HTMLInputElement>(null)
-  const fileName = `${project.languageCode || 'proyecto'}_tg.tsv`
+  const fileName = `${project.languageCode || 'proyecto'}_tg.json`
+  const [since, setSince] = useState(() => lastShared(project.id))
+  const fresh = since ? entries.filter((e) => (e.changed ?? '') > since).length : entries.length
 
   const wanted = search.trim().toLocaleLowerCase()
   const shown = entries
     .filter((e) => !wanted || [e.rendering, e.lemma, ...e.alternatives, e.note].some((s) => s.toLocaleLowerCase().includes(wanted)))
     .sort((a, b) => a.rendering.localeCompare(b.rendering))
 
-  const gather = (tsv: string) => {
-    const theirs = parseGlossary(tsv)
+  const gather = (text: string) => {
+    const theirs = readBundle(text)
     if (!theirs.length) return setSaid(t('glosario.nadaRecibido'))
-    const { entries: next, gathered } = gatherGlossary(entries, theirs)
-    keepGlossary(project.id, next)
-    setEntries(next)
+    const { gathered, changed } = gatherGlossary(entries, theirs)
+    for (const entry of changed) saveGlossaryEntry(project.id, entry)
+    setEntries(readGlossary(project.id))
     setSaid(describe(gathered))
   }
   const describe = (g: Gathered) => t('glosario.juntado', { nuevas: g.added, iguales: g.same, otras: g.joined })
 
+  // What travels: by default only what changed since this computer last shared.
+  const [all, setAll] = useState(false)
+  const toShare = () => glossaryBundle(entries, all ? undefined : since)
+  const shared = () => {
+    markShared(project.id)
+    setSince(lastShared(project.id))
+  }
   const save = () => {
-    // A file to pass on (a memory stick, a message): the same TSV Taller and Door43 keep.
-    const blob = new Blob([serializeGlossary(entries)], { type: 'text/tab-separated-values' })
+    // A file to pass on (a memory stick, a message).
+    const blob = new Blob([toShare()], { type: 'application/json' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
     link.download = fileName
     link.click()
     URL.revokeObjectURL(link.href)
+    shared()
     setSaid(t('glosario.guardado', { archivo: fileName }))
   }
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(serializeGlossary(entries))
+      await navigator.clipboard.writeText(toShare())
+      shared()
       setSaid(t('glosario.copiado'))
     } catch {
       setSaid(t('glosario.noCopiado'))
@@ -93,11 +114,19 @@ export function GlossaryScreen({ project, onBack }: { project: Project; onBack()
         <section className="glossary-share" aria-labelledby="compartir">
           <h2 id="compartir">{t('glosario.compartir')}</h2>
           <p className="quiet">{t('glosario.compartirAyuda')}</p>
+          <div className="unit-switch" role="radiogroup" aria-label={t('glosario.queCompartir')}>
+            <button type="button" role="radio" aria-checked={!all} className="unit-switch-option" onClick={() => setAll(false)}>
+              {t('glosario.loNuevo', { n: fresh })}
+            </button>
+            <button type="button" role="radio" aria-checked={all} className="unit-switch-option" onClick={() => setAll(true)}>
+              {t('glosario.todo', { n: entries.length })}
+            </button>
+          </div>
           <div className="glossary-actions">
-            <button type="button" className="button-secondary" disabled={!entries.length} onClick={save}>
+            <button type="button" className="button-secondary" disabled={!(all ? entries.length : fresh)} onClick={save}>
               {t('glosario.guardarArchivo')}
             </button>
-            <button type="button" className="button-secondary" disabled={!entries.length} onClick={copy}>
+            <button type="button" className="button-secondary" disabled={!(all ? entries.length : fresh)} onClick={copy}>
               {t('glosario.copiar')}
             </button>
           </div>

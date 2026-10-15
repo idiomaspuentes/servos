@@ -13,6 +13,8 @@ import type { Places, PrototypeData, PrototypeNote, PrototypeText } from '../../
 import type { WordLine } from '../../resources/reading'
 import { useT } from '../i18n/i18n'
 import { entriesAbout, type GlossaryEntry } from '../projects/glossary'
+import { lexiconOf } from '../../prototype/data'
+import { sensesOfWord, strongCode, type LexiconSense } from '../../lexicon/lexicon'
 import { Markdown } from './Markdown'
 import { showInPane } from './Panes'
 import { Sheet } from './Sheet'
@@ -22,6 +24,18 @@ export type WordHelp =
   | { kind: 'puente'; id: string; places: Places; abbreviation: string }
   | { kind: 'nota'; id: string; places: Places; note: PrototypeNote }
   | { kind: 'palabra'; id: string; places: Places; original: string; article: string; keyTerm: boolean }
+  | {
+      kind: 'lexico'
+      id: string
+      places: Places
+      lemma: string
+      code: string
+      brief: string
+      /** The senses the lexicon gives for this verse (all, when it gives none for it); then the others. */
+      here: LexiconSense[]
+      other: LexiconSense[]
+      byVerse: boolean
+    }
 
 /** The words of a bridge text that translate any of these words of the original. */
 function wordsTranslating(text: PrototypeText, originals: Set<number>): number[] {
@@ -96,7 +110,35 @@ function otherBridges(data: PrototypeData, abbreviation: string, place: number):
  * The helps of a touched word: the team's glossary first, then what the other bridge texts say, then the notes and
  * word links whose words in `abbreviation` include it, in the order of the verses.
  */
-export function helpsOfWord(data: PrototypeData, abbreviation: string, place: number, glossary: GlossaryEntry[] = []): WordHelp[] {
+/**
+ * What the lexicon says of the words of the original a touched word stands for, the sense of this verse first: last
+ * among its helps, for whoever wants to go to the root of a word.
+ */
+function lexiconOfWord(data: PrototypeData, abbreviation: string, place: number, verse: number): WordHelp[] {
+  const original = data.texts.find((x) => x.original)
+  if (!original?.words) return []
+  const out: WordHelp[] = []
+  for (const p of originalsOfWord(data, abbreviation, place)) {
+    const word = original.words[p]
+    const found = word && lexiconOf(word.strong)
+    if (!found) continue
+    const code = strongCode(found)
+    if (out.some((h) => h.id === `lexico-${code}`)) continue
+    const senses = sensesOfWord(found.file, { book: data.book.id.toUpperCase(), chapter: data.chapter, verse }, found.letter)
+    out.push({
+      kind: 'lexico',
+      id: `lexico-${code}`,
+      places: placesOfOriginals(data, [p]),
+      lemma: senses.entries[0]?.lemma || word.lemma,
+      code,
+      brief: found.file.brief,
+      ...senses,
+    })
+  }
+  return out
+}
+
+export function helpsOfWord(data: PrototypeData, abbreviation: string, place: number, glossary: GlossaryEntry[] = [], verse?: number): WordHelp[] {
   const out: WordHelp[] = [...glossaryOf(data, abbreviation, place, glossary), ...otherBridges(data, abbreviation, place)]
   const seen = new Set<string>()
   for (const verse of data.verses) {
@@ -113,6 +155,7 @@ export function helpsOfWord(data: PrototypeData, abbreviation: string, place: nu
       out.push({ kind: 'palabra', id: word.id, places: word.places, original: word.original, article: word.article, keyTerm: word.keyTerm })
     }
   }
+  if (verse !== undefined) out.push(...lexiconOfWord(data, abbreviation, place, verse))
   return out
 }
 
@@ -193,6 +236,16 @@ export function WordLines({
         </p>
       ))}
     </>
+  )
+}
+
+/** A sense of a word as the lexicon gives it: its glosses first (the words to say it with), then what it means. */
+function LexiconSenseText({ sense }: { sense: LexiconSense }) {
+  return (
+    <div className="lexicon-sense">
+      {sense.glosses?.length ? <p className="lexicon-glosses">{sense.glosses.join(', ')}</p> : null}
+      {sense.definition && <p className="lexicon-definition">{sense.definition.replace(/^=\s*/, '')}</p>}
+    </div>
   )
 }
 
@@ -319,6 +372,29 @@ export function WordHelpCard({
         </>
       )}
 
+      {help?.kind === 'lexico' && (
+        <>
+          <p className="word-help-kind">{t('ayudas.lexico')}</p>
+          <p className="help-original lexicon-lemma" dir={original?.dir} lang={original?.lang}>
+            {help.lemma} <span className="quiet">{help.code}</span>
+          </p>
+          {help.brief && <p className="help-quote">{help.brief}</p>}
+          {help.byVerse && <p className="help-verse">{t('ayudas.enEsteVersiculo')}</p>}
+          {help.here.map((s, i) => (
+            <LexiconSenseText key={i} sense={s} />
+          ))}
+          {help.other.length > 0 && (
+            <details className="general-notes">
+              <summary>{t('ayudas.otrosSentidos', { n: help.other.length })}</summary>
+              {help.other.map((s, i) => (
+                <LexiconSenseText key={i} sense={s} />
+              ))}
+            </details>
+          )}
+          <p className="quiet lexicon-credit">{t('ayudas.lexicoCredito')}</p>
+        </>
+      )}
+
       {help?.kind === 'palabra' && (
         <>
           <p className="word-help-kind">
@@ -420,7 +496,7 @@ export function useWordHelps({
     setAt(null)
     setHelpsRead(false)
   }
-  const touched: Touched | null = at ? { ...at, helps: helpsOfWord(data, at.abbreviation, at.place, glossary) } : null
+  const touched: Touched | null = at ? { ...at, helps: helpsOfWord(data, at.abbreviation, at.place, glossary, at.verse) } : null
   const openNote =
     marked && helpsRead
       ? data.verses

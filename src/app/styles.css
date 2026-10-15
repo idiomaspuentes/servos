@@ -363,6 +363,12 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .chapter-lines.is-alone { font-size: 1.15rem; line-height: 1.7; }
 .chapter-lines.is-alone .chapter-verse.is-current { background: none; padding-inline: 0; }
 .word-help-note { justify-self: start; padding-inline: 0; }
+/* The lexicon: the lemma, a short meaning, the senses of this verse */
+.lexicon-lemma { font-size: 1.15rem; margin: 0; }
+.lexicon-sense { margin-block: 0.35rem; }
+.lexicon-glosses { margin: 0; font-weight: 600; }
+.lexicon-definition { margin: 0.1rem 0 0; color: var(--text-soft); font-size: 0.95rem; }
+.lexicon-credit { margin-block-start: 0.5rem; font-size: 0.75rem; }
 .is-original { font-family: 'SBL Hebrew', 'Ezra SIL', 'Gentium Plus', 'Noto Serif Hebrew', 'Noto Serif', 'Times New Roman', serif; font-size: 1.25rem; line-height: 1.8; }
 
 /* A word to touch: reads as text, answers to a finger */

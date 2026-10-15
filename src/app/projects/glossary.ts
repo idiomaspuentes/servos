@@ -3,13 +3,17 @@
  * An entry hangs from the original word (its lemma and Strong number), not from a word of a bridge text, so a word
  * touched in the TPL, the TPS or the original finds the same entry.
  *
- * Its rows are Taller's (`src/domain/glossary.ts` there, `docs/GLOSARIO_DOOR43.md`): the same TSV columns, the same
- * three files by the original's language, kept in the language's `<lang>_tg` repository on Door43. A glossary shared
- * as a file between computers, published to Door43, or made in Taller is one format. Servos adds one column, `By`
- * (who wrote the entry last), which Taller reads past.
+ * It is kept one file a word, as the lexicons are (`content/H7121.json`, `content/G2316.json`): a glossary that grows
+ * to thousands of words is never read whole. A chapter reads only its words' files, and two translators adding
+ * different words never touch the same file. On Door43 it is the language's `<lang>_tg` repository with that layout.
+ * Each file is `{ "strong": "H7121", "entries": [...] }`; an entry keeps Taller's columns (`src/domain/glossary.ts`
+ * there), so Taller's TSV is read and written too, to bring a glossary from it or give one to it. An expression lives in
+ * the file of its first word.
  *
- * In the prototype the glossary lives in this browser, by project.
+ * In the prototype the files live in this browser, by project.
  */
+
+import { strongCode, strongParts } from '../../lexicon/lexicon'
 
 export type GlossaryScope = 'tpl' | 'tps' | 'helps' | 'all'
 export type GlossaryStatus = 'proposed' | 'agreed'
@@ -36,6 +40,8 @@ export interface GlossaryEntry {
   note: string
   /** Who wrote the entry last. */
   by: string
+  /** When it was written last (ISO): what is shared is what changed since the last time. */
+  changed?: string
 }
 
 export const GLOSSARY_COLUMNS = [
@@ -175,19 +181,28 @@ export interface Gathered {
   joined: number
 }
 
+/** What gathering changed: the entries to write back, each into its word's file. */
+export interface GatherResult {
+  entries: GlossaryEntry[]
+  gathered: Gathered
+  changed: GlossaryEntry[]
+}
+
 /**
  * Gathers a glossary received from another computer (or Door43) into this one. Nothing here is lost: an entry about
  * words this glossary has no entry for comes in; one about the same words with another rendering adds that rendering
  * to the alternatives (and the other's alternatives), so the team sees both and agrees on one.
  */
-export function gatherGlossary(mine: GlossaryEntry[], theirs: GlossaryEntry[]): { entries: GlossaryEntry[]; gathered: Gathered } {
+export function gatherGlossary(mine: GlossaryEntry[], theirs: GlossaryEntry[]): GatherResult {
   let entries = [...mine]
   const gathered: Gathered = { added: 0, same: 0, joined: 0 }
+  const changed: GlossaryEntry[] = []
   for (const entry of theirs) {
     const here = entryFor(entries, entry.strong) ?? entries.find((e) => !e.strong && e.lemma === entry.lemma) ?? null
     if (!here) {
       const id = entries.some((e) => e.id === entry.id) ? newGlossaryId(entries.map((e) => e.id)) : entry.id
       entries = [...entries, { ...entry, id }]
+      changed.push({ ...entry, id })
       gathered.added++
       continue
     }
@@ -196,26 +211,128 @@ export function gatherGlossary(mine: GlossaryEntry[], theirs: GlossaryEntry[]): 
       gathered.same++
       continue
     }
-    entries = upsertEntry(entries, { ...here, alternatives: [...here.alternatives, ...forms], status: 'proposed' })
+    const joined = { ...here, alternatives: [...here.alternatives, ...forms], status: 'proposed' as const }
+    entries = upsertEntry(entries, joined)
+    changed.push(joined)
     gathered.joined++
   }
-  return { entries, gathered }
+  return { entries, gathered, changed }
 }
 
-const storeKey = (project: string) => `servos.prototipo.glosario.${project}`
+/** The file an entry lives in: its first word's Strong number as the lexicons write it (H7121, G2316, H1254a). */
+export function glossaryCode(strong: string): string {
+  const part = strongParts(strong.split(';')[0])[0]
+  return part ? strongCode(part) : 'sin-original'
+}
 
-export function readGlossary(project: string): GlossaryEntry[] {
+/** One file of the glossary: the entries about one word of the original (and the expressions it begins). */
+export interface GlossaryFileOfWord {
+  strong: string
+  entries: GlossaryEntry[]
+}
+
+const prefix = (project: string) => `servos.prototipo.glosario.${project}.`
+
+function readFileOf(project: string, code: string): GlossaryEntry[] {
   try {
-    return JSON.parse(localStorage.getItem(storeKey(project)) ?? '[]') as GlossaryEntry[]
+    return (JSON.parse(localStorage.getItem(prefix(project) + code) ?? 'null') as GlossaryFileOfWord | null)?.entries ?? []
   } catch {
     return []
   }
 }
 
-export function keepGlossary(project: string, entries: GlossaryEntry[]) {
+function writeFileOf(project: string, code: string, entries: GlossaryEntry[]) {
   try {
-    localStorage.setItem(storeKey(project), JSON.stringify(entries))
+    if (entries.length) localStorage.setItem(prefix(project) + code, JSON.stringify({ strong: code, entries } satisfies GlossaryFileOfWord))
+    else localStorage.removeItem(prefix(project) + code)
   } catch {
     /* kept for this visit */
+  }
+}
+
+/** A glossary kept by an earlier prototype as one list goes into its words' files, once. */
+function fromOneList(project: string) {
+  try {
+    const old = localStorage.getItem(`servos.prototipo.glosario.${project}`)
+    if (!old) return
+    for (const entry of JSON.parse(old) as GlossaryEntry[]) {
+      const code = glossaryCode(entry.strong)
+      writeFileOf(project, code, upsertEntry(readFileOf(project, code), entry))
+    }
+    localStorage.removeItem(`servos.prototipo.glosario.${project}`)
+  } catch {
+    /* left as it was */
+  }
+}
+
+/** The entries about these words of the original: only their files are read. */
+export function readGlossaryFor(project: string, strongs: string[]): GlossaryEntry[] {
+  fromOneList(project)
+  const codes = new Set(strongs.flatMap((s) => strongParts(s).map(strongCode)))
+  return [...codes].flatMap((code) => readFileOf(project, code))
+}
+
+/** The whole glossary, for its own screen and for sharing it. */
+export function readGlossary(project: string): GlossaryEntry[] {
+  fromOneList(project)
+  const out: GlossaryEntry[] = []
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key?.startsWith(prefix(project))) out.push(...readFileOf(project, key.slice(prefix(project).length)))
+    }
+  } catch {
+    /* nothing to read */
+  }
+  return out
+}
+
+/** Writes an entry into its word's file, stamped with when. */
+export function saveGlossaryEntry(project: string, entry: GlossaryEntry, now = new Date()) {
+  const code = glossaryCode(entry.strong)
+  const stamped = { ...entry, changed: now.toISOString() }
+  writeFileOf(project, code, upsertEntry(readFileOf(project, code), stamped))
+}
+
+/**
+ * A glossary to pass to another computer: the files of the words whose entries changed since `since` (all of them
+ * without it), so what travels is what is new, however big the glossary is.
+ */
+export function glossaryBundle(entries: GlossaryEntry[], since?: string): string {
+  const files: Record<string, GlossaryEntry[]> = {}
+  for (const e of entries) if (!since || (e.changed ?? '') > since) (files[glossaryCode(e.strong)] ??= []).push(e)
+  return JSON.stringify({ format: 'servos-glosario', version: 1, files })
+}
+
+/** What a received glossary holds: a bundle from Servos, or Taller's TSV. */
+export function readBundle(text: string): GlossaryEntry[] {
+  const trimmed = text.trim()
+  if (trimmed.startsWith('{')) {
+    try {
+      const bundle = JSON.parse(trimmed) as { format?: string; files?: Record<string, GlossaryEntry[]> }
+      return bundle.format === 'servos-glosario' ? Object.values(bundle.files ?? {}).flat() : []
+    } catch {
+      return []
+    }
+  }
+  return parseGlossary(trimmed)
+}
+
+const sharedKey = (project: string) => `servos.prototipo.glosarioCompartido.${project}`
+
+/** When this computer last shared its glossary. */
+export function lastShared(project: string): string | undefined {
+  try {
+    return localStorage.getItem(sharedKey(project)) ?? undefined
+  } catch {
+    return undefined
+  }
+}
+
+export function markShared(project: string, now = new Date()) {
+  try {
+    localStorage.setItem(sharedKey(project), now.toISOString())
+  } catch {
+    /* asked again next time */
   }
 }

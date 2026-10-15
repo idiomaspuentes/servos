@@ -3,7 +3,9 @@
  * screens need. When the screens are wired, `src/resources/reading.ts` gives the same things from the device.
  */
 
+import { strongParts, type LexiconFile } from '../lexicon/lexicon'
 import type { ChapterPiece, WordLine } from '../resources/reading'
+import lexicon from './data/lexicon.json'
 
 export interface PrototypeNote {
   id: string
@@ -69,7 +71,7 @@ export interface PrototypeData {
   academy: Record<string, { title: string; markdown: string }>
 }
 
-const files = import.meta.glob<PrototypeData>('./data/*.json', { eager: true, import: 'default' })
+const files = import.meta.glob<PrototypeData>('./data/*-*.json', { eager: true, import: 'default' })
 
 /** The chapters the prototype has: by book, by chapter number. */
 export const CHAPTERS: Record<string, Record<number, PrototypeData>> = {}
@@ -77,6 +79,16 @@ for (const data of Object.values(files)) (CHAPTERS[data.book.id] ??= {})[data.ch
 
 /** A chapter of a book, when the prototype has it. */
 export const chapterOf = (book: string, chapter: number): PrototypeData | null => CHAPTERS[book]?.[chapter] ?? null
+
+/**
+ * The lexicon entry of a word of the original, by its Strong number (`c:H7121`, `G23160`): from Taller's lexicons on
+ * Door43 (`makeLexicon.test.ts`), the entries of the prototype's words. Wired, the language pack carries them.
+ */
+export function lexiconOf(strong: string): { file: LexiconFile; kind: 'greek' | 'hebrew'; number: number; letter: string } | null {
+  const part = strongParts(strong)[0]
+  const file = part ? (lexicon as Record<string, LexiconFile>)[`${part.kind}:${part.number}`] : undefined
+  return part && file ? { file, ...part } : null
+}
 
 /** The chapter numbers the prototype has of a book, in order. */
 export const chaptersOf = (book: string): number[] =>

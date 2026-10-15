@@ -1,5 +1,34 @@
-import { describe, expect, it } from 'vitest'
-import { entriesAbout, entryFor, gatherGlossary, glossaryFileFor, parseGlossary, serializeGlossary, type GlossaryEntry } from './glossary'
+import { beforeEach, describe, expect, it } from 'vitest'
+import {
+  entriesAbout,
+  entryFor,
+  gatherGlossary,
+  glossaryBundle,
+  glossaryCode,
+  glossaryFileFor,
+  parseGlossary,
+  readBundle,
+  readGlossary,
+  readGlossaryFor,
+  saveGlossaryEntry,
+  serializeGlossary,
+  type GlossaryEntry,
+} from './glossary'
+
+// The prototype keeps the glossary in localStorage; the tests run without a browser.
+beforeEach(() => {
+  const store = new Map<string, string>()
+  globalThis.localStorage = {
+    getItem: (k: string) => store.get(k) ?? null,
+    setItem: (k: string, v: string) => void store.set(k, v),
+    removeItem: (k: string) => void store.delete(k),
+    clear: () => store.clear(),
+    key: (i: number) => [...store.keys()][i] ?? null,
+    get length() {
+      return store.size
+    },
+  } as Storage
+})
 
 const entry = (over: Partial<GlossaryEntry>): GlossaryEntry => ({
   id: 'a1b2',
@@ -51,5 +80,24 @@ describe('glosario', () => {
     expect(entries[0]).toMatchObject({ rendering: 'waqyay', alternatives: ['qapariy'], status: 'proposed' })
     expect(entries[1]).toMatchObject({ lemma: 'יוֹנָה', rendering: 'Jonás' })
     expect(gatherGlossary(entries, theirs).gathered).toEqual({ added: 0, same: 2, joined: 0 })
+  })
+
+  it('se guarda un archivo por palabra y se leen solo los de las palabras pedidas', () => {
+    saveGlossaryEntry('p', entry({}), new Date('2026-10-01'))
+    saveGlossaryEntry('p', entry({ id: 'x1y2', lemma: 'יוֹנָה', strong: 'H3124', rendering: 'Jonás' }), new Date('2026-10-02'))
+    saveGlossaryEntry('p', entry({ id: 'g1h2', lemma: 'θεός', strong: 'G23160', rendering: 'Dios' }), new Date('2026-10-03'))
+    expect([glossaryCode('c:H7121'), glossaryCode('G23160'), glossaryCode('H1254a')]).toEqual(['H7121', 'G2316', 'H1254a'])
+    expect(localStorage.getItem('servos.prototipo.glosario.p.H7121')).toContain('"strong":"H7121"')
+    expect(readGlossaryFor('p', ['c:H7121', 'H0413']).map((e) => e.rendering)).toEqual(['waqyay'])
+    expect(readGlossary('p')).toHaveLength(3)
+  })
+
+  it('compartir lleva solo lo cambiado desde la última vez, y recibir lee eso o un TSV de Taller', () => {
+    saveGlossaryEntry('p', entry({}), new Date('2026-10-01'))
+    saveGlossaryEntry('p', entry({ id: 'x1y2', lemma: 'יוֹנָה', strong: 'H3124', rendering: 'Jonás' }), new Date('2026-10-05'))
+    const bundle = glossaryBundle(readGlossary('p'), '2026-10-03T00:00:00.000Z')
+    expect(readBundle(bundle).map((e) => e.rendering)).toEqual(['Jonás'])
+    expect(readBundle(glossaryBundle(readGlossary('p')))).toHaveLength(2)
+    expect(readBundle(serializeGlossary([entry({})])).map((e) => e.rendering)).toEqual(['waqyay'])
   })
 })
