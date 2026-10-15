@@ -127,6 +127,8 @@ export function checkingCenter<I extends Checkable>(kind: CheckKind<I>) {
     held.set(kind.app, { filter, currentId, refText })
     // Only so the screen is drawn again after an answer is written.
     const [, setAnswered] = useState(0)
+    // The last one left answered «right»: the end is said, with the way on, instead of staying on it.
+    const [finished, setFinished] = useState(false)
 
     const lookup: Lookup = {
       academy: (path) => datas.map((d) => d.academy[path]).find(Boolean),
@@ -218,17 +220,56 @@ export function checkingCenter<I extends Checkable>(kind: CheckKind<I>) {
           {(['despues', 'cambio'] as const).map((s) => all.some((c) => stateFor(c) === s) && row({ kind: 'estado', id: s }, t(k(`estado.${s}`))))}
           {kind.groups
             .filter((g) => all.some((c) => c.group === g))
-            .map((g) => (
-              <section key={g} className="review-category">
-                {row({ kind: 'categoria', id: g }, t(k(`cat.${g}`)))}
-                {[...new Set(all.filter((c) => c.group === g).map((c) => c.subgroup))].map((sub) =>
-                  row({ kind: 'figura', id: sub }, kind.subgroupName(subgroupOf(sub)!, lookup))
-                )}
-              </section>
-            ))}
+            .map((g) => {
+              const subs = [...new Set(all.filter((c) => c.group === g).map((c) => c.subgroup))]
+              // A category with one figure of its own name («Numbers») would show the same row twice: once is enough.
+              const same = subs.length === 1 && kind.subgroupName(subgroupOf(subs[0])!, lookup) === t(k(`cat.${g}`))
+              return (
+                <section key={g} className="review-category">
+                  {row({ kind: 'categoria', id: g }, t(k(`cat.${g}`)))}
+                  {!same && subs.map((sub) => row({ kind: 'figura', id: sub }, kind.subgroupName(subgroupOf(sub)!, lookup)))}
+                </section>
+              )
+            })}
         </div>
       </Sheet>
     )
+
+    if (finished) {
+      const missing = all.filter((c) => stateFor(c) !== 'bien')
+      return (
+        <div className="review">
+          {header}
+          <div className="review-empty">
+            <p className="review-done">
+              ✓ {filter.kind === 'todas' ? t(k('listas'), { n: list.length }) : t(k('grupoListo'), { grupo: filterLabel, n: list.length })}
+            </p>
+            {/* A group done, with others left in the book: on to them. All done: back to the book, to its next step. */}
+            {filter.kind !== 'todas' && missing.length > 0 ? (
+              <button
+                type="button"
+                className="button-primary"
+                onClick={() => {
+                  setFilter({ kind: 'todas' })
+                  setFinished(false)
+                  go(missing[0])
+                }}
+              >
+                {t(k('seguirFaltan'), { n: missing.length })}
+              </button>
+            ) : (
+              <button type="button" className="button-primary" onClick={frame.back}>
+                {t('marco.listoVolver', { libro: context.data.book.name })}
+              </button>
+            )}
+            <button type="button" className="button-quiet" onClick={() => setFinished(false)}>
+              {t(k('verUltima'))}
+            </button>
+          </div>
+          {picker}
+        </div>
+      )
+    }
 
     const data = item ? chapterData(item.chapter) : null
     if (!item || !data) {
@@ -277,8 +318,12 @@ export function checkingCenter<I extends Checkable>(kind: CheckKind<I>) {
           onAnswer={(check) => {
             writeCheck(book, item.id, check, kind.store)
             setAnswered((n) => n + 1)
-            // «Right» goes on to the next one left; the others stay on screen, to be seen as saved.
-            if (check.status === 'bien') go(list.slice(at + 1).find((c) => stateFor(c) !== 'bien'))
+            // «Right» goes on to the next one left (after it, or else one passed over before it); the others stay on
+            // screen, to be seen as saved. None left: the end.
+            if (check.status !== 'bien') return
+            const rest = [...list.slice(at + 1), ...list.slice(0, at)].find((c) => c.id !== item.id && stateFor(c) !== 'bien')
+            if (rest) go(rest)
+            else setFinished(true)
           }}
           onCorrect={() => frame.open('editor', { book, chapter: item.chapter, verse: item.verse })}
         />
@@ -638,6 +683,10 @@ export const checkingTexts = {
     ningunaAqui: 'Este versículo no tiene nada que revisar aquí.',
     ningunaDelGrupo: 'Este versículo no tiene nada de «{grupo}».',
     irSiguiente: 'Ir al siguiente ({lugar})',
+    listas: 'Quedaron revisadas todas: {n}.',
+    grupoListo: 'Quedaron revisadas todas las de «{grupo}»: {n}.',
+    seguirFaltan: 'Seguir con las que faltan ({n})',
+    verUltima: 'Volver a la última',
     textoReferencia: 'Texto de referencia',
     sinAlinear: 'No se sabe qué palabras del {texto} son.',
     noEsta: 'No está en mi traducción',
@@ -669,6 +718,10 @@ export const checkingTexts = {
     ningunaAqui: 'Este versículo não tem nada para revisar aqui.',
     ningunaDelGrupo: 'Este versículo não tem nada de «{grupo}».',
     irSiguiente: 'Ir para o próximo ({lugar})',
+    listas: 'Ficaram todas revisadas: {n}.',
+    grupoListo: 'Ficaram revisadas todas as de «{grupo}»: {n}.',
+    seguirFaltan: 'Seguir com as que faltam ({n})',
+    verUltima: 'Voltar à última',
     textoReferencia: 'Texto de referência',
     sinAlinear: 'Não se sabe que palavras do {texto} são.',
     noEsta: 'Não está na minha tradução',
@@ -700,6 +753,10 @@ export const checkingTexts = {
     ningunaAqui: 'This verse has nothing to check here.',
     ningunaDelGrupo: 'This verse has nothing of «{grupo}».',
     irSiguiente: 'Go to the next ({lugar})',
+    listas: 'All checked: {n}.',
+    grupoListo: 'All of «{grupo}» checked: {n}.',
+    seguirFaltan: 'Go on with the ones left ({n})',
+    verUltima: 'Back to the last one',
     textoReferencia: 'Reference text',
     sinAlinear: 'Which words of the {texto} these are is unknown.',
     noEsta: 'It is not in my translation',

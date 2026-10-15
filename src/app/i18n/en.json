@@ -559,5 +559,6 @@
   "bienvenida.ejemplo": "See the example as {nombre}",
   "persona.agregar": "Add a person",
   "persona.nombreNuevo": "Name of who is going to work",
-  "persona.agregarYTrabajar": "Add and work with this name"
+  "persona.agregarYTrabajar": "Add and work with this name",
+  "marco.listoVolver": "Done: back to {libro}"
 }

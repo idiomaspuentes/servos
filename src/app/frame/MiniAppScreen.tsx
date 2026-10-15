@@ -183,7 +183,10 @@ export function MiniAppScreen({
       ),
       setSaved,
       setUnit,
-      next: backLabel ? onBack : following,
+      // At the book's last verse the way on is back to the book: a button that does nothing is not offered.
+      next: backLabel || atEnd ? onBack : following,
+      atEnd: atEnd && !backLabel,
+      back: onBack,
       open: onOpenApp,
     },
   }
@@ -241,7 +244,11 @@ export function MiniAppScreen({
         <Center key={redrawn} context={context} />
         {app.primary && (
           <button type="button" className="button-primary" onPointerDown={keep} onClick={() => app.primary!.run(context)}>
-            {backLabel && app.primary.returning ? t(app.primary.returning, { app: backLabel }) : t(app.primary.label)}
+            {backLabel && app.primary.returning
+              ? t(app.primary.returning, { app: backLabel })
+              : atEnd
+                ? t('marco.listoVolver', { libro: data.book.name })
+                : t(app.primary.label)}
           </button>
         )}
         {app.helps && <HelpsPanel data={data} verse={position.verse} textAbbreviation={text.abbreviation} onMark={onMark} />}

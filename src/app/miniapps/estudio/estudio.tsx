@@ -86,7 +86,7 @@ function Center({ context }: MiniAppCenterProps) {
           <Markdown text={intro} />
         </article>
         <button type="button" className="button-primary study-next" onClick={frame.next}>
-          {t('estudio.seguir')}
+          {frame.atEnd ? t('marco.listoVolver', { libro: data.book.name }) : t('estudio.seguir')}
         </button>
       </div>
     )
@@ -163,7 +163,7 @@ function Center({ context }: MiniAppCenterProps) {
     <div className="study" ref={root}>
       <Panes panes={panes} label={t('estudio.paneles')} fixed="nota" open={open} onPane={setPane} holdFocus={false} />
       <button type="button" className="button-primary study-next" onClick={button.run}>
-        {t(button.label)}
+        {button.run === frame.next && frame.atEnd ? t('marco.listoVolver', { libro: data.book.name }) : t(button.label)}
       </button>
     </div>
   )

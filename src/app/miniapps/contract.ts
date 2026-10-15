@@ -79,6 +79,13 @@ export interface MiniAppContext {
      */
     next(): void
     /**
+     * At the book's last verse, with nowhere further to go: `next` then goes back to the book (where its progress and
+     * the next step are), and the button that leads on says so (`marco.listoVolver`).
+     */
+    atEnd: boolean
+    /** Back where the mini app was opened from: the book, or the mini app that opened it. */
+    back(): void
+    /**
      * Opens another mini app of the project at a place (the editor, to correct a verse while reviewing it); its back
      * arrow returns here.
      */
