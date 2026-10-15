@@ -391,6 +391,11 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .pane-fixed { height: 100%; }
 .panes-split .edit-where { display: none; }
 @media (min-width: 900px) { .screen-fill { max-width: 1200px; } }
+/* A mini app of one column (the reviewers, the aligner) is as wide as that column, its header over it, not spread to the window's edges */
+@media (min-width: 900px) {
+  .screen-fill:has(> * .review) { max-width: 48rem; }
+  .screen-fill:has(> * .align) { max-width: 62rem; }
+}
 
 /* A line of the text as it is set: a poem's line has a rule at its start and is set in by its depth (as in Taller) */
 .usfm-line {
