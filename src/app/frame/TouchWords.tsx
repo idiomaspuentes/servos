@@ -8,6 +8,7 @@
  */
 
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { flushSync } from 'react-dom'
 import type { Places, PrototypeData, PrototypeNote, PrototypeText } from '../../prototype/data'
 import type { WordLine } from '../../resources/reading'
 import { useT } from '../i18n/i18n'
@@ -180,7 +181,20 @@ export function WordHelpCard({
   // Brought into sight in the pane that scrolls around it, never by scrolling the page: under the keyboard there is
   // little room, and the card would open out of sight.
   const self = useRef<HTMLElement>(null)
+  // Where the pane was when the word was touched: closing the card goes back there, to the word, and not to wherever
+  // reading a long help left the scroll. Read before the card is brought into sight, which moves it.
+  const before = useRef<{ pane: HTMLElement; top: number } | null>(null)
+  useLayoutEffect(() => {
+    const pane = self.current?.parentElement?.closest<HTMLElement>('.pane')
+    before.current = pane ? { pane, top: pane.scrollTop } : null
+  }, [touched.place])
   useLayoutEffect(() => showInPane(self.current), [touched.place, touched.index])
+  const close = () => {
+    const back = before.current
+    // The card leaves at once, so the pane is its old height again before it is scrolled back.
+    flushSync(onClose)
+    if (back) back.pane.scrollTop = back.top
+  }
 
   return (
     <aside ref={self} className="word-help" aria-label={t('ayudas.dePalabra', { palabra: word })}>
@@ -189,7 +203,7 @@ export function WordHelpCard({
           {word}
         </span>
         {count > 1 && <span className="quiet">{t('ayudas.cuenta', { i: touched.index + 1, n: count })}</span>}
-        <button type="button" className="button-quiet word-help-close" aria-label={t('ayudas.cerrar')} onClick={onClose}>
+        <button type="button" className="button-quiet word-help-close" aria-label={t('ayudas.cerrar')} onClick={close}>
           ×
         </button>
       </div>
