@@ -39,7 +39,7 @@ export interface MiniAppContext {
   t: T
   person: { name: string }
   /** The project the book belongs to: what is shared across its books (its glossary). */
-  project: { id: string; name: string; languageCode: string }
+  project: { id: string; name: string; languageCode: string; font?: string }
   data: PrototypeData
   /** The bridge text shown (`TPL` or `TPS`). */
   textAbbreviation: string
@@ -140,6 +140,11 @@ export interface MiniApp {
    * count and mark. A mini app without it shows no progress.
    */
   done?(at: Position): boolean
+  /**
+   * Whether the frame's position line (‹ Jonah 1:2 ›) is shown: not for a mini app that goes by something else than
+   * verses and has its own way on (the reviewers go note by note), so the foot has one way on, not two.
+   */
+  positionLine?: boolean
   /** Its one filled button (philosophy, principle 7), usually leading to the next verse or step. */
   primary?: MiniAppAction
   /** Its "More" menu: what it uses rarely. */

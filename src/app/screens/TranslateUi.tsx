@@ -165,7 +165,7 @@ export function TranslateUi({ onBack }: { onBack(): void }) {
       </header>
       <main className="main">
         <p className="tool-progress translate-progress">
-          <span className="progress-bar" aria-hidden="true">
+          <span className="progress-bar" aria-hidden="true" data-full={(total > 0 && done >= total) || undefined}>
             <span style={{ width: `${percent(done, total)}%` }} />
           </span>
           <span>{t('interfaz.progreso', { hechas: done, total, pct: percent(done, total) })}</span>

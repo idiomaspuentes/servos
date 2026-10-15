@@ -361,8 +361,8 @@ export const editor: MiniApp = {
       'lengua.hbo': 'Hebreo',
       'lengua.grc': 'Griego',
       'lengua.original': 'Original',
-      guardarSeguir: 'Guardar y seguir',
-      guardarVolver: 'Guardar y volver',
+      guardarSeguir: 'Siguiente →',
+      guardarVolver: 'Listo: volver',
     },
     pt: {
       unir: 'Juntar com o próximo versículo',
@@ -399,8 +399,8 @@ export const editor: MiniApp = {
       'lengua.hbo': 'Hebraico',
       'lengua.grc': 'Grego',
       'lengua.original': 'Original',
-      guardarSeguir: 'Salvar e seguir',
-      guardarVolver: 'Salvar e voltar',
+      guardarSeguir: 'Próximo →',
+      guardarVolver: 'Pronto: voltar',
     },
     en: {
       unir: 'Join with the next verse',
@@ -437,8 +437,8 @@ export const editor: MiniApp = {
       'lengua.hbo': 'Hebrew',
       'lengua.grc': 'Greek',
       'lengua.original': 'Original',
-      guardarSeguir: 'Save and continue',
-      guardarVolver: 'Save and go back',
+      guardarSeguir: 'Next →',
+      guardarVolver: 'Done: go back',
     },
   },
 }

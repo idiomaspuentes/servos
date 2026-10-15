@@ -92,6 +92,8 @@ export const revisorNotas: MiniApp = {
   helps: false,
   fills: true,
   writes: false,
+  // Its own way on, note by note (or word by word), at the foot: the verse line would be a second one.
+  positionLine: false,
   // A verse is checked when each of its notes is marked right, for the verse as it is now.
   done: doneOf(notes),
   Center: checkingCenter(notes),

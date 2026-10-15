@@ -76,7 +76,7 @@ export function BookScreen({
   const totalVerses = chapters.reduce((n, c) => n + c.verses.length, 0)
   const doneOf = (app: MiniApp) => chapters.reduce((n, c) => n + doneIn(app, c), 0)
   const bar = (done: number, total: number) => (
-    <span className="progress-bar" aria-hidden="true">
+    <span className="progress-bar" aria-hidden="true" data-full={(total > 0 && done >= total) || undefined}>
       <span style={{ width: `${total ? (100 * done) / total : 0}%` }} />
     </span>
   )
@@ -148,7 +148,7 @@ export function BookScreen({
               >
                 {/* A short name, so the five fit in two lines on a phone; the whole one is said under them. */}
                 <span>{t(`pasos.${phase}Corto`)}</span>
-                <span className="book-step-state">{i < at ? '✓' : p !== null && p > 0 ? `${p} %` : ''}</span>
+                <span className={i < at || p === 100 ? 'book-step-state is-done' : 'book-step-state'}>{i < at || p === 100 ? '✓' : p !== null && p > 0 ? `${p} %` : ''}</span>
               </button>
             )
           })}

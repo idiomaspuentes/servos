@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import type { PrototypeData } from '../../prototype/data'
 import { useT } from '../i18n/i18n'
+import { loadFont } from './fonts'
 import type { MiniApp, MiniAppContext, Position, Unit } from '../miniapps/contract'
 import { HelpsPanel } from './HelpsPanel'
 import { keepFocus } from './Panes'
@@ -189,11 +190,16 @@ export function MiniAppScreen({
   const Center = app.Center
   // The actions of «More» offered where the person is.
   const offered = (app.more ?? []).filter((action) => !action.when || action.when(context))
+  useEffect(() => loadFont(project.font), [project.font])
 
   return (
     // While writing on a phone the header and the filled button step aside: the keyboard leaves room for little more
     // than the box and the text it translates, and the arrows of the position line still move on.
-    <div className={`screen screen-app${app.fills ? ' screen-fill' : ''}${app.fills && keyboard ? ' is-writing' : ''}`} style={box}>
+    <div
+      className={`screen screen-app${app.fills ? ' screen-fill' : ''}${app.fills && keyboard ? ' is-writing' : ''}`}
+      // What the team writes is shown in the project's font (its settings), the rest in the app's.
+      style={{ ...box, ...(project.font ? ({ '--project-font': `'${project.font}', var(--font)` } as CSSProperties) : {}) }}
+    >
       <header className="header">
         <button type="button" className="button-quiet header-back" onClick={onBack}>
           {/* Where it goes back to: the mini app it was opened from, or the book. */}
@@ -202,7 +208,7 @@ export function MiniAppScreen({
         <div className="header-title">
           <span className="header-app">{t(`${app.id}.nombre`)}</span>
           <span className="header-person">
-            {t('marco.trabaja', { nombre: person })}
+            {person}
             {app.writes && ` · ${t(saved === 'guardado' ? 'marco.guardadoAqui' : 'marco.sinCambios')}`}
           </span>
         </div>
@@ -216,18 +222,20 @@ export function MiniAppScreen({
         )}
       </header>
 
-      <nav className="position" aria-label={passage}>
-        <button type="button" className="button-quiet position-arrow" aria-label={t(unit === 'section' ? 'marco.seccionAnterior' : 'marco.anterior')} disabled={atStart} onPointerDown={keep} onClick={previous}>
-          ‹
-        </button>
-        <button type="button" className="position-label" onClick={() => setVerseList(true)}>
-          {/* Which unit it goes by is said, so the person knows there is another (chosen in the sheet this opens). */}
-          <strong>{passage}</strong> · {t(app.sections && unit === 'section' && shown[0] > 0 ? 'marco.posicionSeccion' : 'marco.posicion', { n: at + 1, total: stops.length })}
-        </button>
-        <button type="button" className="button-quiet position-arrow" aria-label={t(unit === 'section' ? 'marco.seccionSiguiente' : 'marco.siguiente')} disabled={atEnd} onPointerDown={keep} onClick={following}>
-          ›
-        </button>
-      </nav>
+      {app.positionLine !== false && (
+        <nav className="position" aria-label={passage}>
+          <button type="button" className="button-quiet position-arrow" aria-label={t(unit === 'section' ? 'marco.seccionAnterior' : 'marco.anterior')} disabled={atStart} onPointerDown={keep} onClick={previous}>
+            ‹
+          </button>
+          <button type="button" className="position-label" onClick={() => setVerseList(true)}>
+            {/* Which unit it goes by is said, so the person knows there is another (chosen in the sheet this opens). */}
+            <strong>{passage}</strong> · {t(app.sections && unit === 'section' && shown[0] > 0 ? 'marco.posicionSeccion' : 'marco.posicion', { n: at + 1, total: stops.length })}
+          </button>
+          <button type="button" className="button-quiet position-arrow" aria-label={t(unit === 'section' ? 'marco.seccionSiguiente' : 'marco.siguiente')} disabled={atEnd} onPointerDown={keep} onClick={following}>
+            ›
+          </button>
+        </nav>
+      )}
       <p className="position-crossed" role="status" aria-live="polite">
         {crossed !== null && <span>{t('marco.capituloNuevo', { libro: data.book.name, capitulo: crossed })}</span>}
       </p>

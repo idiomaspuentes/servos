@@ -190,6 +190,8 @@ export const revisorPalabras: MiniApp = {
   helps: false,
   fills: true,
   writes: false,
+  // Its own way on, note by note (or word by word), at the foot: the verse line would be a second one.
+  positionLine: false,
   // A verse is checked when each of its words is marked right there, for the verse as it is now.
   done: doneOf(words),
   Center: checkingCenter(words),

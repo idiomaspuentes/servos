@@ -90,7 +90,7 @@ export function Home({
                       {pct !== null && ` · ${pct} %`}
                     </span>
                     {pct !== null && (
-                      <span className="progress-bar" aria-hidden="true">
+                      <span className="progress-bar" aria-hidden="true" data-full={pct >= 100 || undefined}>
                         <span style={{ width: `${pct}%` }} />
                       </span>
                     )}
