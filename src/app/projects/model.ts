@@ -36,7 +36,7 @@ export interface Project {
 export const DEFAULT_MINI_APPS: Record<Phase, string[]> = {
   estudio: ['estudio'],
   traduccion: ['editor'],
-  revision: ['revisorNotas', 'revisorPalabras'],
+  revision: ['revisorNotas', 'revisorPalabras', 'alineador'],
   comunitaria: ['comunitaria'],
   publicacion: ['publicar'],
 }
@@ -93,13 +93,22 @@ export function loadProjects(): Project[] {
   return SEED
 }
 
-/** A browser that kept the example from an earlier version gets the books added to it since (Jonah, for its poem). */
+/**
+ * A browser that kept the example from an earlier version gets the books added to it since (Jonah, for its poem), and
+ * the mini apps (aligning). Only the example: what a coordinator chose for a project of their own is theirs.
+ */
 function withNewSeedBooks(projects: Project[]): Project[] {
   return projects.map((p) => {
     const seed = SEED.find((s) => s.id === p.id)
     if (!seed) return p
     const missing = seed.books.filter((b) => !p.books.some((x) => x.code === b.code))
-    return missing.length ? { ...p, books: [...missing, ...p.books] } : p
+    const apps = Object.fromEntries(
+      Object.entries(seed.miniApps).map(([phase, ids]) => {
+        const kept = p.miniApps?.[phase as Phase] ?? []
+        return [phase, [...kept, ...ids.filter((id) => !kept.includes(id))]]
+      })
+    ) as Project['miniApps']
+    return { ...p, books: missing.length ? [...missing, ...p.books] : p.books, miniApps: apps }
   })
 }
 

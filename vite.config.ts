@@ -12,6 +12,14 @@ import { viteSingleFile } from 'vite-plugin-singlefile'
  */
 const BT = resolve(dirname(fileURLToPath(import.meta.url)), '../bt-synergy/packages')
 
+/**
+ * usfm-ast lives next to it too (`../usfm-ast`, as for Taller): the alignment is Taller's, its box model and the way
+ * it keeps links when a verse's text changes. Only those files are read: `@usfm-tools/editor-core` is a small door
+ * (`src/alignment/editorCore.ts`) to them, not the whole editor, which brings git and an XML parser with it.
+ */
+const USFM_AST = resolve(dirname(fileURLToPath(import.meta.url)), '../usfm-ast/packages')
+const HERE = dirname(fileURLToPath(import.meta.url))
+
 // `vite build --mode pagina`: one self-contained HTML file, to share the prototype as a single page.
 export default defineConfig(({ mode }) => ({
   plugins: mode === 'pagina' ? [react(), viteSingleFile()] : [react()],
@@ -20,12 +28,17 @@ export default defineConfig(({ mode }) => ({
       { find: /^@bt-synergy\/catalog-manager\/core$/, replacement: `${BT}/catalog-manager/src/core.ts` },
       { find: /^@bt-synergy\/([^/]+)\/(.+)$/, replacement: `${BT}/$1/src/$2` },
       { find: /^@bt-synergy\/([^/]+)$/, replacement: `${BT}/$1/src/index.ts` },
+      { find: /^@usfm-ast\/alignment-box-model$/, replacement: `${USFM_AST}/usfm-editor-app/src/hooks/useAlignmentBoxModel.ts` },
+      { find: /^@usfm-tools\/editor-core$/, replacement: `${HERE}/src/alignment/editorCore.ts` },
+      { find: /^@usfm-tools\/types$/, replacement: `${USFM_AST}/shared-types/src/index.ts` },
+      { find: /^@usfm-tools\/usj-core$/, replacement: `${USFM_AST}/usfm-usj-core/src/index.ts` },
+      { find: /^usfm-ast\/(.+)$/, replacement: `${USFM_AST}/$1` },
     ],
     // Some bt-synergy packages keep old compiled `.js` files beside their `.ts` sources (cache-adapter-indexeddb);
     // the sources must win.
     extensions: ['.ts', '.tsx', '.mts', '.mjs', '.js', '.jsx', '.json'],
   },
-  server: { fs: { allow: ['.', BT] } },
+  server: { fs: { allow: ['.', BT, USFM_AST] } },
   test: {
     environment: 'node',
   },

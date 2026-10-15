@@ -466,6 +466,44 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .review-again { display: flex; flex-direction: column; gap: 0.5rem; border-block-start: 1px solid var(--line); padding-block-start: 0.75rem; }
 .review-again h3 { margin: 0; font-size: 1rem; }
 .review-again-figure { margin: 0; font-weight: 600; }
+/* Aligning: the draft's words in a bank above, one box for each word of the source below, as Taller draws them */
+.align { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.4rem; padding: 0.5rem 1rem 0; max-width: 60rem; margin-inline: auto; width: 100%; }
+.align-top { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.align-left { flex: none; font-size: 0.85rem; font-weight: 600; color: var(--text-soft); font-variant-numeric: tabular-nums; }
+.align-left.is-done { color: var(--accent); }
+.align-bank { flex: none; max-height: 30%; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-wrap: wrap; gap: 0.35rem; padding: 0.5rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.align-hint { flex: none; margin: 0; font-size: 0.9rem; color: var(--text-soft); text-wrap: balance; }
+.align-boxes { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-wrap: wrap; align-content: flex-start; align-items: flex-start; gap: 0.4rem; padding-block-end: 0.5rem; }
+.align-actions { flex: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; padding-block: 0.25rem; border-block-start: 1px solid var(--line); }
+.align-actions > button { flex: 1 1 auto; width: auto; min-height: var(--touch); }
+.align-empty { display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem 0; }
+.al-word { min-height: var(--touch); padding: 0.2rem 0.7rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); color: var(--text); font-size: 1.05rem; touch-action: manipulation; }
+.al-word[data-selected] { background: var(--accent-soft); border-color: var(--accent); font-weight: 600; }
+/* A word placed reads on, dashed and checked, so the verse can still be read in the bank */
+.al-word[data-aligned] { color: var(--text-soft); border-style: dashed; }
+.al-word[data-aligned]::after { content: ' ✓'; color: var(--accent); }
+.al-box { display: flex; flex-direction: column; min-width: 5.5rem; max-width: 100%; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); cursor: pointer; touch-action: manipulation; }
+.al-box[data-merged] { min-width: 8.5rem; }
+.al-box[data-selected] { box-shadow: 0 0 0 2px var(--accent); }
+.al-box[data-placing] { border-color: var(--accent); }
+.al-box[data-placing]:active { background: var(--accent-soft); }
+.al-box__head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; padding: 0.2rem 0.4rem; border-block-end: 1px solid var(--line); }
+.al-ref { display: inline-flex; flex-direction: column; gap: 0.05rem; }
+.al-ref__word { font-size: 1.05rem; font-weight: 600; line-height: 1.25; }
+/* Not `.is-original`: that one sets the whole box in Hebrew type, the TPL's words under each word too */
+.al-box[data-original] .al-ref__word { font-family: 'SBL Hebrew', 'Ezra SIL', 'Gentium Plus', 'Noto Serif Hebrew', 'Noto Serif', serif; font-size: 1.3rem; font-weight: 400; }
+.al-ref__gloss { font-size: 0.75rem; font-weight: 600; color: var(--accent); line-height: 1.2; max-width: 9rem; }
+.al-box__body { display: flex; flex-wrap: wrap; gap: 0.2rem; min-height: 2.4rem; padding: 0.25rem; align-content: flex-start; }
+.al-box__empty { display: grid; place-items: center; width: 100%; min-height: 1.9rem; border: 1px dashed var(--line); border-radius: 6px; color: var(--text-soft); }
+.al-chip { display: inline-flex; align-items: center; padding-inline-start: 0.45rem; min-height: 2.1rem; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 0.95rem; }
+.al-chip__word { font-weight: 600; }
+.al-chip__x { min-width: 2rem; min-height: 2.1rem; padding: 0; border: 0; background: none; color: var(--text-soft); font-size: 1.1rem; line-height: 1; }
+/* An empty box, while no word is in hand: one slim line with a «+», so the boxes with words stand out */
+.al-box[data-compact] { min-height: var(--touch); justify-content: center; border-style: dashed; border-color: var(--accent); }
+.al-box[data-compact] .al-box__head { border-block-end: 0; }
+.al-box__plus { display: grid; place-items: center; width: 1.25rem; height: 1.25rem; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 700; line-height: 1; }
+.al-box[data-compact][data-selected] { border-style: solid; }
+
 /* How a word was translated across the book: each rendering, and the places it was used, to go to */
 .review-renderings { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
 .review-renderings li { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.5rem 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }

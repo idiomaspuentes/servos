@@ -23,18 +23,6 @@ export const editorVoz = soon('editorVoz', 'traduccion', ['text'], {
   en: { nombre: 'Translate by voice', descripcion: 'Say each verse in your language and record it, instead of writing it' },
 })
 
-export const revisorAlineacion = soon(
-  'revisorAlineacion',
-  'revision',
-  ['text'],
-  {
-    es: { nombre: 'Alinear con el original', descripcion: 'Unir cada palabra de la traducción con la del griego o el hebreo', queRevisa: 'Alineación' },
-    pt: { nombre: 'Alinhar com o original', descripcion: 'Ligar cada palavra da tradução à do grego ou do hebraico', queRevisa: 'Alinhamento' },
-    en: { nombre: 'Align with the original', descripcion: 'Link each word of the translation to the Greek or Hebrew', queRevisa: 'Alignment' },
-  },
-  'revisorAlineacion.queRevisa'
-)
-
 export const comunitaria = soon('comunitaria', 'comunitaria', ['text'], {
   es: { nombre: 'Lectura con la comunidad', descripcion: 'Leer el libro en voz alta con otras personas y anotar lo que no se entiende' },
   pt: { nombre: 'Leitura com a comunidade', descripcion: 'Ler o livro em voz alta com outras pessoas e anotar o que não se entende' },

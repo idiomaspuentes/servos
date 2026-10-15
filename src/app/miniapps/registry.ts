@@ -11,7 +11,8 @@ import { estudio } from './estudio/estudio'
 import { revisor } from './revisor/revisor'
 import { revisorNotas } from './revisorNotas/revisorNotas'
 import { revisorPalabras } from './revisorPalabras/revisorPalabras'
-import { comunitaria, editorVoz, publicar, revisorAlineacion } from './soon'
+import { alineador } from './alineador/alineador'
+import { comunitaria, editorVoz, publicar } from './soon'
 
 const apps: MiniApp[] = []
 
@@ -34,6 +35,6 @@ export function miniAppsFor(phase: Phase): MiniApp[] {
   return apps.filter((a) => a.phase === phase)
 }
 
-for (const app of [estudio, editor, editorVoz, revisorNotas, revisorPalabras, revisorAlineacion, revisor, comunitaria, publicar]) {
+for (const app of [estudio, editor, editorVoz, revisorNotas, revisorPalabras, alineador, revisor, comunitaria, publicar]) {
   registerMiniApp(app)
 }
