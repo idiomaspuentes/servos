@@ -117,25 +117,31 @@ export function ProjectSettings({ project, person, onBack, onSave }: { project: 
           </section>
         )}
 
-        <h1>{t('ajustes.miniApps')}</h1>
-        <p className="quiet">{t('ajustes.miniAppsAyuda')}</p>
-        {PHASES.map((phase) => (
-          <fieldset key={phase} className="settings-phase">
-            <legend>{t(`pasos.${phase}`)}</legend>
-            {miniAppsFor(phase).map((app) => (
-              <label key={app.id} className="check check-two-lines">
-                <input type="checkbox" checked={chosen[phase].includes(app.id)} onChange={() => toggle(phase, app.id)} />
-                <span>
-                  <span className="app-row-name">
-                    {t(`${app.id}.nombre`)}
-                    {app.comingSoon && <span className="badge">{t('catalogo.pronto')}</span>}
+        {/* Chosen once by whoever coordinates, and long: folded, saying how many are in use (philosophy, principle 3). */}
+        <details className="advanced settings-apps" open={missing || undefined}>
+          <summary>
+            {t('ajustes.miniApps')}
+            <span className="quiet">· {t('ajustes.enUso', { n: PHASES.reduce((n, p) => n + chosen[p].length, 0) })}</span>
+          </summary>
+          <p className="quiet">{t('ajustes.miniAppsAyuda')}</p>
+          {PHASES.map((phase) => (
+            <fieldset key={phase} className="settings-phase">
+              <legend>{t(`pasos.${phase}`)}</legend>
+              {miniAppsFor(phase).map((app) => (
+                <label key={app.id} className="check check-two-lines">
+                  <input type="checkbox" checked={chosen[phase].includes(app.id)} onChange={() => toggle(phase, app.id)} />
+                  <span>
+                    <span className="app-row-name">
+                      {t(`${app.id}.nombre`)}
+                      {app.comingSoon && <span className="badge">{t('catalogo.pronto')}</span>}
+                    </span>
+                    <span className="quiet">{t(`${app.id}.descripcion`)}</span>
                   </span>
-                  <span className="quiet">{t(`${app.id}.descripcion`)}</span>
-                </span>
-              </label>
-            ))}
-          </fieldset>
-        ))}
+                </label>
+              ))}
+            </fieldset>
+          ))}
+        </details>
         <div className="settings-save">
           {missing && (
             <p className="notice" role="alert">

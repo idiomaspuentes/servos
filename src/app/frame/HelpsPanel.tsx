@@ -71,20 +71,24 @@ export function HelpsPanel({
     setAnswer(false)
   }, [shown.join(','), tab]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Another verse may have no decisions: its glossary tab is gone, so the notes are shown.
-  useEffect(() => {
-    if (tab === 'glosario' && !decided.length) setTab('notas')
-  }, [tab, decided.length])
-  const count =
-    tab === 'glosario'
+  const countOf = (id: Tab) =>
+    id === 'glosario'
       ? decided.length
-      : tab === 'notas'
+      : id === 'notas'
         ? notes.length
-        : tab === 'preguntas'
+        : id === 'preguntas'
           ? questions.length
-          : tab === 'palabras'
+          : id === 'palabras'
             ? words.length
             : studyNotes.length
+  const count = countOf(tab)
+  // A verse opens on a tab with something in it: another verse may have no notes but questions, or no decisions
+  // (its glossary tab gone). A tab the person chose stays while it has something.
+  const order: Tab[] = ['glosario', 'notas', 'preguntas', 'palabras', 'comentarios']
+  const firstFull = order.find((id) => countOf(id) > 0) ?? 'notas'
+  useEffect(() => {
+    if (countOf(tab) === 0 && firstFull !== tab) setTab(firstFull)
+  }, [shown.join(','), firstFull]) // eslint-disable-line react-hooks/exhaustive-deps
   const note = tab === 'notas' ? notes[index] : undefined
   // In a section, which verse the help shown is on.
   const current = tab === 'notas' ? notes[index] : tab === 'preguntas' ? questions[index] : tab === 'palabras' ? words[index] : undefined
@@ -108,7 +112,7 @@ export function HelpsPanel({
     <section ref={self} className="helps" aria-label={tabs.map((x) => x.label).join(', ')}>
       <div className="helps-tabs" role="tablist">
         {tabs.map((x) => (
-          <button key={x.id} type="button" role="tab" aria-selected={tab === x.id} className="helps-tab" onClick={() => setTab(x.id)}>
+          <button key={x.id} type="button" role="tab" aria-selected={tab === x.id} className="helps-tab" data-empty={countOf(x.id) === 0 || undefined} onClick={() => setTab(x.id)}>
             {x.label}
           </button>
         ))}

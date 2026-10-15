@@ -141,6 +141,8 @@ textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
 /* Every tab stays in sight, however long the phrase in the person's language: they share the width and wrap. */
 .helps-tabs { display: grid; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; border-block-end: 1px solid var(--line); }
 .helps-tab { border: 0; border-radius: 0; background: none; color: var(--text-soft); border-block-end: 3px solid transparent; padding-inline: 0.25rem; overflow-wrap: anywhere; line-height: 1.25; }
+/* A tab with nothing in it for these verses: still there (it says 0), but quieter */
+.helps-tab[data-empty]:not([aria-selected='true']) { opacity: 0.55; }
 .helps-tab[aria-selected='true'] { color: var(--text); border-block-end-color: var(--accent); font-weight: 600; }
 .helps-card { padding: 0.75rem 1rem; }
 .help-verse { margin: 0 0 0.25rem; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-soft); }
@@ -275,7 +277,11 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .choice.is-on, .option.is-on, .book-chip.is-on { border-color: var(--accent); background: var(--accent-soft); color: var(--text); box-shadow: inset 0 0 0 1px var(--accent); }
 .option { display: flex; flex-direction: column; align-items: flex-start; text-align: start; gap: 0.15rem; width: 100%; }
 .option-title { font-weight: 600; }
-.advanced summary { min-height: var(--touch); display: flex; align-items: center; color: var(--accent); cursor: pointer; }
+.advanced summary { min-height: var(--touch); display: flex; flex-wrap: wrap; align-items: center; gap: 0 0.35rem; color: var(--accent); cursor: pointer; list-style: none; }
+.advanced summary::-webkit-details-marker { display: none; }
+/* A fold says it opens: an arrow after its name, turned when open */
+.advanced summary::after { content: '▾'; font-size: 0.85em; transition: transform 0.15s; }
+.advanced[open] > summary::after { transform: rotate(180deg); }
 
 /* Add a book */
 .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); gap: 0.4rem; }

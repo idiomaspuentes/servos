@@ -363,7 +363,7 @@
   "st.edit": "Corregir este diagrama",
   "st.editTitle": "Corregir el diagrama",
   "st.create": "Armar el diagrama de este versículo",
-  "st.editHint": "Toca las palabras, o el nombre de una caja, que quieras cambiar.",
+  "st.editHint": "Toque las palabras, o el nombre de una caja, que quiera cambiar.",
   "st.boxIs": "Esta caja es",
   "st.wrapAs": "Poner lo elegido en una caja de",
   "st.remove": "Quitar la caja",
@@ -405,7 +405,7 @@
   "st.viewBoxes": "Cajas",
   "st.treeAs": "{role} (oración)",
   "st.treeSub": "Describe",
-  "st.swipe": "Desliza hacia los lados para ver toda la oración.",
+  "st.swipe": "Deslice hacia los lados para ver toda la oración.",
   "st.before": "Ver la oración anterior",
   "st.after": "Ver la oración siguiente",
   "st.toBefore": "Pasar a la caja de antes",
@@ -549,5 +549,6 @@
   "glosario.dicenOtra": "Versículos que dicen otra cosa: {n}. Tóquelos para revisarlos en el editor.",
   "glosario.loUsa": "Lo usa",
   "glosario.diceOtra": "Dice otra cosa",
-  "glosario.sinTraducir": "Sin traducir"
+  "glosario.sinTraducir": "Sin traducir",
+  "ajustes.enUso": "en uso: {n}"
 }
