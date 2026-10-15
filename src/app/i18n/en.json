@@ -441,7 +441,6 @@
   "glosario.compartirTitulo": "Share or receive the glossary",
   "glosario.door43Pronto": "Soon: publish it on Door43 ({repo}) and bring other teams' from there.",
   "interfaz.grupo.catalogo": "Mini apps to come",
-  "interfaz.exportarPronto": "Soon: save it as a pack, to pass this translation to another phone.",
   "interfaz.grupo.glosario": "Project glossary",
   "interfaz.grupo.lx": "Lexicon: what a word of the original means",
   "interfaz.grupo.mo": "Grammar of the words of the original",
@@ -565,5 +564,17 @@
   "nuevo.nombrePropuesto": "Bible in {idioma}",
   "nuevo.masOpciones": "More options",
   "libroNuevo.recibir": "Receive a book someone shared",
-  "libroNuevo.recibirAyuda": "Open the .servos file you were sent, with all the work done in it"
+  "libroNuevo.recibirAyuda": "Open the .servos file you were sent, with all the work done in it",
+  "interfaz.compartir": "Pass this translation to another phone",
+  "interfaz.compartirAyuda": "So the rest of the team sees the app in this language: as a file, or by copying its text into a message. On the other phone: App language › Receive a translation.",
+  "interfaz.guardarArchivo": "Save the file",
+  "interfaz.copiar": "Copy the text",
+  "idioma.recibir": "Receive a translation of the app",
+  "idioma.recibirAyuda": "One someone made on another phone, in their language",
+  "idioma.abrirArchivo": "Open the file",
+  "idioma.pegar": "Or paste here the text you were sent",
+  "idioma.recibirla": "Receive it",
+  "idioma.noEs": "That is not a translation of the app.",
+  "idioma.recibida": "{idioma} received. New phrases: {nuevas}. Those this phone had translated otherwise stay as they were: {propias}.",
+  "idioma.recibidaSola": "{idioma} received. New phrases: {nuevas}."
 }

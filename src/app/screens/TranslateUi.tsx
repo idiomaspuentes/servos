@@ -9,6 +9,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { LanguageSearch } from '../frame/LanguageSearch'
+import { saveFile } from '../frame/saveFile'
 import { Sheet } from '../frame/Sheet'
 import { BASE_LANGUAGES, allKeys, baseText, marksOf, useI18n, type BaseLanguage } from '../i18n/i18n'
 import { miniApps } from '../miniapps/registry'
@@ -30,7 +31,8 @@ function problems(original: string, text: string, t: ReturnType<typeof useI18n>[
 }
 
 export function TranslateUi({ onBack }: { onBack(): void }) {
-  const { t, localLanguages, language, fallback, addLanguage, setLanguage, setText, translationOf } = useI18n()
+  const { t, localLanguages, language, fallback, addLanguage, setLanguage, setText, translationOf, packageOf } = useI18n()
+  const [shared, setShared] = useState<string | null>(null)
   const target = localLanguages.find((l) => l.code === language)?.code ?? localLanguages[0]?.code ?? null
   const [creating, setCreating] = useState(localLanguages.length === 0)
   const [name, setName] = useState('')
@@ -231,8 +233,44 @@ export function TranslateUi({ onBack }: { onBack(): void }) {
             <p className="quiet">{t('interfaz.seGuarda')}</p>
           </section>
         )}
-        {/* Not a button that never works: said, until it does. */}
-        <p className="quiet">{t('interfaz.exportarPronto')}</p>
+        {/* What was translated, to the rest of the team: a file to pass on, or its text for a message. */}
+        {target && (
+          <section className="translate-share">
+            <h2>{t('interfaz.compartir')}</h2>
+            <p className="quiet">{t('interfaz.compartirAyuda')}</p>
+            <div className="glossary-actions">
+              <button
+                type="button"
+                className="button-secondary"
+                onClick={async () => {
+                  const saved = await saveFile(`servos-interfaz-${target}.json`, JSON.stringify(packageOf(target)))
+                  setShared(saved.state === 'saved' ? t('compartir.guardado', { archivo: saved.name }) : saved.state === 'declined' ? null : t('compartir.noGuardado'))
+                }}
+              >
+                {t('interfaz.guardarArchivo')}
+              </button>
+              <button
+                type="button"
+                className="button-secondary"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(JSON.stringify(packageOf(target)))
+                    setShared(t('compartir.copiado'))
+                  } catch {
+                    setShared(t('compartir.noCopiado'))
+                  }
+                }}
+              >
+                {t('interfaz.copiar')}
+              </button>
+            </div>
+            {shared && (
+              <p className="status" role="status">
+                {shared}
+              </p>
+            )}
+          </section>
+        )}
       </main>
 
       {choosing && (

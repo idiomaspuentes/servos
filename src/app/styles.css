@@ -743,3 +743,6 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 
 /* The study's helps all together, folded under the section's text */
 .study-helps { margin-block-start: 1rem; border-block-start: 1px solid var(--line); padding-block-start: 0.25rem; font-size: 1rem; }
+
+.translate-share { display: flex; flex-direction: column; gap: 0.5rem; margin-block-start: 0.5rem; padding-block-start: 0.75rem; border-block-start: 1px solid var(--line); }
+.translate-share h2 { margin: 0; font-size: 1rem; }

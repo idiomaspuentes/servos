@@ -441,7 +441,6 @@
   "glosario.compartirTitulo": "Compartir o recibir el glosario",
   "glosario.door43Pronto": "Pronto: publicarlo en Door43 ({repo}) y traer de allí el de otros equipos.",
   "interfaz.grupo.catalogo": "Mini apps que vienen",
-  "interfaz.exportarPronto": "Pronto: guardarla como paquete, para pasar esta traducción a otro teléfono.",
   "interfaz.grupo.glosario": "Glosario del proyecto",
   "interfaz.grupo.lx": "Léxico: qué significa una palabra del original",
   "interfaz.grupo.mo": "Gramática de las palabras del original",
@@ -565,5 +564,17 @@
   "nuevo.nombrePropuesto": "Biblia en {idioma}",
   "nuevo.masOpciones": "Más opciones",
   "libroNuevo.recibir": "Recibir un libro que alguien compartió",
-  "libroNuevo.recibirAyuda": "Abrir el archivo .servos que le mandaron, con todo lo hecho en él"
+  "libroNuevo.recibirAyuda": "Abrir el archivo .servos que le mandaron, con todo lo hecho en él",
+  "interfaz.compartir": "Pasar esta traducción a otro teléfono",
+  "interfaz.compartirAyuda": "Para que el resto del equipo vea la app en este idioma: como archivo, o copiando su texto en un mensaje. En el otro teléfono: Idioma de la app › Recibir una traducción.",
+  "interfaz.guardarArchivo": "Guardar el archivo",
+  "interfaz.copiar": "Copiar el texto",
+  "idioma.recibir": "Recibir una traducción de la app",
+  "idioma.recibirAyuda": "La que alguien hizo en otro teléfono, en su idioma",
+  "idioma.abrirArchivo": "Abrir el archivo",
+  "idioma.pegar": "O pegue aquí el texto que le mandaron",
+  "idioma.recibirla": "Recibirla",
+  "idioma.noEs": "Eso no es una traducción de la app.",
+  "idioma.recibida": "Se recibió {idioma}. Frases nuevas: {nuevas}. Las que ya había traducido distinto en este teléfono se quedan como estaban: {propias}.",
+  "idioma.recibidaSola": "Se recibió {idioma}. Frases nuevas: {nuevas}."
 }
