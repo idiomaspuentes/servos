@@ -94,6 +94,11 @@ export interface MiniApp {
   fills?: boolean
   /** Whether it changes the project's text; then the header says whether the work is saved (philosophy, principle 8). */
   writes: boolean
+  /**
+   * Whether its work on a verse is done (written, checked…): what the book screen, the chapter list and the verse list
+   * count and mark. A mini app without it shows no progress.
+   */
+  done?(at: Position): boolean
   /** Its one filled button (philosophy, principle 7), usually leading to the next verse or step. */
   primary?: MiniAppAction
   /** Its "More" menu: what it uses rarely. */

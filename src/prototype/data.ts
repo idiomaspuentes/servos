@@ -1,11 +1,9 @@
 /**
- * The prototype reads fixed chapters taken from real packs (`makeData.test.ts`), in the shape the screens need. When
- * the screens are wired, `src/resources/reading.ts` gives the same things from the device.
+ * The prototype reads the chapters of Titus and Jonah taken from real packs (`makeData.test.ts`), in the shape the
+ * screens need. When the screens are wired, `src/resources/reading.ts` gives the same things from the device.
  */
 
 import type { ChapterPiece, WordLine } from '../resources/reading'
-import jonas2 from './data/jonas-2.json'
-import tito1 from './data/tito-1.json'
 
 export interface PrototypeNote {
   id: string
@@ -65,8 +63,17 @@ export interface PrototypeData {
   academy: Record<string, { title: string; markdown: string }>
 }
 
-export const TITO_1 = tito1 as unknown as PrototypeData
-export const JONAS_2 = jonas2 as unknown as PrototypeData
+const files = import.meta.glob<PrototypeData>('./data/*.json', { eager: true, import: 'default' })
 
-/** The chapters the prototype has, by book. */
-export const CHAPTERS: Record<string, PrototypeData> = { tit: TITO_1, jon: JONAS_2 }
+/** The chapters the prototype has: by book, by chapter number. */
+export const CHAPTERS: Record<string, Record<number, PrototypeData>> = {}
+for (const data of Object.values(files)) (CHAPTERS[data.book.id] ??= {})[data.chapter] = data
+
+/** A chapter of a book, when the prototype has it. */
+export const chapterOf = (book: string, chapter: number): PrototypeData | null => CHAPTERS[book]?.[chapter] ?? null
+
+/** The chapter numbers the prototype has of a book, in order. */
+export const chaptersOf = (book: string): number[] =>
+  Object.keys(CHAPTERS[book] ?? {})
+    .map(Number)
+    .sort((a, b) => a - b)

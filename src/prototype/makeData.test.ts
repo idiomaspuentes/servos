@@ -1,6 +1,6 @@
 /// <reference types="node" />
 /**
- * Writes the prototype's data, Titus 1 and Jonah 2 in es-419, from the real packs:
+ * Writes the prototype's data, every chapter of Titus and Jonah in es-419, from the real packs:
  *
  *   SERVOS_PAQUETES=<folder> npx vitest run src/prototype/makeData.test.ts
  *
@@ -37,7 +37,15 @@ type Original = { key: string; abbreviation: string; dir: 'ltr' | 'rtl'; lang: s
  * Where each section begins, from the `\ts\*` markers of unfoldingWord's ULT (en_ult, master, read 2026-10-14): the
  * es-419 texts do not mark sections and the packs do not carry the ULT. Wired, a pack carries this table.
  */
-const SECTION_STARTS: Record<string, number[]> = { 'tit 1': [1, 4, 6, 8, 10, 12, 15], 'jon 2': [1, 3, 5, 7, 9] }
+const SECTION_STARTS: Record<string, number[]> = {
+  'tit 1': [1, 4, 6, 8, 10, 12, 15],
+  'tit 2': [1, 3, 6, 9, 11, 14, 15],
+  'tit 3': [1, 3, 4, 6, 8, 9, 12, 14, 15],
+  'jon 1': [1, 4, 6, 8, 11, 14, 17],
+  'jon 2': [1, 3, 5, 7, 9],
+  'jon 3': [1, 4, 6, 8, 10],
+  'jon 4': [1, 4, 6, 8, 10],
+}
 
 async function chapterData(stores: ResourceStores, bookId: string, chapter: number, original: Original): Promise<PrototypeData> {
   const raw = async <T,>(key: string, version: number) => unwrapVersioned<T>(await stores.cache.get(key), version)
@@ -150,14 +158,17 @@ async function chapterData(stores: ResourceStores, bookId: string, chapter: numb
 }
 
 describe.skipIf(!folder)('datos del prototipo', () => {
-  it('escribe Tito 1 y Jonás 2 desde los paquetes reales', async () => {
+  it('escribe todos los capítulos de Tito y Jonás desde los paquetes reales', async () => {
     const stores = openResourceStores({ cache: 'proto-cache', catalog: 'proto-catalog' })
     for (const file of ['originals', 'es-419']) {
       await openPack(stores, readFileSync(join(folder!, `${file}.langpack.zip`)))
     }
-    const write = (data: PrototypeData, file: string) => writeFileSync(join(__dirname, 'data', file), JSON.stringify(data, null, 1) + '\n')
-    write(await chapterData(stores, 'tit', 1, { key: UGNT, abbreviation: 'Griego', dir: 'ltr', lang: 'grc' }), 'tito-1.json')
+    // One file a chapter, `{book}-{chapter}.json`, without spaces: seven chapters go into the one-page prototype.
+    const write = (data: PrototypeData) => writeFileSync(join(__dirname, 'data', `${data.book.id}-${data.chapter}.json`), JSON.stringify(data) + '\n')
+    const greek: Original = { key: UGNT, abbreviation: 'Griego', dir: 'ltr', lang: 'grc' }
+    const hebrew: Original = { key: UHB, abbreviation: 'Hebreo', dir: 'rtl', lang: 'hbo' }
+    for (const chapter of [1, 2, 3]) write(await chapterData(stores, 'tit', chapter, greek))
     // Jonah 2 is a poem (Jonah's prayer): the editor's lines are tried on it.
-    write(await chapterData(stores, 'jon', 2, { key: UHB, abbreviation: 'Hebreo', dir: 'rtl', lang: 'hbo' }), 'jonas-2.json')
-  }, 180_000)
+    for (const chapter of [1, 2, 3, 4]) write(await chapterData(stores, 'jon', chapter, hebrew))
+  }, 600_000)
 })

@@ -10,6 +10,7 @@ import { useT } from '../i18n/i18n'
 import type { MiniApp, MiniAppContext, Position, Unit } from '../miniapps/contract'
 import { HelpsPanel } from './HelpsPanel'
 import { keepFocus } from './Panes'
+import { PlacePicker, rangeOf, stopsOf } from './PlacePicker'
 import { MenuRow, Sheet } from './Sheet'
 
 /**
@@ -53,9 +54,15 @@ export function MiniAppScreen({
   textAbbreviation,
   onTextAbbreviation,
   onBack,
+  chapters,
+  dataOf,
 }: {
   app: MiniApp
+  /** The chapter open. */
   data: PrototypeData
+  /** The chapters of the book on this device, and each one's texts and helps. */
+  chapters: number[]
+  dataOf(chapter: number): PrototypeData | null
   person: string
   position: Position
   onPosition(p: Position): void
@@ -99,13 +106,34 @@ export function MiniAppScreen({
       /* chosen for this visit */
     }
   }
-  const verses = data.verses.map((v) => v.verse)
-  const stops = unit === 'section' && data.sections.length ? data.sections : verses.map((v) => [v])
+  const stops = stopsOf(data, unit)
   const at = Math.max(0, stops.findIndex((s) => s.includes(position.verse)))
   const shown = stops[at] ?? [position.verse]
   const goStop = (index: number) => onPosition({ ...position, verse: stops[index][0] })
-  const range = (s: number[]) => (s.length > 1 ? `${s[0]}–${s[s.length - 1]}` : String(s[0]))
-  const passage = `${data.book.name} ${position.chapter}:${range(shown)}`
+  const passage = `${data.book.name} ${position.chapter}:${rangeOf(shown)}`
+
+  // The arrows go on past the chapter's end into the next one (and back): a chapter is not a wall, and the person is
+  // told in passing that a new one began, so they do not lose their place.
+  const chapterAt = chapters.indexOf(position.chapter)
+  const before = chapterAt > 0 ? chapters[chapterAt - 1] : null
+  const after = chapterAt >= 0 && chapterAt < chapters.length - 1 ? chapters[chapterAt + 1] : null
+  const [crossed, setCrossed] = useState<number | null>(null)
+  useEffect(() => {
+    if (crossed === null) return
+    const done = window.setTimeout(() => setCrossed(null), 2500)
+    return () => window.clearTimeout(done)
+  }, [crossed])
+  const cross = (chapter: number, last: boolean) => {
+    const next = dataOf(chapter)
+    if (!next) return
+    const s = stopsOf(next, unit)
+    onPosition({ ...position, chapter, verse: (last ? s[s.length - 1] : s[0])[0] })
+    setCrossed(chapter)
+  }
+  const previous = () => (at > 0 ? goStop(at - 1) : before !== null && cross(before, true))
+  const following = () => (at < stops.length - 1 ? goStop(at + 1) : after !== null && cross(after, false))
+  const atStart = at <= 0 && before === null
+  const atEnd = at >= stops.length - 1 && after === null
 
   const context: MiniAppContext = {
     t,
@@ -127,7 +155,7 @@ export function MiniAppScreen({
       helps: () => <HelpsPanel data={data} verse={position.verse} textAbbreviation={text.abbreviation} onMark={onMark} />,
       setSaved,
       setUnit,
-      next: () => at < stops.length - 1 && goStop(at + 1),
+      next: following,
     },
   }
   const Center = app.Center
@@ -153,16 +181,19 @@ export function MiniAppScreen({
       </header>
 
       <nav className="position" aria-label={passage}>
-        <button type="button" className="button-quiet position-arrow" aria-label={t(unit === 'section' ? 'marco.seccionAnterior' : 'marco.anterior')} disabled={at <= 0} onPointerDown={keep} onClick={() => goStop(at - 1)}>
+        <button type="button" className="button-quiet position-arrow" aria-label={t(unit === 'section' ? 'marco.seccionAnterior' : 'marco.anterior')} disabled={atStart} onPointerDown={keep} onClick={previous}>
           ‹
         </button>
         <button type="button" className="position-label" onClick={() => setVerseList(true)}>
           <strong>{passage}</strong> · {t('marco.posicion', { n: at + 1, total: stops.length })}
         </button>
-        <button type="button" className="button-quiet position-arrow" aria-label={t(unit === 'section' ? 'marco.seccionSiguiente' : 'marco.siguiente')} disabled={at >= stops.length - 1} onPointerDown={keep} onClick={() => goStop(at + 1)}>
+        <button type="button" className="button-quiet position-arrow" aria-label={t(unit === 'section' ? 'marco.seccionSiguiente' : 'marco.siguiente')} disabled={atEnd} onPointerDown={keep} onClick={following}>
           ›
         </button>
       </nav>
+      <p className="position-crossed" role="status" aria-live="polite">
+        {crossed !== null && <span>{t('marco.capituloNuevo', { libro: data.book.name, capitulo: crossed })}</span>}
+      </p>
 
       <main className={app.fills ? 'main main-fill' : 'main'}>
         <Center context={context} />
@@ -175,28 +206,21 @@ export function MiniAppScreen({
       </main>
 
       {verseList && (
-        <Sheet
-          title={t(unit === 'section' ? 'marco.listaSecciones' : 'marco.listaVersiculos', { libro: data.book.name, capitulo: position.chapter })}
+        <PlacePicker
+          app={app}
+          bookName={data.book.name}
+          bookId={data.book.id}
+          chapters={chapters}
+          dataOf={dataOf}
+          chapter={position.chapter}
+          verse={position.verse}
+          unit={unit}
+          onGo={(chapter, verse) => {
+            onPosition({ ...position, chapter, verse })
+            setVerseList(false)
+          }}
           onClose={() => setVerseList(false)}
-        >
-          <p className="quiet">{t(unit === 'section' ? 'marco.listaSeccionesAyuda' : 'marco.listaVersiculosAyuda')}</p>
-          <div className={unit === 'section' ? 'verse-grid is-sections' : 'verse-grid'}>
-            {stops.map((s, index) => (
-              <button
-                key={s[0]}
-                type="button"
-                className={index === at ? 'verse-cell is-current' : 'verse-cell'}
-                aria-current={index === at}
-                onClick={() => {
-                  goStop(index)
-                  setVerseList(false)
-                }}
-              >
-                {range(s)}
-              </button>
-            ))}
-          </div>
-        </Sheet>
+        />
       )}
 
       {more && (

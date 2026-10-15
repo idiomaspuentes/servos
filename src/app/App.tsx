@@ -4,11 +4,12 @@
  */
 
 import { useState } from 'react'
-import { CHAPTERS, TITO_1 } from '../prototype/data'
+import { chapterOf, chaptersOf } from '../prototype/data'
 import { MiniAppScreen } from './frame/MiniAppScreen'
 import type { Position } from './miniapps/contract'
 import { miniApp } from './miniapps/registry'
 import { loadProjects, saveProjects, type Phase, type Project } from './projects/model'
+import { keepPlace, placeOf } from './projects/work'
 import { AddBookSheet } from './screens/AddBook'
 import { BookScreen } from './screens/BookScreen'
 import { Home, type Resume } from './screens/Home'
@@ -28,8 +29,8 @@ type Screen =
   | { kind: 'receive'; back: Screen }
   | { kind: 'translate' }
 
-/** The prototype has the texts and helps of one chapter of some books (Titus 1, Jonah 2). */
-const dataFor = (book: string) => CHAPTERS[book] ?? null
+/** The chapters of a book whose texts and helps the prototype has (every chapter of Titus and Jonah). */
+const chaptersFor = (book: string) => chaptersOf(book).map((c) => chapterOf(book, c)!)
 
 const RESUME_KEY = 'servos.prototipo.seguir'
 function loadResume(): Resume | null {
@@ -49,7 +50,24 @@ export function App() {
   const [language, setLanguage] = useState(false)
   const [addProject, setAddProject] = useState(false)
   const [addBookFor, setAddBookFor] = useState<string | null>(null)
-  const [position, setPosition] = useState<Position>({ book: TITO_1.book.id, chapter: TITO_1.chapter, verse: 1 })
+  const [position, setPositionState] = useState<Position>({ book: 'tit', chapter: 1, verse: 1 })
+  // Each person's place in each book is kept: opening the book again, on this computer, goes back there.
+  const setPosition = (p: Position) => {
+    setPositionState(p)
+    keepPlace(person, p.book, { chapter: p.chapter, verse: p.verse })
+  }
+  const openAt = (book: string, chapter?: number) => {
+    const chapters = chaptersOf(book)
+    if (!chapters.length) return
+    const kept = placeOf(person, book)
+    const place =
+      chapter !== undefined
+        ? { chapter, verse: chapterOf(book, chapter)?.verses[0]?.verse ?? 1 }
+        : kept && chapterOf(book, kept.chapter)
+          ? kept
+          : { chapter: chapters[0], verse: chapterOf(book, chapters[0])?.verses[0]?.verse ?? 1 }
+    setPosition({ book, ...place })
+  }
   const [text, setText] = useState('TPL')
 
   const setProjects = (next: Project[]) => {
@@ -108,11 +126,10 @@ export function App() {
         <BookScreen
           project={project(bookScreen.projectId)!}
           book={project(bookScreen.projectId)!.books.find((b) => b.code === bookScreen.book)!}
-          data={dataFor(bookScreen.book)}
+          chapters={chaptersFor(bookScreen.book)}
           onBack={home}
-          onOpen={(app) => {
-            const data = dataFor(bookScreen.book)
-            if (data && position.book !== data.book.id) setPosition({ book: data.book.id, chapter: data.chapter, verse: data.verses[0]?.verse ?? 1 })
+          onOpen={(app, chapter) => {
+            openAt(bookScreen.book, chapter)
             setScreen({ kind: 'app', projectId: bookScreen.projectId, book: bookScreen.book, id: app.id })
           }}
           onPhase={(phase) => setPhase(bookScreen.projectId, bookScreen.book, phase)}
@@ -120,10 +137,12 @@ export function App() {
         />
       )}
 
-      {appScreen && miniApp(appScreen.id) && dataFor(appScreen.book) && (
+      {appScreen && miniApp(appScreen.id) && position.book === appScreen.book && chapterOf(appScreen.book, position.chapter) && (
         <MiniAppScreen
           app={miniApp(appScreen.id)!}
-          data={dataFor(appScreen.book)!}
+          data={chapterOf(appScreen.book, position.chapter)!}
+          chapters={chaptersOf(appScreen.book)}
+          dataOf={(chapter) => chapterOf(appScreen.book, chapter)}
           person={person}
           position={position}
           onPosition={setPosition}

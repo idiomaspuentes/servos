@@ -11,25 +11,21 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Panes, type Pane } from '../../frame/Panes'
 import { helpsOfWord, litPlaces, WordHelpCard, type Touched } from '../../frame/TouchWords'
 import type { MiniApp, MiniAppCenterProps } from '../contract'
+import { authorOf, chooseVersion, otherVersion, readDraft, writeDraft, type OtherVersion } from '../../projects/work'
 import { ChapterLines } from './ChapterLines'
 import { LineFields, lineFieldId } from './LineFields'
-
-const draftKey = (book: string, chapter: number, verse: number) => `servos.prototipo.borrador.${book}.${chapter}.${verse}`
-
-function readDraft(key: string): string {
-  try {
-    return localStorage.getItem(key) ?? ''
-  } catch {
-    return ''
-  }
-}
 
 /** Lines of a poem (`\q`, `\q1`, `\q2`…), not the poem's headings or notes (`\qa`, `\qd`…). */
 const isPoemLine = (marker: string) => /^q\d?$|^qm\d?$/.test(marker)
 
 /** What is written of each verse open, read when the verse or section opens. */
 function readDrafts(book: string, chapter: number, verses: number[]): Record<number, string> {
-  return Object.fromEntries(verses.map((v) => [v, readDraft(draftKey(book, chapter, v))]))
+  return Object.fromEntries(verses.map((v) => [v, readDraft(book, chapter, v)]))
+}
+
+/** The other versions waiting for a choice among the verses open (received from another computer). */
+function readOthers(book: string, chapter: number, verses: number[]): Record<number, OtherVersion | null> {
+  return Object.fromEntries(verses.map((v) => [v, otherVersion(book, chapter, v)]))
 }
 
 function Center({ context }: MiniAppCenterProps) {
@@ -38,6 +34,7 @@ function Center({ context }: MiniAppCenterProps) {
   // written (so the helps are that verse's), and nothing else changes.
   const openKey = `${position.book}.${position.chapter}.${shown.join(',')}`
   const [drafts, setDrafts] = useState(() => readDrafts(position.book, position.chapter, shown))
+  const [others, setOthers] = useState(() => readOthers(position.book, position.chapter, shown))
   const [shownKey, setShownKey] = useState(openKey)
   const [touched, setTouched] = useState<Touched | null>(null)
   // The line the cursor is in, by its field's id (`editor-v2`, `editor-v2-l3`): the texts show the same line apart.
@@ -47,6 +44,7 @@ function Center({ context }: MiniAppCenterProps) {
   if (shownKey !== openKey) {
     setShownKey(openKey)
     setDrafts(readDrafts(position.book, position.chapter, shown))
+    setOthers(readOthers(position.book, position.chapter, shown))
     setTouched(null)
     setHelpsRead(false)
   }
@@ -108,11 +106,13 @@ function Center({ context }: MiniAppCenterProps) {
   const write = (verse: number, value: string) => {
     setDrafts((now) => ({ ...now, [verse]: value }))
     frame.setSaved('guardado')
-    try {
-      localStorage.setItem(draftKey(position.book, position.chapter, verse), value)
-    } catch {
-      /* the draft stays on screen */
-    }
+    writeDraft(position.book, position.chapter, verse, value, context.person.name)
+  }
+  const choose = (verse: number, keepOther: boolean) => {
+    chooseVersion(position.book, position.chapter, verse, keepOther)
+    setDrafts((now) => ({ ...now, [verse]: readDraft(position.book, position.chapter, verse) }))
+    setOthers((now) => ({ ...now, [verse]: null }))
+    frame.setSaved('guardado')
   }
 
   const unitSwitch = (
@@ -158,17 +158,37 @@ function Center({ context }: MiniAppCenterProps) {
               onFocus={() => v !== position.verse && goTo({ ...position, verse: v })}
             >
               {shown.length > 1 && <span className="edit-verse-number" aria-hidden="true">{v}</span>}
-              <LineFields
-                key={fieldsId(v)}
-                id={fieldsId(v)}
-                text={drafts[v] ?? ''}
-                markers={markers}
-                poem={poem}
-                label={t('editor.suVersiculo', { v })}
-                placeholder={(line) => (poem ? t('editor.renglon', { n: line }) : t('editor.cajaVacia'))}
-                addLabel={t('editor.otroRenglon')}
-                onChange={(value) => write(v, value)}
-              />
+              <div className="edit-verse-body">
+                {others[v] && (
+                  // Received from another computer while this one had its own text: both stay until someone chooses.
+                  <div className="edit-other" role="note">
+                    <p className="edit-other-head">{t('editor.otraVersion', { nombre: others[v]!.by })}</p>
+                    <p className="edit-other-text">{others[v]!.text}</p>
+                    <div className="edit-other-actions">
+                      <button type="button" className="button-quiet" onClick={() => choose(v, true)}>
+                        {t('editor.usarOtra', { nombre: others[v]!.by })}
+                      </button>
+                      <button type="button" className="button-quiet" onClick={() => choose(v, false)}>
+                        {t('editor.dejarEsta')}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {others[v] && authorOf(position.book, position.chapter, v) && (
+                  <p className="edit-mine-head">{t('editor.loQueEsta', { nombre: authorOf(position.book, position.chapter, v)! })}</p>
+                )}
+                <LineFields
+                  key={fieldsId(v)}
+                  id={fieldsId(v)}
+                  text={drafts[v] ?? ''}
+                  markers={markers}
+                  poem={poem}
+                  label={t('editor.suVersiculo', { v })}
+                  placeholder={(line) => (poem ? t('editor.renglon', { n: line }) : t('editor.cajaVacia'))}
+                  addLabel={t('editor.otroRenglon')}
+                  onChange={(value) => write(v, value)}
+                />
+              </div>
             </div>
           )
         })}
@@ -207,6 +227,7 @@ export const editor: MiniApp = {
   phase: 'traduccion',
   unit: 'verse',
   sections: true,
+  done: (at) => Boolean(readDraft(at.book, at.chapter, at.verse).trim()),
   helps: false,
   fills: true,
   writes: true,
@@ -226,6 +247,10 @@ export const editor: MiniApp = {
       descripcion: 'Escribir el versículo en su idioma, con el texto puente al lado',
       textoPuente: 'Texto puente: {texto}',
       dondeFuente: 'Para leer el {texto}, deslice a la izquierda o toque «{texto}» arriba.',
+      otraVersion: '{nombre} escribió este versículo de otra manera:',
+      usarOtra: 'Usar la de {nombre}',
+      dejarEsta: 'Dejar la que está',
+      loQueEsta: 'Lo que está, de {nombre}:',
       suVersiculo: 'Su traducción del versículo {v}',
       cajaVacia: 'Escriba aquí',
       renglon: 'Renglón {n}',
@@ -254,6 +279,10 @@ export const editor: MiniApp = {
       descripcion: 'Escrever o versículo no seu idioma, com o texto ponte ao lado',
       textoPuente: 'Texto ponte: {texto}',
       dondeFuente: 'Para ler o {texto}, deslize para a esquerda ou toque «{texto}» acima.',
+      otraVersion: '{nombre} escreveu este versículo de outro jeito:',
+      usarOtra: 'Usar a de {nombre}',
+      dejarEsta: 'Deixar a que está',
+      loQueEsta: 'O que está, de {nombre}:',
       suVersiculo: 'Sua tradução do versículo {v}',
       cajaVacia: 'Escreva aqui',
       renglon: 'Linha {n}',
@@ -282,6 +311,10 @@ export const editor: MiniApp = {
       descripcion: 'Write the verse in your language, with the bridge text beside it',
       textoPuente: 'Bridge text: {texto}',
       dondeFuente: 'To read the {texto}, swipe left or touch «{texto}» above.',
+      otraVersion: '{nombre} wrote this verse another way:',
+      usarOtra: 'Use {nombre}\'s',
+      dejarEsta: 'Keep this one',
+      loQueEsta: 'What is here, by {nombre}:',
       suVersiculo: 'Your translation of verse {v}',
       cajaVacia: 'Write here',
       renglon: 'Line {n}',

@@ -61,6 +61,7 @@ function Center({ context }: MiniAppCenterProps) {
 }
 
 export const revisorNotas: MiniApp = {
+  done: (at) => Boolean(read(key(at.book, at.chapter, at.verse))),
   id: 'revisorNotas',
   phase: 'revision',
   checks: 'revisorNotas.queRevisa',
