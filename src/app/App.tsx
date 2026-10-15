@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react'
-import { TITO_1 } from '../prototype/data'
+import { CHAPTERS, TITO_1 } from '../prototype/data'
 import { MiniAppScreen } from './frame/MiniAppScreen'
 import type { Position } from './miniapps/contract'
 import { miniApp } from './miniapps/registry'
@@ -28,8 +28,8 @@ type Screen =
   | { kind: 'receive'; back: Screen }
   | { kind: 'translate' }
 
-/** The prototype has the texts and helps of Titus 1 only. */
-const dataFor = (book: string) => (book === TITO_1.book.id ? TITO_1 : null)
+/** The prototype has the texts and helps of one chapter of some books (Titus 1, Jonah 2). */
+const dataFor = (book: string) => CHAPTERS[book] ?? null
 
 const RESUME_KEY = 'servos.prototipo.seguir'
 function loadResume(): Resume | null {
@@ -110,7 +110,11 @@ export function App() {
           book={project(bookScreen.projectId)!.books.find((b) => b.code === bookScreen.book)!}
           data={dataFor(bookScreen.book)}
           onBack={home}
-          onOpen={(app) => setScreen({ kind: 'app', projectId: bookScreen.projectId, book: bookScreen.book, id: app.id })}
+          onOpen={(app) => {
+            const data = dataFor(bookScreen.book)
+            if (data && position.book !== data.book.id) setPosition({ book: data.book.id, chapter: data.chapter, verse: data.verses[0]?.verse ?? 1 })
+            setScreen({ kind: 'app', projectId: bookScreen.projectId, book: bookScreen.book, id: app.id })
+          }}
           onPhase={(phase) => setPhase(bookScreen.projectId, bookScreen.book, phase)}
           onReceive={() => setScreen({ kind: 'receive', back: bookScreen })}
         />

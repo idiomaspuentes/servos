@@ -7,7 +7,7 @@ import { HELPS_ALIGN_VERSION } from '@bt-synergy/resource-pipeline/helps/helpsAl
 import { NOTES_PREPARE_VERSION } from '@bt-synergy/resource-pipeline/notes/notesPreparer'
 import { SCRIPTURE_PREPARE_VERSION } from '@bt-synergy/resource-pipeline/scripture/scripturePreparer'
 import { describePack, openPack } from './packs'
-import { booksOfText, notesOfVerse, readChapter, referenceCovers, resourcesOnDevice, textQuoteOf } from './reading'
+import { booksOfText, notesOfVerse, readChapter, referenceCovers, resourcesOnDevice, textQuoteOf, versesInLines, wordsInLines } from './reading'
 import { RESOURCE_VERSIONS, openResourceStores } from './store'
 
 const GLT = 'es-419_gl/es-419/glt'
@@ -162,6 +162,55 @@ describe('leer sin internet', () => {
     expect(textQuoteOf({ p: [20, 23, 24, 26], m: 1, t: ['de', 'que', 'es', 'acuerdo'] })).toBe('de … que es … acuerdo')
     expect(textQuoteOf({ p: [], m: 0 })).toBeNull()
     expect(textQuoteOf({ p: [3], m: 2, t: ['a', 'b'] })).toBe('a b')
+  })
+
+  it('un versículo de un poema tiene un renglón por cada \\q, con su marca; el de prosa, uno', () => {
+    const block = (marker: string, inline: unknown[]) => ({ marker, role: 'p', indentLevel: 0, chapterNumber: 2, verseNumbers: [], inline })
+    const v = (n: number) => ({ kind: 'verse', chapterNumber: 2, verseNumber: n })
+    const text = (s: string) => ({ kind: 'text', text: s })
+    expect(
+      versesInLines([
+        block('p', [v(1), text('Jonás oró desde el vientre del pez.')]),
+        block('s1', [{ kind: 'heading', text: 'La oración' }]),
+        block('q1', [v(2), text(' En mi angustia clamé ')]),
+        block('q2', [text('y él me respondió.')]),
+        block('q1', [v(3), text('Me echaste a lo hondo,'), v(4), text('pero dije:')]),
+      ] as never)
+    ).toEqual({
+      1: [{ marker: 'p', text: 'Jonás oró desde el vientre del pez.' }],
+      2: [
+        { marker: 'q1', text: 'En mi angustia clamé' },
+        { marker: 'q2', text: 'y él me respondió.' },
+      ],
+      3: [{ marker: 'q1', text: 'Me echaste a lo hondo,' }],
+      4: [{ marker: 'q1', text: 'pero dije:' }],
+    })
+  })
+
+  it('las palabras de un capítulo se cuentan en orden, con sus renglones y las palabras del original que traducen', () => {
+    const v = (n: number) => ({ kind: 'verse', chapterNumber: 2, verseNumber: n })
+    const w = (c: string, k: number, a?: number[]) => ({ kind: 'token', token: { c, o: 1, k, ...(a ? { a } : {}) } })
+    const text = (s: string) => ({ kind: 'text', text: s })
+    const block = (marker: string, inline: unknown[]) => ({ marker, role: 'p', indentLevel: 0, chapterNumber: 2, verseNumbers: [], inline })
+    const chapter = wordsInLines({
+      version: 1,
+      unit: 2,
+      matchKeys: ['jon 2:2:clamé:1', 'jon 2:2:קראתי:1', 'jon 2:2:qué:1', 'jon 2:2:אֶל־:1', 'jon 2:2:יְהוָה:1'],
+      blocks: [
+        block('q1', [v(2), w('Clamé', 0, [1]), text(', ')]),
+        block('q2', [text('¿'), w('Qué', 2), text('?')]),
+        block('p', [w('אֶל־', 3), w('יְהוָה', 4)]),
+      ],
+    } as never)
+    const shown = (n: number) => chapter.lines[n].map((l) => [l.marker, l.pieces.map((p) => p.text).join('')])
+    // No space after «¿» nor after the maqaf: tc-study's rule puts one there.
+    expect(shown(2)).toEqual([
+      ['q1', 'Clamé,'],
+      ['q2', '¿Qué?'],
+      ['p', 'אֶל־יְהוָה'],
+    ])
+    expect(chapter.lines[2][1].pieces.find((p) => p.text === 'Qué')?.word).toBe(1)
+    expect(chapter.words[0]).toEqual({ verse: 2, own: 'jon 2:2:clamé:1', originals: ['jon 2:2:קראתי:1'] })
   })
 
   it('una referencia cubre los versículos de su rango y nada más', () => {

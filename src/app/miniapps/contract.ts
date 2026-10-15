@@ -8,7 +8,7 @@
  * is plain data plus one component, and it reaches the device's data only through the context it is given.
  */
 
-import type { ComponentType } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import type { BaseLanguage, T, Texts } from '../i18n/i18n'
 import type { PrototypeData } from '../../prototype/data'
 import type { Phase } from '../projects/model'
@@ -42,6 +42,10 @@ export interface MiniAppContext {
     switchText(): void
     /** Open the whole chapter in a sheet. */
     showChapter(): void
+    /** The helps panel of the open verse, for a mini app that places it itself (`helps: false`), e.g. in a pane. */
+    helps(): ReactNode
+    /** What the header says about the work (philosophy, principle 8): nothing changed yet, or saved on this phone. */
+    setSaved(state: 'sinCambios' | 'guardado'): void
   }
 }
 
@@ -70,6 +74,11 @@ export interface MiniApp {
   unit: 'verse'
   /** Whether the helps panel shows under its center. */
   helps: boolean
+  /**
+   * Whether its center takes the height the keyboard leaves: the frame then sizes the screen to what is visible,
+   * so a box being written in and what it is translated from are never under the keyboard.
+   */
+  fills?: boolean
   /** Whether it changes the project's text; then the header says whether the work is saved (philosophy, principle 8). */
   writes: boolean
   /** Its one filled button (philosophy, principle 7), usually leading to the next verse or step. */

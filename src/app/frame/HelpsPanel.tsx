@@ -24,6 +24,7 @@ export function HelpsPanel({
   onMark(words: string | null): void
 }) {
   const t = useT()
+  const original = data.texts.find((x) => x.original)
   const helps = data.verses.find((v) => v.verse === verse)
   const notes = helps?.notes ?? []
   const questions = helps?.questions ?? []
@@ -69,7 +70,7 @@ export function HelpsPanel({
         {note && (
           <>
             {marked ? <p className="help-quote">{marked}</p> : <p className="quiet">{t('ayudas.noAlineada', { texto: textAbbreviation })}</p>}
-            <p className="help-original" lang="grc">
+            <p className="help-original" lang={original?.lang} dir={original?.dir}>
               {t('ayudas.enElOriginal', { texto: note.quote })}
             </p>
             <Markdown text={note.note} />
@@ -97,7 +98,7 @@ export function HelpsPanel({
         {tab === 'palabras' && words[index] && (
           <>
             <p className="help-quote">{data.words[words[index].article]?.title ?? words[index].article}</p>
-            <p className="help-original" lang="grc">
+            <p className="help-original" lang={original?.lang} dir={original?.dir}>
               {t('ayudas.enElOriginal', { texto: words[index].original })}
               {words[index].keyTerm && <span className="badge">{t('ayudas.palabraClave')}</span>}
             </p>

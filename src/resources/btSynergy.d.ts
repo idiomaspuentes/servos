@@ -127,6 +127,29 @@ declare module '@bt-synergy/resource-pipeline/scripture/scripturePreparer' {
     unit: number
     blocks: LightBlock[]
   }
+  /** A word of the full tier: its surface, occurrence, its own match key and the original words it is aligned to (indices into `matchKeys`). */
+  export interface InternedToken {
+    c: string
+    o: number
+    k: number
+    a?: number[]
+  }
+  export type FullInline = LightInline | { kind: 'token'; token: InternedToken }
+  export interface FullBlock {
+    marker: string
+    role: string
+    indentLevel: number
+    chapterNumber: number
+    verseNumbers: number[]
+    inline: FullInline[]
+  }
+  export interface ScriptureFullChapter {
+    version: number
+    unit: number
+    /** Folded semantic ids (`jon 2:2:קראתי:1`). */
+    matchKeys: string[]
+    blocks: FullBlock[]
+  }
   export interface ScriptureNavRecord {
     version: number
     resourceKey?: string

@@ -62,7 +62,7 @@ export const bookName = (code: string) => BOOKS.find(([c]) => c === code)?.[1] ?
 
 const STORAGE_KEY = 'servos.prototipo.proyectos'
 
-/** What the prototype starts with: a Bible with Titus under way and Ruth just added. */
+/** What the prototype starts with: a Bible with Jonah and Titus under way and Ruth just added. */
 const SEED: Project[] = [
   {
     id: 'biblia-kichwa',
@@ -75,6 +75,7 @@ const SEED: Project[] = [
     font: 'Charis SIL',
     versification: 'eng',
     books: [
+      { code: 'jon', phase: 'traduccion' },
       { code: 'tit', phase: 'traduccion' },
       { code: 'rut', phase: 'estudio' },
     ],
@@ -85,11 +86,21 @@ const SEED: Project[] = [
 export function loadProjects(): Project[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return JSON.parse(raw) as Project[]
+    if (raw) return withNewSeedBooks(JSON.parse(raw) as Project[])
   } catch {
     /* blocked storage: start from the example */
   }
   return SEED
+}
+
+/** A browser that kept the example from an earlier version gets the books added to it since (Jonah, for its poem). */
+function withNewSeedBooks(projects: Project[]): Project[] {
+  return projects.map((p) => {
+    const seed = SEED.find((s) => s.id === p.id)
+    if (!seed) return p
+    const missing = seed.books.filter((b) => !p.books.some((x) => x.code === b.code))
+    return missing.length ? { ...p, books: [...missing, ...p.books] } : p
+  })
 }
 
 export function saveProjects(projects: Project[]) {

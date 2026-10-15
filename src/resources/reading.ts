@@ -11,6 +11,8 @@ import { NOTES_PREPARE_VERSION, type NotesLightChapter } from '@bt-synergy/resou
 import { preparedUnitKey } from '@bt-synergy/resource-pipeline/prepare/prepareKeys'
 import {
   SCRIPTURE_PREPARE_VERSION,
+  type FullInline,
+  type ScriptureFullChapter,
   type ScriptureLightChapter,
   type ScriptureNavRecord,
 } from '@bt-synergy/resource-pipeline/scripture/scripturePreparer'
@@ -191,6 +193,163 @@ export async function readChapter(
     if (piece.kind === 'paragraph') for (const v of piece.verses) v.text = v.text.replace(/\s+/g, ' ').trim()
   }
   return pieces.filter((p) => p.kind === 'heading' || p.verses.length > 0)
+}
+
+/** A line of a verse as the text has it: its paragraph marker (`p`, `q1`, `q2`…) and its words. */
+export interface VerseLine {
+  marker: string
+  text: string
+}
+
+/**
+ * A chapter as its verses, each in the lines the text gives it: a prose verse is one line; a verse of a poem has one
+ * line per `\q`. Headings are not part of any verse. This is the shape the editor writes in, line by line, and the
+ * shape a translated verse takes when it is saved (Taller, `docs/PLATAFORMA.md`, «Un versículo es sus renglones»).
+ */
+export async function readChapterLines(
+  stores: ResourceStores,
+  textKey: string,
+  book: string,
+  chapter: number
+): Promise<Record<number, VerseLine[]> | null> {
+  const entry = await stores.cache.get(preparedUnitKey('scripture', textKey, book, chapter, 'light'))
+  const light = unwrapVersioned<ScriptureLightChapter>(entry, SCRIPTURE_PREPARE_VERSION)
+  if (!light) return null
+  return versesInLines(light.blocks)
+}
+
+export function versesInLines(blocks: ScriptureLightChapter['blocks']): Record<number, VerseLine[]> {
+  const verses: Record<number, VerseLine[]> = {}
+  let current: number | null = null
+  for (const block of blocks) {
+    let lineOpen = false
+    for (const item of block.inline) {
+      if (item.kind === 'heading') {
+        current = null
+      } else if (item.kind === 'verse') {
+        current = item.verseNumber
+        verses[current] = [{ marker: block.marker, text: '' }]
+        lineOpen = true
+      } else if (item.kind === 'text' && current !== null) {
+        if (!lineOpen) {
+          verses[current].push({ marker: block.marker, text: '' })
+          lineOpen = true
+        }
+        verses[current][verses[current].length - 1].text += item.text
+      }
+    }
+  }
+  for (const lines of Object.values(verses)) {
+    for (const line of lines) line.text = line.text.replace(/\s+/g, ' ').trim()
+    while (lines.length > 1 && !lines[lines.length - 1].text) lines.pop()
+  }
+  return verses
+}
+
+/** A piece of a line: a word of the text (its place among the chapter's words) or what stands between words. */
+export interface WordPiece {
+  text: string
+  word?: number
+}
+
+export interface WordLine {
+  marker: string
+  pieces: WordPiece[]
+}
+
+export interface ChapterWords {
+  /** Each verse in its lines, as `readChapterLines` gives them, its words told apart. */
+  lines: Record<number, WordLine[]>
+  /**
+   * The chapter's words in order: the place of each is what aligned helps keep (`helps-align` rows), so a touched word
+   * finds its notes. `own` is its match key (`jon 2:2:קראתי:1`), `originals` the original words it translates.
+   */
+  words: Array<{ verse: number; own: string; originals: string[] }>
+}
+
+/** A chapter of a text in lines of words, from the full prepared tier (null when the device lacks it). */
+export async function readChapterWords(stores: ResourceStores, textKey: string, book: string, chapter: number): Promise<ChapterWords | null> {
+  const entry = await stores.cache.get(preparedUnitKey('scripture', textKey, book, chapter, 'full'))
+  const full = unwrapVersioned<ScriptureFullChapter>(entry, SCRIPTURE_PREPARE_VERSION)
+  return full ? wordsInLines(full) : null
+}
+
+/**
+ * tc-study's rule for the space before a word (`shouldInsertSpaceBeforeInline`), but no space after what opens (`¿`,
+ * `«`, a quote mark after a space) nor after a Hebrew maqaf, which binds two words: tc-study writes «¿ Qué» and
+ * «אֶל־ יְהוָה».
+ */
+function spaceBefore(prev: FullInline | undefined): boolean {
+  if (!prev) return false
+  if (prev.kind === 'text' || prev.kind === 'heading') return !/\s$/.test(prev.text) && !/[¿¡(\[«“‘־]$|(^|\s)["']$/.test(prev.text)
+  if (prev.kind === 'token') return !prev.token.c.endsWith('־')
+  return prev.kind === 'verse' || prev.kind === 'note' || prev.kind === 'xref'
+}
+
+/**
+ * The words are numbered as tc-study numbers them for the aligned helps (`extractPreparedBroadcastTokens`): every word
+ * of the chapter in order, a word before the first verse marker counted in the block's verse. What stands before the
+ * first verse is not shown in a verse (the chapter's label, «Capítulo 2»), but a psalm's title (`\d`) is.
+ */
+export function wordsInLines(full: ScriptureFullChapter): ChapterWords {
+  const lines: Record<number, WordLine[]> = {}
+  const words: ChapterWords['words'] = []
+  let verse = 0
+  for (const block of full.blocks) {
+    let current: WordLine | null = null
+    const blockVerse = block.verseNumbers[0] ?? 0
+    const open = (v: number) => {
+      current = { marker: block.marker, pieces: [] }
+      ;(lines[v] ??= []).push(current)
+    }
+    block.inline.forEach((item, i) => {
+      if (item.kind === 'heading') {
+        current = null
+      } else if (item.kind === 'verse') {
+        verse = item.verseNumber
+        open(verse)
+      } else if (item.kind === 'text' || item.kind === 'token') {
+        const v = verse > 0 ? verse : blockVerse > 0 ? blockVerse : 1
+        const shown = verse > 0 || block.marker === 'd'
+        if (!current && shown) open(v)
+        const line = (current as WordLine | null) ?? { marker: block.marker, pieces: [] }
+        if (item.kind === 'text') {
+          line.pieces.push({ text: item.text })
+        } else {
+          if (spaceBefore(block.inline[i - 1])) line.pieces.push({ text: ' ' })
+          line.pieces.push({ text: item.token.c, word: words.length })
+          words.push({
+            verse: v,
+            own: full.matchKeys[item.token.k] ?? '',
+            originals: (item.token.a ?? []).map((k) => full.matchKeys[k]).filter((k): k is string => typeof k === 'string'),
+          })
+        }
+      }
+    })
+  }
+  for (const verseLines of Object.values(lines)) {
+    for (const line of verseLines) {
+      // Spaces at the ends of a line are not part of it, as in `versesInLines`.
+      const { pieces } = line
+      while (pieces.length && pieces[0].word === undefined && !pieces[0].text.trim()) pieces.shift()
+      while (pieces.length && pieces[pieces.length - 1].word === undefined && !pieces[pieces.length - 1].text.trim()) pieces.pop()
+      if (pieces.length && pieces[0].word === undefined) pieces[0] = { text: pieces[0].text.trimStart() }
+      const last = pieces.length - 1
+      if (last >= 0 && pieces[last].word === undefined) pieces[last] = { text: pieces[last].text.trimEnd() }
+    }
+    while (verseLines.length > 1 && !verseLines[verseLines.length - 1].pieces.length) verseLines.pop()
+  }
+  return { lines, words }
+}
+
+/**
+ * Where each aligned help of a chapter stands in a text: help id → the places of its words (`ChapterWords.words`).
+ * The same rows as `notesOfVerse` reads; translation words links are aligned the same way.
+ */
+export async function alignedPlaces(stores: ResourceStores, helpsKey: string, textKey: string, book: string, chapter: number): Promise<Record<string, number[]>> {
+  const stamp = resourceContentStamp(await stores.catalog.get(helpsKey))
+  const rows = await alignedQuotes(stores, helpsKey, stamp, textKey, book, chapter)
+  return Object.fromEntries(Object.entries(rows).filter(([, row]) => row.m !== 0 && row.p.length).map(([id, row]) => [id, row.p]))
 }
 
 export interface VerseNote {

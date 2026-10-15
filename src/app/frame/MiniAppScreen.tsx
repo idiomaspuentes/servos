@@ -4,12 +4,36 @@
  * the helps panel under the verse. The mini app draws only its center.
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import type { PrototypeData } from '../../prototype/data'
 import { useT } from '../i18n/i18n'
 import type { MiniApp, MiniAppContext, Position } from '../miniapps/contract'
 import { HelpsPanel } from './HelpsPanel'
+import { keepFocus } from './Panes'
 import { MenuRow, Sheet } from './Sheet'
+
+/**
+ * The part of the page the person sees: with the keyboard up, the visual viewport is what is left above it. The
+ * layout viewport keeps its height on most phones, so a screen sized by it would go on under the keyboard.
+ */
+function useVisibleBox(on: boolean): CSSProperties | undefined {
+  const [box, setBox] = useState<{ top: number; height: number } | null>(null)
+  useEffect(() => {
+    if (!on) return
+    const view = window.visualViewport
+    const update = () => setBox(view ? { top: view.offsetTop, height: view.height } : { top: 0, height: window.innerHeight })
+    update()
+    view?.addEventListener('resize', update)
+    view?.addEventListener('scroll', update)
+    window.addEventListener('resize', update)
+    return () => {
+      view?.removeEventListener('resize', update)
+      view?.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+    }
+  }, [on])
+  return on && box ? { top: box.top, height: box.height } : undefined
+}
 
 export function MiniAppScreen({
   app,
@@ -35,9 +59,14 @@ export function MiniAppScreen({
   const [verseList, setVerseList] = useState(false)
   const [more, setMore] = useState(false)
   const [chapter, setChapter] = useState(false)
+  const [saved, setSaved] = useState<'sinCambios' | 'guardado'>('sinCambios')
   const onMark = useCallback((w: string | null) => setMarked(w), [])
+  const box = useVisibleBox(Boolean(app.fills))
+  // Moving on keeps the box being written in focused, and so the keyboard up.
+  const keep = app.fills ? keepFocus : undefined
 
-  const text = data.texts.find((x) => x.abbreviation === textAbbreviation) ?? data.texts[0]
+  // The bridge text shown is TPL or TPS; the original is a pane of its own where a mini app wants it.
+  const text = data.texts.find((x) => x.abbreviation === textAbbreviation && !x.original) ?? data.texts[0]
   const verseTexts = useMemo(() => {
     const map = new Map<number, string>()
     for (const piece of text.pieces) if (piece.kind === 'paragraph') for (const v of piece.verses) map.set(v.verse, v.text)
@@ -58,16 +87,18 @@ export function MiniAppScreen({
     marked,
     frame: {
       switchText: () => {
-        const other = data.texts.find((x) => x.abbreviation !== text.abbreviation)
+        const other = data.texts.find((x) => x.abbreviation !== text.abbreviation && !x.original)
         if (other) onTextAbbreviation(other.abbreviation)
       },
       showChapter: () => setChapter(true),
+      helps: () => <HelpsPanel data={data} verse={position.verse} textAbbreviation={text.abbreviation} onMark={onMark} />,
+      setSaved,
     },
   }
   const Center = app.Center
 
   return (
-    <div className="screen">
+    <div className={app.fills ? 'screen screen-fill' : 'screen'} style={box}>
       <header className="header">
         <button type="button" className="button-quiet header-back" onClick={onBack}>
           ‹ {t('marco.volver')}
@@ -76,7 +107,7 @@ export function MiniAppScreen({
           <span className="header-app">{t(`${app.id}.nombre`)}</span>
           <span className="header-person">
             {t('marco.trabaja', { nombre: person })}
-            {app.writes && ` · ${t('marco.guardadoAqui')}`}
+            {app.writes && ` · ${t(saved === 'guardado' ? 'marco.guardadoAqui' : 'marco.sinCambios')}`}
           </span>
         </div>
         <button type="button" className="button-quiet" onClick={() => setMore(true)}>
@@ -85,21 +116,21 @@ export function MiniAppScreen({
       </header>
 
       <nav className="position" aria-label={passage}>
-        <button type="button" className="button-quiet position-arrow" aria-label={t('marco.anterior')} disabled={at <= 0} onClick={() => onPosition({ ...position, verse: verses[at - 1] })}>
+        <button type="button" className="button-quiet position-arrow" aria-label={t('marco.anterior')} disabled={at <= 0} onPointerDown={keep} onClick={() => onPosition({ ...position, verse: verses[at - 1] })}>
           ‹
         </button>
         <button type="button" className="position-label" onClick={() => setVerseList(true)}>
           <strong>{passage}</strong> · {t('marco.posicion', { n: at + 1, total: verses.length })}
         </button>
-        <button type="button" className="button-quiet position-arrow" aria-label={t('marco.siguiente')} disabled={at >= verses.length - 1} onClick={() => onPosition({ ...position, verse: verses[at + 1] })}>
+        <button type="button" className="button-quiet position-arrow" aria-label={t('marco.siguiente')} disabled={at >= verses.length - 1} onPointerDown={keep} onClick={() => onPosition({ ...position, verse: verses[at + 1] })}>
           ›
         </button>
       </nav>
 
-      <main className="main">
+      <main className={app.fills ? 'main main-fill' : 'main'}>
         <Center context={context} />
         {app.primary && (
-          <button type="button" className="button-primary" onClick={() => app.primary!.run(context)}>
+          <button type="button" className="button-primary" onPointerDown={keep} onClick={() => app.primary!.run(context)}>
             {t(app.primary.label)}
           </button>
         )}
