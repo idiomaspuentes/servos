@@ -29,7 +29,7 @@ export function PersonMenu({
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
   return (
-    <Sheet title={t('persona.menu', { nombre: person })} onClose={onClose}>
+    <Sheet title={t('persona.menu', { nombre: person })} onClose={onClose} dirty={adding && name.trim() !== ''}>
       <MenuRow label={t('persona.recibir')} description={t('persona.recibirAyuda')} onClick={onReceive} />
       <MenuRow label={t('persona.idioma')} description={t('persona.idiomaAyuda')} onClick={onLanguage} />
       <MenuRow label={t('persona.traducir')} description={t('persona.traducirAyuda')} onClick={onTranslate} />

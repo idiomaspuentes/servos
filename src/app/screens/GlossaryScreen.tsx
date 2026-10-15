@@ -178,7 +178,7 @@ export function GlossaryScreen({
         />
       )}
       {sharing && (
-        <Sheet title={t('glosario.compartirTitulo')} onClose={() => setSharing(false)}>
+        <Sheet title={t('glosario.compartirTitulo')} onClose={() => setSharing(false)} dirty={pasting && pasted.trim() !== ''}>
           <div className="glossary-share">
             <h3>{t('glosario.compartir')}</h3>
             <p className="quiet">{t('glosario.compartirAyuda')}</p>

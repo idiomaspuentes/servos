@@ -79,7 +79,11 @@ export function GlossarySheet({
   }
 
   return (
-    <Sheet title={t('editor.glosario')} onClose={onClose}>
+    <Sheet
+      title={t('editor.glosario')}
+      onClose={onClose}
+      dirty={rendering !== (before?.rendering ?? '') || others !== (before?.alternatives.join(', ') ?? '') || note !== (before?.note ?? '')}
+    >
       <div className="glossary-form">
         <p className="glossary-word">
           <span>{target.word}</span>

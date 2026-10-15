@@ -33,7 +33,7 @@ export function Language({ onClose }: { onClose(): void }) {
     onClose()
   }
   return (
-    <Sheet title={t('idioma.titulo')} onClose={onClose}>
+    <Sheet title={t('idioma.titulo')} onClose={onClose} dirty={receiving && pasted.trim() !== ''}>
       <h3 className="menu-heading">{t('idioma.base')}</h3>
       {BASE_LANGUAGES.map((code) => (
         <MenuRow key={code} label={`${LANGUAGE_NAMES[code]}${code === language ? ' ✓' : ''}`} onClick={() => choose(code)} />

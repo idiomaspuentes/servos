@@ -750,3 +750,8 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .translate-share h2 { margin: 0; font-size: 1rem; }
 
 .usfm-found { display: flex; flex-direction: column; gap: 0.4rem; padding: 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+
+/* A sheet with something unsaved asks before closing, at its top, under its title */
+.sheet-ask { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem 1rem; border-block-end: 1px solid var(--line); background: var(--surface-soft); }
+.sheet-ask p { margin: 0; font-weight: 600; }
+.sheet-ask-close { color: var(--danger); }

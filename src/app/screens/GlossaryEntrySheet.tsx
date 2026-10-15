@@ -61,7 +61,11 @@ export function GlossaryEntrySheet({
   }
 
   return (
-    <Sheet title={entry.rendering} onClose={onClose}>
+    <Sheet
+      title={entry.rendering}
+      onClose={onClose}
+      dirty={editing && (rendering.trim() !== entry.rendering || others !== entry.alternatives.join(', ') || note !== entry.note)}
+    >
       <div className="glossary-form">
         {/* The rendering is the sheet's title; under it, the word of the original it stands for and the decision. */}
         <p className="glossary-state">

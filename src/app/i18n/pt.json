@@ -590,5 +590,8 @@
   "glosario.porAcordar": "Por combinar ({n})",
   "recibir.esperando": "já têm outra versão esperando, que não muda: {n}",
   "idioma.esBase": "{idioma} já vem com o app: não se muda a partir de um arquivo.",
-  "idioma.rotas": "Frases que não entraram porque suas marcas (o que vai entre chaves) não são as do original: {n}."
+  "idioma.rotas": "Frases que não entraram porque suas marcas (o que vai entre chaves) não são as do original: {n}.",
+  "marco.sinGuardar": "O que você escreveu ainda não foi salvo.",
+  "marco.seguirEscribiendo": "Continuar escrevendo",
+  "marco.cerrarSinGuardar": "Fechar sem salvar"
 }

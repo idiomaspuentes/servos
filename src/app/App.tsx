@@ -156,7 +156,14 @@ export function App() {
       }
       // A sheet open (a menu, a list, an article) is what the button closes first, as on any phone: the screen stays,
       // and its entry is set again for the next press.
-      if (closeTopSheet()) {
+      const sheet = closeTopSheet()
+      if (sheet === 'asked') {
+        // It asked before closing, and stays: its entry is set again for the next press.
+        history.pushState({ servos: true }, '')
+        armed.current = true
+        return
+      }
+      if (sheet === 'closed') {
         if (away.current) {
           history.pushState({ servos: true }, '')
           armed.current = true

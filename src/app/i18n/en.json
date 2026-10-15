@@ -590,5 +590,8 @@
   "glosario.porAcordar": "To agree on ({n})",
   "recibir.esperando": "already have another version waiting, which does not change: {n}",
   "idioma.esBase": "{idioma} comes with the app: it is not changed from a file.",
-  "idioma.rotas": "Phrases left out because their marks (what goes between braces) are not the original's: {n}."
+  "idioma.rotas": "Phrases left out because their marks (what goes between braces) are not the original's: {n}.",
+  "marco.sinGuardar": "What you wrote is not saved yet.",
+  "marco.seguirEscribiendo": "Keep writing",
+  "marco.cerrarSinGuardar": "Close without saving"
 }

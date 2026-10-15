@@ -590,5 +590,8 @@
   "glosario.porAcordar": "Por acordar ({n})",
   "recibir.esperando": "ya tienen otra versión esperando, que no se cambia: {n}",
   "idioma.esBase": "{idioma} ya viene con la app: no se cambia desde un archivo.",
-  "idioma.rotas": "Frases que no entraron porque sus marcas (lo que va entre llaves) no son las del original: {n}."
+  "idioma.rotas": "Frases que no entraron porque sus marcas (lo que va entre llaves) no son las del original: {n}.",
+  "marco.sinGuardar": "Lo que escribió todavía no se guardó.",
+  "marco.seguirEscribiendo": "Seguir escribiendo",
+  "marco.cerrarSinGuardar": "Cerrar sin guardar"
 }
