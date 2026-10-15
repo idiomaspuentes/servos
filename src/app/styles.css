@@ -322,6 +322,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 /* The helps of a touched word, under its verse */
 .word-help { margin-block: 0.5rem; padding: 0.5rem 0.75rem 0.75rem; border: 1px solid var(--line); border-inline-start: 3px solid var(--accent); border-radius: var(--radius); background: var(--surface); font-family: var(--font); font-size: 1rem; line-height: 1.5; }
 .word-help-head { display: flex; align-items: center; gap: 0.5rem; }
+.help-bridge { font-size: 1.1rem; }
 .word-help-word { font-weight: 600; flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .word-help-close { min-width: var(--touch); font-size: 1.3rem; padding: 0; }
 .word-help-kind { margin: 0; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-soft); display: flex; gap: 0.5rem; align-items: center; }

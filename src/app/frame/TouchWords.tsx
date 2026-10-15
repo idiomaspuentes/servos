@@ -1,6 +1,8 @@
 /**
  * Touching a word of a text (a bridge text or the original) brings the notes and the translation words that are about
- * it, one at a time, right under its verse (philosophy, principle 4). A help knows its words in every text through the
+ * it, one at a time, right under its verse (philosophy, principle 4). First come the other bridge texts: the TPS is a
+ * help to the TPL as much as a text, so a TPL word shows the TPS words that translate the same original words (and
+ * the other way round), as Taller does. A help knows its words in every text through the
  * alignment (`PrototypeNote.places`), so a Hebrew word finds the notes of its Spanish words, and the help being read
  * lights its words in every pane.
  */
@@ -13,12 +15,45 @@ import { Markdown } from './Markdown'
 import { Sheet } from './Sheet'
 
 export type WordHelp =
+  | { kind: 'puente'; id: string; places: Places; abbreviation: string }
   | { kind: 'nota'; id: string; places: Places; note: PrototypeNote }
   | { kind: 'palabra'; id: string; places: Places; original: string; article: string; keyTerm: boolean }
 
-/** The notes and word links whose words in `abbreviation` include the word at `place`, in the order of the verses. */
+/** The words of a bridge text that translate any of these words of the original. */
+function wordsTranslating(text: PrototypeText, originals: Set<number>): number[] {
+  const out: number[] = []
+  text.toOriginal?.forEach((places, word) => places.some((p) => originals.has(p)) && out.push(word))
+  return out
+}
+
+/**
+ * What the other bridge texts say for a touched word: for each, its words aligned to the same original words. The
+ * places light the words in every text, the touched one's too (all its words aligned there, not only the touched).
+ */
+function otherBridges(data: PrototypeData, abbreviation: string, place: number): WordHelp[] {
+  const text = data.texts.find((x) => x.abbreviation === abbreviation)
+  const original = data.texts.find((x) => x.original)
+  if (!text || !original) return []
+  const originals = new Set(text.original ? [place] : text.toOriginal?.[place] ?? [])
+  if (!originals.size) return []
+  const own = text.original ? [...originals] : wordsTranslating(text, originals)
+  return data.texts
+    .filter((x) => !x.original && x !== text)
+    .map((other): WordHelp | null => {
+      const words = wordsTranslating(other, originals)
+      if (!words.length) return null
+      const places: Places = { [other.abbreviation]: words, [original.abbreviation]: [...originals].sort((a, b) => a - b), [abbreviation]: own }
+      return { kind: 'puente', id: `puente-${other.abbreviation}`, places, abbreviation: other.abbreviation }
+    })
+    .filter((h): h is WordHelp => h !== null)
+}
+
+/**
+ * The helps of a touched word: what the other bridge texts say, then the notes and word links whose words in
+ * `abbreviation` include it, in the order of the verses.
+ */
 export function helpsOfWord(data: PrototypeData, abbreviation: string, place: number): WordHelp[] {
-  const out: WordHelp[] = []
+  const out: WordHelp[] = otherBridges(data, abbreviation, place)
   const seen = new Set<string>()
   for (const verse of data.verses) {
     for (const note of verse.notes) {
@@ -166,6 +201,18 @@ export function WordHelpCard({
       </div>
 
       {!help && <p className="quiet">{t('ayudas.nadaEnPalabra')}</p>}
+
+      {help?.kind === 'puente' && (
+        <>
+          <p className="word-help-kind">{t('ayudas.enOtroTexto', { texto: help.abbreviation })}</p>
+          <p className="help-quote help-bridge">{wordsOf(data.texts.find((x) => x.abbreviation === help.abbreviation)!, help.places[help.abbreviation])}</p>
+          {original && !text.original && (
+            <p className="help-original" dir={original.dir} lang={original.lang}>
+              {wordsOf(original, help.places[original.abbreviation])}
+            </p>
+          )}
+        </>
+      )}
 
       {help?.kind === 'nota' && (
         <>

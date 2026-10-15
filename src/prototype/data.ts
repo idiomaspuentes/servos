@@ -33,6 +33,11 @@ export interface PrototypeText {
   pieces: ChapterPiece[]
   /** Each verse in the lines the text gives it, with their markers, its words numbered through the chapter. */
   lines: Record<number, WordLine[]>
+  /**
+   * For a bridge text, each word's places in the original (the words it translates), by the word's place: what
+   * lets a touched word find the words of the other bridge text that translate the same original words.
+   */
+  toOriginal?: number[][]
   /** The Greek or Hebrew the bridge texts translate. */
   original?: boolean
   dir?: 'ltr' | 'rtl'

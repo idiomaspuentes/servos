@@ -65,6 +65,8 @@ async function chapterData(stores: ResourceStores, bookId: string, chapter: numb
     twl: { TPL: await alignedPlaces(stores, TWL, GLT, bookId, chapter), TPS: await alignedPlaces(stores, TWL, GST, bookId, chapter) },
   }
   const originalPlace = new Map(words3[original.abbreviation].words.map((w, i) => [w.own, i]))
+  const toOriginal = (abbr: 'TPL' | 'TPS') =>
+    words3[abbr].words.map((w) => w.originals.map((key) => originalPlace.get(key)).filter((p): p is number => p !== undefined))
   const placesOf = (helps: 'tn' | 'twl', id: string): Places => {
     const tpl = aligned[helps].TPL[id] ?? []
     const tps = aligned[helps].TPS[id] ?? []
@@ -127,8 +129,8 @@ async function chapterData(stores: ResourceStores, bookId: string, chapter: numb
     book: { id: bookId, name: book.name, chapters: book.chapters.length },
     chapter,
     texts: [
-      { key: GLT, abbreviation: 'TPL', title: await title(GLT), pieces: glt, lines: words3.TPL.lines },
-      { key: GST, abbreviation: 'TPS', title: await title(GST), pieces: gst, lines: words3.TPS.lines },
+      { key: GLT, abbreviation: 'TPL', title: await title(GLT), pieces: glt, lines: words3.TPL.lines, toOriginal: toOriginal('TPL') },
+      { key: GST, abbreviation: 'TPS', title: await title(GST), pieces: gst, lines: words3.TPS.lines, toOriginal: toOriginal('TPS') },
       {
         key: original.key,
         abbreviation: original.abbreviation,
