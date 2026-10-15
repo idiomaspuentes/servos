@@ -279,10 +279,11 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .choice.is-on, .option.is-on, .book-chip.is-on { border-color: var(--accent); background: var(--accent-soft); color: var(--text); box-shadow: inset 0 0 0 1px var(--accent); }
 .option { display: flex; flex-direction: column; align-items: flex-start; text-align: start; gap: 0.15rem; width: 100%; }
 .option-title { font-weight: 600; }
-.advanced summary { min-height: var(--touch); display: flex; flex-wrap: wrap; align-items: center; gap: 0 0.35rem; color: var(--accent); cursor: pointer; list-style: none; }
+.advanced summary { min-height: var(--touch); display: block; box-sizing: border-box; padding-block: 0.65rem; line-height: 1.35; color: var(--accent); cursor: pointer; list-style: none; }
+.advanced summary .quiet { margin-inline-start: 0.35rem; }
 .advanced summary::-webkit-details-marker { display: none; }
 /* A fold says it opens: an arrow after its name, turned when open */
-.advanced summary::after { content: '▾'; font-size: 0.85em; transition: transform 0.15s; }
+.advanced summary::after { content: '▾'; display: inline-block; margin-inline-start: 0.35rem; font-size: 0.85em; transition: transform 0.15s; }
 .advanced[open] > summary::after { transform: rotate(180deg); }
 
 /* Add a book */
@@ -734,3 +735,6 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .welcome-example { display: flex; flex-direction: column; gap: 0.4rem; margin-block-start: 1rem; padding-block-start: 1rem; border-block-start: 1px solid var(--line); }
 .welcome-example p { margin: 0; }
 .person-add { display: flex; flex-direction: column; gap: 0.5rem; margin-block-start: 0.5rem; }
+
+/* The study's helps all together, folded under the section's text */
+.study-helps { margin-block-start: 1rem; border-block-start: 1px solid var(--line); padding-block-start: 0.25rem; font-size: 1rem; }

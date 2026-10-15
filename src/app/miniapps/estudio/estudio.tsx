@@ -67,7 +67,7 @@ function Center({ context }: MiniAppCenterProps) {
     (data.texts.find((x) => x.original)?.words ?? []).map((w) => w.strong)
   )
   const glossed = glossedPlaces(data, glossary)
-  const { lit, touch, card } = useWordHelps({
+  const { lit, touch, card, helpsOpened } = useWordHelps({
     data,
     resetKey: unitKey,
     marked,
@@ -106,6 +106,10 @@ function Center({ context }: MiniAppCenterProps) {
     )
   }
   const hint = t('estudio.toquePalabra')
+  const inShown = data.verses.filter((v) => shown.includes(v.verse))
+  const notesCount = inShown.reduce((n, v) => n + v.notes.length, 0)
+  const wordsCount = inShown.reduce((n, v) => n + v.words.length, 0)
+  const helpsCount = notesCount + wordsCount
   const questions = data.verses.filter((v) => shown.includes(v.verse)).flatMap((v) => v.questions)
   const others = studyNotesAbout(position.book, position.chapter, shown).filter((n) => n.verses.join(',') !== shown.join(','))
   const panes: Pane[] = [
@@ -114,6 +118,7 @@ function Center({ context }: MiniAppCenterProps) {
         id: x.abbreviation,
         label: x.original ? t(`estudio.lengua.${x.lang ?? 'original'}`) : x.abbreviation,
         content: (
+          <>
           <ChapterLines
             text={x}
             shown={shown}
@@ -131,6 +136,16 @@ function Center({ context }: MiniAppCenterProps) {
               </>
             )}
           />
+          {/* The helps reached by touching words, also all together and counted, folded under the text: whoever does
+              not know which words to touch sees that there are notes, and goes through them one at a time. */}
+          {!x.original && helpsCount > 0 && (
+            // Open, the note shown lights its words in the text above, as in the editor.
+            <details className="advanced study-helps" onToggle={(e) => e.currentTarget.open && helpsOpened()}>
+              <summary>{t('estudio.ayudasAqui', { notas: notesCount, palabras: wordsCount })}</summary>
+              {frame.helps(shown, { comments: false, glossary })}
+            </details>
+          )}
+          </>
         ),
       })
     ),
@@ -194,6 +209,7 @@ export const estudio: MiniApp = {
       verRespuestas: 'Ver las respuestas',
       guardarSeguir: 'Guardar y seguir',
       toquePalabra: 'toque una palabra para ver sus notas',
+      ayudasAqui: 'Todas las notas ({notas}) y palabras clave ({palabras}) de estos versículos',
       paneles: 'Lo que se lee',
       notaDe: 'Notas de comprensión · {pasaje}',
       preguntaSeccion: '¿Qué dice esta sección? ¿Quién habla, a quién, y qué será difícil de traducir?',
@@ -220,6 +236,7 @@ export const estudio: MiniApp = {
       verRespuestas: 'Ver as respostas',
       guardarSeguir: 'Salvar e seguir',
       toquePalabra: 'toque uma palavra para ver suas notas',
+      ayudasAqui: 'Todas as notas ({notas}) e palavras-chave ({palabras}) destes versículos',
       paneles: 'O que se lê',
       notaDe: 'Notas de compreensão · {pasaje}',
       preguntaSeccion: 'O que diz esta seção? Quem fala, a quem, e o que será difícil de traduzir?',
@@ -246,6 +263,7 @@ export const estudio: MiniApp = {
       verRespuestas: 'See the answers',
       guardarSeguir: 'Save and continue',
       toquePalabra: 'touch a word to see its notes',
+      ayudasAqui: 'All the notes ({notas}) and key words ({palabras}) of these verses',
       paneles: 'What is read',
       notaDe: 'Comprehension notes · {pasaje}',
       preguntaSeccion: 'What does this section say? Who speaks, to whom, and what will be hard to translate?',
