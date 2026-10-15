@@ -198,7 +198,7 @@ function Center({ context }: MiniAppCenterProps) {
     { id: 'ayudas', label: t('editor.panelAyudas'), content: frame.helps() },
   ]
 
-  return <Panes panes={panes} label={t('editor.paneles')} onPane={(id) => id === 'ayudas' && setHelpsRead(true)} />
+  return <Panes panes={panes} label={t('editor.paneles')} fixed="suyo" onPane={(id) => id === 'ayudas' && setHelpsRead(true)} />
 }
 
 export const editor: MiniApp = {

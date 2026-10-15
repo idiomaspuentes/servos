@@ -253,6 +253,13 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .pane { position: relative; flex: 0 0 100%; min-width: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0.75rem 1rem; }
 @media (prefers-reduced-motion: reduce) { .panes-track { transition: none; } }
 
+/* Wide: what is read on the left, what is written on the right */
+.panes-split { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.panes-split > .panes { border-inline-end: 1px solid var(--line); }
+.pane-fixed { height: 100%; }
+.panes-split .edit-where { display: none; }
+@media (min-width: 900px) { .screen-fill { max-width: 1200px; } }
+
 /* A line of the text as it is set: a poem's line has a rule at its start and is set in by its depth (as in Taller) */
 .usfm-line {
   --indent: 0rem; --bar: 0px; --pad: 0rem;

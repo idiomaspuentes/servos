@@ -7,6 +7,9 @@
  * sight: with the row a scroll container, Chrome on Android scrolled it back to the box as soon as the keyboard moved,
  * and scroll snapping re-snaps to the pane that holds the focus. A clipped box cannot be scrolled by anyone, so the
  * swipe is read here from the pointer.
+ *
+ * On a wide screen one pane (`fixed`, the boxes) stays in sight on the right and the others share the left, so the
+ * text being read and the one being written are side by side.
  */
 
 import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react'
@@ -24,13 +27,36 @@ export function keepFocus(event: PointerEvent) {
   if (document.activeElement instanceof HTMLTextAreaElement || document.activeElement instanceof HTMLInputElement) event.preventDefault()
 }
 
+/** Where a screen is wide enough for two panes side by side. */
+const WIDE = '(min-width: 900px)'
+
+function useWide(): boolean {
+  const [wide, setWide] = useState(() => typeof window !== 'undefined' && window.matchMedia(WIDE).matches)
+  useEffect(() => {
+    const query = window.matchMedia(WIDE)
+    const change = () => setWide(query.matches)
+    query.addEventListener('change', change)
+    return () => query.removeEventListener('change', change)
+  }, [])
+  return wide
+}
+
 /** How far a finger moves before it counts as a swipe, and how far (of the width) to go to the next pane. */
 const SLOP = 10
 const ENOUGH = 0.2
 
-export function Panes({ panes, label, onPane }: { panes: Pane[]; label: string; onPane?(id: string): void }) {
+export function Panes({ panes: all, label, onPane, fixed }: { panes: Pane[]; label: string; onPane?(id: string): void; fixed?: string }) {
+  const wide = useWide()
+  const kept = wide ? all.find((p) => p.id === fixed) : undefined
+  const panes = kept ? all.filter((p) => p !== kept) : all
   const track = useRef<HTMLDivElement>(null)
   const [current, setCurrent] = useState(0)
+  // Between one column and two the panes are not the same list: start again from the first.
+  const [wasWide, setWasWide] = useState(Boolean(kept))
+  if (wasWide !== Boolean(kept)) {
+    setWasWide(Boolean(kept))
+    setCurrent(0)
+  }
   const swipe = useRef<{ id: number; x: number; y: number; t: number; dx: number; horizontal: boolean | null } | null>(null)
   // A swipe that ends over a word must not touch it.
   const swiped = useRef(false)
@@ -84,7 +110,7 @@ export function Panes({ panes, label, onPane }: { panes: Pane[]; label: string; 
     if (event.type === 'pointerup' && (Math.abs(s.dx) > width * ENOUGH || (fast && Math.abs(s.dx) > SLOP * 3))) go(current + (s.dx < 0 ? 1 : -1))
   }
 
-  return (
+  const row = (
     <div className="panes">
       <div className="panes-tabs" role="tablist" aria-label={label} onPointerDown={keepFocus}>
         {panes.map((pane, index) => (
@@ -131,6 +157,15 @@ export function Panes({ panes, label, onPane }: { panes: Pane[]; label: string; 
           ))}
         </div>
       </div>
+    </div>
+  )
+  if (!kept) return row
+  return (
+    <div className="panes-split">
+      {row}
+      <section id={`pane-${kept.id}`} aria-label={kept.label} className="pane pane-fixed">
+        {kept.content}
+      </section>
     </div>
   )
 }
