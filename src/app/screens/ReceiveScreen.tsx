@@ -19,6 +19,7 @@ export function ReceiveScreen({
   onBack,
   onReceived,
   onGo,
+  onChoose,
 }: {
   projects: Project[]
   /** The project it was opened from, to gather into by default. */
@@ -30,6 +31,8 @@ export function ReceiveScreen({
   onReceived(projects: Project[]): void
   /** Opens a book of a project, after receiving. */
   onGo(projectId: string, book: string | null): void
+  /** Goes through a book's verses with two versions, after receiving. */
+  onChoose(projectId: string, book: string): void
 }) {
   const t = useT()
   const [file, setFile] = useState<SharedFile | null>(null)
@@ -76,6 +79,8 @@ export function ReceiveScreen({
 
   if (done && file) {
     const first = done.books[0]?.code ?? null
+    const choices = done.books.reduce((n, b) => n + b.choices, 0)
+    const toChoose = done.books.find((b) => b.choices > 0)?.code
     return (
       <div className="screen">
         {header}
@@ -92,8 +97,13 @@ export function ReceiveScreen({
             ))}
           </ul>
           {done.glossary.added > 0 && <p className="quiet">{t('recibir.glosarioNuevas', { n: done.glossary.added })}</p>}
+          {toChoose && (
+            <button type="button" className="button-primary" onClick={() => onChoose(done.projectId, toChoose)}>
+              {t('recibir.elegirAhora', { n: choices })} →
+            </button>
+          )}
           {first && (
-            <button type="button" className="button-primary" onClick={() => onGo(done.projectId, first)}>
+            <button type="button" className={toChoose ? 'button-secondary' : 'button-primary'} onClick={() => onGo(done.projectId, first)}>
               {t('recibir.irAl', { libro: bookName(first) })} →
             </button>
           )}

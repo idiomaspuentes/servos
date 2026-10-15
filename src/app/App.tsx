@@ -14,6 +14,7 @@ import { placeLabel, stepPercent } from './projects/progress'
 import { keepLastApp, keepPlace, lastAppOf, placeOf } from './projects/work'
 import { AddBookSheet } from './screens/AddBook'
 import { BookScreen } from './screens/BookScreen'
+import { ChooseScreen } from './screens/ChooseScreen'
 import { GlossaryScreen } from './screens/GlossaryScreen'
 import { Home, type Resume } from './screens/Home'
 import { Language, TestModeBar } from './screens/Language'
@@ -35,6 +36,7 @@ type Screen =
   | { kind: 'receive'; back: Screen }
   | { kind: 'recibir'; back: Screen; projectId?: string; book?: string }
   | { kind: 'translate' }
+  | { kind: 'elegir'; projectId: string; book: string; back: Screen }
 
 /** The chapters of a book whose texts and helps the prototype has (every chapter of Titus and Jonah). */
 const chaptersFor = (book: string) => chaptersOf(book).map((c) => chapterOf(book, c)!)
@@ -129,7 +131,7 @@ export function App() {
   // the screen goes back and, if still away from home, sets another.
   const goBack = useRef(home)
   goBack.current =
-    screen.kind === 'app' ? leaveApp : screen.kind === 'glossary' || screen.kind === 'receive' || screen.kind === 'recibir' ? () => setScreen(screen.back) : home
+    screen.kind === 'app' ? leaveApp : screen.kind === 'glossary' || screen.kind === 'receive' || screen.kind === 'recibir' || screen.kind === 'elegir' ? () => setScreen(screen.back) : home
   const armed = useRef(false)
   const skip = useRef(false)
   useEffect(() => {
@@ -219,6 +221,7 @@ export function App() {
           onReceive={() => setScreen({ kind: 'receive', back: bookScreen })}
           onGlossary={() => setScreen({ kind: 'glossary', projectId: bookScreen.projectId, back: bookScreen })}
           onReceiveWork={() => setScreen({ kind: 'recibir', back: bookScreen, projectId: bookScreen.projectId, book: bookScreen.book })}
+          onChooseVersions={() => setScreen({ kind: 'elegir', projectId: bookScreen.projectId, book: bookScreen.book, back: bookScreen })}
           person={person}
         />
       )}
@@ -269,9 +272,22 @@ export function App() {
           onBack={() => setScreen(screen.back)}
           onReceived={setProjects}
           onGo={(projectId, book) => (book ? openBook(projectId, book) : home())}
+          onChoose={(projectId, book) => {
+            setResume({ projectId, book })
+            setScreen({ kind: 'elegir', projectId, book, back: { kind: 'book', projectId, book } })
+          }}
         />
       )}
       {screen.kind === 'translate' && <TranslateUi onBack={home} />}
+      {screen.kind === 'elegir' && project(screen.projectId) && (
+        <ChooseScreen
+          project={project(screen.projectId)!}
+          book={screen.book}
+          chapters={chaptersFor(screen.book)}
+          textAbbreviation={text}
+          onBack={() => setScreen(screen.back)}
+        />
+      )}
 
       {addProject && (
         <AddProjectSheet

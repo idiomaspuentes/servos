@@ -114,6 +114,13 @@ Lo tomamos de Taller (`src/domain/usfmVerseMerge.ts`, `usfmTrunkPatch.ts`, docum
 | Los dos cambiaron el mismo versículo, distinto | **Choque real**: decide una persona |
 | Un puente contra versículos sueltos, con texto en los dos | **Choque de estructura**: decide una persona |
 
+**Cómo decide la persona** (en el prototipo): las dos versiones, enteras, una debajo de la otra, cada una con lo
+que la otra no tiene resaltado (palabra por palabra; una coma también cuenta); se toca la que se queda y el único
+botón lleno la guarda. La que queda se corrige después como cualquier otra, en el editor. Se llega por tres lados:
+al terminar de recibir («Elegir entre las dos versiones»), desde el libro (una tarjeta dice cuántos versículos
+esperan) y en el editor, donde la elección ocupa el lugar de la caja hasta que se decide. Un versículo se puede dejar
+para después; sigue esperando y el libro lo sigue contando.
+
 ### 6.3 El diario: qué cambió, quién, desde dónde
 
 Cada proyecto lleva un diario de cambios por versículo, además del libro:

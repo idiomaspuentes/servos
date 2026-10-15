@@ -26,6 +26,7 @@ import {
   type OtherVersion,
 } from '../../projects/work'
 import { ChapterLines } from '../../frame/ChapterLines'
+import { TwoVersions } from '../../frame/TwoVersions'
 import { LineFields, lineFieldId } from './LineFields'
 
 /** Lines of a poem (`\q`, `\q1`, `\q2`…), not the poem's headings or notes (`\qa`, `\qd`…). */
@@ -198,35 +199,27 @@ function Center({ context }: MiniAppCenterProps) {
               {units.length > 1 && <span className="edit-verse-number" aria-hidden="true">{unitLabel(unit)}</span>}
               {units.length === 1 && unit.length > 1 && <p className="edit-joined">{t('editor.unidos', { versiculos: unitLabel(unit) })}</p>}
               <div className="edit-verse-body">
-                {others[v] && (
-                  // Received from another computer while this one had its own text: both stay until someone chooses.
-                  <div className="edit-other" role="note">
-                    <p className="edit-other-head">{t('editor.otraVersion', { nombre: others[v]!.by })}</p>
-                    <p className="edit-other-text">{others[v]!.text}</p>
-                    <div className="edit-other-actions">
-                      <button type="button" className="button-quiet" onClick={() => choose(v, true)}>
-                        {t('editor.usarOtra', { nombre: others[v]!.by })}
-                      </button>
-                      <button type="button" className="button-quiet" onClick={() => choose(v, false)}>
-                        {t('editor.dejarEsta')}
-                      </button>
-                    </div>
-                  </div>
+                {others[v] ? (
+                  // Received from another computer while this one had its own text: both stay until someone chooses,
+                  // and the choice comes before writing (the one kept can be corrected then).
+                  <TwoVersions
+                    here={{ text: drafts[v] ?? '', by: authorOf(position.book, position.chapter, v) ?? '' }}
+                    received={others[v]!}
+                    onChoose={(keepReceived) => choose(v, keepReceived)}
+                  />
+                ) : (
+                  <LineFields
+                    key={fieldsId(v)}
+                    id={fieldsId(v)}
+                    text={drafts[v] ?? ''}
+                    markers={markers}
+                    poem={poem}
+                    label={t('editor.suVersiculo', { v: unitLabel(unit) })}
+                    placeholder={(line) => (poem ? t('editor.renglon', { n: line }) : t('editor.cajaVacia'))}
+                    addLabel={t('editor.otroRenglon')}
+                    onChange={(value) => write(v, value)}
+                  />
                 )}
-                {others[v] && authorOf(position.book, position.chapter, v) && (
-                  <p className="edit-mine-head">{t('editor.loQueEsta', { nombre: authorOf(position.book, position.chapter, v)! })}</p>
-                )}
-                <LineFields
-                  key={fieldsId(v)}
-                  id={fieldsId(v)}
-                  text={drafts[v] ?? ''}
-                  markers={markers}
-                  poem={poem}
-                  label={t('editor.suVersiculo', { v: unitLabel(unit) })}
-                  placeholder={(line) => (poem ? t('editor.renglon', { n: line }) : t('editor.cajaVacia'))}
-                  addLabel={t('editor.otroRenglon')}
-                  onChange={(value) => write(v, value)}
-                />
               </div>
             </div>
           )
@@ -336,7 +329,6 @@ export const editor: MiniApp = {
       descripcion: 'Escribir el versículo en su idioma, con el texto puente al lado',
       textoPuente: 'Texto puente: {texto}',
       dondeFuente: 'Para leer el {texto}, deslice a la izquierda o toque «{texto}» abajo.',
-      otraVersion: '{nombre} escribió este versículo de otra manera:',
       glosario: 'Glosario',
       glosarioSinOriginal: '«{palabra}» no está alineada con el original: no se sabe de qué palabra es.',
       comoSeTraduce: 'Cómo se traduce',
@@ -346,9 +338,6 @@ export const editor: MiniApp = {
       otrasFormasAyuda: 'Si según el contexto se dice de otra manera',
       notaGlosario: 'Nota (opcional)',
       guardarGlosario: 'Guardar en el glosario',
-      usarOtra: 'Usar la de {nombre}',
-      dejarEsta: 'Dejar la que está',
-      loQueEsta: 'Lo que está, de {nombre}:',
       suVersiculo: 'Su traducción del versículo {v}',
       cajaVacia: 'Escriba aquí',
       renglon: 'Renglón {n}',
@@ -374,7 +363,6 @@ export const editor: MiniApp = {
       descripcion: 'Escrever o versículo no seu idioma, com o texto ponte ao lado',
       textoPuente: 'Texto ponte: {texto}',
       dondeFuente: 'Para ler o {texto}, deslize para a esquerda ou toque «{texto}» abaixo.',
-      otraVersion: '{nombre} escreveu este versículo de outro jeito:',
       glosario: 'Glossário',
       glosarioSinOriginal: '«{palabra}» não está alinhada com o original: não se sabe de que palavra é.',
       comoSeTraduce: 'Como se traduz',
@@ -384,9 +372,6 @@ export const editor: MiniApp = {
       otrasFormasAyuda: 'Se conforme o contexto se diz de outro jeito',
       notaGlosario: 'Nota (opcional)',
       guardarGlosario: 'Salvar no glossário',
-      usarOtra: 'Usar a de {nombre}',
-      dejarEsta: 'Deixar a que está',
-      loQueEsta: 'O que está, de {nombre}:',
       suVersiculo: 'Sua tradução do versículo {v}',
       cajaVacia: 'Escreva aqui',
       renglon: 'Linha {n}',
@@ -412,7 +397,6 @@ export const editor: MiniApp = {
       descripcion: 'Write the verse in your language, with the bridge text beside it',
       textoPuente: 'Bridge text: {texto}',
       dondeFuente: 'To read the {texto}, swipe left or touch «{texto}» below.',
-      otraVersion: '{nombre} wrote this verse another way:',
       glosario: 'Glossary',
       glosarioSinOriginal: '«{palabra}» is not aligned to the original: which word it stands for is unknown.',
       comoSeTraduce: 'How it is translated',
@@ -422,9 +406,6 @@ export const editor: MiniApp = {
       otrasFormasAyuda: 'If in some contexts it is said another way',
       notaGlosario: 'Note (optional)',
       guardarGlosario: 'Save in the glossary',
-      usarOtra: 'Use {nombre}\'s',
-      dejarEsta: 'Keep this one',
-      loQueEsta: 'What is here, by {nombre}:',
       suVersiculo: 'Your translation of verse {v}',
       cajaVacia: 'Write here',
       renglon: 'Line {n}',

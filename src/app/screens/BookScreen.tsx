@@ -19,6 +19,7 @@ import type { MiniApp } from '../miniapps/contract'
 import { miniApp } from '../miniapps/registry'
 import { PHASES, bookName, type BookEntry, type Phase, type Project } from '../projects/model'
 import { doneIn as doneInBook, percent as pct, placeLabel, stepPercent, versesOf } from '../projects/progress'
+import { versesToChoose } from '../projects/versions'
 import { workOf } from '../projects/work'
 import { ShareSheet } from './ShareSheet'
 
@@ -34,6 +35,7 @@ export function BookScreen({
   onReceive,
   onGlossary,
   onReceiveWork,
+  onChooseVersions,
   person,
   lastApp,
   placeFor,
@@ -51,6 +53,8 @@ export function BookScreen({
   onGlossary(): void
   /** Receives work shared from another computer into this book's project. */
   onReceiveWork(): void
+  /** Goes through the verses that came written another way, to keep one version of each. */
+  onChooseVersions(): void
   person: string
   /** The mini app the person last opened from this book. */
   lastApp?: string | null
@@ -89,6 +93,7 @@ export function BookScreen({
   const stepPct = (phase: Phase) => stepPercent(project, book.code, phase, chapters)
 
   const resumeAt = current ? placeFor(current.id) : null
+  const toChoose = versesToChoose(book.code, chapters.map((c) => ({ chapter: c.chapter, verses: versesOf(c) }))).length
   const shownAt = PHASES.indexOf(shown)
   const shownApps = appsOf(shown)
 
@@ -128,6 +133,17 @@ export function BookScreen({
               </button>
             </section>
           )
+        )}
+
+        {toChoose > 0 && (
+          // Work received that came written another way: said where the book opens, with the way to choose.
+          <section className="book-choose">
+            <strong>{t('libro.dosVersiones', { n: toChoose })}</strong>
+            <span className="quiet">{t('libro.dosVersionesAyuda')}</span>
+            <button type="button" className="button-secondary" onClick={onChooseVersions}>
+              {t('libro.elegir')} →
+            </button>
+          </section>
         )}
 
         {/* The steps, always in sight as tabs, each with how far it has gone; the one the book is in, marked. */}
