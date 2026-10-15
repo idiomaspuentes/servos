@@ -274,5 +274,7 @@
   "idiomas.aMano": "Not in the list: write it by hand",
   "idiomas.cambiar": "Change",
   "idiomas.codigo": "Code",
-  "interfaz.grupo.idiomas": "Choosing a language"
+  "interfaz.grupo.idiomas": "Choosing a language",
+  "idioma.pruebaPuesta": "Long phrases test",
+  "idioma.quitarPrueba": "Turn the test off"
 }

@@ -472,5 +472,7 @@
   "idiomas.aMano": "Não está na lista: escrever à mão",
   "idiomas.cambiar": "Trocar",
   "idiomas.codigo": "Código",
-  "interfaz.grupo.idiomas": "Escolher um idioma"
+  "interfaz.grupo.idiomas": "Escolher um idioma",
+  "idioma.pruebaPuesta": "Teste de frases longas",
+  "idioma.quitarPrueba": "Tirar o teste"
 }

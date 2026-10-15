@@ -16,7 +16,7 @@ import { AddBookSheet } from './screens/AddBook'
 import { BookScreen } from './screens/BookScreen'
 import { GlossaryScreen } from './screens/GlossaryScreen'
 import { Home, type Resume } from './screens/Home'
-import { Language } from './screens/Language'
+import { Language, TestModeBar } from './screens/Language'
 import { AddProjectSheet, NewProject } from './screens/NewProject'
 import { PEOPLE, PersonMenu } from './screens/PersonMenu'
 import { ProjectSettings } from './screens/ProjectSettings'
@@ -159,6 +159,7 @@ export function App() {
 
   return (
     <>
+      <TestModeBar />
       {screen.kind === 'home' && (
         <Home
           projects={projects}
