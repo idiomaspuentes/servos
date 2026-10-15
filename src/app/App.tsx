@@ -354,15 +354,17 @@ export function App() {
       {addBookFor && project(addBookFor) && (
         <AddBookSheet
           project={project(addBookFor)!}
+          person={person}
           onClose={() => setAddBookFor(null)}
           onReceive={() => {
             const id = addBookFor
             setAddBookFor(null)
             setScreen({ kind: 'recibir', back: { kind: 'home' }, projectId: id })
           }}
-          onCreate={(code) => {
+          onCreate={(code, phase = 'estudio') => {
             const id = addBookFor
-            setProjects(projects.map((p) => (p.id === id ? { ...p, books: [...p.books, { code, phase: 'estudio' }] } : p)))
+            // A book already in the project (a USFM file gathered into it) is not added twice.
+            setProjects(projects.map((p) => (p.id === id && !p.books.some((b) => b.code === code) ? { ...p, books: [...p.books, { code, phase }] } : p)))
             setAddBookFor(null)
             openBook(id, code)
           }}

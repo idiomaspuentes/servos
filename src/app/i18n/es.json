@@ -131,7 +131,7 @@
   "libroNuevo.enBlanco": "Empezar un libro en blanco",
   "libroNuevo.enBlancoAyuda": "Elegir el libro y traducirlo desde el principio",
   "libroNuevo.usfm": "Desde un archivo USFM",
-  "libroNuevo.usfmAyuda": "Traer un libro ya empezado en otra app (pronto)",
+  "libroNuevo.usfmAyuda": "Traer un libro ya empezado en otra app (translationCore, Paratext…)",
   "libroNuevo.at": "Antiguo Testamento",
   "libroNuevo.nt": "Nuevo Testamento",
   "libroNuevo.yaEsta": "Ya está en el proyecto",
@@ -576,5 +576,11 @@
   "idioma.recibirla": "Recibirla",
   "idioma.noEs": "Eso no es una traducción de la app.",
   "idioma.recibida": "Se recibió {idioma}. Frases nuevas: {nuevas}. Las que ya había traducido distinto en este teléfono se quedan como estaban: {propias}.",
-  "idioma.recibidaSola": "Se recibió {idioma}. Frases nuevas: {nuevas}."
+  "idioma.recibidaSola": "Se recibió {idioma}. Frases nuevas: {nuevas}.",
+  "libroNuevo.usfmNoLibro": "Este archivo no dice qué libro es, o no es uno que Servos conozca («{id}»).",
+  "libroNuevo.usfmVacio": "Este archivo no tiene versículos con texto.",
+  "libroNuevo.usfmOtro": "Elegir otro archivo",
+  "libroNuevo.usfmQueNo": "Se trae el texto de cada versículo; las notas al pie y la alineación del archivo no.",
+  "libroNuevo.usfmAgregar": "Agregar {libro}",
+  "libroNuevo.usfmJuntar": "Juntar con {libro}"
 }

@@ -131,7 +131,7 @@
   "libroNuevo.enBlanco": "Start a blank book",
   "libroNuevo.enBlancoAyuda": "Choose the book and translate it from the beginning",
   "libroNuevo.usfm": "From a USFM file",
-  "libroNuevo.usfmAyuda": "Bring a book already started in another app (coming soon)",
+  "libroNuevo.usfmAyuda": "Bring a book begun in another app (translationCore, Paratext…)",
   "libroNuevo.at": "Old Testament",
   "libroNuevo.nt": "New Testament",
   "libroNuevo.yaEsta": "Already in the project",
@@ -576,5 +576,11 @@
   "idioma.recibirla": "Receive it",
   "idioma.noEs": "That is not a translation of the app.",
   "idioma.recibida": "{idioma} received. New phrases: {nuevas}. Those this phone had translated otherwise stay as they were: {propias}.",
-  "idioma.recibidaSola": "{idioma} received. New phrases: {nuevas}."
+  "idioma.recibidaSola": "{idioma} received. New phrases: {nuevas}.",
+  "libroNuevo.usfmNoLibro": "This file does not say which book it is, or it is not one Servos knows («{id}»).",
+  "libroNuevo.usfmVacio": "This file has no verses with text.",
+  "libroNuevo.usfmOtro": "Choose another file",
+  "libroNuevo.usfmQueNo": "Each verse's text comes in; the file's footnotes and alignment do not.",
+  "libroNuevo.usfmAgregar": "Add {libro}",
+  "libroNuevo.usfmJuntar": "Join with {libro}"
 }
