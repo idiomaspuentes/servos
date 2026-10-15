@@ -15,7 +15,16 @@ import { describe, it } from 'vitest'
 import { resourceContentStamp } from '@bt-synergy/resource-catalog'
 import { unwrapVersioned } from '@bt-synergy/resource-pipeline/cache/versionedEnvelope'
 import { openPack } from '../resources/packs'
-import { alignedPlaces, booksOfText, notesOfVerse, readChapter, readChapterWords, referenceCovers, type ChapterWords } from '../resources/reading'
+import {
+  alignedPlaces,
+  booksOfText,
+  introsOf,
+  notesOfVerse,
+  readChapter,
+  readChapterWords,
+  referenceCovers,
+  type ChapterWords,
+} from '../resources/reading'
 import { openResourceStores, type ResourceStores } from '../resources/store'
 import type { Places, PrototypeData } from './data'
 
@@ -131,7 +140,11 @@ async function chapterData(stores: ResourceStores, bookId: string, chapter: numb
     })
   }
 
+  const intros = await introsOf(stores, TN, bookId, chapter)
+
   return {
+    ...(intros.chapter ? { intro: intros.chapter } : {}),
+    ...(intros.book ? { bookIntro: intros.book } : {}),
     source: `Recursos de ${ORG} y originales de unfoldingWord en Door43 (CC BY-SA 4.0), sacados de los paquetes de idioma el ${new Date().toISOString().slice(0, 10)}.`,
     language: 'es-419',
     book: { id: bookId, name: book.name, chapters: book.chapters.length },

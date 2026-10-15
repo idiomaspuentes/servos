@@ -407,6 +407,31 @@ export function textQuoteOf(row: { p: number[]; m: number; t?: string[] } | unde
   return words.map((w, i) => (i > 0 && w.position > words[i - 1].position + 1 ? `… ${w.word}` : w.word)).join(' ')
 }
 
+/** The introductions a chapter of notes opens with: the book's, then the chapter's. */
+export interface ChapterIntros {
+  book: string | null
+  chapter: string | null
+}
+
+/**
+ * The introduction notes of a chapter, in markdown. tc-study keeps them in the chapter's notes marked `isIntro`, with
+ * their reference rewritten to the first verse, so the book's (`front:intro`) and chapter 1's (`1:intro`) look alike:
+ * in chapter 1 the book's comes first. A lone one in chapter 1 is the chapter's when its heading names the chapter
+ * («# Jonás 1 Notas generales»), else the book's («# Introducción a Jonás»).
+ */
+export async function introsOf(stores: ResourceStores, notesKey: string, book: string, chapter: number): Promise<ChapterIntros> {
+  const entry = await stores.cache.get(preparedUnitKey('notes', notesKey, book, chapter, 'light'))
+  const light = unwrapVersioned<NotesLightChapter>(entry, NOTES_PREPARE_VERSION)
+  const intros = (light?.notes ?? []).filter((n) => n.isIntro && n.note.trim()).map((n) => n.note)
+  if (chapter !== 1) return { book: null, chapter: intros[0] ?? null }
+  if (intros.length >= 2) return { book: intros[0], chapter: intros[1] }
+  const only = intros[0] ?? null
+  // Its heading: the first line, the notes keeping their line ends as written `\n` or as real ones.
+  const heading = only?.trimStart().split(/\\n|\n/)[0] ?? ''
+  const namesChapter = heading.startsWith('#') && new RegExp(`\\b${chapter}\\b`).test(heading)
+  return namesChapter ? { book: null, chapter: only } : { book: only, chapter: null }
+}
+
 /** The notes of a verse, in the order of the notes resource, each with its words in `textKey` when known. */
 export async function notesOfVerse(
   stores: ResourceStores,

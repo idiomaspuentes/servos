@@ -283,3 +283,58 @@ export function WordHelpCard({
     </aside>
   )
 }
+
+/**
+ * Words to touch in the texts of a mini app (the editor, the study): which word is touched and its help, the words
+ * lit in every text, and the card under the touched word's verse. Everything starts again when `resetKey` changes
+ * (another verse or section).
+ *
+ * Without a touched word, the note being read in the helps pane lights its words, once the person has opened that
+ * pane (`helpsOpened`): lit words nobody asked for, in a text read before the helps, only puzzle.
+ */
+export function useWordHelps({
+  data,
+  resetKey,
+  marked,
+  bridge,
+  verses,
+}: {
+  data: PrototypeData
+  resetKey: string
+  /** The bridge-text words of the note open in the helps pane (the frame's `marked`). */
+  marked: string | null
+  /** The bridge text `marked` is in. */
+  bridge: string
+  /** The verses whose notes `marked` may come from. */
+  verses: number[]
+}) {
+  const [touched, setTouched] = useState<Touched | null>(null)
+  const [helpsRead, setHelpsRead] = useState(false)
+  const [key, setKey] = useState(resetKey)
+  if (key !== resetKey) {
+    setKey(resetKey)
+    setTouched(null)
+    setHelpsRead(false)
+  }
+  const openNote =
+    marked && helpsRead
+      ? data.verses
+          .filter((v) => verses.includes(v.verse))
+          .flatMap((v) => v.notes)
+          .find((n) => (bridge === 'TPS' ? n.gst : n.glt) === marked)
+      : undefined
+  return {
+    lit: (abbreviation: string) => (touched ? litPlaces(touched, abbreviation) : new Set(openNote?.places[abbreviation] ?? [])),
+    touch: (abbreviation: string, verse: number, place: number) =>
+      setTouched((now) =>
+        now && now.abbreviation === abbreviation && now.place === place
+          ? null
+          : { abbreviation, verse, place, helps: helpsOfWord(data, abbreviation, place), index: 0 }
+      ),
+    card: (abbreviation: string, verse: number) =>
+      touched && touched.abbreviation === abbreviation && touched.verse === verse ? (
+        <WordHelpCard data={data} touched={touched} onIndex={(index) => setTouched({ ...touched, index })} onClose={() => setTouched(null)} />
+      ) : null,
+    helpsOpened: () => setHelpsRead(true),
+  }
+}

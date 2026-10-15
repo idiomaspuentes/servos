@@ -48,6 +48,10 @@ export interface PrototypeData {
   book: { id: string; name: string; chapters: number }
   chapter: number
   texts: PrototypeText[]
+  /** The chapter's introduction note (markdown), when the notes have one. */
+  intro?: string
+  /** The book's introduction note, kept with its first chapter. */
+  bookIntro?: string
   /**
    * The chapter's sections, the verses of each: the translators' sections (`\ts\*`) that translationCore and
    * translationCore 4 work by. The es-419 bridge texts do not mark them, so they come from unfoldingWord's ULT.

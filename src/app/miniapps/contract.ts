@@ -16,6 +16,13 @@ import type { Phase } from '../projects/model'
 /** What a mini app can ask the device for. The catalog says honestly what is missing (philosophy, principle 8). */
 export type ResourceNeed = 'text' | 'notes' | 'questions' | 'words' | 'academy'
 
+/**
+ * Where the introductions stand among the verses of a position: before the first verse, the book's (in the first
+ * chapter) and then the chapter's, for a mini app that reads them (`MiniApp.intros`).
+ */
+export const BOOK_INTRO = -1
+export const CHAPTER_INTRO = 0
+
 /** A verse at a time, or a section (the translators' sections of the chapter) at a time. */
 export type Unit = 'verse' | 'section'
 
@@ -49,8 +56,11 @@ export interface MiniAppContext {
     switchText(): void
     /** Open the whole chapter in a sheet. */
     showChapter(): void
-    /** The helps panel of the open verse, for a mini app that places it itself (`helps: false`), e.g. in a pane. */
-    helps(): ReactNode
+    /**
+     * The helps panel for a mini app that places it itself (`helps: false`), e.g. in a pane: of the open verse, or of
+     * the verses given (a section's, all together).
+     */
+    helps(verses?: number[]): ReactNode
     /** What the header says about the work (philosophy, principle 8): nothing changed yet, or saved on this phone. */
     setSaved(state: 'sinCambios' | 'guardado'): void
     /** Work a verse or a section at a time; the position line then moves by that. Kept for the next visit. */
@@ -85,6 +95,11 @@ export interface MiniApp {
   unit: 'verse'
   /** Whether the person may also work a section at a time: then the frame moves by sections and opens all its verses. */
   sections?: boolean
+  /**
+   * Whether the book starts with its introduction and each chapter with its own, when the notes have them: the frame
+   * then stops at them first (`BOOK_INTRO`, `CHAPTER_INTRO` as the verse).
+   */
+  intros?: boolean
   /** Whether the helps panel shows under its center. */
   helps: boolean
   /**

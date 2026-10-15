@@ -183,5 +183,13 @@
   "libro.recibido": "Juntou-se o trabalho de {nombre} ({que}): {n} versículos novos.",
   "libro.recibidoIgual": "{n} versículos já estavam iguais.",
   "libro.recibidoElegir": "{n} versículos já tinham outro texto. Guardou-se também a versão de {nombre}: ao abrir esses versículos no editor você pode escolher qual fica.",
-  "libro.recibirOtro": "Receber outro trabalho"
+  "libro.recibirOtro": "Receber outro trabalho",
+  "marco.introLibro": "Introdução ao livro",
+  "marco.introCapitulo": "Introdução",
+  "marco.introLibroCorta": "Livro",
+  "marco.introCapituloCorta": "Intro.",
+  "ayudas.versiculo": "Versículo {v}",
+  "marco.verPor": "Ver por",
+  "marco.porVersiculo": "Versículo",
+  "marco.porSeccion": "Seção"
 }

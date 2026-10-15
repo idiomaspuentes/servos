@@ -7,7 +7,17 @@ import { HELPS_ALIGN_VERSION } from '@bt-synergy/resource-pipeline/helps/helpsAl
 import { NOTES_PREPARE_VERSION } from '@bt-synergy/resource-pipeline/notes/notesPreparer'
 import { SCRIPTURE_PREPARE_VERSION } from '@bt-synergy/resource-pipeline/scripture/scripturePreparer'
 import { describePack, openPack } from './packs'
-import { booksOfText, notesOfVerse, readChapter, referenceCovers, resourcesOnDevice, textQuoteOf, versesInLines, wordsInLines } from './reading'
+import {
+  booksOfText,
+  introsOf,
+  notesOfVerse,
+  readChapter,
+  referenceCovers,
+  resourcesOnDevice,
+  textQuoteOf,
+  versesInLines,
+  wordsInLines,
+} from './reading'
 import { RESOURCE_VERSIONS, openResourceStores } from './store'
 
 const GLT = 'es-419_gl/es-419/glt'
@@ -211,6 +221,13 @@ describe('leer sin internet', () => {
     ])
     expect(chapter.lines[2][1].pieces.find((p) => p.text === 'Qué')?.word).toBe(1)
     expect(chapter.words[0]).toEqual({ verse: 2, own: 'jon 2:2:clamé:1', originals: ['jon 2:2:קראתי:1'] })
+  })
+
+  it('la introducción sola del capítulo 1 es la del libro cuando su título no nombra el capítulo', async () => {
+    const { stores } = await deviceWithPack()
+    // The fixture's only intro note in Titus 1 is «Introducción», no heading naming chapter 1.
+    expect(await introsOf(stores, TN, 'tit', 1)).toEqual({ book: 'Introducción', chapter: null })
+    expect(await introsOf(stores, TN, 'tit', 2)).toEqual({ book: null, chapter: null })
   })
 
   it('una referencia cubre los versículos de su rango y nada más', () => {

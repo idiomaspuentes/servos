@@ -10,7 +10,7 @@ import { useT } from '../i18n/i18n'
 import type { MiniApp, MiniAppContext, Position, Unit } from '../miniapps/contract'
 import { HelpsPanel } from './HelpsPanel'
 import { keepFocus } from './Panes'
-import { PlacePicker, rangeOf, stopsOf } from './PlacePicker'
+import { PlacePicker, passageOf, stopsOf } from './PlacePicker'
 import { MenuRow, Sheet } from './Sheet'
 
 /**
@@ -106,11 +106,16 @@ export function MiniAppScreen({
       /* chosen for this visit */
     }
   }
-  const stops = stopsOf(data, unit)
+  const stops = stopsOf(data, unit, app.intros)
   const at = Math.max(0, stops.findIndex((s) => s.includes(position.verse)))
   const shown = stops[at] ?? [position.verse]
   const goStop = (index: number) => onPosition({ ...position, verse: stops[index][0] })
-  const passage = `${data.book.name} ${position.chapter}:${rangeOf(shown)}`
+  const passage = passageOf(data.book.name, position.chapter, shown, t)
+  // A place another mini app left (an introduction, where this one has none) becomes this one's first stop.
+  const lost = !stops.some((s) => s.includes(position.verse))
+  useEffect(() => {
+    if (lost && stops[0]) onPosition({ ...position, verse: stops[0][0] })
+  }, [lost]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // The arrows go on past the chapter's end into the next one (and back): a chapter is not a wall, and the person is
   // told in passing that a new one began, so they do not lose their place.
@@ -126,7 +131,7 @@ export function MiniAppScreen({
   const cross = (chapter: number, last: boolean) => {
     const next = dataOf(chapter)
     if (!next) return
-    const s = stopsOf(next, unit)
+    const s = stopsOf(next, unit, app.intros)
     onPosition({ ...position, chapter, verse: (last ? s[s.length - 1] : s[0])[0] })
     setCrossed(chapter)
   }
@@ -152,7 +157,7 @@ export function MiniAppScreen({
         if (other) onTextAbbreviation(other.abbreviation)
       },
       showChapter: () => setChapter(true),
-      helps: () => <HelpsPanel data={data} verse={position.verse} textAbbreviation={text.abbreviation} onMark={onMark} />,
+      helps: (verses) => <HelpsPanel data={data} verse={position.verse} verses={verses} textAbbreviation={text.abbreviation} onMark={onMark} />,
       setSaved,
       setUnit,
       next: following,
@@ -215,6 +220,7 @@ export function MiniAppScreen({
           chapter={position.chapter}
           verse={position.verse}
           unit={unit}
+          onUnit={app.sections ? setUnit : undefined}
           onGo={(chapter, verse) => {
             onPosition({ ...position, chapter, verse })
             setVerseList(false)

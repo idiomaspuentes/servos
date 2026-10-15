@@ -6,7 +6,7 @@
 import { useState } from 'react'
 import { chapterOf, chaptersOf } from '../prototype/data'
 import { MiniAppScreen } from './frame/MiniAppScreen'
-import type { Position } from './miniapps/contract'
+import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type Position } from './miniapps/contract'
 import { miniApp } from './miniapps/registry'
 import { loadProjects, saveProjects, type Phase, type Project } from './projects/model'
 import { keepPlace, placeOf } from './projects/work'
@@ -51,22 +51,31 @@ export function App() {
   const [addProject, setAddProject] = useState(false)
   const [addBookFor, setAddBookFor] = useState<string | null>(null)
   const [position, setPositionState] = useState<Position>({ book: 'tit', chapter: 1, verse: 1 })
-  // Each person's place in each book is kept: opening the book again, on this computer, goes back there.
-  const setPosition = (p: Position) => {
+  // Each person's place in each book is kept for each mini app (reading and translating go at their own pace):
+  // opening it again, on this computer, goes back there.
+  const setPosition = (p: Position, app = screen.kind === 'app' ? screen.id : '') => {
     setPositionState(p)
-    keepPlace(person, p.book, { chapter: p.chapter, verse: p.verse })
+    keepPlace(person, p.book, app, { chapter: p.chapter, verse: p.verse })
   }
-  const openAt = (book: string, chapter?: number) => {
+  // Where a mini app opens: at a chapter's start when one is chosen, else where the person left it, else at the book's
+  // start. A start is the introduction for a mini app that reads them.
+  const openAt = (book: string, app: MiniApp, chapter?: number) => {
     const chapters = chaptersOf(book)
     if (!chapters.length) return
-    const kept = placeOf(person, book)
+    const startOf = (c: number) => {
+      const data = chapterOf(book, c)
+      if (app.intros && data?.bookIntro && chapter === undefined) return BOOK_INTRO
+      if (app.intros && data?.intro) return CHAPTER_INTRO
+      return data?.verses[0]?.verse ?? 1
+    }
+    const kept = placeOf(person, book, app.id)
     const place =
       chapter !== undefined
-        ? { chapter, verse: chapterOf(book, chapter)?.verses[0]?.verse ?? 1 }
+        ? { chapter, verse: startOf(chapter) }
         : kept && chapterOf(book, kept.chapter)
           ? kept
-          : { chapter: chapters[0], verse: chapterOf(book, chapters[0])?.verses[0]?.verse ?? 1 }
-    setPosition({ book, ...place })
+          : { chapter: chapters[0], verse: startOf(chapters[0]) }
+    setPosition({ book, ...place }, app.id)
   }
   const [text, setText] = useState('TPL')
 
@@ -129,7 +138,7 @@ export function App() {
           chapters={chaptersFor(bookScreen.book)}
           onBack={home}
           onOpen={(app, chapter) => {
-            openAt(bookScreen.book, chapter)
+            openAt(bookScreen.book, app, chapter)
             setScreen({ kind: 'app', projectId: bookScreen.projectId, book: bookScreen.book, id: app.id })
           }}
           onPhase={(phase) => setPhase(bookScreen.projectId, bookScreen.book, phase)}

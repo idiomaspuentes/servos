@@ -5,8 +5,8 @@
  */
 
 import { useEffect, useRef, type ReactNode } from 'react'
-import type { PrototypeText } from '../../../prototype/data'
-import { WordLines } from '../../frame/TouchWords'
+import type { PrototypeText } from '../../prototype/data'
+import { WordLines } from './TouchWords'
 
 export function ChapterLines({
   text,

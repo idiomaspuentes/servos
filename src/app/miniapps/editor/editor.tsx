@@ -9,10 +9,10 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Panes, type Pane } from '../../frame/Panes'
-import { helpsOfWord, litPlaces, WordHelpCard, type Touched } from '../../frame/TouchWords'
+import { useWordHelps } from '../../frame/TouchWords'
 import type { MiniApp, MiniAppCenterProps } from '../contract'
 import { authorOf, chooseVersion, otherVersion, readDraft, writeDraft, type OtherVersion } from '../../projects/work'
-import { ChapterLines } from './ChapterLines'
+import { ChapterLines } from '../../frame/ChapterLines'
 import { LineFields, lineFieldId } from './LineFields'
 
 /** Lines of a poem (`\q`, `\q1`, `\q2`…), not the poem's headings or notes (`\qa`, `\qd`…). */
@@ -29,24 +29,19 @@ function readOthers(book: string, chapter: number, verses: number[]): Record<num
 }
 
 function Center({ context }: MiniAppCenterProps) {
-  const { position, marked, t, data, textAbbreviation, frame, unit, shown, goTo } = context
+  const { position, marked, t, data, textAbbreviation, frame, shown, goTo } = context
   // What is open: the verse, or the verses of its section. Within a section the position follows the verse being
   // written (so the helps are that verse's), and nothing else changes.
   const openKey = `${position.book}.${position.chapter}.${shown.join(',')}`
   const [drafts, setDrafts] = useState(() => readDrafts(position.book, position.chapter, shown))
   const [others, setOthers] = useState(() => readOthers(position.book, position.chapter, shown))
   const [shownKey, setShownKey] = useState(openKey)
-  const [touched, setTouched] = useState<Touched | null>(null)
   // The line the cursor is in, by its field's id (`editor-v2`, `editor-v2-l3`): the texts show the same line apart.
   const [writingLine, setWritingLine] = useState<{ verse: number; line: number } | null>(null)
-  // Whether the person opened the helps pane here: only then does the note open there light its words.
-  const [helpsRead, setHelpsRead] = useState(false)
   if (shownKey !== openKey) {
     setShownKey(openKey)
     setDrafts(readDrafts(position.book, position.chapter, shown))
     setOthers(readOthers(position.book, position.chapter, shown))
-    setTouched(null)
-    setHelpsRead(false)
   }
 
   // Going on to another verse or section while writing: the cursor goes to its first line, and the keyboard stays up.
@@ -90,17 +85,7 @@ function Center({ context }: MiniAppCenterProps) {
   const markersOf = (verse: number) => (bridge.lines[verse] ?? []).map((l) => l.marker)
   const anyPoem = shown.some((v) => markersOf(v).some(isPoemLine))
 
-  // Without a touched word, the note read in the helps pane lights its words (`marked` is its quote in the bridge text).
-  const openNote = marked && helpsRead ? data.verses.find((v) => v.verse === position.verse)?.notes.find((n) => (bridge.abbreviation === 'TPS' ? n.gst : n.glt) === marked) : undefined
-  const lit = (abbreviation: string) => (touched ? litPlaces(touched, abbreviation) : new Set(openNote?.places[abbreviation] ?? []))
-  const touch = (abbreviation: string, verse: number, place: number) =>
-    setTouched((now) =>
-      now && now.abbreviation === abbreviation && now.place === place ? null : { abbreviation, verse, place, helps: helpsOfWord(data, abbreviation, place), index: 0 }
-    )
-  const card = (abbreviation: string, verse: number) =>
-    touched && touched.abbreviation === abbreviation && touched.verse === verse ? (
-      <WordHelpCard data={data} touched={touched} onIndex={(index) => setTouched({ ...touched, index })} onClose={() => setTouched(null)} />
-    ) : null
+  const { lit, touch, card, helpsOpened } = useWordHelps({ data, resetKey: openKey, marked, bridge: bridge.abbreviation, verses: [position.verse] })
   const hint = t('editor.toquePalabra')
 
   const write = (verse: number, value: string) => {
@@ -115,21 +100,10 @@ function Center({ context }: MiniAppCenterProps) {
     frame.setSaved('guardado')
   }
 
-  const unitSwitch = (
-    <div className="edit-unit" role="radiogroup" aria-label={t('editor.trabajarPor')}>
-      {(['verse', 'section'] as const).map((u) => (
-        <button key={u} type="button" role="radio" aria-checked={unit === u} className="edit-unit-option" onClick={() => frame.setUnit(u)}>
-          {t(u === 'verse' ? 'editor.unVersiculo' : 'editor.unaSeccion')}
-        </button>
-      ))}
-    </div>
-  )
-
   // Only the boxes: the texts to translate from are panes of their own, a swipe away. Both in one pane left each a
   // sliver once the keyboard was up, and the person could not tell the text being written from the one being read.
   const own = (
     <div className="edit-pane">
-      {unitSwitch}
       <p className="edit-where">{t('editor.dondeFuente', { texto: bridge.abbreviation })}</p>
       <div
         className="edit-fields"
@@ -218,7 +192,7 @@ function Center({ context }: MiniAppCenterProps) {
     { id: 'ayudas', label: t('editor.panelAyudas'), content: frame.helps() },
   ]
 
-  return <Panes panes={panes} label={t('editor.paneles')} fixed="suyo" onPane={(id) => id === 'ayudas' && setHelpsRead(true)} />
+  return <Panes panes={panes} label={t('editor.paneles')} fixed="suyo" onPane={(id) => id === 'ayudas' && helpsOpened()} />
 }
 
 export const editor: MiniApp = {
@@ -259,9 +233,6 @@ export const editor: MiniApp = {
       paneles: 'Lo que se ve',
       panelSuyo: 'Su traducción',
       panelAyudas: 'Ayudas',
-      trabajarPor: 'Trabajar por',
-      unVersiculo: 'Un versículo',
-      unaSeccion: 'Una sección',
       toquePalabra: 'toque una palabra para ver sus notas',
       'lengua.hbo': 'Hebreo',
       'lengua.grc': 'Griego',
@@ -291,9 +262,6 @@ export const editor: MiniApp = {
       paneles: 'O que se vê',
       panelSuyo: 'Sua tradução',
       panelAyudas: 'Ajudas',
-      trabajarPor: 'Trabalhar por',
-      unVersiculo: 'Um versículo',
-      unaSeccion: 'Uma seção',
       toquePalabra: 'toque uma palavra para ver suas notas',
       'lengua.hbo': 'Hebraico',
       'lengua.grc': 'Grego',
@@ -323,9 +291,6 @@ export const editor: MiniApp = {
       paneles: 'What is shown',
       panelSuyo: 'Your translation',
       panelAyudas: 'Helps',
-      trabajarPor: 'Work by',
-      unVersiculo: 'One verse',
-      unaSeccion: 'One section',
       toquePalabra: 'touch a word to see its notes',
       'lengua.hbo': 'Hebrew',
       'lengua.grc': 'Greek',

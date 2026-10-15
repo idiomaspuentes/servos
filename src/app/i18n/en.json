@@ -183,5 +183,13 @@
   "libro.recibido": "{nombre}'s work ({que}) came together here: {n} new verses.",
   "libro.recibidoIgual": "{n} verses were already the same.",
   "libro.recibidoElegir": "{n} verses already had another text. {nombre}'s version was kept too: open those verses in the editor to choose which stays.",
-  "libro.recibirOtro": "Receive other work"
+  "libro.recibirOtro": "Receive other work",
+  "marco.introLibro": "Introduction to the book",
+  "marco.introCapitulo": "Introduction",
+  "marco.introLibroCorta": "Book",
+  "marco.introCapituloCorta": "Intro.",
+  "ayudas.versiculo": "Verse {v}",
+  "marco.verPor": "Go by",
+  "marco.porVersiculo": "Verse",
+  "marco.porSeccion": "Section"
 }

@@ -13,7 +13,7 @@ const KEY = 'servos.prototipo'
 const draftKey = (book: string, chapter: number, verse: number) => `${KEY}.borrador.${book}.${chapter}.${verse}`
 const authorKey = (book: string, chapter: number, verse: number) => `${KEY}.autor.${book}.${chapter}.${verse}`
 const otherKey = (book: string, chapter: number, verse: number) => `${KEY}.otra.${book}.${chapter}.${verse}`
-const placeKey = (person: string, book: string) => `${KEY}.posicion.${person}.${book}`
+const placeKey = (person: string, book: string, app: string) => `${KEY}.posicion.${person}.${book}.${app}`
 
 function read(key: string): string | null {
   try {
@@ -126,14 +126,14 @@ export function receiveWork(file: WorkFile): Received {
   return result
 }
 
-/** Where a person was in a book, to open it there again. */
+/** Where a person was in a book with a mini app, to open it there again. */
 export interface Place {
   chapter: number
   verse: number
 }
 
-export function placeOf(person: string, book: string): Place | null {
-  const raw = read(placeKey(person, book))
+export function placeOf(person: string, book: string, app: string): Place | null {
+  const raw = read(placeKey(person, book, app))
   if (!raw) return null
   try {
     return JSON.parse(raw) as Place
@@ -142,4 +142,4 @@ export function placeOf(person: string, book: string): Place | null {
   }
 }
 
-export const keepPlace = (person: string, book: string, place: Place) => write(placeKey(person, book), JSON.stringify(place))
+export const keepPlace = (person: string, book: string, app: string, place: Place) => write(placeKey(person, book, app), JSON.stringify(place))

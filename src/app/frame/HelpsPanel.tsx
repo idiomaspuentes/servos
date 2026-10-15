@@ -13,23 +13,35 @@ import { Sheet } from './Sheet'
 
 type Tab = 'notas' | 'preguntas' | 'palabras'
 
+/** Each help once, though it covers several of the verses shown (a note on 3–4 is in both), with its first verse. */
+function once<T extends { id: string }>(lists: Array<{ verse: number; items: T[] }>): Array<T & { verse: number }> {
+  const out: Array<T & { verse: number }> = []
+  for (const { verse, items } of lists) for (const item of items) if (!out.some((x) => x.id === item.id)) out.push({ ...item, verse })
+  return out
+}
+
 export function HelpsPanel({
   data,
   verse,
+  verses,
   textAbbreviation,
   onMark,
 }: {
   data: PrototypeData
   verse: number
+  /** The verses whose helps to show together (a section's); else the verse's. */
+  verses?: number[]
   textAbbreviation: string
   onMark(words: string | null): void
 }) {
   const t = useT()
   const original = data.texts.find((x) => x.original)
-  const helps = data.verses.find((v) => v.verse === verse)
-  const notes = helps?.notes ?? []
-  const questions = helps?.questions ?? []
-  const words = helps?.words ?? []
+  const shown = verses?.length ? verses : [verse]
+  const of = data.verses.filter((v) => shown.includes(v.verse))
+  const notes = once(of.map((v) => ({ verse: v.verse, items: v.notes })))
+  const questions = once(of.map((v) => ({ verse: v.verse, items: v.questions })))
+  const words = once(of.map((v) => ({ verse: v.verse, items: v.words })))
+  const several = shown.length > 1
   const [tab, setTab] = useState<Tab>('notas')
   const [index, setIndex] = useState(0)
   const [answer, setAnswer] = useState(false)
@@ -38,10 +50,12 @@ export function HelpsPanel({
   useEffect(() => {
     setIndex(0)
     setAnswer(false)
-  }, [verse, tab])
+  }, [shown.join(','), tab]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const count = tab === 'notas' ? notes.length : tab === 'preguntas' ? questions.length : words.length
   const note = tab === 'notas' ? notes[index] : undefined
+  // In a section, which verse the help shown is on.
+  const current = tab === 'notas' ? notes[index] : tab === 'preguntas' ? questions[index] : words[index]
   const marked = note ? (textAbbreviation === 'TPS' ? note.gst : note.glt) : null
   useEffect(() => onMark(marked), [marked, onMark])
   // In a pane, the next help starts at its first line, wherever the last one left the scroll.
@@ -65,6 +79,7 @@ export function HelpsPanel({
       </div>
 
       <div className="helps-card" role="tabpanel">
+        {several && current && <p className="help-verse">{t('ayudas.versiculo', { v: current.verse })}</p>}
         {count === 0 && (
           <p className="quiet">
             {t(tab === 'notas' ? 'ayudas.sinNotas' : tab === 'preguntas' ? 'ayudas.sinPreguntas' : 'ayudas.sinPalabras')}
