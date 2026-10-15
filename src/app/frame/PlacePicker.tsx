@@ -65,6 +65,10 @@ export function PlacePicker({
   const [open, setOpen] = useState(chapter)
   const data = dataOf(open)
   const stops = data ? stopsOf(data, unit, app.intros) : []
+  const writersHere =
+    app.writes && data
+      ? [...new Set(data.verses.map((v) => authorOf(bookId, open, v.verse)).filter((x): x is string => Boolean(x)))].sort()
+      : []
   const doneIn = (c: number, verses: number[]) =>
     app.done && verses[0] > 0 ? verses.filter((v) => app.done!({ book: bookId, chapter: c, verse: v })).length : null
 
@@ -97,7 +101,9 @@ export function PlacePicker({
             >
               <span className="chapter-cell-number">{c}</span>
               {done !== null && (
-                <span className="chapter-cell-done">{t('marco.hechosDe', { hechos: done, total: verses.length })}</span>
+                <span className="chapter-cell-done">
+                  {t('libro.hechosDe', { hechos: done, total: verses.length, pct: verses.length ? Math.floor((100 * done) / verses.length) : 0 })}
+                </span>
               )}
               {people.length > 0 && <span className="chapter-cell-people">{people.map(([name]) => name).join(', ')}</span>}
             </button>
@@ -108,6 +114,10 @@ export function PlacePicker({
       <h3 className="picker-heading">
         {t(unit === 'section' ? 'marco.seccionesDe' : 'marco.versiculosDe', { libro: bookName, capitulo: open })}
       </h3>
+      {/* The letters on the verses are who wrote them: said once, under them. */}
+      {writersHere.length > 0 && (
+        <p className="quiet picker-legend">{writersHere.map((name) => t('marco.inicialDe', { inicial: initials(name), nombre: name })).join(' · ')}</p>
+      )}
       <div className={unit === 'section' ? 'verse-grid is-sections' : 'verse-grid'}>
         {stops.map((s) => {
           const here = open === chapter && s.includes(verse)

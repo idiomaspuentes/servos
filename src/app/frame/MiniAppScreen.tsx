@@ -193,7 +193,8 @@ export function MiniAppScreen({
     <div className={`screen screen-app${app.fills ? ' screen-fill' : ''}${app.fills && keyboard ? ' is-writing' : ''}`} style={box}>
       <header className="header">
         <button type="button" className="button-quiet header-back" onClick={onBack}>
-          ‹ {backLabel ?? t('marco.volver')}
+          {/* Where it goes back to: the mini app it was opened from, or the book. */}
+          ‹ {backLabel ?? data.book.name}
         </button>
         <div className="header-title">
           <span className="header-app">{t(`${app.id}.nombre`)}</span>
@@ -202,9 +203,14 @@ export function MiniAppScreen({
             {app.writes && ` · ${t(saved === 'guardado' ? 'marco.guardadoAqui' : 'marco.sinCambios')}`}
           </span>
         </div>
-        <button type="button" className="button-quiet" onClick={() => setMore(true)}>
-          {t('marco.mas')}
-        </button>
+        {/* «More» only when the mini app has something there: an empty or make-believe menu is not offered. */}
+        {app.more?.length ? (
+          <button type="button" className="button-quiet" onClick={() => setMore(true)}>
+            {t('marco.mas')}
+          </button>
+        ) : (
+          <span />
+        )}
       </header>
 
       <nav className="position" aria-label={passage}>

@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Panes, type Pane } from '../../frame/Panes'
+import { Panes, type Pane, useWide } from '../../frame/Panes'
 import { glossedPlaces, useWordHelps, type GlossaryTarget } from '../../frame/TouchWords'
 import { readGlossaryFor, saveGlossaryEntry } from '../../projects/glossary'
 import { GlossarySheet } from './GlossarySheet'
@@ -109,6 +109,24 @@ function Center({ context }: MiniAppCenterProps) {
     onGlossary: setAdding,
   })
   const hint = t('editor.toquePalabra')
+  // How to reach the text to translate from is said until the person has gone there once: then it is known.
+  const wide = useWide()
+  const [sawSource, setSawSource] = useState(() => {
+    try {
+      return localStorage.getItem(SAW_SOURCE) === '1'
+    } catch {
+      return false
+    }
+  })
+  const sawIt = () => {
+    if (sawSource) return
+    setSawSource(true)
+    try {
+      localStorage.setItem(SAW_SOURCE, '1')
+    } catch {
+      /* said again next time */
+    }
+  }
 
   const write = (verse: number, value: string) => {
     setDrafts((now) => ({ ...now, [verse]: value }))
@@ -126,7 +144,7 @@ function Center({ context }: MiniAppCenterProps) {
   // sliver once the keyboard was up, and the person could not tell the text being written from the one being read.
   const own = (
     <div className="edit-pane">
-      <p className="edit-where">{t('editor.dondeFuente', { texto: bridge.abbreviation })}</p>
+      {!wide && !sawSource && <p className="edit-where">{t('editor.dondeFuente', { texto: bridge.abbreviation })}</p>}
       <div
         className="edit-fields"
         onFocus={(event) => {
@@ -217,7 +235,15 @@ function Center({ context }: MiniAppCenterProps) {
 
   return (
     <>
-      <Panes panes={panes} label={t('editor.paneles')} fixed="suyo" onPane={(id) => id === 'ayudas' && helpsOpened()} />
+      <Panes
+        panes={panes}
+        label={t('editor.paneles')}
+        fixed="suyo"
+        onPane={(id) => {
+          if (id === 'ayudas') helpsOpened()
+          if (id !== 'suyo') sawIt()
+        }}
+      />
       {adding && (
         <GlossarySheet
           data={data}
@@ -237,6 +263,8 @@ function Center({ context }: MiniAppCenterProps) {
   )
 }
 
+const SAW_SOURCE = 'servos.prototipo.vioLaFuente'
+
 export const editor: MiniApp = {
   id: 'editor',
   needs: ['text', 'notes', 'words'],
@@ -253,17 +281,12 @@ export const editor: MiniApp = {
     returning: 'editor.guardarVolver',
     run: (c) => c.frame.next(),
   },
-  more: [
-    { label: 'editor.unir', description: 'editor.unirAyuda', run: () => {} },
-    { label: 'editor.deshacer', description: 'editor.deshacerAyuda', run: () => {} },
-    { label: 'editor.grabar', description: 'editor.grabarAyuda', run: () => {} },
-  ],
   texts: {
     es: {
       nombre: 'Editor',
       descripcion: 'Escribir el versículo en su idioma, con el texto puente al lado',
       textoPuente: 'Texto puente: {texto}',
-      dondeFuente: 'Para leer el {texto}, deslice a la izquierda o toque «{texto}» arriba.',
+      dondeFuente: 'Para leer el {texto}, deslice a la izquierda o toque «{texto}» abajo.',
       otraVersion: '{nombre} escribió este versículo de otra manera:',
       glosario: 'Glosario',
       glosarioSinOriginal: '«{palabra}» no está alineada con el original: no se sabe de qué palabra es.',
@@ -291,18 +314,12 @@ export const editor: MiniApp = {
       'lengua.original': 'Original',
       guardarSeguir: 'Guardar y seguir',
       guardarVolver: 'Guardar y volver',
-      unir: 'Unir con el siguiente versículo',
-      unirAyuda: 'Cuando su idioma dice los dos versículos en una sola frase',
-      deshacer: 'Deshacer',
-      deshacerAyuda: 'Volver a como estaba antes del último cambio',
-      grabar: 'Grabar en voz',
-      grabarAyuda: 'Decir el versículo en lugar de escribirlo (pronto)',
     },
     pt: {
       nombre: 'Editor',
       descripcion: 'Escrever o versículo no seu idioma, com o texto ponte ao lado',
       textoPuente: 'Texto ponte: {texto}',
-      dondeFuente: 'Para ler o {texto}, deslize para a esquerda ou toque «{texto}» acima.',
+      dondeFuente: 'Para ler o {texto}, deslize para a esquerda ou toque «{texto}» abaixo.',
       otraVersion: '{nombre} escreveu este versículo de outro jeito:',
       glosario: 'Glossário',
       glosarioSinOriginal: '«{palabra}» não está alinhada com o original: não se sabe de que palavra é.',
@@ -330,18 +347,12 @@ export const editor: MiniApp = {
       'lengua.original': 'Original',
       guardarSeguir: 'Salvar e seguir',
       guardarVolver: 'Salvar e voltar',
-      unir: 'Juntar com o próximo versículo',
-      unirAyuda: 'Quando seu idioma diz os dois versículos numa só frase',
-      deshacer: 'Desfazer',
-      deshacerAyuda: 'Voltar a como estava antes da última mudança',
-      grabar: 'Gravar em voz',
-      grabarAyuda: 'Dizer o versículo em vez de escrevê-lo (em breve)',
     },
     en: {
       nombre: 'Editor',
       descripcion: 'Write the verse in your language, with the bridge text beside it',
       textoPuente: 'Bridge text: {texto}',
-      dondeFuente: 'To read the {texto}, swipe left or touch «{texto}» above.',
+      dondeFuente: 'To read the {texto}, swipe left or touch «{texto}» below.',
       otraVersion: '{nombre} wrote this verse another way:',
       glosario: 'Glossary',
       glosarioSinOriginal: '«{palabra}» is not aligned to the original: which word it stands for is unknown.',
@@ -369,12 +380,6 @@ export const editor: MiniApp = {
       'lengua.original': 'Original',
       guardarSeguir: 'Save and continue',
       guardarVolver: 'Save and go back',
-      unir: 'Join with the next verse',
-      unirAyuda: 'When your language says both verses in one sentence',
-      deshacer: 'Undo',
-      deshacerAyuda: 'Go back to how it was before the last change',
-      grabar: 'Record by voice',
-      grabarAyuda: 'Say the verse instead of writing it (coming soon)',
     },
   },
 }

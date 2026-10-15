@@ -54,9 +54,11 @@ export function ProjectSettings({ project, onBack, onSave }: { project: Project;
             ))}
           </fieldset>
         ))}
-        <button type="button" className="button-primary" onClick={() => onSave({ ...project, miniApps: chosen })}>
-          {t('ajustes.guardar')}
-        </button>
+        <div className="settings-save">
+          <button type="button" className="button-primary" onClick={() => onSave({ ...project, miniApps: chosen })}>
+            {t('ajustes.guardar')}
+          </button>
+        </div>
       </main>
     </div>
   )

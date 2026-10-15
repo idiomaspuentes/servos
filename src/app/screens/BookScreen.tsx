@@ -93,7 +93,7 @@ export function BookScreen({
     <div className="screen">
       <header className="header">
         <button type="button" className="button-quiet header-back" onClick={onBack}>
-          ‹ {t('marco.volver')}
+          ‹ {t('marco.inicio')}
         </button>
         <div className="header-title">
           <span className="header-app">{name}</span>

@@ -207,6 +207,9 @@ textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
 .translate-group-name { font-weight: 600; }
 .translate-group-count { font-size: 0.85rem; color: var(--text-soft); font-variant-numeric: tabular-nums; }
 .translate-progress { margin: 0; }
+.picker-legend { margin: -0.25rem 0 0.25rem; font-size: 0.85rem; }
+/* The settings' one button stays in sight at the foot while the mini apps are chosen */
+.settings-save { position: sticky; bottom: 0; z-index: 2; margin-inline: -1rem; padding: 0.5rem 1rem calc(0.5rem + env(safe-area-inset-bottom, 0px)); background: var(--bg); border-block-start: 1px solid var(--line); }
 /* The long-phrases test, on: floating over every screen, with its way out */
 .test-mode-bar { position: fixed; inset-inline: 0; bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)); z-index: 40; width: max-content; max-width: calc(100% - 2rem); margin-inline: auto; display: flex; align-items: center; gap: 0.6rem; padding: 0.3rem 0.4rem 0.3rem 0.9rem; border-radius: 999px; background: var(--text); color: var(--bg); box-shadow: 0 4px 14px rgb(0 0 0 / 0.3); font-size: 0.9rem; font-weight: 600; }
 .test-mode-bar button { width: auto; min-height: var(--touch); padding-inline: 0.9rem; border: 0; border-radius: 999px; background: var(--accent); color: var(--accent-text); font-weight: 700; }

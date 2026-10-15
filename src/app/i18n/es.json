@@ -108,7 +108,7 @@
   "agregar.recibir": "Recibir un proyecto",
   "agregar.recibirAyuda": "Abrir un proyecto o un paquete que llegó por tarjeta, USB o Bluetooth",
   "nuevo.titulo": "Nueva Biblia",
-  "nuevo.ayuda": "Todo esto se puede cambiar después.",
+  "nuevo.ayuda": "Las mini apps de cada paso se pueden cambiar después, en los ajustes del proyecto.",
   "nuevo.nombre": "Nombre del proyecto",
   "nuevo.nombreEjemplo": "Biblia en kichwa",
   "nuevo.idioma": "Idioma",
@@ -474,5 +474,7 @@
   "idiomas.codigo": "Código",
   "interfaz.grupo.idiomas": "Elegir un idioma",
   "idioma.pruebaPuesta": "Prueba de frases largas",
-  "idioma.quitarPrueba": "Quitar la prueba"
+  "idioma.quitarPrueba": "Quitar la prueba",
+  "marco.inicio": "Inicio",
+  "marco.inicialDe": "{inicial}: {nombre}"
 }
