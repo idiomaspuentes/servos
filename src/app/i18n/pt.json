@@ -108,7 +108,7 @@
   "agregar.recibir": "Receber um projeto",
   "agregar.recibirAyuda": "Abrir um projeto ou um pacote que chegou por cartão, USB ou Bluetooth",
   "nuevo.titulo": "Nova Bíblia",
-  "nuevo.ayuda": "As mini apps de cada etapa podem ser trocadas depois, nos ajustes do projeto.",
+  "nuevo.ayuda": "Tudo isto pode ser trocado depois, nos ajustes do projeto.",
   "nuevo.nombre": "Nome do projeto",
   "nuevo.nombreEjemplo": "Bíblia em kichwa",
   "nuevo.idioma": "Idioma",
@@ -151,7 +151,6 @@
   "ajustes.miniAppsAyuda": "Quem coordena o projeto escolhe com o que se trabalha em cada passo. Todos os telefones do projeto veem o mesmo.",
   "ajustes.usar": "Usar",
   "ajustes.guardar": "Salvar os ajustes",
-  "ajustes.idioma": "{idioma} ({codigo}) · {direccion}",
   "interfaz.grupo.pasos": "Passos de um livro",
   "interfaz.grupo.inicio": "Tela inicial",
   "interfaz.grupo.agregar": "Adicionar um projeto",
@@ -476,5 +475,7 @@
   "idioma.pruebaPuesta": "Teste de frases longas",
   "idioma.quitarPrueba": "Tirar o teste",
   "marco.inicio": "Início",
-  "marco.inicialDe": "{inicial}: {nombre}"
+  "marco.inicialDe": "{inicial}: {nombre}",
+  "ajustes.elProyecto": "O projeto",
+  "ajustes.falta": "Escreva o nome e escolha o idioma."
 }

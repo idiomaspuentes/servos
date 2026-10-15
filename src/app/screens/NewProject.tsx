@@ -24,11 +24,11 @@ export function AddProjectSheet({ onClose, onBible, onReceive }: { onClose(): vo
   )
 }
 
-const FONTS = ['Charis SIL', 'Andika', 'Gentium Plus', 'Noto Sans']
-const VERSIFICATIONS = ['eng', 'org', 'lxx', 'vul', 'rsc']
+export const FONTS = ['Charis SIL', 'Andika', 'Gentium Plus', 'Noto Sans']
+export const VERSIFICATIONS = ['eng', 'org', 'lxx', 'vul', 'rsc']
 
 /** The language packs on this phone (the prototype has one). */
-const PACKS = [{ code: 'es-419', name: 'Español latinoamericano', what: 'TPL, TPS, notas, preguntas, palabras, academia' }]
+export const PACKS = [{ code: 'es-419', name: 'Español latinoamericano', what: 'TPL, TPS, notas, preguntas, palabras, academia' }]
 
 export function NewProject({ existing, onCancel, onCreate }: { existing: Project[]; onCancel(): void; onCreate(p: Project): void }) {
   const t = useT()

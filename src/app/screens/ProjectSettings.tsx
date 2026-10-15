@@ -1,25 +1,43 @@
 /**
- * A project's settings, on its card as in translationCore 4 (`ProjectSettings.jsx`): the language, and — Servos's
- * own — which mini apps each step uses. Whoever coordinates chooses; every phone in the project then sees the same,
- * so the person translating never has to choose.
+ * A project's settings, on its card as in translationCore 4 (`ProjectSettings.jsx`): its name, its language (searched in
+ * Door43's list, as when it was created) and the direction it is written in, and — Servos's own — which mini apps each
+ * step uses. Whoever coordinates chooses; every phone in the project then sees the same, so the person translating
+ * never has to choose.
  */
 
 import { useState } from 'react'
+import { LanguageSearch } from '../frame/LanguageSearch'
 import { useT } from '../i18n/i18n'
 import { miniAppsFor } from '../miniapps/registry'
+import { writtenRightToLeft } from '../projects/languages'
 import { PHASES, type Phase, type Project } from '../projects/model'
+import { FONTS, PACKS, VERSIFICATIONS } from './NewProject'
 
 export function ProjectSettings({ project, onBack, onSave }: { project: Project; onBack(): void; onSave(p: Project): void }) {
   const t = useT()
+  const [name, setName] = useState(project.name)
+  const [language, setLanguage] = useState({ code: project.languageCode, name: project.languageName })
+  const [direction, setDirection] = useState(project.direction)
+  const [font, setFont] = useState(project.font)
+  const [versification, setVersification] = useState(project.versification)
+  const [helps, setHelps] = useState(project.helpsLanguage)
   const [chosen, setChosen] = useState<Record<Phase, string[]>>(project.miniApps)
+  const [missing, setMissing] = useState(false)
   const toggle = (phase: Phase, id: string) =>
     setChosen((c) => ({ ...c, [phase]: c[phase].includes(id) ? c[phase].filter((x) => x !== id) : [...c[phase], id] }))
+  const save = () => {
+    if (!name.trim() || !language.name.trim() || !language.code.trim()) {
+      setMissing(true)
+      return
+    }
+    onSave({ ...project, name: name.trim(), languageName: language.name.trim(), languageCode: language.code.trim().toLowerCase(), direction, font, versification, helpsLanguage: helps, miniApps: chosen })
+  }
 
   return (
     <div className="screen">
       <header className="header">
         <button type="button" className="button-quiet header-back" onClick={onBack}>
-          ‹ {t('marco.volver')}
+          ‹ {t('marco.inicio')}
         </button>
         <div className="header-title">
           <span className="header-app">{t('ajustes.titulo')}</span>
@@ -28,13 +46,65 @@ export function ProjectSettings({ project, onBack, onSave }: { project: Project;
         <span />
       </header>
       <main className="main">
-        <p className="quiet">
-          {t('ajustes.idioma', {
-            idioma: project.languageName,
-            codigo: project.languageCode,
-            direccion: t(project.direction === 'ltr' ? 'nuevo.izquierda' : 'nuevo.derecha'),
-          })}
-        </p>
+        <h1>{t('ajustes.elProyecto')}</h1>
+        <label className="field">
+          <span className="field-label">{t('nuevo.nombre')}</span>
+          <input value={name} onChange={(e) => (setName(e.target.value), setMissing(false))} />
+        </label>
+        <LanguageSearch
+          label={t('nuevo.idioma')}
+          value={language}
+          onChange={(l) => {
+            setLanguage(l)
+            setMissing(false)
+            // A language written from right to left sets the direction; it can still be changed below.
+            if (l.code && l.code !== project.languageCode) setDirection(writtenRightToLeft(l.code) ? 'rtl' : 'ltr')
+          }}
+        />
+        <fieldset className="field">
+          <legend className="field-label">{t('nuevo.direccion')}</legend>
+          <div className="choice-row">
+            {(['ltr', 'rtl'] as const).map((d) => (
+              <button key={d} type="button" className={direction === d ? 'choice is-on' : 'choice'} aria-pressed={direction === d} onClick={() => setDirection(d)}>
+                {t(d === 'ltr' ? 'nuevo.izquierda' : 'nuevo.derecha')}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset className="field">
+          <legend className="field-label">{t('nuevo.ayudas')}</legend>
+          {PACKS.map((p) => (
+            <button key={p.code} type="button" className={helps === p.code ? 'option is-on' : 'option'} aria-pressed={helps === p.code} onClick={() => setHelps(p.code)}>
+              <span className="option-title">
+                {p.name} ({p.code})
+              </span>
+              <span className="quiet">
+                {t('nuevo.enEsteTelefono')} · {p.what}
+              </span>
+            </button>
+          ))}
+        </fieldset>
+        <label className="field">
+          <span className="field-label">{t('nuevo.letra')}</span>
+          <select value={font} onChange={(e) => setFont(e.target.value)}>
+            {[...new Set([font, ...FONTS])].map((f) => (
+              <option key={f}>{f}</option>
+            ))}
+          </select>
+        </label>
+        <details className="advanced">
+          <summary>{t('nuevo.versificacion')}</summary>
+          <label className="field">
+            <span className="quiet">{t('nuevo.versificacionAyuda')}</span>
+            <select value={versification} onChange={(e) => setVersification(e.target.value)}>
+              {[...new Set([versification, ...VERSIFICATIONS])].map((v) => (
+                <option key={v}>{v}</option>
+              ))}
+            </select>
+          </label>
+        </details>
+
         <h1>{t('ajustes.miniApps')}</h1>
         <p className="quiet">{t('ajustes.miniAppsAyuda')}</p>
         {PHASES.map((phase) => (
@@ -55,7 +125,12 @@ export function ProjectSettings({ project, onBack, onSave }: { project: Project;
           </fieldset>
         ))}
         <div className="settings-save">
-          <button type="button" className="button-primary" onClick={() => onSave({ ...project, miniApps: chosen })}>
+          {missing && (
+            <p className="notice" role="alert">
+              {t('ajustes.falta')}
+            </p>
+          )}
+          <button type="button" className="button-primary" onClick={save}>
             {t('ajustes.guardar')}
           </button>
         </div>
