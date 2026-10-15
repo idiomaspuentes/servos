@@ -187,21 +187,27 @@ function Center({ context }: MiniAppCenterProps) {
         <p className="word-help-kind">
           {t(`revisorNotas.cat.${item.category}`)} · {item.chapter}:{item.verse}
         </p>
-        {/* What the note is about, first: notes begin by speaking of it («This phrase…»). In each text, as the
-            reference below can be changed, and since a note may point to the wording of one of them. */}
-        <dl className="review-quote">
-          {data.texts.map((x) => {
-            const quote = wordsOf(x, item.note.places[x.abbreviation]) || (x.original ? item.note.quote : x.abbreviation === 'TPS' ? item.note.gst : item.note.glt)
-            return quote ? (
-              <div key={x.abbreviation}>
-                <dt>{x.original ? t(`estudio.lengua.${x.lang ?? 'original'}`) : x.abbreviation}</dt>
-                <dd className={x.original ? 'is-original' : undefined} dir={x.dir ?? 'ltr'} lang={x.lang}>
-                  {quote}
-                </dd>
+        {/* What the note is about, first: notes begin by speaking of it («This phrase…»). In one text at a time,
+            the same one the verse below is shown in: choosing it here or there changes both. */}
+        {(() => {
+          const quoteIn = (x: PrototypeData['texts'][number]) =>
+            wordsOf(x, item.note.places[x.abbreviation]) || (x.original ? item.note.quote : x.abbreviation === 'TPS' ? item.note.gst : item.note.glt) || ''
+          const shown = data.texts.find((x) => x.abbreviation === refText) ?? data.texts[0]
+          return (
+            <section className="review-quote" aria-label={t('revisorNotas.cita')}>
+              <div className="review-quote-switch" role="radiogroup" aria-label={t('revisorNotas.textoReferencia')}>
+                {data.texts.map((x) => (
+                  <button key={x.abbreviation} type="button" role="radio" aria-checked={x === shown} onClick={() => setRefText(x.abbreviation)}>
+                    {x.original ? t(`estudio.lengua.${x.lang ?? 'original'}`) : x.abbreviation}
+                  </button>
+                ))}
               </div>
-            ) : null
-          })}
-        </dl>
+              <p className={shown.original ? 'review-quote-text is-original' : 'review-quote-text'} dir={shown.dir ?? 'ltr'} lang={shown.lang}>
+                {quoteIn(shown) || <span className="quiet">{t('revisorNotas.sinAlinear', { texto: shown.abbreviation })}</span>}
+              </p>
+            </section>
+          )
+        })()}
         <h2 className="review-figure">{figureName(item.academy)}</h2>
         <div className="review-note">
           <Markdown text={item.note.note} />
@@ -417,6 +423,7 @@ export const revisorNotas: MiniApp = {
       irSiguiente: 'Ir a la siguiente nota ({lugar})',
       leerArticulo: 'Leer el artículo: {titulo}',
       textoReferencia: 'Texto de referencia',
+      cita: 'De qué habla la nota',
       sinAlinear: 'No se sabe qué palabras del {texto} son: guíese por la nota.',
       queDice: '¿Qué palabras de su traducción dicen esto?',
       noEsta: 'No está en mi traducción',
@@ -463,6 +470,7 @@ export const revisorNotas: MiniApp = {
       irSiguiente: 'Ir para a próxima nota ({lugar})',
       leerArticulo: 'Ler o artigo: {titulo}',
       textoReferencia: 'Texto de referência',
+      cita: 'Do que a nota fala',
       sinAlinear: 'Não se sabe que palavras do {texto} são: guie-se pela nota.',
       queDice: 'Que palavras da sua tradução dizem isto?',
       noEsta: 'Não está na minha tradução',
@@ -509,6 +517,7 @@ export const revisorNotas: MiniApp = {
       irSiguiente: 'Go to the next note ({lugar})',
       leerArticulo: 'Read the article: {titulo}',
       textoReferencia: 'Reference text',
+      cita: 'What the note is about',
       sinAlinear: 'Which words of the {texto} these are is unknown: go by the note.',
       queDice: 'Which words of your translation say this?',
       noEsta: 'It is not in my translation',
