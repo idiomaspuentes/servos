@@ -264,7 +264,6 @@ function NoteSteps({
   }, [step, scroller])
 
   const text = data.texts.find((x) => x.abbreviation === refText) ?? data.texts[0]
-  const lit = new Set(item.note.places[text.abbreviation] ?? [])
   const answer = (status: NoteCheck['status']) =>
     onAnswer({
       status,
@@ -328,19 +327,16 @@ function NoteSteps({
 
         {step === 2 && (
           <>
-            <p className="review-instruction">{t('revisorNotas.busque')}</p>
-            {quote}
-            <div className={text.original ? 'review-ref-text is-original' : 'review-ref-text'} dir={text.dir ?? 'ltr'} lang={text.lang}>
-              <WordLines lines={text.lines[item.verse] ?? []} verse={item.verse} lit={lit} onWord={() => {}} />
-            </div>
+            {/* The verse it is in, the phrase lit, in the same box the quote was in (tabs, or a swipe, change the
+                text): the phrase is seen where it stands, and the translation comes right under it. */}
+            <QuoteBox data={data} note={item.note} shown={text} onShow={onRefText} verse={item.verse} />
             <section className="review-mine">
-              <h3>{t('revisorNotas.suTraduccion')}</h3>
+              <h3>{t('revisorNotas.marqueAqui')}</h3>
               {state === 'cambio' && <p className="notice">{t('revisorNotas.cambio')}</p>}
               {words.length === 0 ? (
                 <p className="notice">{t('revisorNotas.sinTraducir')}</p>
               ) : (
                 <>
-                  <p className="quiet review-hint">{t('revisorNotas.toqueODeslice')}</p>
                   <WordPicker
                     words={words}
                     picked={picked}
@@ -457,11 +453,14 @@ function QuoteBox({
   note,
   shown,
   onShow,
+  verse,
 }: {
   data: PrototypeData
   note: CheckItem['note']
   shown: PrototypeData['texts'][number]
   onShow(abbreviation: string): void
+  /** Show the whole verse, the phrase lit in it, rather than the phrase alone. */
+  verse?: number
 }) {
   const t = useT()
   const [drag, setDrag] = useState(0)
@@ -527,15 +526,24 @@ function QuoteBox({
           </button>
         ))}
       </div>
-      <p
+      <div
         key={shown.abbreviation}
-        className={['review-quote-text', shown.original && 'is-original', enter && `is-entering-${enter}`].filter(Boolean).join(' ')}
+        className={['review-quote-text', verse !== undefined && 'is-verse', shown.original && 'is-original', enter && `is-entering-${enter}`]
+          .filter(Boolean)
+          .join(' ')}
         dir={shown.dir ?? 'ltr'}
         lang={shown.lang}
         style={drag ? { transform: `translateX(${drag}px)`, opacity: 1 - Math.min(Math.abs(drag) / 400, 0.4), transition: 'none' } : undefined}
       >
-        {quote || <span className="quiet">{t('revisorNotas.sinAlinear', { texto: shown.abbreviation })}</span>}
-      </p>
+        {verse !== undefined ? (
+          <>
+            <WordLines lines={shown.lines[verse] ?? []} verse={verse} lit={new Set(note.places[shown.abbreviation] ?? [])} onWord={() => {}} />
+            {!note.places[shown.abbreviation]?.length && <p className="quiet">{t('revisorNotas.sinAlinear', { texto: shown.abbreviation })}</p>}
+          </>
+        ) : (
+          quote || <span className="quiet">{t('revisorNotas.sinAlinear', { texto: shown.abbreviation })}</span>
+        )}
+      </div>
     </section>
   )
 }
@@ -581,9 +589,8 @@ export const revisorNotas: MiniApp = {
       paso3: '¿Se entiende?',
       hablaDe: 'La nota habla de esto:',
       aBuscar: 'Ya la leí: buscarlo en mi traducción',
-      busque: 'Busque esto en su traducción.',
+      marqueAqui: 'En su traducción, toque o deslice el dedo sobre las palabras que dicen lo resaltado:',
       suTraduccion: 'Su traducción',
-      toqueODeslice: 'Toque las palabras que lo dicen, o deslice el dedo sobre ellas.',
       aDecidir: 'Seguir',
       releer: 'Leer la nota otra vez',
       marcoNoEsta: 'Marcó que no está en su traducción.',
@@ -638,9 +645,8 @@ export const revisorNotas: MiniApp = {
       paso3: 'Dá para entender?',
       hablaDe: 'A nota fala disto:',
       aBuscar: 'Já li: encontrar na minha tradução',
-      busque: 'Encontre isto na sua tradução.',
+      marqueAqui: 'Na sua tradução, toque ou deslize o dedo sobre as palavras que dizem o destacado:',
       suTraduccion: 'Sua tradução',
-      toqueODeslice: 'Toque as palavras que dizem isto, ou deslize o dedo sobre elas.',
       aDecidir: 'Seguir',
       releer: 'Ler a nota de novo',
       marcoNoEsta: 'Marcou que não está na sua tradução.',
@@ -695,9 +701,8 @@ export const revisorNotas: MiniApp = {
       paso3: 'Does it read well?',
       hablaDe: 'The note is about this:',
       aBuscar: 'I read it: find it in my translation',
-      busque: 'Find this in your translation.',
+      marqueAqui: 'In your translation, touch or slide your finger over the words that say what is lit:',
       suTraduccion: 'Your translation',
-      toqueODeslice: 'Touch the words that say it, or slide your finger over them.',
       aDecidir: 'Continue',
       releer: 'Read the note again',
       marcoNoEsta: 'You marked that it is not in your translation.',

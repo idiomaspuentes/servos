@@ -439,6 +439,9 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .review-quote-switch button[aria-checked='true'] { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
 .review-quote-text { margin: 0; font-size: 1.15rem; font-weight: 600; line-height: 1.45; }
 .review-quote-text.is-original { font-weight: 400; font-size: 1.3rem; }
+.review-quote-text.is-verse { font-weight: 400; font-size: 1.05rem; line-height: 1.55; }
+.review-quote-text.is-verse.is-original { font-size: 1.2rem; }
+.review-quote-text.is-verse .quiet { margin: 0.25rem 0 0; }
 /* The phrase follows the finger, and the next text slides in from the side it went to */
 .review-quote-text { transition: transform 0.2s ease, opacity 0.2s ease; }
 .review-quote-text.is-entering-next { animation: quote-from-end 0.22s ease-out; }
