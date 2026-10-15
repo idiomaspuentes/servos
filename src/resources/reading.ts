@@ -411,6 +411,8 @@ export function textQuoteOf(row: { p: number[]; m: number; t?: string[] } | unde
 export interface OriginalWord {
   lemma: string
   strong: string
+  /** Its grammar, as the text gives it (`He,C:Vqw3ms`): what `describeMorph` puts in plain words. */
+  morph: string
 }
 
 /**
@@ -419,7 +421,7 @@ export interface OriginalWord {
  * device lacks the chapter or the counts differ (then the places would not match).
  */
 export async function originalWordsOf(stores: ResourceStores, textKey: string, book: string, chapter: number): Promise<OriginalWord[] | null> {
-  type Node = { marker?: string; content?: Array<Node | string>; lemma?: string; strong?: string }
+  type Node = { marker?: string; content?: Array<Node | string>; lemma?: string; strong?: string; 'x-morph'?: string }
   const row = (await stores.cache.get(`scripture-usj:${textKey}:${book.toLowerCase()}:${chapter}`)) as { content?: { usj?: Node } } | null
   const usj = row?.content?.usj
   const words = await readChapterWords(stores, textKey, book, chapter)
@@ -427,7 +429,7 @@ export async function originalWordsOf(stores: ResourceStores, textKey: string, b
   const found: OriginalWord[] = []
   const walk = (node: Node | string) => {
     if (typeof node === 'string') return
-    if (node.marker === 'w') found.push({ lemma: node.lemma ?? '', strong: node.strong ?? '' })
+    if (node.marker === 'w') found.push({ lemma: node.lemma ?? '', strong: node.strong ?? '', morph: node['x-morph'] ?? '' })
     for (const child of node.content ?? []) walk(child)
   }
   walk(usj)

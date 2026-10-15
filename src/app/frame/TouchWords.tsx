@@ -16,6 +16,8 @@ import { entriesAbout, type GlossaryEntry } from '../projects/glossary'
 import { lexiconOf } from '../../prototype/data'
 import { sensesOfWord, strongCode, type LexiconSense } from '../../lexicon/lexicon'
 import { Markdown } from './Markdown'
+import { OriginalFacts, Referents } from './OriginalWord'
+import { SentenceDiagram } from './SentenceDiagram'
 import { showInPane } from './Panes'
 import { Sheet } from './Sheet'
 
@@ -28,6 +30,9 @@ export type WordHelp =
       kind: 'lexico'
       id: string
       places: Places
+      /** The word of the original, by its place, and its verse: what its grammar, referents and sentence are read by. */
+      place: number
+      verse: number
       lemma: string
       code: string
       brief: string
@@ -129,6 +134,8 @@ function lexiconOfWord(data: PrototypeData, abbreviation: string, place: number,
       kind: 'lexico',
       id: `lexico-${code}`,
       places: placesOfOriginals(data, [p]),
+      place: p,
+      verse,
       lemma: senses.entries[0]?.lemma || word.lemma,
       code,
       brief: found.file.brief,
@@ -281,6 +288,7 @@ export function WordHelpCard({
 }) {
   const t = useT()
   const [article, setArticle] = useState<{ title: string; markdown: string } | null>(null)
+  const [diagram, setDiagram] = useState<{ verse: number; place: number } | null>(null)
   const text = data.texts.find((x) => x.abbreviation === touched.abbreviation)!
   const original = data.texts.find((x) => x.original)
   const help = touched.helps[touched.index]
@@ -375,9 +383,11 @@ export function WordHelpCard({
       {help?.kind === 'lexico' && (
         <>
           <p className="word-help-kind">{t('ayudas.lexico')}</p>
-          <p className="help-original lexicon-lemma" dir={original?.dir} lang={original?.lang}>
-            {help.lemma} <span className="quiet">{help.code}</span>
-          </p>
+          <OriginalFacts data={data} place={help.place} />
+          <Referents data={data} verse={help.verse} place={help.place} />
+          <button type="button" className="button-link" onClick={() => setDiagram({ verse: help.verse, place: help.place })}>
+            {t('st.open')}
+          </button>
           {help.brief && <p className="help-quote">{help.brief}</p>}
           {help.byVerse && <p className="help-verse">{t('ayudas.enEsteVersiculo')}</p>}
           {help.here.map((s, i) => (
@@ -442,6 +452,7 @@ export function WordHelpCard({
           <Markdown text={article.markdown} skipFirstHeading />
         </Sheet>
       )}
+      {diagram && <SentenceDiagram data={data} verse={diagram.verse} place={diagram.place} onClose={() => setDiagram(null)} />}
     </aside>
   )
 }

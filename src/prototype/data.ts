@@ -39,7 +39,7 @@ export interface PrototypeText {
    */
   toOriginal?: number[][]
   /** For the original, each word's lemma and Strong number, by the word's place: what a glossary entry hangs from. */
-  words?: Array<{ lemma: string; strong: string }>
+  words?: Array<{ lemma: string; strong: string; morph?: string }>
   /** The Greek or Hebrew the bridge texts translate. */
   original?: boolean
   dir?: 'ltr' | 'rtl'

@@ -436,3 +436,34 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
   }
   .screen-app > .position-crossed > span { inset-block-start: auto; inset-block-end: 0.4rem; }
 }
+
+/* A word of the original: its facts, and whom it points to */
+.word-facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.15rem 0.75rem; margin: 0.25rem 0; }
+.word-facts > div { display: contents; }
+.word-facts dt { color: var(--text-soft); font-size: 0.85rem; }
+.word-facts dd { margin: 0; }
+.word-referents ul { margin: 0 0 0.25rem; padding-inline-start: 1.1rem; }
+
+/* How the sentence is built: the tree on its side, the words in a column at the far edge */
+.diagram { margin-block-end: 1rem; }
+.diagram-side { position: relative; width: 100%; }
+.diagram-side svg { position: absolute; inset: 0; }
+.diagram-side[dir='rtl'] svg { transform: scaleX(-1); }
+.diagram-side line { stroke: var(--line); stroke-width: 1.5; }
+.diagram-node {
+  --edge: var(--text-soft);
+  position: absolute; box-sizing: border-box; height: 22px; padding: 0 0.45rem; border: 1.5px solid var(--edge); border-radius: 999px;
+  background: var(--surface); color: var(--edge); font-size: 0.62rem; font-weight: 700; letter-spacing: 0.04em; line-height: 19px;
+  text-transform: uppercase; white-space: nowrap; unicode-bidi: plaintext;
+}
+.diagram-node[data-role='v'] { --edge: var(--accent); }
+.diagram-node[data-role='o'], .diagram-node[data-role='o2'], .diagram-node[data-role='io'] { --edge: var(--warn-text); }
+.diagram-node[data-clause] { border-width: 2px; background: var(--surface-soft); color: var(--text); }
+.diagram-node[data-kind='as'], .diagram-node[data-kind='describes'] { border-style: dashed; }
+.diagram-leaf { position: absolute; display: grid; align-content: center; }
+.diagram-word { display: grid; justify-items: center; gap: 0.05rem; padding: 0.2rem; border: 1px solid transparent; border-radius: 6px; text-align: center; overflow: hidden; }
+.diagram-word[data-here] { border-color: var(--accent); background: var(--accent-soft); }
+.diagram-original { font-size: 1.1rem; line-height: 1.4; }
+.diagram-gloss, .diagram-morph, .diagram-aligned { max-width: 100%; font-size: 0.7rem; line-height: 1.2; color: var(--text-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; }
+.diagram-morph { font-style: italic; }
+.diagram-aligned { color: var(--text); }
