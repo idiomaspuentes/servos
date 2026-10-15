@@ -64,7 +64,11 @@ export function GlossaryScreen({
   const fresh = since ? entries.filter((e) => (e.changed ?? '') > since).length : entries.length
 
   const wanted = search.trim().toLocaleLowerCase()
+  // What is still to agree on, for whoever brings the team together: a proposal waits for the team.
+  const [onlyProposed, setOnlyProposed] = useState(false)
+  const proposed = entries.filter((e) => e.status !== 'agreed').length
   const shown = entries
+    .filter((e) => !onlyProposed || e.status !== 'agreed')
     .filter((e) => !wanted || [e.rendering, e.lemma, ...e.alternatives, e.note].some((s) => s.toLocaleLowerCase().includes(wanted)))
     .sort((a, b) => a.rendering.localeCompare(b.rendering))
 
@@ -125,6 +129,16 @@ export function GlossaryScreen({
           <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('glosario.buscarAyuda')} />
         </label>
 
+        {proposed > 0 && (
+          <div className="unit-switch" role="radiogroup" aria-label={t('glosario.cuales')}>
+            <button type="button" role="radio" aria-checked={!onlyProposed} className="unit-switch-option" onClick={() => setOnlyProposed(false)}>
+              {t('glosario.todas', { n: entries.length })}
+            </button>
+            <button type="button" role="radio" aria-checked={onlyProposed} className="unit-switch-option" onClick={() => setOnlyProposed(true)}>
+              {t('glosario.porAcordar', { n: proposed })}
+            </button>
+          </div>
+        )}
         {entries.length === 0 && <p className="quiet">{t('glosario.vacio')}</p>}
         <ul className="glossary-list">
           {shown.map((e) => (

@@ -584,5 +584,8 @@
   "libroNuevo.usfmAgregar": "Add {libro}",
   "libroNuevo.usfmJuntar": "Join with {libro}",
   "libro.usfm": "Save the book as USFM",
-  "libro.usfmAyuda": "To take the text to Paratext, translationCore or Door43: each verse's draft, with the bridge text's paragraphs and poetry"
+  "libro.usfmAyuda": "To take the text to Paratext, translationCore or Door43: each verse's draft, with the bridge text's paragraphs and poetry",
+  "glosario.cuales": "Which words to see",
+  "glosario.todas": "All ({n})",
+  "glosario.porAcordar": "To agree on ({n})"
 }

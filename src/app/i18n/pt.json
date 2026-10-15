@@ -584,5 +584,8 @@
   "libroNuevo.usfmAgregar": "Adicionar {libro}",
   "libroNuevo.usfmJuntar": "Juntar com {libro}",
   "libro.usfm": "Salvar o livro em USFM",
-  "libro.usfmAyuda": "Para levar o texto ao Paratext, translationCore ou Door43: o rascunho de cada versículo, com os parágrafos e a poesia do texto-ponte"
+  "libro.usfmAyuda": "Para levar o texto ao Paratext, translationCore ou Door43: o rascunho de cada versículo, com os parágrafos e a poesia do texto-ponte",
+  "glosario.cuales": "Que palavras ver",
+  "glosario.todas": "Todas ({n})",
+  "glosario.porAcordar": "Por combinar ({n})"
 }
