@@ -21,6 +21,8 @@ import { AddProjectSheet, NewProject } from './screens/NewProject'
 import { PEOPLE, PersonMenu } from './screens/PersonMenu'
 import { ProjectSettings } from './screens/ProjectSettings'
 import { ReceivePack } from './screens/ReceivePack'
+import { ReceiveScreen } from './screens/ReceiveScreen'
+import { exampleShared } from './screens/exampleWork'
 import { TranslateUi } from './screens/TranslateUi'
 
 type Screen =
@@ -31,6 +33,7 @@ type Screen =
   | { kind: 'settings'; projectId: string }
   | { kind: 'glossary'; projectId: string; back: Screen }
   | { kind: 'receive'; back: Screen }
+  | { kind: 'recibir'; back: Screen; projectId?: string; book?: string }
   | { kind: 'translate' }
 
 /** The chapters of a book whose texts and helps the prototype has (every chapter of Titus and Jonah). */
@@ -126,7 +129,7 @@ export function App() {
   // the screen goes back and, if still away from home, sets another.
   const goBack = useRef(home)
   goBack.current =
-    screen.kind === 'app' ? leaveApp : screen.kind === 'glossary' || screen.kind === 'receive' ? () => setScreen(screen.back) : home
+    screen.kind === 'app' ? leaveApp : screen.kind === 'glossary' || screen.kind === 'receive' || screen.kind === 'recibir' ? () => setScreen(screen.back) : home
   const armed = useRef(false)
   const skip = useRef(false)
   useEffect(() => {
@@ -215,6 +218,8 @@ export function App() {
           onPhase={(phase) => setPhase(bookScreen.projectId, bookScreen.book, phase)}
           onReceive={() => setScreen({ kind: 'receive', back: bookScreen })}
           onGlossary={() => setScreen({ kind: 'glossary', projectId: bookScreen.projectId, back: bookScreen })}
+          onReceiveWork={() => setScreen({ kind: 'recibir', back: bookScreen, projectId: bookScreen.projectId, book: bookScreen.book })}
+          person={person}
         />
       )}
 
@@ -246,6 +251,7 @@ export function App() {
       {screen.kind === 'settings' && project(screen.projectId) && (
         <ProjectSettings
           project={project(screen.projectId)!}
+          person={person}
           onBack={home}
           onSave={(p) => {
             setProjects(projects.map((x) => (x.id === p.id ? p : x)))
@@ -255,6 +261,16 @@ export function App() {
       )}
 
       {screen.kind === 'receive' && <ReceivePack onBack={() => setScreen(screen.back)} onStudy={() => setScreen(screen.back)} />}
+      {screen.kind === 'recibir' && (
+        <ReceiveScreen
+          projects={projects}
+          preset={screen.projectId}
+          examples={screen.projectId && screen.book && project(screen.projectId) ? exampleShared(project(screen.projectId)!, chaptersFor(screen.book)) : []}
+          onBack={() => setScreen(screen.back)}
+          onReceived={setProjects}
+          onGo={(projectId, book) => (book ? openBook(projectId, book) : home())}
+        />
+      )}
       {screen.kind === 'translate' && <TranslateUi onBack={home} />}
 
       {addProject && (
@@ -266,7 +282,7 @@ export function App() {
           }}
           onReceive={() => {
             setAddProject(false)
-            setScreen({ kind: 'receive', back: { kind: 'home' } })
+            setScreen({ kind: 'recibir', back: { kind: 'home' } })
           }}
         />
       )}

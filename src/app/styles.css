@@ -254,6 +254,13 @@ textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
 .add-tile-plus { font-size: 1.3rem; line-height: 1; font-weight: 600; }
 .add-card { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; width: 100%; padding: 0.9rem 1rem; border: 1px dashed var(--accent); border-radius: var(--radius); background: none; color: var(--accent); text-align: center; }
 .add-card-title { font-weight: 600; }
+/* Sharing and receiving */
+.share { display: flex; flex-direction: column; gap: 0.6rem; }
+.settings-share { display: flex; flex-direction: column; gap: 0.5rem; }
+.settings-share .button-secondary { align-self: flex-start; width: auto; }
+.receive-books { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.receive-books li { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.6rem 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.receive-examples { display: flex; flex-direction: column; gap: 0.25rem; border-block-start: 1px solid var(--line); padding-block-start: 0.75rem; }
 
 /* New Bible */
 .field-row { display: grid; grid-template-columns: minmax(0, 1fr) 6.5rem; gap: 0.75rem; }

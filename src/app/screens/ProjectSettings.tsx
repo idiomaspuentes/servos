@@ -12,8 +12,9 @@ import { miniAppsFor } from '../miniapps/registry'
 import { writtenRightToLeft } from '../projects/languages'
 import { PHASES, type Phase, type Project } from '../projects/model'
 import { FONTS, PACKS, VERSIFICATIONS } from './NewProject'
+import { ShareSheet } from './ShareSheet'
 
-export function ProjectSettings({ project, onBack, onSave }: { project: Project; onBack(): void; onSave(p: Project): void }) {
+export function ProjectSettings({ project, person, onBack, onSave }: { project: Project; person: string; onBack(): void; onSave(p: Project): void }) {
   const t = useT()
   const [name, setName] = useState(project.name)
   const [language, setLanguage] = useState({ code: project.languageCode, name: project.languageName })
@@ -23,6 +24,7 @@ export function ProjectSettings({ project, onBack, onSave }: { project: Project;
   const [helps, setHelps] = useState(project.helpsLanguage)
   const [chosen, setChosen] = useState<Record<Phase, string[]>>(project.miniApps)
   const [missing, setMissing] = useState(false)
+  const [sharing, setSharing] = useState(false)
   const toggle = (phase: Phase, id: string) =>
     setChosen((c) => ({ ...c, [phase]: c[phase].includes(id) ? c[phase].filter((x) => x !== id) : [...c[phase], id] }))
   const save = () => {
@@ -105,6 +107,16 @@ export function ProjectSettings({ project, onBack, onSave }: { project: Project;
           </label>
         </details>
 
+        {project.books.length > 0 && (
+          <section className="settings-share">
+            <h1>{t('ajustes.compartir')}</h1>
+            <p className="quiet">{t('ajustes.compartirAyuda')}</p>
+            <button type="button" className="button-secondary" onClick={() => setSharing(true)}>
+              {t('ajustes.compartirBoton')}
+            </button>
+          </section>
+        )}
+
         <h1>{t('ajustes.miniApps')}</h1>
         <p className="quiet">{t('ajustes.miniAppsAyuda')}</p>
         {PHASES.map((phase) => (
@@ -135,6 +147,7 @@ export function ProjectSettings({ project, onBack, onSave }: { project: Project;
           </button>
         </div>
       </main>
+      {sharing && <ShareSheet project={project} books={project.books.map((b) => b.code)} person={person} onClose={() => setSharing(false)} />}
     </div>
   )
 }

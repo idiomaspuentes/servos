@@ -4,7 +4,8 @@
  * to publishing, as tabs always in sight, each with how far it has gone; under the step chosen, a card for each of its
  * mini apps, with what it does, its progress in the whole book, the next verse to do and, folded, its progress chapter
  * by chapter (and, for the translation, who wrote each chapter, since a team may split a book and gather it on one
- * computer). What is used now and then (receiving work from another computer, the project's glossary) is in «More».
+ * computer). What is used now and then (sharing the book, receiving work from another computer, the project's
+ * glossary) is in «More».
  * Moving the book on to the next step is said plainly, at the foot of the step it is in; no step is closed to the
  * person (philosophy, principle 5). A book whose texts and helps are not on the phone says so, and how to get them
  * (principle 8).
@@ -18,8 +19,8 @@ import type { MiniApp } from '../miniapps/contract'
 import { miniApp } from '../miniapps/registry'
 import { PHASES, bookName, type BookEntry, type Phase, type Project } from '../projects/model'
 import { doneIn as doneInBook, percent as pct, placeLabel, stepPercent, versesOf } from '../projects/progress'
-import { receiveWork, workOf, type Received, type WorkFile } from '../projects/work'
-import { exampleWork } from './exampleWork'
+import { workOf } from '../projects/work'
+import { ShareSheet } from './ShareSheet'
 
 type Place = { chapter: number; verse: number }
 
@@ -32,6 +33,8 @@ export function BookScreen({
   onPhase,
   onReceive,
   onGlossary,
+  onReceiveWork,
+  person,
   lastApp,
   placeFor,
 }: {
@@ -46,6 +49,9 @@ export function BookScreen({
   onReceive(): void
   /** The project's glossary, shared by all its books. */
   onGlossary(): void
+  /** Receives work shared from another computer into this book's project. */
+  onReceiveWork(): void
+  person: string
   /** The mini app the person last opened from this book. */
   lastApp?: string | null
   /** Where the person left a mini app in this book, if they opened it. */
@@ -63,10 +69,7 @@ export function BookScreen({
   const [shown, setShown] = useState<Phase>(current?.phase ?? book.phase)
   const [byChapter, setByChapter] = useState<string | null>(null)
   const [more, setMore] = useState(false)
-  const [receiving, setReceiving] = useState(false)
-  const [received, setReceived] = useState<{ file: WorkFile; result: Received } | null>(null)
-  // Work received changes what the cards show: drawn again after it.
-  const [, setGathered] = useState(0)
+  const [sharing, setSharing] = useState(false)
 
   const isDone = (app: MiniApp, chapter: number, verse: number) => app.done!({ book: book.code, chapter, verse })
   const doneIn = (app: MiniApp, c: PrototypeData) => doneInBook(app, book.code, c)
@@ -232,12 +235,19 @@ export function BookScreen({
       {more && (
         <Sheet title={t('libro.mas')} onClose={() => setMore(false)}>
           <MenuRow
-            label={t('libro.recibirTrabajo')}
-            description={t('libro.recibirTrabajoAyuda')}
-            disabled={!chapters.length}
+            label={t('libro.compartir')}
+            description={t('libro.compartirAyuda')}
             onClick={() => {
               setMore(false)
-              setReceiving(true)
+              setSharing(true)
+            }}
+          />
+          <MenuRow
+            label={t('libro.recibirTrabajo')}
+            description={t('libro.recibirTrabajoAyuda')}
+            onClick={() => {
+              setMore(false)
+              onReceiveWork()
             }}
           />
           <MenuRow
@@ -251,45 +261,7 @@ export function BookScreen({
         </Sheet>
       )}
 
-      {receiving && (
-        <Sheet
-          title={t('libro.recibirTrabajo')}
-          onClose={() => {
-            setReceiving(false)
-            setReceived(null)
-          }}
-        >
-          {received ? (
-            <>
-              <p>{t('libro.recibido', { nombre: received.file.from, que: received.file.label, n: received.result.taken })}</p>
-              {received.result.same > 0 && <p className="quiet">{t('libro.recibidoIgual', { n: received.result.same })}</p>}
-              {received.result.choices > 0 && <p className="notice">{t('libro.recibidoElegir', { n: received.result.choices, nombre: received.file.from })}</p>}
-              <button type="button" className="button-primary" onClick={() => setReceived(null)}>
-                {t('libro.recibirOtro')}
-              </button>
-            </>
-          ) : (
-            <>
-              <p className="quiet">{t('libro.recibirAyuda')}</p>
-              {exampleWork(chapters).map((file) => (
-                <button
-                  key={file.label}
-                  type="button"
-                  className="menu-row"
-                  onClick={() => {
-                    setReceived({ file, result: receiveWork(file) })
-                    setGathered((n) => n + 1)
-                  }}
-                >
-                  <span className="menu-row-label">{t('libro.trabajoDe', { nombre: file.from, que: file.label })}</span>
-                  <span className="menu-row-description">{t('libro.versiculosN', { n: file.verses.length })}</span>
-                </button>
-              ))}
-              <p className="quiet">{t('libro.ejemploAviso')}</p>
-            </>
-          )}
-        </Sheet>
-      )}
+      {sharing && <ShareSheet project={project} books={[book.code]} person={person} onClose={() => setSharing(false)} />}
     </div>
   )
 }

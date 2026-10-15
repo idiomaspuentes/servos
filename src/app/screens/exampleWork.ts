@@ -9,6 +9,8 @@
  */
 
 import type { PrototypeData } from '../../prototype/data'
+import type { Project } from '../projects/model'
+import type { SharedFile } from '../projects/share'
 import type { WorkFile } from '../projects/work'
 
 const linesOf = (c: PrototypeData, verse: number, text: number) =>
@@ -36,4 +38,29 @@ export function exampleWork(chapters: PrototypeData[]): WorkFile[] {
       verses: [...verses(first, firstPart, 1), ...(last !== first ? verses(last, lastPart, 1) : [])],
     },
   ]
+}
+
+/** The same work, as the files Bea and Carlos would share from their phones (`projects/share.ts`). */
+export function exampleShared(project: Project, chapters: PrototypeData[]): SharedFile[] {
+  const { books: _books, ...rest } = project
+  void _books
+  return exampleWork(chapters).map((w) => ({
+    format: 'servos-compartir',
+    version: 1,
+    from: w.from,
+    at: '2026-10-15T12:00:00.000Z',
+    project: rest,
+    books: [
+      {
+        code: w.book,
+        phase: 'traduccion',
+        verses: w.verses.map((v) => ({ ...v, by: w.from })),
+        others: [],
+        alignments: [],
+        checks: {},
+        studyNotes: [],
+      },
+    ],
+    glossary: [],
+  }))
 }

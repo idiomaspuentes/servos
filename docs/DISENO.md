@@ -249,7 +249,25 @@ sabe hasta dónde incorporó a cada persona, y las decisiones viajan dentro de l
   distintas no tocan el mismo archivo. Entre computadoras viaja, por defecto, solo lo cambiado desde la última vez.
   Las entradas conservan las columnas del glosario de Taller, y se recibe su TSV; para que las dos apps compartan
   el repositorio, Taller tendría que pasar a este formato.
-- **Por decidir:** el formato del paquete de trabajo (el libro y su diario).
+- **El paquete de trabajo** (decidido el 15 de octubre). En la app se llama **«Compartir»** y **«Recibir»**, sin
+  nombre técnico; el archivo termina en `.servos`.
+  - **Qué lleva:** un índice (qué proyecto, de quién, cuándo, qué libros) y, por cada libro, el texto (con los
+    versículos unidos, como `\v 1-2`), su diario, y lo que va pegado a cada versículo con la huella del texto sobre
+    el que se hizo: la alineación con cada fuente, las revisiones con notas y con palabras, las notas de estudio y las
+    versiones que esperan una elección. Del proyecto: el glosario, los ajustes y las mini apps de cada paso.
+  - **Va todo, sin preguntar** capa por capa. El diario hace que traer lo mismo dos veces no duplique nada.
+  - **Compartir:** desde un libro («Más › Compartir este libro») o desde los ajustes del proyecto («Compartir el
+    proyecto», con los libros marcados; todos de entrada). Se puede mandar parte de un libro («Jonás 1:1–10»).
+  - **Recibir** («Agregar un proyecto › Recibir», o desde el libro), en tres pasos, sin aplicar nada antes del último:
+    qué trae (de quién, cuándo, qué libros y el glosario); dónde va (si el proyecto ya está en el aparato, se junta
+    con él; si no, se elige: **agregarlo como proyecto nuevo o juntarlo con uno propio del mismo idioma**, el caso de
+    6.5); y qué libros, cada uno con lo que cambia aquí («12 versículos nuevos · 40 iguales · 3 escritos distinto,
+    para elegir»; «libro nuevo para usted»).
+  - **Al juntar, cada capa sigue a su texto** (6.2 y 6.8): lo que solo tiene un lado entra; lo distinto queda como
+    dos versiones para elegir; la alineación y las revisiones de un versículo entran si se hicieron sobre el texto
+    que queda, y si no quedan por revisar, nunca borradas; el glosario se junta palabra por palabra (una traducción
+    distinta queda como otra forma); dos notas de estudio distintas sobre los mismos versículos quedan las dos, cada
+    una con su autor.
 - Al importar, la app dice qué trae y qué cambia antes de aplicarlo.
 - Un paquete de recursos más nuevo puede reemplazar a uno anterior; el trabajo hecho no se toca, pero la app avisa
   qué notas o textos cambiaron en los versículos ya traducidos.
