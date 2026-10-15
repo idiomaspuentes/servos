@@ -40,6 +40,8 @@ function Center({ context }: MiniAppCenterProps) {
   const [drafts, setDrafts] = useState(() => readDrafts(position.book, position.chapter, shown))
   const [shownKey, setShownKey] = useState(openKey)
   const [touched, setTouched] = useState<Touched | null>(null)
+  // The line the cursor is in, by its field's id (`editor-v2`, `editor-v2-l3`): the texts show the same line apart.
+  const [writingLine, setWritingLine] = useState<{ verse: number; line: number } | null>(null)
   // Whether the person opened the helps pane here: only then does the note open there light its words.
   const [helpsRead, setHelpsRead] = useState(false)
   if (shownKey !== openKey) {
@@ -131,9 +133,11 @@ function Center({ context }: MiniAppCenterProps) {
       <p className="edit-where">{t('editor.dondeFuente', { texto: bridge.abbreviation })}</p>
       <div
         className="edit-fields"
-        onFocus={() => {
+        onFocus={(event) => {
           window.clearTimeout(stopWriting.current)
           writing.current = true
+          const id = event.target.id.match(/^editor-v(\d+)(?:-l(\d+))?$/)
+          if (id) setWritingLine({ verse: Number(id[1]), line: id[2] ? Number(id[2]) - 1 : 0 })
         }}
         onBlur={() => {
           // Later, not now: moving to another verse takes the focused field away for a moment.
@@ -183,6 +187,7 @@ function Center({ context }: MiniAppCenterProps) {
           text={x}
           shown={shown}
           at={position.verse}
+          line={writingLine?.verse === position.verse ? writingLine.line : null}
           lit={lit(x.abbreviation)}
           hint={hint}
           onWord={(verse, place) => touch(x.abbreviation, verse, place)}

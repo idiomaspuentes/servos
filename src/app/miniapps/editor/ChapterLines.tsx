@@ -12,6 +12,7 @@ export function ChapterLines({
   text,
   shown,
   at,
+  line,
   lit,
   hint,
   onWord,
@@ -22,6 +23,12 @@ export function ChapterLines({
   shown: number[]
   /** The verse brought into sight: the one being written, within a section too. */
   at: number
+  /**
+   * The line being written in that verse, when one is: the same line here stands out and is brought to the middle of
+   * the pane, so it is in sight as soon as the person slides to it. A text with fewer lines (the original has one a
+   * verse) shows its last.
+   */
+  line: number | null
   lit: Set<number>
   hint: string
   onWord(verse: number, place: number): void
@@ -29,12 +36,23 @@ export function ChapterLines({
   under(verse: number): ReactNode
 }) {
   const current = useRef<HTMLDivElement>(null)
+  const count = text.lines[at]?.length ?? 0
+  const writing = line === null || !count ? undefined : Math.min(line, count - 1)
   useEffect(() => {
-    // Within the pane only: scrolling the page would move the screen under the person's finger.
-    const el = current.current
-    const pane = el?.closest<HTMLElement>('.pane')
-    if (el && pane) pane.scrollTop = Math.max(0, el.offsetTop - 12)
-  }, [at, text.key])
+    // Within the pane only: scrolling the page would move the screen under the person's finger. The pane is laid
+    // out while out of sight too, so it is ready before the person slides to it.
+    const verse = current.current
+    const pane = verse?.closest<HTMLElement>('.pane')
+    if (!verse || !pane) return
+    const target = writing === undefined ? null : verse.querySelector<HTMLElement>('.is-writing-line')
+    if (!target) {
+      pane.scrollTop = Math.max(0, verse.offsetTop - 12)
+      return
+    }
+    const p = pane.getBoundingClientRect()
+    const r = target.getBoundingClientRect()
+    pane.scrollTop = Math.max(0, pane.scrollTop + (r.top - p.top) - (pane.clientHeight - r.height) / 2)
+  }, [at, writing, text.key])
 
   const verses = Object.keys(text.lines).map(Number).sort((a, b) => a - b)
   return (
@@ -45,7 +63,7 @@ export function ChapterLines({
       {verses.map((v) => (
         <div key={v} ref={v === at ? current : undefined}>
           <div className={shown.includes(v) ? 'chapter-verse is-current' : 'chapter-verse'} dir={text.dir ?? 'ltr'} lang={text.lang}>
-            <WordLines lines={text.lines[v]} verse={v} lit={lit} onWord={(place) => onWord(v, place)} />
+            <WordLines lines={text.lines[v]} verse={v} lit={lit} onWord={(place) => onWord(v, place)} writing={v === at ? writing : undefined} />
           </div>
           {under(v)}
         </div>

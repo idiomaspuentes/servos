@@ -299,6 +299,10 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .chapter-lines-title { margin: 0 0 0.25rem; font-size: 0.85rem; color: var(--text-soft); }
 .chapter-verse { padding: 0.25rem 0.5rem; border-radius: var(--radius); color: var(--text-soft); }
 .chapter-verse.is-current { background: var(--accent-soft); color: var(--text); }
+/* The line the person is translating: apart from the rest of its verse, a mark at its start and a deeper ground.
+   background-color only, so a poem line keeps its rule (drawn as a background image). */
+.usfm-line.is-writing-line { background-color: color-mix(in srgb, var(--accent) 22%, transparent); box-shadow: inset 3px 0 0 var(--accent); border-radius: 4px; }
+[dir='rtl'] .usfm-line.is-writing-line { box-shadow: inset -3px 0 0 var(--accent); }
 .is-original { font-family: 'SBL Hebrew', 'Ezra SIL', 'Gentium Plus', 'Noto Serif Hebrew', 'Noto Serif', 'Times New Roman', serif; font-size: 1.25rem; line-height: 1.8; }
 
 /* A word to touch: reads as text, answers to a finger */

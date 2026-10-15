@@ -84,16 +84,19 @@ export function WordLines({
   verse,
   lit,
   onWord,
+  writing,
 }: {
   lines: WordLine[]
   verse: number
   lit: Set<number>
   onWord(place: number): void
+  /** The line that the line being written translates, to stand out from the rest of the verse. */
+  writing?: number
 }) {
   return (
     <>
       {lines.map((line, i) => (
-        <p key={i} className="usfm-line" data-marker={line.marker}>
+        <p key={i} className={i === writing ? 'usfm-line is-writing-line' : 'usfm-line'} data-marker={line.marker}>
           {i === 0 && <span className="verse-number">{verse} </span>}
           {groups(line.pieces, (place, text, key) => (
             <button key={key} type="button" className={lit.has(place) ? 'word is-lit' : 'word'} onClick={() => onWord(place)}>
