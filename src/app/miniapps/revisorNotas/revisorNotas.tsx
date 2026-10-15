@@ -17,6 +17,7 @@ import { useT } from '../../i18n/i18n'
 import { Markdown } from '../../frame/Markdown'
 import { Sheet } from '../../frame/Sheet'
 import { WordLines } from '../../frame/TouchWords'
+import { WordPicker } from '../../frame/WordPicker'
 import { readDraft } from '../../projects/work'
 import {
   CATEGORY_ORDER,
@@ -305,25 +306,15 @@ function Check({
           <p className="notice">{t('revisorNotas.sinTraducir')}</p>
         ) : (
           <>
-            <p className="review-words">
-              {words.map((w, i) => {
-                const on = picked.includes(i) && !notThere
-                return (
-                  <button
-                    key={i}
-                    type="button"
-                    className={on ? 'review-word is-picked' : 'review-word'}
-                    aria-pressed={on}
-                    onClick={() => {
-                      setNotThere(false)
-                      setPicked((now) => (now.includes(i) ? now.filter((x) => x !== i) : [...now, i].sort((a, b) => a - b)))
-                    }}
-                  >
-                    {w}
-                  </button>
-                )
-              })}
-            </p>
+            <WordPicker
+              words={words}
+              picked={picked}
+              off={notThere}
+              onChange={(now) => {
+                setNotThere(false)
+                setPicked(now)
+              }}
+            />
             <label className="check">
               <input type="checkbox" checked={notThere} onChange={(e) => setNotThere(e.target.checked)} />
               {t('revisorNotas.noEsta')}

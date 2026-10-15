@@ -441,9 +441,11 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .review-later .unit-switch { margin: 0; }
 .review-ref-text { font-size: 1.15rem; line-height: 1.6; }
 .review-mine h3, .review-answer h3 { margin: 0; font-size: 1rem; }
-.review-words { margin: 0; display: flex; flex-wrap: wrap; gap: 0.35rem; font-size: 1.15rem; }
-.review-word { min-height: var(--touch); padding: 0.2rem 0.55rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--text); font: inherit; }
-.review-word.is-picked { background: var(--mark); border-color: var(--text-soft); }
+/* Words to mark with a touch, or with a finger slid over them (WordPicker.tsx). The page still scrolls under a finger
+   that goes up or down first; the words are not picked as text, nor called out by a long press, while a stroke passes. */
+.word-picker { margin: 0; display: flex; flex-wrap: wrap; gap: 0.25rem; font-size: 1.15rem; touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.picker-word { min-height: var(--touch); padding: 0.2rem 0.55rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--text); font: inherit; touch-action: pan-y; }
+.picker-word.is-picked { background: var(--mark); border-color: var(--text-soft); }
 .review-done { margin: 0; padding: 0.6rem 0.75rem; border-radius: var(--radius); background: var(--accent-soft); color: var(--text); font-weight: 600; }
 .review-hint { margin: 0; }
 .review-later { display: flex; flex-direction: column; gap: 0.5rem; }
