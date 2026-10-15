@@ -151,7 +151,7 @@
   "libro.volverA": "Go back to {paso}",
   "libro.faltaPaquete": "The texts and helps for {libro} are not on this phone. Receive the {libro} pack to start.",
   "libro.recibirPaquete": "Receive a pack",
-  "libro.avance": "{hechos} of {total} verses",
+  "libro.avance": "{pct}% · {hechos} of {total} verses",
   "libro.ningunaApp": "This step has no mini apps. Whoever coordinates the project chooses them in Settings.",
   "ajustes.titulo": "Project settings",
   "ajustes.miniApps": "Mini apps for each step",
@@ -239,5 +239,5 @@
   "ayudas.lexicoCredito": "Lexicon adapted from the United Bible Societies' dictionaries (CC BY-SA 4.0).",
   "marco.volverA": "{app}",
   "libro.avanceEn": "Progress in «{app}». Touch a chapter to see each mini app's.",
-  "libro.hechosDe": "{hechos} of {total}"
+  "libro.hechosDe": "{pct}% · {hechos} of {total}"
 }

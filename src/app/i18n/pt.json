@@ -151,7 +151,7 @@
   "libro.volverA": "Voltar para {paso}",
   "libro.faltaPaquete": "Os textos e as ajudas de {libro} não estão neste telefone. Receba o pacote de {libro} para começar.",
   "libro.recibirPaquete": "Receber um pacote",
-  "libro.avance": "{hechos} de {total} versículos",
+  "libro.avance": "{pct} % · {hechos} de {total} versículos",
   "libro.ningunaApp": "Este passo não tem mini apps. Quem coordena o projeto as escolhe em Ajustes.",
   "ajustes.titulo": "Ajustes do projeto",
   "ajustes.miniApps": "Mini apps de cada passo",
@@ -437,5 +437,5 @@
   "st.leftOut": "Este diagrama não tem todas as palavras do versículo. Faltam: {words}. A análise foi feita sobre outra edição do texto, que não as traz.",
   "marco.volverA": "{app}",
   "libro.avanceEn": "Progresso em «{app}». Toque um capítulo para ver o de cada mini app.",
-  "libro.hechosDe": "{hechos} de {total}"
+  "libro.hechosDe": "{pct} % · {hechos} de {total}"
 }

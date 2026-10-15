@@ -66,6 +66,8 @@ export function BookScreen({
     const done = chapters.reduce((n, c) => n + doneIn(app, c), 0)
     return { done, total }
   }
+  // Whole percents, rounded down: 99 % until every verse is done, never 100 % with one left.
+  const pct = (done: number, total: number) => (total ? Math.floor((100 * done) / total) : 0)
   const bar = (done: number, total: number) => (
     <span className="chapter-row-bar" aria-hidden="true">
       <span style={{ width: `${total ? (100 * done) / total : 0}%` }} />
@@ -114,7 +116,7 @@ export function BookScreen({
                     <button type="button" className="chapter-row" aria-expanded={open} onClick={() => setOpenChapter(open ? null : c.chapter)}>
                       <span className="chapter-row-name">{t('libro.capitulo', { n: c.chapter })}</span>
                       {done !== null && bar(done, c.verses.length)}
-                      {done !== null && <span className="chapter-row-count">{t('libro.avance', { hechos: done, total: c.verses.length })}</span>}
+                      {done !== null && <span className="chapter-row-count">{t('libro.avance', { hechos: done, total: c.verses.length, pct: pct(done, c.verses.length) })}</span>}
                       {work.people.length > 0 && (
                         <span className="chapter-row-people">{work.people.map(([who, n]) => t('libro.quien', { nombre: who, n })).join(' · ')}</span>
                       )}
@@ -130,7 +132,7 @@ export function BookScreen({
                               <button type="button" className={app === first ? 'chapter-app is-current' : 'chapter-app'} onClick={() => onOpen(app, c.chapter)}>
                                 <span className="chapter-app-name">{t(`${app.id}.nombre`)}</span>
                                 {n !== null && bar(n, c.verses.length)}
-                                {n !== null && <span className="chapter-row-count">{t('libro.hechosDe', { hechos: n, total: c.verses.length })}</span>}
+                                {n !== null && <span className="chapter-row-count">{t('libro.hechosDe', { hechos: n, total: c.verses.length, pct: pct(n, c.verses.length) })}</span>}
                               </button>
                             </li>
                           )
@@ -178,7 +180,7 @@ export function BookScreen({
                             {p && (
                               <span className="app-row-progress">
                                 {bar(p.done, p.total)}
-                                <span>{t('libro.avance', { hechos: p.done, total: p.total })}</span>
+                                <span>{t('libro.avance', { hechos: p.done, total: p.total, pct: pct(p.done, p.total) })}</span>
                               </span>
                             )}
                           </button>
