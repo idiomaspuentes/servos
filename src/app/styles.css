@@ -201,7 +201,12 @@ textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
 .catalog-name { font-weight: 600; font-size: 1.1rem; }
 .catalog-description { color: var(--text-soft); }
 .catalog-missing { color: var(--warn-text); background: var(--warn-bg); border-radius: 6px; padding: 0.1rem 0.4rem; font-size: 0.85rem; }
-.resources summary, .translate-group summary { min-height: var(--touch); display: flex; align-items: center; cursor: pointer; font-weight: 600; }
+.resources summary { min-height: var(--touch); display: flex; align-items: center; cursor: pointer; font-weight: 600; }
+/* A part of the app to translate: its name, and how far it has gone */
+.translate-group summary { min-height: var(--touch); display: grid; grid-template-columns: minmax(0, 1fr) 4rem auto; align-items: center; gap: 0.6rem; cursor: pointer; padding-block: 0.25rem; }
+.translate-group-name { font-weight: 600; }
+.translate-group-count { font-size: 0.85rem; color: var(--text-soft); font-variant-numeric: tabular-nums; }
+.translate-progress { margin: 0; }
 .resources ul { padding-inline-start: 1.25rem; }
 .pack-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
 .pack-list li { display: flex; flex-direction: column; }
@@ -212,13 +217,11 @@ textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
 .translate-original { margin: 0; display: flex; flex-direction: column; }
 
 /* Home: «Continue», projects and their books (translationCore 4's Home) */
-.resume { display: flex; flex-direction: column; align-items: center; gap: 0.1rem; padding-block: 0.75rem; }
-.resume-project { font-weight: 400; font-size: 0.85rem; opacity: 0.9; }
 .project-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
 .project-card h2 { text-wrap: balance; }
 .project-card p { margin: 0; }
 .book-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: 0.5rem; }
-.book-tile { display: flex; flex-direction: column; align-items: flex-start; text-align: start; background: var(--surface-soft); }
+.book-tile { display: flex; flex-direction: column; align-items: stretch; gap: 0.2rem; text-align: start; background: var(--surface-soft); }
 .book-tile-name { font-weight: 600; }
 .book-tile-phase { font-size: 0.85rem; color: var(--text-soft); }
 .card-actions { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-inline: -0.9rem; }
@@ -258,6 +261,8 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .book-resume { display: flex; flex-direction: column; gap: 0.2rem; padding: 0.75rem; border-radius: var(--radius); background: var(--accent-soft); }
 .book-resume-kicker { font-size: 0.8rem; font-weight: 600; color: var(--accent); }
 .book-resume-what { font-weight: 600; margin-block-end: 0.4rem; }
+.book-resume-project { margin: -0.4rem 0 0.4rem; font-size: 0.85rem; }
+.home-add { align-self: center; width: auto; }
 /* The steps go on to a second line rather than out of the screen: a step one has to scroll to find is a step not seen */
 .book-steps { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .book-step { flex: none; display: inline-flex; align-items: center; gap: 0.35rem; width: auto; min-height: var(--touch); padding: 0.25rem 0.85rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--text-soft); font-size: 0.9rem; }

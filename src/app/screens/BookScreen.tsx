@@ -14,9 +14,10 @@ import { useState } from 'react'
 import type { PrototypeData } from '../../prototype/data'
 import { MenuRow, Sheet } from '../frame/Sheet'
 import { useT } from '../i18n/i18n'
-import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp } from '../miniapps/contract'
+import type { MiniApp } from '../miniapps/contract'
 import { miniApp } from '../miniapps/registry'
 import { PHASES, bookName, type BookEntry, type Phase, type Project } from '../projects/model'
+import { doneIn as doneInBook, percent as pct, placeLabel, stepPercent, versesOf } from '../projects/progress'
 import { receiveWork, workOf, type Received, type WorkFile } from '../projects/work'
 import { exampleWork } from './exampleWork'
 
@@ -67,38 +68,22 @@ export function BookScreen({
   // Work received changes what the cards show: drawn again after it.
   const [, setGathered] = useState(0)
 
-  const versesOf = (c: PrototypeData) => c.verses.map((v) => v.verse)
   const isDone = (app: MiniApp, chapter: number, verse: number) => app.done!({ book: book.code, chapter, verse })
-  const doneIn = (app: MiniApp, c: PrototypeData) => versesOf(c).filter((v) => isDone(app, c.chapter, v)).length
+  const doneIn = (app: MiniApp, c: PrototypeData) => doneInBook(app, book.code, c)
   const totalVerses = chapters.reduce((n, c) => n + c.verses.length, 0)
   const doneOf = (app: MiniApp) => chapters.reduce((n, c) => n + doneIn(app, c), 0)
-  // Whole percents, rounded down: 99 % until every verse is done, never 100 % with one left.
-  const pct = (done: number, total: number) => (total ? Math.floor((100 * done) / total) : 0)
   const bar = (done: number, total: number) => (
     <span className="progress-bar" aria-hidden="true">
       <span style={{ width: `${total ? (100 * done) / total : 0}%` }} />
     </span>
   )
-  const placeName = (p: Place) =>
-    p.verse === BOOK_INTRO
-      ? t('libro.introLibro', { libro: name })
-      : p.verse === CHAPTER_INTRO
-        ? t('libro.introCapitulo', { libro: name, capitulo: p.chapter })
-        : `${name} ${p.chapter}:${p.verse}`
+  const placeName = (p: Place) => placeLabel(t, name, p)
   /** The first verse of the book a mini app has still to do. */
   const nextOf = (app: MiniApp): Place | null => {
     for (const c of chapters) for (const v of versesOf(c)) if (!isDone(app, c.chapter, v)) return { chapter: c.chapter, verse: v }
     return null
   }
-  /** How far a step has gone: the verses done in all its mini apps that count, of all they have to do. */
-  const stepPct = (phase: Phase) => {
-    const counted = appsOf(phase).filter((a) => !a.comingSoon && a.done)
-    if (!counted.length || !totalVerses) return null
-    return pct(
-      counted.reduce((n, a) => n + doneOf(a), 0),
-      counted.length * totalVerses
-    )
-  }
+  const stepPct = (phase: Phase) => stepPercent(project, book.code, phase, chapters)
 
   const resumeAt = current ? placeFor(current.id) : null
   const shownAt = PHASES.indexOf(shown)

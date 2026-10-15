@@ -9,7 +9,8 @@ import { MiniAppScreen } from './frame/MiniAppScreen'
 import { useT } from './i18n/i18n'
 import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type Position } from './miniapps/contract'
 import { miniApp } from './miniapps/registry'
-import { loadProjects, saveProjects, type Phase, type Project } from './projects/model'
+import { bookName, loadProjects, saveProjects, type Phase, type Project } from './projects/model'
+import { placeLabel, stepPercent } from './projects/progress'
 import { keepLastApp, keepPlace, lastAppOf, placeOf } from './projects/work'
 import { AddBookSheet } from './screens/AddBook'
 import { BookScreen } from './screens/BookScreen'
@@ -104,6 +105,9 @@ export function App() {
     setProjects(projects.map((p) => (p.id !== projectId ? p : { ...p, books: p.books.map((b) => (b.code === book ? { ...b, phase } : b)) })))
 
   const home = () => setScreen({ kind: 'home' })
+  // Where home's «Continue» goes: into the mini app last worked in, at its place, in the book last opened; or else the book.
+  const resumeApp = resume ? miniApp(lastAppOf(person, resume.book) ?? '') : undefined
+  const resumePlace = resume && resumeApp ? placeOf(person, resume.book, resumeApp.id) : null
   const bookScreen = screen.kind === 'book' ? screen : null
   const appScreen = screen.kind === 'app' ? screen : null
   // Back from a mini app: to the one it was opened from, at the place it was left, or else to its book.
@@ -160,7 +164,20 @@ export function App() {
           projects={projects}
           person={person}
           resume={resume}
-          onResume={(r) => openBook(r.projectId, r.book)}
+          resumeAt={
+            resume && resumeApp
+              ? `${t(`${resumeApp.id}.nombre`)} · ${resumePlace ? placeLabel(t, bookName(resume.book), resumePlace) : bookName(resume.book)}`
+              : null
+          }
+          progressOf={(p, code) => {
+            const b = p.books.find((x) => x.code === code)
+            return b ? stepPercent(p, code, b.phase) : null
+          }}
+          onResume={(r) => {
+            if (!resumeApp || !project(r.projectId)) return openBook(r.projectId, r.book)
+            openAt(r.book, resumeApp)
+            setScreen({ kind: 'app', projectId: r.projectId, book: r.book, id: resumeApp.id })
+          }}
           onAddProject={() => setAddProject(true)}
           onBook={openBook}
           onAddBook={setAddBookFor}

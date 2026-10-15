@@ -4,10 +4,12 @@
  * pass on, or its text to copy into a message) and gathered from another computer, nothing lost (two renderings of a
  * word stay, one as an alternative, until the team agrees). What is shared is, by default, what changed since the
  * last time: the glossary may grow to thousands of words. A glossary from Taller (its TSV) is received too. Publishing
- * to Door43 puts it in the language's `<lang>_tg` repository, one file a word.
+ * to Door43 puts it in the language's `<lang>_tg` repository, one file a word. Sharing and receiving, used now and then,
+ * are in a sheet from «Share» in the header: the list fills the screen.
  */
 
 import { useRef, useState } from 'react'
+import { Sheet } from '../frame/Sheet'
 import { useT } from '../i18n/i18n'
 import type { Project } from '../projects/model'
 import {
@@ -26,6 +28,7 @@ export function GlossaryScreen({ project, onBack }: { project: Project; onBack()
   const [entries, setEntries] = useState(() => readGlossary(project.id))
   const [search, setSearch] = useState('')
   const [said, setSaid] = useState<string | null>(null)
+  const [sharing, setSharing] = useState(false)
   const [pasting, setPasting] = useState(false)
   const [pasted, setPasted] = useState('')
   const file = useRef<HTMLInputElement>(null)
@@ -86,7 +89,9 @@ export function GlossaryScreen({ project, onBack }: { project: Project; onBack()
           <span className="header-app">{t('glosario.titulo')}</span>
           <span className="header-person">{project.name}</span>
         </div>
-        <span />
+        <button type="button" className="button-quiet header-more" onClick={() => setSharing(true)}>
+          {t('glosario.compartirCorto')}
+        </button>
       </header>
       <main className="main">
         <p className="quiet">{t('glosario.ayuda')}</p>
@@ -111,82 +116,83 @@ export function GlossaryScreen({ project, onBack }: { project: Project; onBack()
           ))}
         </ul>
 
-        <section className="glossary-share" aria-labelledby="compartir">
-          <h2 id="compartir">{t('glosario.compartir')}</h2>
-          <p className="quiet">{t('glosario.compartirAyuda')}</p>
-          <div className="unit-switch" role="radiogroup" aria-label={t('glosario.queCompartir')}>
-            <button type="button" role="radio" aria-checked={!all} className="unit-switch-option" onClick={() => setAll(false)}>
-              {t('glosario.loNuevo', { n: fresh })}
-            </button>
-            <button type="button" role="radio" aria-checked={all} className="unit-switch-option" onClick={() => setAll(true)}>
-              {t('glosario.todo', { n: entries.length })}
-            </button>
-          </div>
-          <div className="glossary-actions">
-            <button type="button" className="button-secondary" disabled={!(all ? entries.length : fresh)} onClick={save}>
-              {t('glosario.guardarArchivo')}
-            </button>
-            <button type="button" className="button-secondary" disabled={!(all ? entries.length : fresh)} onClick={copy}>
-              {t('glosario.copiar')}
-            </button>
-          </div>
-
-          <h2>{t('glosario.recibir')}</h2>
-          <p className="quiet">{t('glosario.recibirAyuda')}</p>
-          <div className="glossary-actions">
-            <button type="button" className="button-secondary" onClick={() => file.current?.click()}>
-              {t('glosario.abrirArchivo')}
-            </button>
-            <button type="button" className="button-secondary" onClick={() => setPasting((p) => !p)}>
-              {t('glosario.pegar')}
-            </button>
-            <input
-              ref={file}
-              type="file"
-              accept=".tsv,.txt,text/tab-separated-values,text/plain"
-              hidden
-              onChange={async (e) => {
-                const chosen = e.target.files?.[0]
-                if (chosen) gather(await chosen.text())
-                e.target.value = ''
-              }}
-            />
-          </div>
-          {pasting && (
-            <div className="glossary-paste">
-              <textarea rows={4} value={pasted} onChange={(e) => setPasted(e.target.value)} placeholder={t('glosario.pegarAyuda')} />
-              <button
-                type="button"
-                className="button-primary"
-                disabled={!pasted.trim()}
-                onClick={() => {
-                  gather(pasted)
-                  setPasted('')
-                  setPasting(false)
-                }}
-              >
-                {t('glosario.juntar')}
+        {said && !sharing && (
+          <p className="notice" role="status">
+            {said}
+          </p>
+        )}
+      </main>
+      {sharing && (
+        <Sheet title={t('glosario.compartirTitulo')} onClose={() => setSharing(false)}>
+          <div className="glossary-share">
+            <h3>{t('glosario.compartir')}</h3>
+            <p className="quiet">{t('glosario.compartirAyuda')}</p>
+            <div className="unit-switch" role="radiogroup" aria-label={t('glosario.queCompartir')}>
+              <button type="button" role="radio" aria-checked={!all} className="unit-switch-option" onClick={() => setAll(false)}>
+                {t('glosario.loNuevo', { n: fresh })}
+              </button>
+              <button type="button" role="radio" aria-checked={all} className="unit-switch-option" onClick={() => setAll(true)}>
+                {t('glosario.todo', { n: entries.length })}
               </button>
             </div>
-          )}
+            <div className="glossary-actions">
+              <button type="button" className="button-secondary" disabled={!(all ? entries.length : fresh)} onClick={save}>
+                {t('glosario.guardarArchivo')}
+              </button>
+              <button type="button" className="button-secondary" disabled={!(all ? entries.length : fresh)} onClick={copy}>
+                {t('glosario.copiar')}
+              </button>
+            </div>
 
-          <h2>Door43</h2>
-          <p className="quiet">{t('glosario.door43Ayuda', { repo: `${project.languageCode || '…'}_tg` })}</p>
-          <div className="glossary-actions">
-            <button type="button" className="button-secondary" disabled>
-              {t('glosario.publicar')}
-            </button>
-            <button type="button" className="button-secondary" disabled>
-              {t('glosario.traer')}
-            </button>
+            <h3>{t('glosario.recibir')}</h3>
+            <p className="quiet">{t('glosario.recibirAyuda')}</p>
+            <div className="glossary-actions">
+              <button type="button" className="button-secondary" onClick={() => file.current?.click()}>
+                {t('glosario.abrirArchivo')}
+              </button>
+              <button type="button" className="button-secondary" onClick={() => setPasting((p) => !p)}>
+                {t('glosario.pegar')}
+              </button>
+              <input
+                ref={file}
+                type="file"
+                accept=".tsv,.txt,text/tab-separated-values,text/plain"
+                hidden
+                onChange={async (e) => {
+                  const chosen = e.target.files?.[0]
+                  if (chosen) gather(await chosen.text())
+                  e.target.value = ''
+                }}
+              />
+            </div>
+            {pasting && (
+              <div className="glossary-paste">
+                <textarea rows={4} value={pasted} onChange={(e) => setPasted(e.target.value)} placeholder={t('glosario.pegarAyuda')} />
+                <button
+                  type="button"
+                  className="button-primary"
+                  disabled={!pasted.trim()}
+                  onClick={() => {
+                    gather(pasted)
+                    setPasted('')
+                    setPasting(false)
+                  }}
+                >
+                  {t('glosario.juntar')}
+                </button>
+              </div>
+            )}
+
+            {/* Not two buttons that never work: said, until it does. */}
+            <p className="quiet">{t('glosario.door43Pronto', { repo: `${project.languageCode || '…'}_tg` })}</p>
+            {said && (
+              <p className="notice" role="status">
+                {said}
+              </p>
+            )}
           </div>
-          {said && (
-            <p className="notice" role="status">
-              {said}
-            </p>
-          )}
-        </section>
-      </main>
+        </Sheet>
+      )}
     </div>
   )
 }

@@ -8,6 +8,7 @@
 import { useMemo, useState } from 'react'
 import { BASE_LANGUAGES, allKeys, baseText, marksOf, useI18n, type BaseLanguage } from '../i18n/i18n'
 import { miniApps } from '../miniapps/registry'
+import { percent } from '../projects/progress'
 
 const NAMES: Record<BaseLanguage, string> = { es: 'Español', pt: 'Português', en: 'English' }
 const SCREEN_ORDER = ['marco', 'ayudas', 'inicio', 'agregar', 'nuevo', 'libroNuevo', 'libro', 'pasos', 'ajustes', 'catalogo', 'persona', 'paquete', 'idioma', 'interfaz']
@@ -117,7 +118,12 @@ export function TranslateUi({ onBack }: { onBack(): void }) {
                 <option value="__nuevo">{t('interfaz.nuevoIdioma')}…</option>
               </select>
             </label>
-            <p className="quiet">{t('interfaz.progreso', { hechas: done, total })}</p>
+            <p className="tool-progress translate-progress">
+              <span className="progress-bar" aria-hidden="true">
+                <span style={{ width: `${percent(done, total)}%` }} />
+              </span>
+              <span>{t('interfaz.progreso', { hechas: done, total, pct: percent(done, total) })}</span>
+            </p>
             <label className="check">
               <input type="checkbox" checked={onlyMissing} onChange={(e) => setOnlyMissing(e.target.checked)} />
               {t('interfaz.soloFaltan')}
@@ -126,10 +132,16 @@ export function TranslateUi({ onBack }: { onBack(): void }) {
             {groups.map((g) => {
               const keys = g.keys.filter((k) => !onlyMissing || !translationOf(target, k))
               if (!keys.length) return null
+              // How far each part has gone, so what is left to translate is found without opening them all.
+              const groupDone = target ? g.keys.filter((k) => translationOf(target, k)).length : 0
               return (
                 <details key={g.group} className="translate-group">
                   <summary>
-                    {g.title} <span className="quiet">· {keys.length}</span>
+                    <span className="translate-group-name">{g.title}</span>
+                    <span className="progress-bar" aria-hidden="true">
+                      <span style={{ width: `${percent(groupDone, g.keys.length)}%` }} />
+                    </span>
+                    <span className="translate-group-count">{t('libro.hechosDe', { hechos: groupDone, total: g.keys.length, pct: percent(groupDone, g.keys.length) })}</span>
                   </summary>
                   {keys.map((key) => {
                     const original = baseText(fallback, key) ?? baseText('es', key) ?? key
@@ -156,10 +168,8 @@ export function TranslateUi({ onBack }: { onBack(): void }) {
                 </details>
               )
             })}
-            <button type="button" className="button-secondary" disabled title={t('interfaz.exportarAyuda')}>
-              {t('interfaz.exportar')}
-            </button>
-            <p className="quiet">{t('interfaz.exportarAyuda')}</p>
+            {/* Not a button that never works: said, until it does. */}
+            <p className="quiet">{t('interfaz.exportarPronto')}</p>
           </>
         )}
       </main>
