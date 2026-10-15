@@ -126,6 +126,7 @@ function UsfmFound({ found, isNew, onAgain, onBring }: { found: UsfmBook; isNew:
     <div className="usfm-found">
       <strong>{bookName(found.code)}</strong>
       <span className="quiet">{isNew ? t('recibir.libroNuevo', { n: p.taken }) : t('recibir.cambia', { nuevos: p.taken, iguales: p.same, elegir: p.choices })}</span>
+      {p.waiting > 0 && <span className="quiet">{t('recibir.esperando', { n: p.waiting })}</span>}
       <span className="quiet">{t('libroNuevo.usfmQueNo')}</span>
       <button type="button" className="button-primary" onClick={onBring}>
         {t(isNew ? 'libroNuevo.usfmAgregar' : 'libroNuevo.usfmJuntar', { libro: bookName(found.code) })}

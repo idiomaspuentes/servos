@@ -587,5 +587,8 @@
   "libro.usfmAyuda": "Para levar o texto ao Paratext, translationCore ou Door43: o rascunho de cada versículo, com os parágrafos e a poesia do texto-ponte",
   "glosario.cuales": "Que palavras ver",
   "glosario.todas": "Todas ({n})",
-  "glosario.porAcordar": "Por combinar ({n})"
+  "glosario.porAcordar": "Por combinar ({n})",
+  "recibir.esperando": "já têm outra versão esperando, que não muda: {n}",
+  "idioma.esBase": "{idioma} já vem com o app: não se muda a partir de um arquivo.",
+  "idioma.rotas": "Frases que não entraram porque suas marcas (o que vai entre chaves) não são as do original: {n}."
 }

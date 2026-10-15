@@ -53,4 +53,13 @@ describe('a book brought in from a USFM file', () => {
     expect(readDraft('jon', 1, 3)).toContain('Jonasca miticurcami')
     expect(joinedTo('jon', 1, 3)).toBe(4)
   })
+
+  it('never replaces a version already waiting for a choice', () => {
+    writeDraft('jon', 1, 2, 'Ninive llactaman rii.', 'Ana')
+    localStorage.setItem('servos.prototipo.otra.jon.1.2', JSON.stringify({ text: 'Ninive llactamanmi ri.', by: 'Bea' }))
+    const { book } = readUsfmBook(JONAH, 'Rosa')
+    expect(previewBook(book, false)).toMatchObject({ choices: 0, waiting: 1 })
+    receiveBook(book, false)
+    expect(otherVersion('jon', 1, 2)).toEqual({ text: 'Ninive llactamanmi ri.', by: 'Bea' })
+  })
 })

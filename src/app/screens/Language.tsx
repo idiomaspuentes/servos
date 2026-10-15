@@ -18,8 +18,13 @@ export function Language({ onClose }: { onClose(): void }) {
   const receive = (text: string) => {
     const p = readInterfacePackage(text)
     if (!p) return setSaid(t('idioma.noEs'))
-    const { added, kept } = receivePackage(p)
-    setSaid(t(kept ? 'idioma.recibida' : 'idioma.recibidaSola', { idioma: p.name, nuevas: added, propias: kept }))
+    const got = receivePackage(p)
+    if (!got) return setSaid(t('idioma.esBase', { idioma: p.name }))
+    const { added, kept, broken } = got
+    setSaid(
+      t(kept ? 'idioma.recibida' : 'idioma.recibidaSola', { idioma: p.name, nuevas: added, propias: kept }) +
+        (broken ? ` ${t('idioma.rotas', { n: broken })}` : '')
+    )
     setReceiving(false)
     setPasted('')
   }

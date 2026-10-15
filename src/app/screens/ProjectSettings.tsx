@@ -118,7 +118,7 @@ export function ProjectSettings({ project, person, onBack, onSave }: { project: 
         )}
 
         {/* Chosen once by whoever coordinates, and long: folded, saying how many are in use (philosophy, principle 3). */}
-        <details className="advanced settings-apps" open={missing || undefined}>
+        <details className="advanced settings-apps">
           <summary>
             {t('ajustes.miniApps')}
             <span className="quiet">· {t('ajustes.enUso', { n: PHASES.reduce((n, p) => n + chosen[p].length, 0) })}</span>

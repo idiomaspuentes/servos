@@ -154,6 +154,7 @@ export function checkingCenter<I extends Checkable>(kind: CheckKind<I>) {
     }, [item?.id])
     const go = (c: I | undefined) => {
       if (!c) return
+      setFinished(false)
       setCurrentId(c.id)
       if (c.chapter !== position.chapter || c.verse !== position.verse) goTo({ book, chapter: c.chapter, verse: c.verse })
     }

@@ -587,5 +587,8 @@
   "libro.usfmAyuda": "To take the text to Paratext, translationCore or Door43: each verse's draft, with the bridge text's paragraphs and poetry",
   "glosario.cuales": "Which words to see",
   "glosario.todas": "All ({n})",
-  "glosario.porAcordar": "To agree on ({n})"
+  "glosario.porAcordar": "To agree on ({n})",
+  "recibir.esperando": "already have another version waiting, which does not change: {n}",
+  "idioma.esBase": "{idioma} comes with the app: it is not changed from a file.",
+  "idioma.rotas": "Phrases left out because their marks (what goes between braces) are not the original's: {n}."
 }

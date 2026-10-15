@@ -4,7 +4,7 @@
  * can be left for later; it stays waiting, and the book page keeps saying how many are left.
  */
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import type { PrototypeData } from '../../prototype/data'
 import { useProjectFont } from '../frame/fonts'
 import { TwoVersions } from '../frame/TwoVersions'
@@ -30,7 +30,7 @@ export function ChooseScreen({
 }) {
   const t = useT()
   // The verses to choose, as they were on opening: one chosen or left for later does not move the others.
-  const queue = useMemo(() => versesToChoose(book, chapters.map((c) => ({ chapter: c.chapter, verses: c.verses.map((v) => v.verse) }))), [book, chapters])
+  const [queue] = useState(() => versesToChoose(book, chapters.map((c) => ({ chapter: c.chapter, verses: c.verses.map((v) => v.verse) }))))
   const [at, setAt] = useState(0)
   const [chosen, setChosen] = useState(0)
   const [source, setSource] = useState(false)

@@ -134,7 +134,7 @@ function Against({ item, data, lookup, context, here, all, renderingAt, go }: Ag
       )
     })
   return (
-    <section className="review-again" aria-label={t('revisorPalabras.enElLibro')}>
+    <section className="review-again" aria-label={t('revisorPalabras.enElLibro', { palabra: wordName(item, lookup) })}>
       {/* No quote of the source here: the heading names the word, and a quote above the renderings read as one of them.
           Nothing to compare with until the word is checked at another place: then only where it is still to check. */}
       {others.length === 0 ? (

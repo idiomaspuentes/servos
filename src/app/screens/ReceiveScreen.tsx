@@ -79,8 +79,8 @@ export function ReceiveScreen({
 
   if (done && file) {
     const first = done.books[0]?.code ?? null
-    const choices = done.books.reduce((n, b) => n + b.choices, 0)
     const toChoose = done.books.find((b) => b.choices > 0)?.code
+    const choices = done.books.find((b) => b.code === toChoose)?.choices ?? 0
     return (
       <div className="screen">
         {header}
@@ -220,6 +220,7 @@ export function ReceiveScreen({
                     ? t('recibir.libroNuevo', { n: p.taken })
                     : t('recibir.cambia', { nuevos: p.taken, iguales: p.same, elegir: p.choices })}
                   {p.alignments + p.checks + p.studyNotes > 0 && ` · ${t('recibir.traeMas', { n: p.alignments + p.checks + p.studyNotes })}`}
+                  {p.waiting > 0 && ` · ${t('recibir.esperando', { n: p.waiting })}`}
                 </span>
               </span>
             </label>

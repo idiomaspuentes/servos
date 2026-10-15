@@ -171,6 +171,11 @@ export interface BookPreview {
   same: number
   /** Verses written differently: the received one will wait as the other version. */
   choices: number
+  /**
+   * Verses that already have another version waiting for a choice, different again: that one keeps waiting, and the
+   * received one does not come in (choosing first, then receiving again, brings it).
+   */
+  waiting: number
   /** Alignments, checks and study notes it brings. */
   alignments: number
   checks: number
@@ -178,14 +183,19 @@ export interface BookPreview {
 }
 
 const draftHere = (code: string, chapter: number, verse: number) => get(`${P}.borrador.${code}.${chapter}.${verse}`) ?? ''
+/** The text of another version already waiting for a choice at a verse, if one is. */
+const waitingOf = (code: string, chapter: number, verse: number): string | null =>
+  json<{ text: string }>(`${P}.otra.${code}.${chapter}.${verse}`)?.text.trim() ?? null
 
 export function previewBook(book: SharedBook, isNew: boolean): BookPreview {
-  const p: BookPreview = { code: book.code, isNew, taken: 0, same: 0, choices: 0, alignments: book.alignments.length, checks: 0, studyNotes: 0 }
+  const p: BookPreview = { code: book.code, isNew, taken: 0, same: 0, choices: 0, waiting: 0, alignments: book.alignments.length, checks: 0, studyNotes: 0 }
   for (const v of book.verses) {
     if (!v.text.trim()) continue
     const here = draftHere(book.code, v.chapter, v.verse)
+    const pending = waitingOf(book.code, v.chapter, v.verse)
     if (!here.trim()) p.taken++
-    else if (here.trim() === v.text.trim()) p.same++
+    else if (here.trim() === v.text.trim() || pending === v.text.trim()) p.same++
+    else if (pending !== null) p.waiting++
     else p.choices++
   }
   p.checks = Object.values(book.checks).reduce((n, byId) => n + Object.keys(byId).length, 0)
@@ -209,7 +219,8 @@ export function receiveBook(book: SharedBook, isNew: boolean): BookReceived {
     if (v.text.trim() && !here.trim()) {
       set(`${P}.borrador.${code}.${v.chapter}.${v.verse}`, v.text)
       set(`${P}.autor.${code}.${v.chapter}.${v.verse}`, v.by)
-    } else if (v.text.trim() && here.trim() !== v.text.trim()) {
+    } else if (v.text.trim() && here.trim() !== v.text.trim() && waitingOf(code, v.chapter, v.verse) === null) {
+      // Only where no other version waits: one waiting for a choice is not replaced without it.
       set(`${P}.otra.${code}.${v.chapter}.${v.verse}`, JSON.stringify({ text: v.text, by: v.by ?? '' }))
     }
     // A join comes in where this phone has none there and the verses it takes in are not written here.

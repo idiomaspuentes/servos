@@ -109,7 +109,7 @@ interface I18n {
   /** A language translated on this phone, in one package to pass to another. */
   packageOf(language: string): InterfacePackage
   /** A package received: its phrases gathered (this phone's own kept), and the app shown in that language. */
-  receivePackage(p: InterfacePackage): { added: number; kept: number }
+  receivePackage(p: InterfacePackage): { added: number; kept: number; broken: number } | null
 }
 
 const Context = createContext<I18n | null>(null)
@@ -167,7 +167,14 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       translationOf: (lang, key) => translations[lang]?.[key],
       packageOf: (lang) => interfacePackage(lang, names[lang] ?? lang, fallback, translations[lang] ?? {}),
       receivePackage: (p) => {
-        const { texts, added, kept } = gatherInterface(translations[p.code] ?? {}, p.texts)
+        // The languages the app brings are not replaced from a file; they are changed in the app's own texts.
+        if (BASE_LANGUAGES.includes(p.code as BaseLanguage) || p.code === PSEUDO_LANGUAGE) return null
+        // A phrase whose {marks} are not those of the original would show them raw: it stays out, to translate again.
+        const sound = Object.fromEntries(
+          Object.entries(p.texts).filter(([key, text]) => key in base.es && marksOf(base.es[key]).join() === marksOf(text).join())
+        )
+        const broken = Object.keys(p.texts).length - Object.keys(sound).length
+        const { texts, added, kept } = gatherInterface(translations[p.code] ?? {}, sound)
         const fb = BASE_LANGUAGES.includes(p.fallback as BaseLanguage) ? (p.fallback as BaseLanguage) : fallback
         update((s) => ({
           ...s,
@@ -176,7 +183,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
           names: { ...s.names, [p.code]: s.names[p.code] ?? p.name },
           translations: { ...s.translations, [p.code]: texts },
         }))
-        return { added, kept }
+        return { added, kept, broken }
       },
     }
   }, [stored, update])
