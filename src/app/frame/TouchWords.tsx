@@ -5,7 +5,7 @@
  * lights its words in every pane.
  */
 
-import { useState, type ReactNode } from 'react'
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { Places, PrototypeData, PrototypeNote, PrototypeText } from '../../prototype/data'
 import type { WordLine } from '../../resources/reading'
 import { useT } from '../i18n/i18n'
@@ -138,8 +138,20 @@ export function WordHelpCard({
   const count = touched.helps.length
   const word = wordAt(text, touched.place)
 
+  // Brought into sight in what scrolls around it (a pane, or the text above the box being written in), never by
+  // scrolling the page: under the keyboard there is little room, and the card would open out of sight.
+  const self = useRef<HTMLElement>(null)
+  useLayoutEffect(() => {
+    const card = self.current
+    const around = card?.parentElement?.closest<HTMLElement>('.edit-source-scroll, .pane')
+    if (!card || !around) return
+    const c = around.getBoundingClientRect()
+    const r = card.getBoundingClientRect()
+    if (r.bottom > c.bottom) around.scrollTop += Math.min(r.top - c.top - 8, r.bottom - c.bottom + 8)
+  }, [touched.place, touched.index])
+
   return (
-    <aside className="word-help" aria-label={t('ayudas.dePalabra', { palabra: word })}>
+    <aside ref={self} className="word-help" aria-label={t('ayudas.dePalabra', { palabra: word })}>
       <div className="word-help-head">
         <span className="word-help-word" dir={text.dir} lang={text.lang}>
           {word}

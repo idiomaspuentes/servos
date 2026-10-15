@@ -15,13 +15,22 @@ import { MenuRow, Sheet } from './Sheet'
 /**
  * The part of the page the person sees: with the keyboard up, the visual viewport is what is left above it. The
  * layout viewport keeps its height on most phones, so a screen sized by it would go on under the keyboard.
+ *
+ * Whether the keyboard is up is told by the height lost against the tallest seen at this width: some phones shrink
+ * the layout viewport with the visual one, so comparing the two says nothing there.
  */
-function useVisibleBox(on: boolean): CSSProperties | undefined {
-  const [box, setBox] = useState<{ top: number; height: number } | null>(null)
+function useVisibleBox(on: boolean): { style: CSSProperties | undefined; keyboard: boolean } {
+  const [box, setBox] = useState<{ top: number; height: number; keyboard: boolean } | null>(null)
   useEffect(() => {
     if (!on) return
     const view = window.visualViewport
-    const update = () => setBox(view ? { top: view.offsetTop, height: view.height } : { top: 0, height: window.innerHeight })
+    let tallest = { width: 0, height: 0 }
+    const update = () => {
+      const width = view?.width ?? window.innerWidth
+      const height = view?.height ?? window.innerHeight
+      if (Math.abs(width - tallest.width) > 1 || height > tallest.height) tallest = { width, height }
+      setBox({ top: view?.offsetTop ?? 0, height, keyboard: tallest.height - height > 120 })
+    }
     update()
     view?.addEventListener('resize', update)
     view?.addEventListener('scroll', update)
@@ -32,7 +41,7 @@ function useVisibleBox(on: boolean): CSSProperties | undefined {
       window.removeEventListener('resize', update)
     }
   }, [on])
-  return on && box ? { top: box.top, height: box.height } : undefined
+  return { style: on && box ? { top: box.top, height: box.height } : undefined, keyboard: Boolean(on && box?.keyboard) }
 }
 
 export function MiniAppScreen({
@@ -61,7 +70,7 @@ export function MiniAppScreen({
   const [chapter, setChapter] = useState(false)
   const [saved, setSaved] = useState<'sinCambios' | 'guardado'>('sinCambios')
   const onMark = useCallback((w: string | null) => setMarked(w), [])
-  const box = useVisibleBox(Boolean(app.fills))
+  const { style: box, keyboard } = useVisibleBox(Boolean(app.fills))
   // Moving on keeps the box being written in focused, and so the keyboard up.
   const keep = app.fills ? keepFocus : undefined
 
@@ -98,7 +107,9 @@ export function MiniAppScreen({
   const Center = app.Center
 
   return (
-    <div className={app.fills ? 'screen screen-fill' : 'screen'} style={box}>
+    // While writing on a phone the header and the filled button step aside: the keyboard leaves room for little more
+    // than the box and the text it translates, and the arrows of the position line still move on.
+    <div className={app.fills ? (keyboard ? 'screen screen-fill is-writing' : 'screen screen-fill') : 'screen'} style={box}>
       <header className="header">
         <button type="button" className="button-quiet header-back" onClick={onBack}>
           ‹ {t('marco.volver')}

@@ -6,7 +6,7 @@
  * kept in this browser only; wired, every change goes to the journal (design, section 6).
  */
 
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Panes, type Pane } from '../../frame/Panes'
 import { helpsOfWord, litPlaces, WordHelpCard, WordLines, type Touched } from '../../frame/TouchWords'
 import type { MiniApp, MiniAppCenterProps } from '../contract'
@@ -52,6 +52,32 @@ function Center({ context }: MiniAppCenterProps) {
     box?.setSelectionRange(box.value.length, box.value.length)
   }, [fieldsId])
 
+  // When the keyboard comes up the box area shrinks under the line being written: it is brought back into sight there.
+  useEffect(() => {
+    const view = window.visualViewport
+    if (!view) return
+    const show = () => {
+      const box = document.activeElement
+      const around = box instanceof HTMLTextAreaElement ? box.closest<HTMLElement>('.edit-fields') : null
+      if (!box || !around) return
+      const c = around.getBoundingClientRect()
+      const r = box.getBoundingClientRect()
+      if (r.bottom > c.bottom) around.scrollTop += r.bottom - c.bottom + 4
+      else if (r.top < c.top) around.scrollTop -= c.top - r.top + 4
+    }
+    // After the frame has laid the screen out at its new height.
+    let later = 0
+    const soon = () => {
+      window.clearTimeout(later)
+      later = window.setTimeout(show, 80)
+    }
+    view.addEventListener('resize', soon)
+    return () => {
+      window.clearTimeout(later)
+      view.removeEventListener('resize', soon)
+    }
+  }, [])
+
   const bridge = data.texts.find((x) => x.abbreviation === textAbbreviation) ?? data.texts[0]
   const source = bridge.lines[position.verse] ?? []
   const markers = source.map((l) => l.marker)
@@ -80,16 +106,21 @@ function Center({ context }: MiniAppCenterProps) {
     }
   }
 
+  // The text and the box share the pane's height: with the keyboard up the box stays right above it, and the text (and
+  // the helps of a touched word) scrolls in what is left, so neither is pushed out of sight by the other.
   const own = (
     <div className="edit-pane">
-      <div className="edit-source" aria-label={t('editor.textoPuente', { texto: bridge.abbreviation })}>
-        <span className="edit-source-label">
-          {bridge.abbreviation} · {hint}
-        </span>
-        <WordLines lines={source} verse={position.verse} lit={lit(bridge.abbreviation)} onWord={(place) => touch(bridge.abbreviation, position.verse, place)} />
+      <div className="edit-source-scroll">
+        <div className="edit-source" aria-label={t('editor.textoPuente', { texto: bridge.abbreviation })}>
+          <span className="edit-source-label">
+            {bridge.abbreviation} · {hint}
+          </span>
+          <WordLines lines={source} verse={position.verse} lit={lit(bridge.abbreviation)} onWord={(place) => touch(bridge.abbreviation, position.verse, place)} />
+        </div>
+        {card(bridge.abbreviation, position.verse)}
       </div>
-      {card(bridge.abbreviation, position.verse)}
       <div
+        className="edit-fields"
         onFocus={() => {
           window.clearTimeout(stopWriting.current)
           writing.current = true
@@ -112,8 +143,8 @@ function Center({ context }: MiniAppCenterProps) {
           addLabel={t('editor.otroRenglon')}
           onChange={write}
         />
+        {poem && <p className="edit-hint">{t('editor.comoRenglones')}</p>}
       </div>
-      {poem && <p className="edit-hint">{t('editor.comoRenglones')}</p>}
     </div>
   )
 
