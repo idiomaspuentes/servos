@@ -16,7 +16,7 @@ import { chapterOf, type PrototypeData } from '../../../prototype/data'
 import { useT } from '../../i18n/i18n'
 import { Markdown } from '../../frame/Markdown'
 import { Sheet } from '../../frame/Sheet'
-import { WordLines } from '../../frame/TouchWords'
+import { WordLines, wordsOf } from '../../frame/TouchWords'
 import { WordPicker } from '../../frame/WordPicker'
 import { readDraft } from '../../projects/work'
 import {
@@ -187,6 +187,21 @@ function Center({ context }: MiniAppCenterProps) {
         <p className="word-help-kind">
           {t(`revisorNotas.cat.${item.category}`)} · {item.chapter}:{item.verse}
         </p>
+        {/* What the note is about, first: notes begin by speaking of it («This phrase…»). In each text, as the
+            reference below can be changed, and since a note may point to the wording of one of them. */}
+        <dl className="review-quote">
+          {data.texts.map((x) => {
+            const quote = wordsOf(x, item.note.places[x.abbreviation]) || (x.original ? item.note.quote : x.abbreviation === 'TPS' ? item.note.gst : item.note.glt)
+            return quote ? (
+              <div key={x.abbreviation}>
+                <dt>{x.original ? t(`estudio.lengua.${x.lang ?? 'original'}`) : x.abbreviation}</dt>
+                <dd className={x.original ? 'is-original' : undefined} dir={x.dir ?? 'ltr'} lang={x.lang}>
+                  {quote}
+                </dd>
+              </div>
+            ) : null
+          })}
+        </dl>
         <h2 className="review-figure">{figureName(item.academy)}</h2>
         <div className="review-note">
           <Markdown text={item.note.note} />

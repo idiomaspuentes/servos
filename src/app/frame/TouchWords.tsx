@@ -263,7 +263,8 @@ export function wordAt(text: PrototypeText, place: number): string {
 }
 
 /** The words of a help in a text, in order, with «…» where other words lie between. */
-function wordsOf(text: PrototypeText, places: number[] | undefined): string {
+/** The words of a text at these places, in reading order, with «…» where words are left out between them. */
+export function wordsOf(text: PrototypeText, places: number[] | undefined): string {
   if (!places?.length) return ''
   const sorted = [...places].sort((a, b) => a - b)
   return sorted.map((p, i) => (i > 0 && p > sorted[i - 1] + 1 ? `… ${wordAt(text, p)}` : wordAt(text, p))).join(' ')
