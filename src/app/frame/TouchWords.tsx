@@ -12,6 +12,7 @@ import type { Places, PrototypeData, PrototypeNote, PrototypeText } from '../../
 import type { WordLine } from '../../resources/reading'
 import { useT } from '../i18n/i18n'
 import { Markdown } from './Markdown'
+import { showInPane } from './Panes'
 import { Sheet } from './Sheet'
 
 export type WordHelp =
@@ -179,14 +180,7 @@ export function WordHelpCard({
   // Brought into sight in the pane that scrolls around it, never by scrolling the page: under the keyboard there is
   // little room, and the card would open out of sight.
   const self = useRef<HTMLElement>(null)
-  useLayoutEffect(() => {
-    const card = self.current
-    const around = card?.parentElement?.closest<HTMLElement>('.pane')
-    if (!card || !around) return
-    const c = around.getBoundingClientRect()
-    const r = card.getBoundingClientRect()
-    if (r.bottom > c.bottom) around.scrollTop += Math.min(r.top - c.top - 8, r.bottom - c.bottom + 8)
-  }, [touched.place, touched.index])
+  useLayoutEffect(() => showInPane(self.current), [touched.place, touched.index])
 
   return (
     <aside ref={self} className="word-help" aria-label={t('ayudas.dePalabra', { palabra: word })}>

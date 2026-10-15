@@ -27,6 +27,20 @@ export function keepFocus(event: PointerEvent) {
   if (document.activeElement instanceof HTMLTextAreaElement || document.activeElement instanceof HTMLInputElement) event.preventDefault()
 }
 
+/**
+ * Brings a box into sight in the pane that scrolls around it, never by scrolling the page: its first line when it
+ * opens above the pane's top or is taller than the pane (a long help moved to with «Next» from its end), else its
+ * whole when it opens below.
+ */
+export function showInPane(box: HTMLElement | null) {
+  const pane = box?.parentElement?.closest<HTMLElement>('.pane')
+  if (!box || !pane) return
+  const c = pane.getBoundingClientRect()
+  const r = box.getBoundingClientRect()
+  if (r.top < c.top) pane.scrollTop -= c.top - r.top + 8
+  else if (r.bottom > c.bottom) pane.scrollTop += Math.min(r.top - c.top - 8, r.bottom - c.bottom + 8)
+}
+
 /** Where a screen is wide enough for two panes side by side. */
 const WIDE = '(min-width: 900px)'
 

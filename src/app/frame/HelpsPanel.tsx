@@ -4,10 +4,11 @@
  * marks its words in the verse.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { PrototypeData } from '../../prototype/data'
 import { useT } from '../i18n/i18n'
 import { Markdown } from './Markdown'
+import { showInPane } from './Panes'
 import { Sheet } from './Sheet'
 
 type Tab = 'notas' | 'preguntas' | 'palabras'
@@ -43,6 +44,9 @@ export function HelpsPanel({
   const note = tab === 'notas' ? notes[index] : undefined
   const marked = note ? (textAbbreviation === 'TPS' ? note.gst : note.glt) : null
   useEffect(() => onMark(marked), [marked, onMark])
+  // In a pane, the next help starts at its first line, wherever the last one left the scroll.
+  const self = useRef<HTMLElement>(null)
+  useLayoutEffect(() => showInPane(self.current), [index, tab])
 
   const tabs: Array<{ id: Tab; label: string }> = [
     { id: 'notas', label: t('ayudas.notas', { n: notes.length }) },
@@ -51,7 +55,7 @@ export function HelpsPanel({
   ]
 
   return (
-    <section className="helps" aria-label={tabs.map((x) => x.label).join(', ')}>
+    <section ref={self} className="helps" aria-label={tabs.map((x) => x.label).join(', ')}>
       <div className="helps-tabs" role="tablist">
         {tabs.map((x) => (
           <button key={x.id} type="button" role="tab" aria-selected={tab === x.id} className="helps-tab" onClick={() => setTab(x.id)}>
