@@ -181,7 +181,7 @@ export function MiniAppScreen({
       ),
       setSaved,
       setUnit,
-      next: following,
+      next: backLabel ? onBack : following,
       open: onOpenApp,
     },
   }
@@ -227,7 +227,7 @@ export function MiniAppScreen({
         <Center context={context} />
         {app.primary && (
           <button type="button" className="button-primary" onPointerDown={keep} onClick={() => app.primary!.run(context)}>
-            {t(app.primary.label)}
+            {backLabel && app.primary.returning ? t(app.primary.returning, { app: backLabel }) : t(app.primary.label)}
           </button>
         )}
         {app.helps && <HelpsPanel data={data} verse={position.verse} textAbbreviation={text.abbreviation} onMark={onMark} />}

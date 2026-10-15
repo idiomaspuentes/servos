@@ -73,7 +73,10 @@ export interface MiniAppContext {
     setSaved(state: 'sinCambios' | 'guardado'): void
     /** Work a verse or a section at a time; the position line then moves by that. Kept for the next visit. */
     setUnit(unit: Unit): void
-    /** On to the next verse or section, as the position line's arrow does. */
+    /**
+     * On to the next verse or section, as the position line's arrow does; or, when this mini app was opened from
+     * another one to do something there, back to it: the next verse is not part of what was being done.
+     */
     next(): void
     /**
      * Opens another mini app of the project at a place (the editor, to correct a verse while reviewing it); its back
@@ -90,6 +93,11 @@ export interface MiniAppCenterProps {
 export interface MiniAppAction {
   /** Text keys of the mini app's own group, or of the frame's. */
   label: string
+  /**
+   * Its label when the mini app was opened from another one (the editor from the review), where `frame.next` goes
+   * back to it rather than on: «Save and go back». Given `{app}`, the other one's name.
+   */
+  returning?: string
   description?: string
   run(context: MiniAppContext): void
 }

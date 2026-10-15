@@ -3,7 +3,7 @@
  * their frame, receiving a pack, and the interface translator.
  */
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { chapterOf, chaptersOf } from '../prototype/data'
 import { MiniAppScreen } from './frame/MiniAppScreen'
 import { useT } from './i18n/i18n'
@@ -106,6 +106,52 @@ export function App() {
   const home = () => setScreen({ kind: 'home' })
   const bookScreen = screen.kind === 'book' ? screen : null
   const appScreen = screen.kind === 'app' ? screen : null
+  // Back from a mini app: to the one it was opened from, at the place it was left, or else to its book.
+  const leaveApp = () => {
+    if (!appScreen) return
+    const back = appScreen.back
+    if (back?.kind === 'app') {
+      const place = placeOf(person, back.book, back.id)
+      if (place) setPosition({ book: back.book, ...place }, back.id)
+    }
+    setScreen(back ?? { kind: 'book', projectId: appScreen.projectId, book: appScreen.book })
+  }
+
+  // The phone's back button does what the screen's back arrow does, rather than leave the app. The screens are not
+  // history of their own: away from home one entry is kept in the browser's history, and when the button takes it
+  // the screen goes back and, if still away from home, sets another.
+  const goBack = useRef(home)
+  goBack.current =
+    screen.kind === 'app' ? leaveApp : screen.kind === 'glossary' || screen.kind === 'receive' ? () => setScreen(screen.back) : home
+  const armed = useRef(false)
+  const skip = useRef(false)
+  useEffect(() => {
+    const onPop = () => {
+      if (skip.current) {
+        skip.current = false
+        return
+      }
+      armed.current = false
+      goBack.current()
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
+  useEffect(() => {
+    try {
+      if (screen.kind !== 'home' && !armed.current) {
+        history.pushState({ servos: true }, '')
+        armed.current = true
+      } else if (screen.kind === 'home' && armed.current) {
+        // Home by its own arrow: the entry kept is taken back, so the next press of the button leaves as it should.
+        armed.current = false
+        skip.current = true
+        history.back()
+      }
+    } catch {
+      /* a frame that refuses history: the arrows still work */
+    }
+  }, [screen])
 
   return (
     <>
@@ -167,15 +213,7 @@ export function App() {
           onPosition={setPosition}
           textAbbreviation={text}
           onTextAbbreviation={setText}
-          onBack={() => {
-            // Back to the mini app this one was opened from, at the place it was left, or else to the book.
-            const back = appScreen.back
-            if (back?.kind === 'app') {
-              const place = placeOf(person, back.book, back.id)
-              if (place) setPosition({ book: back.book, ...place }, back.id)
-            }
-            setScreen(back ?? { kind: 'book', projectId: appScreen.projectId, book: appScreen.book })
-          }}
+          onBack={leaveApp}
           backLabel={appScreen.back?.kind === 'app' && miniApp(appScreen.back.id) ? t('marco.volverA', { app: t(`${appScreen.back.id}.nombre`) }) : undefined}
           onOpenApp={(id, at) => {
             setPosition(at, id)

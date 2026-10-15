@@ -40,14 +40,23 @@ const verseTextOf = (book: string, chapter: number, verse: number) => readDraft(
 
 const sameFilter = (a: Filter, b: Filter) => a.kind === b.kind && ('id' in a ? a.id : '') === ('id' in b ? b.id : '')
 
+/**
+ * The reviewer's own state, kept while the app is open: going to the editor and back draws the reviewer anew, and
+ * it comes back to the same note, in the same group, in the same text.
+ */
+const held: { filter: Filter; currentId: string | null; refText: string } = { filter: { kind: 'todas' }, currentId: null, refText: 'TPL' }
+
 function Center({ context }: MiniAppCenterProps) {
   const { position, t, frame, chapters, chapterData, goTo, person } = context
   const book = position.book
   const all = checksOf(chapters.map(chapterData).filter((d): d is PrototypeData => Boolean(d)))
-  const [filter, setFilter] = useState<Filter>({ kind: 'todas' })
+  const [filter, setFilter] = useState<Filter>(held.filter)
   const [choosing, setChoosing] = useState(false)
-  const [currentId, setCurrentId] = useState<string | null>(null)
-  const [refText, setRefText] = useState('TPL')
+  const [currentId, setCurrentId] = useState<string | null>(held.currentId)
+  const [refText, setRefText] = useState(held.refText)
+  held.filter = filter
+  held.currentId = currentId
+  held.refText = refText
   // Only so the screen is drawn again after an answer is written.
   const [, setAnswered] = useState(0)
 
@@ -208,6 +217,12 @@ function Center({ context }: MiniAppCenterProps) {
 type Step = 1 | 2 | 3
 
 /**
+ * Where a note's check was left when the editor was opened from it, to come back to: the step, and the words marked,
+ * for the verse as it was. Kept while the app is open; the reviewer is drawn anew when the editor closes.
+ */
+const leftAt = new Map<string, { step: Step; picked: number[]; notThere: boolean; verseText: string }>()
+
+/**
  * One note's check, in three steps shown one at a time, each with one thing to do and one button on: read the note
  * (and what it is about); find it in the translation (touch the words that say it); answer whether it says it and
  * reads well. The steps are numbered at the top, so the person sees where they are and can go back to one done.
@@ -244,16 +259,30 @@ function NoteSteps({
   const state = stateOf(before, verseText)
   // The words chosen before still point at the same words only while the verse is the same.
   const kept = before && state !== 'cambio' ? before : null
-  const [picked, setPicked] = useState<number[]>(kept?.words ?? [])
-  const [notThere, setNotThere] = useState(Boolean(kept?.notThere))
+  // Back from the editor: at the step it was opened from, with the words marked, if the verse is the same; at finding
+  // the words again if it was changed. Then the note is as any other.
+  const [back] = useState(() => {
+    const left = leftAt.get(item.note.id)
+    return left ? { ...left, same: left.verseText.trim() === verseText.trim() } : null
+  })
+  // Forgotten once read, in an effect: React may call the initializer above twice.
+  useEffect(() => {
+    leftAt.delete(item.note.id)
+  }, [item.note.id])
+  const [picked, setPicked] = useState<number[]>(back ? (back.same ? back.picked : []) : (kept?.words ?? []))
+  const [notThere, setNotThere] = useState(back ? back.same && back.notThere : Boolean(kept?.notThere))
   // A note answered opens at its answer; one whose verse changed, at finding the words again; any other, at reading.
-  const [step, setStep] = useState<Step>(kept ? 3 : state === 'cambio' ? 2 : 1)
+  const [step, setStep] = useState<Step>(back ? (back.same ? back.step : 2) : kept ? 3 : state === 'cambio' ? 2 : 1)
   const [reached, setReached] = useState<Step>(step)
   const [article, setArticle] = useState(false)
   const [later, setLater] = useState(false)
   const [reason, setReason] = useState<'equipo' | 'investigar'>(before?.reason ?? 'equipo')
   const [comment, setComment] = useState(before?.comment ?? '')
   const chosen = notThere || picked.length > 0
+  const correct = () => {
+    leftAt.set(item.note.id, { step, picked, notThere, verseText })
+    onCorrect()
+  }
   const goStep = (s: Step) => {
     setStep(s)
     setReached((r) => (s > r ? s : r))
@@ -283,7 +312,7 @@ function NoteSteps({
       : step === 2
         ? words.length
           ? { label: 'revisorNotas.aDecidir', run: () => goStep(3), off: !chosen }
-          : { label: 'revisorNotas.traducirAhora', run: onCorrect, off: false }
+          : { label: 'revisorNotas.traducirAhora', run: correct, off: false }
         : null
 
   return (
@@ -400,7 +429,7 @@ function NoteSteps({
                 {t('revisorNotas.siBien')}
               </button>
               <div className="glossary-actions">
-                <button type="button" className="button-secondary" onClick={onCorrect}>
+                <button type="button" className="button-secondary" onClick={correct}>
                   {t('revisorNotas.corregirAhora')}
                 </button>
                 <button type="button" className="button-secondary" aria-expanded={later} onClick={() => setLater((l) => !l)}>

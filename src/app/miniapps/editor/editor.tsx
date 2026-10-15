@@ -250,6 +250,7 @@ export const editor: MiniApp = {
   Center,
   primary: {
     label: 'editor.guardarSeguir',
+    returning: 'editor.guardarVolver',
     run: (c) => c.frame.next(),
   },
   more: [
@@ -289,6 +290,7 @@ export const editor: MiniApp = {
       'lengua.grc': 'Griego',
       'lengua.original': 'Original',
       guardarSeguir: 'Guardar y seguir',
+      guardarVolver: 'Guardar y volver',
       unir: 'Unir con el siguiente versículo',
       unirAyuda: 'Cuando su idioma dice los dos versículos en una sola frase',
       deshacer: 'Deshacer',
@@ -327,6 +329,7 @@ export const editor: MiniApp = {
       'lengua.grc': 'Grego',
       'lengua.original': 'Original',
       guardarSeguir: 'Salvar e seguir',
+      guardarVolver: 'Salvar e voltar',
       unir: 'Juntar com o próximo versículo',
       unirAyuda: 'Quando seu idioma diz os dois versículos numa só frase',
       deshacer: 'Desfazer',
@@ -365,6 +368,7 @@ export const editor: MiniApp = {
       'lengua.grc': 'Greek',
       'lengua.original': 'Original',
       guardarSeguir: 'Save and continue',
+      guardarVolver: 'Save and go back',
       unir: 'Join with the next verse',
       unirAyuda: 'When your language says both verses in one sentence',
       deshacer: 'Undo',
