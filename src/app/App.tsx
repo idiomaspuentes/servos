@@ -6,6 +6,7 @@
 import { useState } from 'react'
 import { chapterOf, chaptersOf } from '../prototype/data'
 import { MiniAppScreen } from './frame/MiniAppScreen'
+import { useT } from './i18n/i18n'
 import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type Position } from './miniapps/contract'
 import { miniApp } from './miniapps/registry'
 import { loadProjects, saveProjects, type Phase, type Project } from './projects/model'
@@ -25,7 +26,7 @@ type Screen =
   | { kind: 'home' }
   | { kind: 'newProject' }
   | { kind: 'book'; projectId: string; book: string }
-  | { kind: 'app'; projectId: string; book: string; id: string }
+  | { kind: 'app'; projectId: string; book: string; id: string; back?: Screen }
   | { kind: 'settings'; projectId: string }
   | { kind: 'glossary'; projectId: string; back: Screen }
   | { kind: 'receive'; back: Screen }
@@ -44,6 +45,7 @@ function loadResume(): Resume | null {
 }
 
 export function App() {
+  const t = useT()
   const [projects, setProjectsState] = useState<Project[]>(loadProjects)
   const [screen, setScreen] = useState<Screen>({ kind: 'home' })
   const [resume, setResumeState] = useState<Resume | null>(loadResume)
@@ -165,7 +167,20 @@ export function App() {
           onPosition={setPosition}
           textAbbreviation={text}
           onTextAbbreviation={setText}
-          onBack={() => setScreen({ kind: 'book', projectId: appScreen.projectId, book: appScreen.book })}
+          onBack={() => {
+            // Back to the mini app this one was opened from, at the place it was left, or else to the book.
+            const back = appScreen.back
+            if (back?.kind === 'app') {
+              const place = placeOf(person, back.book, back.id)
+              if (place) setPosition({ book: back.book, ...place }, back.id)
+            }
+            setScreen(back ?? { kind: 'book', projectId: appScreen.projectId, book: appScreen.book })
+          }}
+          backLabel={appScreen.back?.kind === 'app' && miniApp(appScreen.back.id) ? t('marco.volverA', { app: t(`${appScreen.back.id}.nombre`) }) : undefined}
+          onOpenApp={(id, at) => {
+            setPosition(at, id)
+            setScreen({ kind: 'app', projectId: appScreen.projectId, book: appScreen.book, id, back: appScreen })
+          }}
         />
       )}
 

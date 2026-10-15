@@ -51,6 +51,9 @@ export interface MiniAppContext {
   unit: Unit
   /** The verses open: the verse, or every verse of its section. */
   shown: number[]
+  /** The chapters of the book on this device, and each one's texts and helps: for a mini app that goes through the book. */
+  chapters: number[]
+  chapterData(chapter: number): PrototypeData | null
   /** Words of the bridge text to mark in the open verse (from the help the person is reading). */
   marked: string | null
   /** What the frame can do for a mini app. */
@@ -72,6 +75,11 @@ export interface MiniAppContext {
     setUnit(unit: Unit): void
     /** On to the next verse or section, as the position line's arrow does. */
     next(): void
+    /**
+     * Opens another mini app of the project at a place (the editor, to correct a verse while reviewing it); its back
+     * arrow returns here.
+     */
+    open(appId: string, at: Position): void
   }
 }
 

@@ -424,6 +424,37 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .glossary-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
 .glossary-paste { display: flex; flex-direction: column; gap: 0.5rem; }
 
+/* Checking with the notes: one note at a time, read from the top down to its answer */
+.review { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.review-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.5rem max(1rem, calc((100% - 46rem) / 2 + 1rem)); border-block-end: 1px solid var(--line); }
+.review-filter { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.review-steps { flex: none; display: flex; align-items: center; font-variant-numeric: tabular-nums; }
+.review-steps .button-quiet { min-width: var(--touch); padding: 0; font-size: 1.4rem; }
+.review-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0.75rem 1rem 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; max-width: 46rem; margin-inline: auto; width: 100%; }
+.review-figure { margin: 0; font-size: 1.25rem; text-wrap: balance; }
+.review-note { font-size: 1.05rem; line-height: 1.55; }
+.review-note > :first-child { margin-block-start: 0; }
+.review-note > :last-child { margin-block-end: 0; }
+.review-article { align-self: flex-start; width: auto; }
+.review-ref, .review-mine, .review-answer { display: flex; flex-direction: column; gap: 0.5rem; border-block-start: 1px solid var(--line); padding-block-start: 0.75rem; }
+.review-ref .unit-switch { grid-auto-flow: column; grid-auto-columns: 1fr; grid-template-columns: none; margin: 0; }
+.review-later .unit-switch { margin: 0; }
+.review-ref-text { font-size: 1.15rem; line-height: 1.6; }
+.review-mine h3, .review-answer h3 { margin: 0; font-size: 1rem; }
+.review-words { margin: 0; display: flex; flex-wrap: wrap; gap: 0.35rem; font-size: 1.15rem; }
+.review-word { min-height: var(--touch); padding: 0.2rem 0.55rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--text); font: inherit; }
+.review-word.is-picked { background: var(--mark); border-color: var(--text-soft); }
+.review-done { margin: 0; padding: 0.6rem 0.75rem; border-radius: var(--radius); background: var(--accent-soft); color: var(--text); font-weight: 600; }
+.review-hint { margin: 0; }
+.review-later { display: flex; flex-direction: column; gap: 0.5rem; }
+.review-empty { padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+.review-groups { display: flex; flex-direction: column; gap: 0.25rem; }
+.review-category { display: flex; flex-direction: column; gap: 0.25rem; border-block-start: 1px solid var(--line); padding-block-start: 0.5rem; margin-block-start: 0.25rem; }
+.review-category .review-group + .review-group { padding-inline-start: 1.25rem; font-weight: 400; }
+.review-group { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; min-height: var(--touch); border: 0; border-radius: var(--radius); background: none; color: var(--text); text-align: start; font-weight: 600; padding-inline: 0.5rem; }
+.review-group.is-current { background: var(--accent-soft); }
+.review-group .quiet { flex: none; font-variant-numeric: tabular-nums; }
+
 /* On a phone the position line, with its arrows, is at the foot of a mini app's screen, under the thumb (right above
    the keyboard while writing); the notice of a new chapter floats above it. On a wide screen it stays at the top. */
 @media (max-width: 899px) {

@@ -434,5 +434,6 @@
   "st.splitHere": "Começar aqui outra oração",
   "st.joinNext": "Unir com a oração seguinte",
   "st.second": "A segunda oração",
-  "st.leftOut": "Este diagrama não tem todas as palavras do versículo. Faltam: {words}. A análise foi feita sobre outra edição do texto, que não as traz."
+  "st.leftOut": "Este diagrama não tem todas as palavras do versículo. Faltam: {words}. A análise foi feita sobre outra edição do texto, que não as traz.",
+  "marco.volverA": "{app}"
 }

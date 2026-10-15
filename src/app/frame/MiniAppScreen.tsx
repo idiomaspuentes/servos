@@ -55,8 +55,10 @@ export function MiniAppScreen({
   textAbbreviation,
   onTextAbbreviation,
   onBack,
+  backLabel,
   chapters,
   dataOf,
+  onOpenApp,
 }: {
   app: MiniApp
   /** The chapter open. */
@@ -71,6 +73,9 @@ export function MiniAppScreen({
   textAbbreviation: string
   onTextAbbreviation(a: string): void
   onBack(): void
+  /** What the back arrow says, when it goes back to another mini app rather than to the book. */
+  backLabel?: string
+  onOpenApp(appId: string, at: Position): void
 }) {
   const t = useT()
   const [marked, setMarked] = useState<string | null>(null)
@@ -154,6 +159,8 @@ export function MiniAppScreen({
     goTo: onPosition,
     unit,
     shown,
+    chapters,
+    chapterData: dataOf,
     marked,
     frame: {
       switchText: () => {
@@ -175,6 +182,7 @@ export function MiniAppScreen({
       setSaved,
       setUnit,
       next: following,
+      open: onOpenApp,
     },
   }
   const Center = app.Center
@@ -185,7 +193,7 @@ export function MiniAppScreen({
     <div className={`screen screen-app${app.fills ? ' screen-fill' : ''}${app.fills && keyboard ? ' is-writing' : ''}`} style={box}>
       <header className="header">
         <button type="button" className="button-quiet header-back" onClick={onBack}>
-          ‹ {t('marco.volver')}
+          ‹ {backLabel ?? t('marco.volver')}
         </button>
         <div className="header-title">
           <span className="header-app">{t(`${app.id}.nombre`)}</span>

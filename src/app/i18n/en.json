@@ -236,5 +236,6 @@
   "ayudas.lexico": "Lexicon",
   "ayudas.enEsteVersiculo": "In this verse",
   "ayudas.otrosSentidos": "Other senses ({n})",
-  "ayudas.lexicoCredito": "Lexicon adapted from the United Bible Societies' dictionaries (CC BY-SA 4.0)."
+  "ayudas.lexicoCredito": "Lexicon adapted from the United Bible Societies' dictionaries (CC BY-SA 4.0).",
+  "marco.volverA": "{app}"
 }
