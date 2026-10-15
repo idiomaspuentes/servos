@@ -198,6 +198,11 @@ sabe hasta dónde incorporó a cada persona, y las decisiones viajan dentro de l
 - Dos alineaciones distintas del mismo texto con la misma referencia (decidido el 14 de octubre): si las hizo la
   misma persona, queda la más reciente; si las hicieron personas distintas, es un choque de alineación y se decide
   como los de texto.
+- **La alineación alimenta el glosario** (idea del 15 de octubre, para la mini app de revisión «Alineación»): al
+  alinear un versículo con el original, la palabra con que se tradujo cada palabra del hebreo o del griego se anota
+  en el glosario del proyecto (en el archivo de esa palabra, sección 7), con el versículo como ejemplo. Lo que el
+  equipo decidió a mano queda como está; lo que sale de alinear se agrega como otra forma usada, para que el revisor
+  vea de un vistazo si una palabra se tradujo siempre igual o de varias maneras.
 
 ### 6.9 Dónde se guarda
 
@@ -234,6 +239,16 @@ sabe hasta dónde incorporó a cada persona, y las decisiones viajan dentro de l
   `bt-synergy/docs/LANGUAGE_PACKS_PLAN.md`.
 - Falta sacar de la app tc-study a paquetes compartidos el código que construye y muestra las citas y los títulos
   (`apps/tc-study/src/features/helps`), para que Servos pueda reconstruirlos si un paquete viene sin ellos.
+- **El léxico viaja en el paquete de idioma** (decidido el 15 de octubre): los léxicos que usa Taller en Door43
+  (`es-419_uhl` para hebreo y arameo, `es-419_ugl` para griego; un archivo por número Strong, `content/7121.json`).
+  Al tocar una palabra, el léxico es la última ayuda, con el sentido que da para ese versículo primero (la numeración
+  hebrea de algunos versículos se convierte como en Taller).
+- **El glosario del proyecto es un archivo por palabra** (decidido el 15 de octubre), como los léxicos: en Door43,
+  el repositorio `<idioma>_tg` con `content/H7121.json` = `{ "strong", "entries" }`; una expresión vive en el archivo
+  de su primera palabra. Cada capítulo lee solo los archivos de sus palabras, y dos traductores que agregan palabras
+  distintas no tocan el mismo archivo. Entre computadoras viaja, por defecto, solo lo cambiado desde la última vez.
+  Las entradas conservan las columnas del glosario de Taller, y se recibe su TSV; para que las dos apps compartan
+  el repositorio, Taller tendría que pasar a este formato.
 - **Por decidir:** el formato del paquete de trabajo (el libro y su diario).
 - Al importar, la app dice qué trae y qué cambia antes de aplicarlo.
 - Un paquete de recursos más nuevo puede reemplazar a uno anterior; el trabajo hecho no se toca, pero la app avisa
