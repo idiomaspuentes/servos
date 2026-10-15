@@ -423,3 +423,16 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .glossary-share h2 { margin-block-start: 0.5rem; }
 .glossary-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
 .glossary-paste { display: flex; flex-direction: column; gap: 0.5rem; }
+
+/* On a phone the position line, with its arrows, is at the foot of a mini app's screen, under the thumb (right above
+   the keyboard while writing); the notice of a new chapter floats above it. On a wide screen it stays at the top. */
+@media (max-width: 899px) {
+  .screen-app { display: flex; flex-direction: column; }
+  .screen-app > .main { order: 1; flex: 1; }
+  .screen-app > .position-crossed { order: 2; }
+  .screen-app > .position {
+    order: 3; position: sticky; inset-block-end: 0; z-index: 2;
+    border-block-start: 1px solid var(--line); padding-block-end: env(safe-area-inset-bottom, 0px);
+  }
+  .screen-app > .position-crossed > span { inset-block-start: auto; inset-block-end: 0.4rem; }
+}

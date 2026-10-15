@@ -182,7 +182,7 @@ export function MiniAppScreen({
   return (
     // While writing on a phone the header and the filled button step aside: the keyboard leaves room for little more
     // than the box and the text it translates, and the arrows of the position line still move on.
-    <div className={app.fills ? (keyboard ? 'screen screen-fill is-writing' : 'screen screen-fill') : 'screen'} style={box}>
+    <div className={`screen screen-app${app.fills ? ' screen-fill' : ''}${app.fills && keyboard ? ' is-writing' : ''}`} style={box}>
       <header className="header">
         <button type="button" className="button-quiet header-back" onClick={onBack}>
           ‹ {t('marco.volver')}
