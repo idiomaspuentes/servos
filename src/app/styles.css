@@ -358,7 +358,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 /* Panes: one in sight on a phone, a finger slides to the next */
 .panes { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .panes-tabs { display: flex; overflow-x: auto; scrollbar-width: none; border-block-end: 1px solid var(--line); padding-inline: 0.25rem; }
-.panes-tab { flex: 0 0 auto; min-height: var(--touch); border: 0; border-radius: 0; background: none; color: var(--text-soft); border-block-end: 3px solid transparent; padding-inline: 0.5rem; }
+.panes-tab { flex: 0 0 auto; min-height: var(--touch); min-width: var(--touch); border: 0; border-radius: 0; background: none; color: var(--text-soft); border-block-end: 3px solid transparent; padding-inline: 0.5rem; }
 .panes-tab[aria-selected='true'] { color: var(--text); border-block-end-color: var(--accent); font-weight: 600; }
 /* The window clips and cannot be scrolled; the row inside it is moved by a transform (see Panes.tsx). */
 .panes-window { flex: 1; min-height: 0; overflow: hidden; overflow: clip; }
@@ -499,7 +499,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .study { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.5rem; }
 .study-next { flex: none; margin-inline: 1rem; width: auto; }
 .study-prompts { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-.chip { min-height: 36px; padding: 0.25rem 0.75rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-size: 0.9rem; }
+.chip { min-height: var(--touch); padding: 0.25rem 0.75rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-size: 0.9rem; }
 .chip:active { background: var(--accent-soft); }
 .chip-question { text-align: start; border-style: dashed; }
 .study-answers, .general-notes { font-size: 0.95rem; }
@@ -511,7 +511,20 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .glossary-word { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.5rem; margin: 0; font-size: 1.15rem; font-weight: 600; }
 .glossary-offered { display: flex; flex-direction: column; gap: 0.35rem; }
 .glossary-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
-.glossary-entry { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.6rem 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.glossary-entry { display: flex; flex-direction: column; align-items: stretch; gap: 0.15rem; width: 100%; padding: 0.6rem 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--text); text-align: start; font-weight: 400; }
+.glossary-rendering { font-family: var(--project-font, var(--font)); }
+.glossary-state { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 0; }
+.glossary-lemma { margin-inline-start: auto; font-size: 1.2rem; }
+.badge-done { background: var(--done-soft); color: var(--done); }
+.glossary-uses { display: flex; flex-direction: column; gap: 0.4rem; border-block-start: 1px solid var(--line); padding-block-start: 0.75rem; }
+.glossary-uses h3 { margin: 0; font-size: 1rem; }
+.glossary-use-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.glossary-use { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.75rem; width: 100%; text-align: start; font-weight: 400; background: var(--surface); color: var(--text); border: 1px solid var(--line); }
+.glossary-use-place { font-weight: 600; font-variant-numeric: tabular-nums; }
+.glossary-use-state { color: var(--text-soft); font-size: 0.9rem; }
+.glossary-use.is-uses .glossary-use-state { color: var(--done); }
+.glossary-use.is-other { border-color: var(--warn-text); }
+.glossary-use.is-other .glossary-use-state { color: var(--warn-text); font-weight: 600; }
 .glossary-entry-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 1.1rem; }
 .glossary-share { display: flex; flex-direction: column; gap: 0.5rem; border-block-start: 1px solid var(--line); padding-block-start: 0.75rem; }
 .glossary-share h2 { margin-block-start: 0.5rem; }
@@ -529,7 +542,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 /* The phrase a note is about, before the note: in one text at a time, chosen by the small tabs above it */
 .review-quote { overflow: hidden; overflow: clip; touch-action: pan-y; user-select: none; -webkit-user-select: none; display: flex; flex-direction: column; gap: 0.4rem; padding: 0.5rem 0.75rem 0.75rem; border-inline-start: 3px solid var(--accent); border-radius: var(--radius); background: var(--surface); }
 .review-quote-switch { display: flex; flex-wrap: wrap; gap: 0.25rem; }
-.review-quote-switch button { min-height: 36px; padding: 0.15rem 0.7rem; border: 1px solid transparent; border-radius: 999px; background: none; color: var(--text-soft); font-size: 0.85rem; font-weight: 600; }
+.review-quote-switch button { min-height: var(--touch); min-width: var(--touch); padding: 0.15rem 0.7rem; border: 1px solid transparent; border-radius: 999px; background: none; color: var(--text-soft); font-size: 0.85rem; font-weight: 600; }
 .review-quote-switch button[aria-checked='true'] { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
 .review-quote-text { margin: 0; font-size: 1.15rem; font-weight: 600; line-height: 1.45; }
 .review-quote-text.is-original { font-weight: 400; font-size: 1.3rem; }
@@ -566,7 +579,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .align-left { flex: none; font-size: 0.85rem; font-weight: 600; color: var(--text-soft); font-variant-numeric: tabular-nums; }
 .align-left.is-done { color: var(--done); }
 .align-bank-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-block-end: -0.25rem; }
-.align-bank-head .button-quiet { width: auto; min-height: 36px; padding-inline: 0.25rem; }
+.align-bank-head .button-quiet { width: auto; min-height: var(--touch); padding-inline: 0.25rem; }
 .align-bank[data-over] { box-shadow: 0 0 0 2px var(--accent); }
 /* What is carried, under the finger; and where it came from, faint, until it is put down */
 .al-word--ghost { display: inline-block; background: var(--accent-soft); border-color: var(--accent); box-shadow: 0 4px 12px rgb(0 0 0 / 0.25); }
@@ -582,7 +595,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .align-actions { flex: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; padding-block: 0.25rem; border-block-start: 1px solid var(--line); }
 .align-actions > button { flex: 1 1 auto; width: auto; min-height: var(--touch); }
 .align-empty { display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem 0; }
-.al-word { min-height: var(--touch); padding: 0.2rem 0.7rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); color: var(--text); font-size: 1.05rem; touch-action: manipulation; }
+.al-word { min-height: var(--touch); min-width: var(--touch); padding: 0.2rem 0.7rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); color: var(--text); font-size: 1.05rem; touch-action: manipulation; }
 .al-word[data-selected] { background: var(--accent-soft); border-color: var(--accent); font-weight: 600; }
 /* A word placed reads on, dashed and checked, so the verse can still be read in the bank */
 .al-word[data-aligned] { color: var(--text-soft); border-style: dashed; }
@@ -615,9 +628,9 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .review-renderings strong { font-size: 1.1rem; }
 .review-renderings .review-unchecked { border-style: dashed; background: none; }
 .review-places { display: flex; flex-wrap: wrap; gap: 0.3rem; }
-.review-place { min-height: 36px; min-width: 3rem; padding: 0.15rem 0.6rem; border: 1px solid var(--line); border-radius: 999px; background: var(--bg); color: var(--accent); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.review-place { min-height: var(--touch); min-width: 3rem; padding: 0.15rem 0.6rem; border: 1px solid var(--line); border-radius: 999px; background: var(--bg); color: var(--accent); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
 /* The verse being checked, among the places: said, not a button, as it is where one already is */
-.review-here { display: inline-flex; align-items: center; min-height: 36px; padding-inline: 0.2rem; color: var(--text-soft); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.review-here { display: inline-flex; align-items: center; min-height: var(--touch); padding-inline: 0.2rem; color: var(--text-soft); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
 .review-not-yet { display: flex; flex-direction: column; gap: 0.4rem; }
 .review-not-yet .quiet { margin: 0; }
 .review-glossary { margin: 0; display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: baseline; }

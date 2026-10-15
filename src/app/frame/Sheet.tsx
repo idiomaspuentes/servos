@@ -10,6 +10,17 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useT } from '../i18n/i18n'
 
+/** The sheets open, the last on top: the phone's back button closes the top one before it leaves a screen. */
+const open: Array<{ close(): void }> = []
+
+/** Closes the sheet on top, if one is open; whether one was. */
+export function closeTopSheet(): boolean {
+  const top = open[open.length - 1]
+  if (!top) return false
+  top.close()
+  return true
+}
+
 export function Sheet({ title, onClose, children }: { title: string; onClose(): void; children: ReactNode }) {
   const t = useT()
   const panel = useRef<HTMLDivElement>(null)
@@ -18,6 +29,11 @@ export function Sheet({ title, onClose, children }: { title: string; onClose(): 
   useEffect(() => panel.current?.focus(), [])
   const close = useRef(onClose)
   close.current = onClose
+  useEffect(() => {
+    const entry = { close: () => close.current() }
+    open.push(entry)
+    return () => void open.splice(open.indexOf(entry), 1)
+  }, [])
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close.current()
     window.addEventListener('keydown', onKey)

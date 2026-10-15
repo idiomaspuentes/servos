@@ -15,6 +15,7 @@ import { keepLastApp, keepPlace, lastAppOf, placeOf } from './projects/work'
 import { AddBookSheet } from './screens/AddBook'
 import { BookScreen } from './screens/BookScreen'
 import { ChooseScreen } from './screens/ChooseScreen'
+import { closeTopSheet } from './frame/Sheet'
 import { GlossaryScreen } from './screens/GlossaryScreen'
 import { Home, type Resume } from './screens/Home'
 import { Language, TestModeBar } from './screens/Language'
@@ -32,7 +33,7 @@ type Screen =
   | { kind: 'book'; projectId: string; book: string }
   | { kind: 'app'; projectId: string; book: string; id: string; back?: Screen }
   | { kind: 'settings'; projectId: string }
-  | { kind: 'glossary'; projectId: string; back: Screen }
+  | { kind: 'glossary'; projectId: string; back: Screen; entry?: string }
   | { kind: 'receive'; back: Screen }
   | { kind: 'recibir'; back: Screen; projectId?: string; book?: string }
   | { kind: 'translate' }
@@ -133,11 +134,22 @@ export function App() {
   goBack.current =
     screen.kind === 'app' ? leaveApp : screen.kind === 'glossary' || screen.kind === 'receive' || screen.kind === 'recibir' || screen.kind === 'elegir' ? () => setScreen(screen.back) : home
   const armed = useRef(false)
+  const away = useRef(false)
+  away.current = screen.kind !== 'home'
   const skip = useRef(false)
   useEffect(() => {
     const onPop = () => {
       if (skip.current) {
         skip.current = false
+        return
+      }
+      // A sheet open (a menu, a list, an article) is what the button closes first, as on any phone: the screen stays,
+      // and its entry is set again for the next press.
+      if (closeTopSheet()) {
+        if (away.current) {
+          history.pushState({ servos: true }, '')
+          armed.current = true
+        }
         return
       }
       armed.current = false
@@ -227,7 +239,19 @@ export function App() {
       )}
 
       {screen.kind === 'glossary' && project(screen.projectId) && (
-        <GlossaryScreen project={project(screen.projectId)!} onBack={() => setScreen(screen.back)} />
+        <GlossaryScreen
+          project={project(screen.projectId)!}
+          books={project(screen.projectId)!.books.map((b) => ({ code: b.code, chapters: chaptersFor(b.code) }))}
+          person={person}
+          backLabel={screen.back.kind === 'book' ? bookName(screen.back.book) : t('marco.volver')}
+          openEntry={screen.entry}
+          onBack={() => setScreen(screen.back)}
+          onOpenVerse={(use, entry) => {
+            // The verse opens in the editor; back from it comes to this word of the glossary, still open.
+            setPosition({ book: use.book, chapter: use.chapter, verse: use.verse }, 'editor')
+            setScreen({ kind: 'app', projectId: screen.projectId, book: use.book, id: 'editor', back: { ...screen, entry } })
+          }}
+        />
       )}
 
       {appScreen && miniApp(appScreen.id) && position.book === appScreen.book && chapterOf(appScreen.book, position.chapter) && (
@@ -243,7 +267,13 @@ export function App() {
           textAbbreviation={text}
           onTextAbbreviation={setText}
           onBack={leaveApp}
-          backLabel={appScreen.back?.kind === 'app' && miniApp(appScreen.back.id) ? t('marco.volverA', { app: t(`${appScreen.back.id}.nombre`) }) : undefined}
+          backLabel={
+            appScreen.back?.kind === 'app' && miniApp(appScreen.back.id)
+              ? t('marco.volverA', { app: t(`${appScreen.back.id}.nombre`) })
+              : appScreen.back?.kind === 'glossary'
+                ? t('glosario.titulo')
+                : undefined
+          }
           onOpenApp={(id, at) => {
             setPosition(at, id)
             setScreen({ kind: 'app', projectId: appScreen.projectId, book: appScreen.book, id, back: appScreen })

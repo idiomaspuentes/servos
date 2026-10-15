@@ -9,6 +9,8 @@
  */
 
 import { useRef, useState } from 'react'
+import type { PrototypeData } from '../../prototype/data'
+import { useProjectFont } from '../frame/fonts'
 import { Sheet } from '../frame/Sheet'
 import { useT } from '../i18n/i18n'
 import type { Project } from '../projects/model'
@@ -22,13 +24,37 @@ import {
   saveGlossaryEntry,
   type Gathered,
 } from '../projects/glossary'
+import type { GlossaryUse } from '../projects/glossaryUses'
+import { GlossaryEntrySheet } from './GlossaryEntrySheet'
 
-export function GlossaryScreen({ project, onBack }: { project: Project; onBack(): void }) {
+export function GlossaryScreen({
+  project,
+  books,
+  person,
+  backLabel,
+  openEntry,
+  onBack,
+  onOpenVerse,
+}: {
+  project: Project
+  /** The project's books whose texts are on this phone: where each word is looked for. */
+  books: Array<{ code: string; chapters: PrototypeData[] }>
+  person: string
+  /** Where «‹» goes back to, named. */
+  backLabel: string
+  /** The entry open when coming back from a verse opened from it. */
+  openEntry?: string
+  onBack(): void
+  /** Opens a verse in the editor, from an entry; `entry` is reopened on coming back. */
+  onOpenVerse(use: GlossaryUse, entry: string): void
+}) {
   const t = useT()
   const [entries, setEntries] = useState(() => readGlossary(project.id))
   const [search, setSearch] = useState('')
   const [said, setSaid] = useState<string | null>(null)
   const [sharing, setSharing] = useState(false)
+  const [open, setOpen] = useState<string | null>(openEntry ?? null)
+  const opened = entries.find((e) => e.id === open)
   const [pasting, setPasting] = useState(false)
   const [pasted, setPasted] = useState('')
   const file = useRef<HTMLInputElement>(null)
@@ -79,11 +105,13 @@ export function GlossaryScreen({ project, onBack }: { project: Project; onBack()
     }
   }
 
+  useProjectFont(project.font)
+
   return (
     <div className="screen">
       <header className="header">
         <button type="button" className="button-quiet header-back" onClick={onBack}>
-          ‹ {t('marco.volver')}
+          ‹ {backLabel}
         </button>
         <div className="header-title">
           <span className="header-app">{t('glosario.titulo')}</span>
@@ -103,15 +131,17 @@ export function GlossaryScreen({ project, onBack }: { project: Project; onBack()
         {entries.length === 0 && <p className="notice">{t('glosario.vacio')}</p>}
         <ul className="glossary-list">
           {shown.map((e) => (
-            <li key={e.id} className="glossary-entry">
-              <div className="glossary-entry-head">
-                <strong>{e.rendering}</strong>
-                <span className="badge">{t(e.status === 'agreed' ? 'ayudas.acordada' : 'ayudas.propuesta')}</span>
-              </div>
-              <span className="help-original">{e.lemma}</span>
-              {e.alternatives.length > 0 && <span className="quiet">{t('ayudas.tambien', { formas: e.alternatives.join(', ') })}</span>}
-              {e.note && <span className="study-other-text">{e.note}</span>}
-              {e.by && <span className="quiet">{t('ayudas.glosarioDe', { nombre: e.by })}</span>}
+            <li key={e.id}>
+              {/* Touched, the entry opens: its decision, a way to change it, and where its word is. */}
+              <button type="button" className="glossary-entry" onClick={() => setOpen(e.id)}>
+                <span className="glossary-entry-head">
+                  <strong className="glossary-rendering">{e.rendering}</strong>
+                  <span className={e.status === 'agreed' ? 'badge badge-done' : 'badge'}>{t(e.status === 'agreed' ? 'ayudas.acordada' : 'ayudas.propuesta')}</span>
+                </span>
+                <span className="help-original">{e.lemma}</span>
+                {e.alternatives.length > 0 && <span className="quiet">{t('ayudas.tambien', { formas: e.alternatives.join(', ') })}</span>}
+                {e.note && <span className="study-other-text">{e.note}</span>}
+              </button>
             </li>
           ))}
         </ul>
@@ -122,6 +152,20 @@ export function GlossaryScreen({ project, onBack }: { project: Project; onBack()
           </p>
         )}
       </main>
+      {opened && (
+        <GlossaryEntrySheet
+          entry={opened}
+          books={books}
+          person={person}
+          dir={books[0]?.chapters[0]?.texts.find((x) => x.original)?.dir}
+          onSave={(entry) => {
+            saveGlossaryEntry(project.id, entry)
+            setEntries(readGlossary(project.id))
+          }}
+          onOpenVerse={(use) => onOpenVerse(use, opened.id)}
+          onClose={() => setOpen(null)}
+        />
+      )}
       {sharing && (
         <Sheet title={t('glosario.compartirTitulo')} onClose={() => setSharing(false)}>
           <div className="glossary-share">

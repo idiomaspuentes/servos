@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import type { PrototypeData } from '../../prototype/data'
 import { useT } from '../i18n/i18n'
-import { loadFont } from './fonts'
+import { useProjectFont } from './fonts'
 import type { MiniApp, MiniAppContext, Position, Unit } from '../miniapps/contract'
 import { HelpsPanel } from './HelpsPanel'
 import { keepFocus } from './Panes'
@@ -190,16 +190,12 @@ export function MiniAppScreen({
   const Center = app.Center
   // The actions of «More» offered where the person is.
   const offered = (app.more ?? []).filter((action) => !action.when || action.when(context))
-  useEffect(() => loadFont(project.font), [project.font])
+  useProjectFont(project.font)
 
   return (
     // While writing on a phone the header and the filled button step aside: the keyboard leaves room for little more
     // than the box and the text it translates, and the arrows of the position line still move on.
-    <div
-      className={`screen screen-app${app.fills ? ' screen-fill' : ''}${app.fills && keyboard ? ' is-writing' : ''}`}
-      // What the team writes is shown in the project's font (its settings), the rest in the app's.
-      style={{ ...box, ...(project.font ? ({ '--project-font': `'${project.font}', var(--font)` } as CSSProperties) : {}) }}
-    >
+    <div className={`screen screen-app${app.fills ? ' screen-fill' : ''}${app.fills && keyboard ? ' is-writing' : ''}`} style={box}>
       <header className="header">
         <button type="button" className="button-quiet header-back" onClick={onBack}>
           {/* Where it goes back to: the mini app it was opened from, or the book. */}

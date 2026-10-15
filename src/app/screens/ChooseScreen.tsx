@@ -4,9 +4,9 @@
  * can be left for later; it stays waiting, and the book page keeps saying how many are left.
  */
 
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useMemo, useState } from 'react'
 import type { PrototypeData } from '../../prototype/data'
-import { loadFont } from '../frame/fonts'
+import { useProjectFont } from '../frame/fonts'
 import { TwoVersions } from '../frame/TwoVersions'
 import { WordLines } from '../frame/TouchWords'
 import { useT } from '../i18n/i18n'
@@ -34,7 +34,7 @@ export function ChooseScreen({
   const [at, setAt] = useState(0)
   const [chosen, setChosen] = useState(0)
   const [source, setSource] = useState(false)
-  useEffect(() => loadFont(project.font), [project.font])
+  useProjectFont(project.font)
 
   const name = bookName(book)
   const place = queue[at]
@@ -43,7 +43,7 @@ export function ChooseScreen({
   const received = place && otherVersion(book, place.chapter, place.verse)
 
   return (
-    <div className="screen" style={project.font ? ({ '--project-font': `'${project.font}', var(--font)` } as CSSProperties) : undefined}>
+    <div className="screen">
       <header className="header">
         <button type="button" className="button-quiet header-back" onClick={onBack}>
           ‹ {name}

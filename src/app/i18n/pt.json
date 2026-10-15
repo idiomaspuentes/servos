@@ -539,5 +539,15 @@
   "libro.dosVersiones": "Versículos com duas versões: {n}",
   "libro.dosVersionesAyuda": "Chegaram escritos de outro jeito. Escolha qual fica em cada um.",
   "libro.elegir": "Escolher",
-  "recibir.elegirAhora": "Escolher entre as duas versões ({n})"
+  "recibir.elegirAhora": "Escolher entre as duas versões ({n})",
+  "glosario.acordar": "Marcar como combinada",
+  "glosario.cambiar": "Mudar",
+  "glosario.noCambiar": "Deixar como está",
+  "glosario.vuelvePropuesta": "Ao mudar como se traduz, volta a ser uma proposta até a equipe combinar.",
+  "glosario.dondeAparece": "Onde aparece: {n}",
+  "glosario.noAparece": "Esta palavra não aparece nos livros que há neste telefone.",
+  "glosario.dicenOtra": "Versículos que dizem outra coisa: {n}. Toque neles para revisá-los no editor.",
+  "glosario.loUsa": "Usa",
+  "glosario.diceOtra": "Diz outra coisa",
+  "glosario.sinTraducir": "Sem traduzir"
 }

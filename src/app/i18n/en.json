@@ -341,5 +341,15 @@
   "libro.dosVersiones": "Verses with two versions: {n}",
   "libro.dosVersionesAyuda": "They came written another way. Choose which one stays in each.",
   "libro.elegir": "Choose",
-  "recibir.elegirAhora": "Choose between the two versions ({n})"
+  "recibir.elegirAhora": "Choose between the two versions ({n})",
+  "glosario.acordar": "Mark as agreed",
+  "glosario.cambiar": "Change",
+  "glosario.noCambiar": "Leave it as it is",
+  "glosario.vuelvePropuesta": "Changing how it is translated makes it a proposal again, until the team agrees.",
+  "glosario.dondeAparece": "Where it appears: {n}",
+  "glosario.noAparece": "This word does not appear in the books on this phone.",
+  "glosario.dicenOtra": "Verses that say something else: {n}. Touch them to check them in the editor.",
+  "glosario.loUsa": "Uses it",
+  "glosario.diceOtra": "Says something else",
+  "glosario.sinTraducir": "Not translated"
 }
