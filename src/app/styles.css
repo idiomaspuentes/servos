@@ -433,12 +433,35 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .review-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0.75rem 1rem 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; max-width: 46rem; margin-inline: auto; width: 100%; }
 .review-figure { margin: 0; font-size: 1.25rem; text-wrap: balance; }
 /* The phrase a note is about, before the note: in one text at a time, chosen by the small tabs above it */
-.review-quote { touch-action: pan-y; user-select: none; -webkit-user-select: none; display: flex; flex-direction: column; gap: 0.4rem; padding: 0.5rem 0.75rem 0.75rem; border-inline-start: 3px solid var(--accent); border-radius: var(--radius); background: var(--surface); }
+.review-quote { overflow: hidden; overflow: clip; touch-action: pan-y; user-select: none; -webkit-user-select: none; display: flex; flex-direction: column; gap: 0.4rem; padding: 0.5rem 0.75rem 0.75rem; border-inline-start: 3px solid var(--accent); border-radius: var(--radius); background: var(--surface); }
 .review-quote-switch { display: flex; flex-wrap: wrap; gap: 0.25rem; }
 .review-quote-switch button { min-height: 36px; padding: 0.15rem 0.7rem; border: 1px solid transparent; border-radius: 999px; background: none; color: var(--text-soft); font-size: 0.85rem; font-weight: 600; }
 .review-quote-switch button[aria-checked='true'] { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
 .review-quote-text { margin: 0; font-size: 1.15rem; font-weight: 600; line-height: 1.45; }
 .review-quote-text.is-original { font-weight: 400; font-size: 1.3rem; }
+/* The phrase follows the finger, and the next text slides in from the side it went to */
+.review-quote-text { transition: transform 0.2s ease, opacity 0.2s ease; }
+.review-quote-text.is-entering-next { animation: quote-from-end 0.22s ease-out; }
+.review-quote-text.is-entering-back { animation: quote-from-start 0.22s ease-out; }
+@keyframes quote-from-end { from { transform: translateX(40%); opacity: 0; } }
+@keyframes quote-from-start { from { transform: translateX(-40%); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .review-quote-text, .review-quote-text[class*='is-entering'] { animation: none; transition: none; } }
+
+/* A note's three steps, numbered at the top: where the person is, and the ones done to go back to */
+.review-stepper { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.25rem; }
+.review-stepper button { width: 100%; min-height: var(--touch); display: flex; flex-direction: column; align-items: center; gap: 0.15rem; padding: 0.25rem; border: 0; border-block-end: 3px solid var(--line); border-radius: 0; background: none; color: var(--text-soft); font-size: 0.8rem; line-height: 1.2; text-align: center; }
+.review-stepper button:disabled { opacity: 0.55; }
+.review-stepper-n { display: inline-grid; place-items: center; width: 1.5rem; height: 1.5rem; border-radius: 999px; border: 1px solid var(--line); font-weight: 600; font-size: 0.8rem; }
+.review-stepper .is-done { color: var(--text); }
+.review-stepper .is-done .review-stepper-n { background: var(--accent-soft); border-color: var(--accent); }
+.review-stepper [aria-current='step'] { color: var(--text); font-weight: 600; border-block-end-color: var(--accent); }
+.review-stepper [aria-current='step'] .review-stepper-n { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.review-instruction { margin: 0; font-size: 1.1rem; font-weight: 600; text-wrap: balance; }
+.review-reminder { margin: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.25rem 0.5rem; }
+.review-reminder .button-quiet { width: auto; min-height: var(--touch); padding-inline: 0; }
+.review-mine-verse { margin: 0; font-size: 1.15rem; line-height: 1.6; }
+.review-next { flex: none; display: flex; flex-direction: column; gap: 0.25rem; padding: 0.5rem 1rem; max-width: 46rem; margin-inline: auto; width: 100%; }
+.review-next .review-hint { text-align: center; font-size: 0.85rem; }
 .review-note { font-size: 1.05rem; line-height: 1.55; }
 .review-note > :first-child { margin-block-start: 0; }
 .review-note > :last-child { margin-block-end: 0; }
@@ -467,7 +490,8 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
    position line; on a wide screen it stays at the top. */
 @media (max-width: 899px) {
   .review-scroll { order: 1; }
-  .review-head { order: 2; border-block-end: 0; border-block-start: 1px solid var(--line); background: var(--surface); }
+  .review-next { order: 2; }
+  .review-head { order: 3; border-block-end: 0; border-block-start: 1px solid var(--line); background: var(--surface); }
   .review > .review-empty { order: 1; flex: 1; }
   .main-fill:has(> .review) { padding-block-end: 0; }
 }
