@@ -471,6 +471,17 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .align-top { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .align-left { flex: none; font-size: 0.85rem; font-weight: 600; color: var(--text-soft); font-variant-numeric: tabular-nums; }
 .align-left.is-done { color: var(--accent); }
+.align-bank-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-block-end: -0.25rem; }
+.align-bank-head .button-quiet { width: auto; min-height: 36px; padding-inline: 0.25rem; }
+.align-bank[data-over] { box-shadow: 0 0 0 2px var(--accent); }
+/* What is carried, under the finger; and where it came from, faint, until it is put down */
+.al-word--ghost { display: inline-block; background: var(--accent-soft); border-color: var(--accent); box-shadow: 0 4px 12px rgb(0 0 0 / 0.25); }
+.al-word[data-dragging], .al-chip[data-dragging], .al-box[data-dragging] { opacity: 0.4; }
+.al-box[data-over] { box-shadow: 0 0 0 2px var(--accent); background: var(--accent-soft); }
+.al-chip__word { touch-action: manipulation; cursor: grab; }
+.al-box__head { cursor: grab; }
+/* A finger resting on what can be carried starts carrying it, not the phone's copy menu or a text selection */
+.al-word, .al-chip__word, .al-box__head { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .align-bank { flex: none; max-height: 30%; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-wrap: wrap; gap: 0.35rem; padding: 0.5rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
 .align-hint { flex: none; margin: 0; font-size: 0.9rem; color: var(--text-soft); text-wrap: balance; }
 .align-boxes { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-wrap: wrap; align-content: flex-start; align-items: flex-start; gap: 0.4rem; padding-block-end: 0.5rem; }
