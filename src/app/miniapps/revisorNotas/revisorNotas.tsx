@@ -72,6 +72,7 @@ function Center({ context }: MiniAppCenterProps) {
   const previous = item ? list[at - 1] : list.filter((c) => !atOrAfter(c)).pop()
   // Each note is read from its top, whatever was scrolled on the one before.
   const scroller = useRef<HTMLDivElement>(null)
+  const swipe = useRef<{ x: number; y: number } | null>(null)
   useLayoutEffect(() => {
     if (scroller.current) scroller.current.scrollTop = 0
   }, [item?.note.id])
@@ -193,8 +194,30 @@ function Center({ context }: MiniAppCenterProps) {
           const quoteIn = (x: PrototypeData['texts'][number]) =>
             wordsOf(x, item.note.places[x.abbreviation]) || (x.original ? item.note.quote : x.abbreviation === 'TPS' ? item.note.gst : item.note.glt) || ''
           const shown = data.texts.find((x) => x.abbreviation === refText) ?? data.texts[0]
+          const step = (by: number) => {
+            const next = data.texts[data.texts.indexOf(shown) + by]
+            if (next) setRefText(next.abbreviation)
+          }
           return (
-            <section className="review-quote" aria-label={t('revisorNotas.cita')}>
+            <section
+              className="review-quote"
+              aria-label={t('revisorNotas.cita')}
+              // A finger slid sideways over the box goes to the next text or back, as the panes do; one going up or
+              // down still scrolls (touch-action: pan-y).
+              onPointerDown={(e) => {
+                swipe.current = { x: e.clientX, y: e.clientY }
+              }}
+              onPointerUp={(e) => {
+                const from = swipe.current
+                swipe.current = null
+                if (!from) return
+                const dx = e.clientX - from.x
+                if (Math.abs(dx) > 40 && Math.abs(dx) > 1.5 * Math.abs(e.clientY - from.y)) step(dx < 0 ? 1 : -1)
+              }}
+              onPointerCancel={() => {
+                swipe.current = null
+              }}
+            >
               <div className="review-quote-switch" role="radiogroup" aria-label={t('revisorNotas.textoReferencia')}>
                 {data.texts.map((x) => (
                   <button key={x.abbreviation} type="button" role="radio" aria-checked={x === shown} onClick={() => setRefText(x.abbreviation)}>

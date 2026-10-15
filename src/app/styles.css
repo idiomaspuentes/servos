@@ -433,7 +433,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .review-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0.75rem 1rem 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; max-width: 46rem; margin-inline: auto; width: 100%; }
 .review-figure { margin: 0; font-size: 1.25rem; text-wrap: balance; }
 /* The phrase a note is about, before the note: in one text at a time, chosen by the small tabs above it */
-.review-quote { display: flex; flex-direction: column; gap: 0.4rem; padding: 0.5rem 0.75rem 0.75rem; border-inline-start: 3px solid var(--accent); border-radius: var(--radius); background: var(--surface); }
+.review-quote { touch-action: pan-y; user-select: none; -webkit-user-select: none; display: flex; flex-direction: column; gap: 0.4rem; padding: 0.5rem 0.75rem 0.75rem; border-inline-start: 3px solid var(--accent); border-radius: var(--radius); background: var(--surface); }
 .review-quote-switch { display: flex; flex-wrap: wrap; gap: 0.25rem; }
 .review-quote-switch button { min-height: 36px; padding: 0.15rem 0.7rem; border: 1px solid transparent; border-radius: 999px; background: none; color: var(--text-soft); font-size: 0.85rem; font-weight: 600; }
 .review-quote-switch button[aria-checked='true'] { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
@@ -463,6 +463,16 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .review-group { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; min-height: var(--touch); border: 0; border-radius: var(--radius); background: none; color: var(--text); text-align: start; font-weight: 600; padding-inline: 0.5rem; }
 .review-group.is-current { background: var(--accent-soft); }
 .review-group .quiet { flex: none; font-variant-numeric: tabular-nums; }
+/* On a phone the notes' bar (the group, and from note to note) is at the foot, under the thumb, right above the
+   position line; on a wide screen it stays at the top. */
+@media (max-width: 899px) {
+  .review-scroll { order: 1; }
+  .review-head { order: 2; border-block-end: 0; border-block-start: 1px solid var(--line); background: var(--surface); }
+  .review > .review-empty { order: 1; flex: 1; }
+  .main-fill:has(> .review) { padding-block-end: 0; }
+}
+/* While writing why a note is left for later, the keyboard has the foot: the comment stays in sight. */
+.screen-fill.is-writing .review-head { display: none; }
 
 /* On a phone the position line, with its arrows, is at the foot of a mini app's screen, under the thumb (right above
    the keyboard while writing); the notice of a new chapter floats above it. On a wide screen it stays at the top. */
