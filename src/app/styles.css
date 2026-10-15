@@ -253,15 +253,37 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .app-row { display: flex; flex-direction: column; align-items: flex-start; text-align: start; gap: 0.15rem; width: 100%; }
 .app-row-name { font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; }
 .app-row-progress { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.75rem; width: 100%; font-size: 0.85rem; color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
-/* A chapter touched: each mini app's progress in it, each a way in */
-.chapters-of { margin: -0.25rem 0 0; font-size: 0.85rem; }
-/* Opened, the chapter and its breakdown are one card */
-.chapter-list > li.is-open { border: 1px solid var(--accent); border-radius: var(--radius); background: var(--surface); }
-.chapter-list > li.is-open > .chapter-row { border: 0; background: none; }
-.chapter-apps { list-style: none; margin: 0; padding: 0 0.5rem 0.5rem; display: flex; flex-direction: column; gap: 0.25rem; }
-.chapter-app { display: grid; grid-template-columns: minmax(0, 9rem) minmax(0, 1fr) auto; align-items: center; gap: 0.75rem; width: 100%; min-height: var(--touch); padding: 0.25rem 0.5rem; border: 0; border-radius: var(--radius); background: none; color: var(--text); text-align: start; font-size: 0.9rem; }
-.chapter-app.is-current { background: var(--accent-soft); font-weight: 600; }
-.chapter-app-name { overflow-wrap: anywhere; }
+/* The book, as tC4's «Continue →» and its choosing of a review tool: where to go on, the steps, a card per mini app */
+.header-more { justify-self: end; width: auto; }
+.book-resume { display: flex; flex-direction: column; gap: 0.2rem; padding: 0.75rem; border-radius: var(--radius); background: var(--accent-soft); }
+.book-resume-kicker { font-size: 0.8rem; font-weight: 600; color: var(--accent); }
+.book-resume-what { font-weight: 600; margin-block-end: 0.4rem; }
+.book-steps { display: flex; gap: 0.35rem; overflow-x: auto; scrollbar-width: none; margin-inline: -1rem; padding: 0.1rem 1rem; }
+.book-step { flex: none; display: inline-flex; align-items: center; gap: 0.35rem; width: auto; min-height: var(--touch); padding: 0.25rem 0.85rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--text-soft); font-size: 0.9rem; }
+.book-step.is-current { color: var(--text); }
+.book-step.is-current::before { content: ''; width: 0.45rem; height: 0.45rem; border-radius: 999px; background: var(--accent); }
+.book-step[aria-selected='true'] { border: 2px solid var(--accent); color: var(--text); font-weight: 600; }
+.book-step-state { font-size: 0.8rem; font-variant-numeric: tabular-nums; color: var(--accent); }
+.book-step-about { margin: -0.25rem 0 0; font-size: 0.9rem; }
+.tool-cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+.tool-card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.tool-card.is-current { border: 2px solid var(--accent); }
+.tool-card-main { display: flex; flex-direction: column; align-items: stretch; gap: 0.25rem; width: 100%; padding: 0.7rem 0.8rem 0.4rem; border: 0; background: none; color: var(--text); text-align: start; }
+.tool-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; }
+.tool-card-name { font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; }
+.tool-card-go { flex: none; color: var(--accent); font-weight: 600; font-size: 0.95rem; }
+.tool-progress { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.75rem; margin-block-start: 0.25rem; font-size: 0.85rem; font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; }
+.progress-bar { height: 6px; border-radius: 3px; background: var(--surface-soft); overflow: hidden; }
+.progress-bar > span { display: block; height: 100%; background: var(--accent); }
+.tool-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0 0.8rem 0.25rem; font-size: 0.85rem; }
+.tool-card-foot .button-quiet { width: auto; min-height: var(--touch); padding-inline: 0; font-size: 0.9rem; }
+.tool-chapters { list-style: none; margin: 0; padding: 0 0.5rem 0.5rem; display: flex; flex-direction: column; gap: 0.15rem; border-block-start: 1px solid var(--line); padding-block-start: 0.35rem; }
+.tool-chapter { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr) auto; align-items: center; gap: 0.15rem 0.75rem; width: 100%; min-height: var(--touch); padding: 0.25rem 0.35rem; border: 0; border-radius: var(--radius); background: none; color: var(--text); text-align: start; font-size: 0.9rem; }
+.tool-chapter:active { background: var(--accent-soft); }
+.tool-chapter-count { font-size: 0.85rem; color: var(--text-soft); font-variant-numeric: tabular-nums; }
+.tool-chapter-people, .tool-chapter-choices { grid-column: 1 / -1; font-size: 0.8rem; color: var(--text-soft); }
+.tool-chapter-choices { color: var(--warn-text); }
+.book-pass { align-self: center; width: auto; }
 
 /* Checking with the notes */
 .translation { font-size: 1.15rem; }

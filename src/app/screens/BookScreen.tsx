@@ -1,23 +1,26 @@
 /**
- * A book: its chapters and its steps, from studying to publishing. The chapters say how far the work has gone in each
- * and who did it, since a team may split a book by chapters, sections or verses, each on their own computer, and
- * gather it later on the one that keeps the master copy. Each chapter's bar is the progress of the mini app the person
- * last worked in (or the step's first), named above the list; touching a chapter shows how far every mini app has gone
- * in it, each opening there. The step the book is in is open, with its mini apps and each one's progress in the whole
- * book; the others are folded, and none is closed to the person (philosophy, principle 5). One filled button
- * continues where the person left off: in the mini app last worked in. A book whose texts and
- * helps are not on the phone says so, and how to get them (principle 8).
+ * A book, as translationCore 4 lays out where to go on (its home's «Continue →» and its screen for choosing a review
+ * tool): first, where the person left off and one filled button to go on there; then the book's steps, from studying
+ * to publishing, as tabs always in sight, each with how far it has gone; under the step chosen, a card for each of its
+ * mini apps, with what it does, its progress in the whole book, the next verse to do and, folded, its progress chapter
+ * by chapter (and, for the translation, who wrote each chapter, since a team may split a book and gather it on one
+ * computer). What is used now and then (receiving work from another computer, the project's glossary) is in «More».
+ * Moving the book on to the next step is said plainly, at the foot of the step it is in; no step is closed to the
+ * person (philosophy, principle 5). A book whose texts and helps are not on the phone says so, and how to get them
+ * (principle 8).
  */
 
 import { useState } from 'react'
 import type { PrototypeData } from '../../prototype/data'
-import { Sheet } from '../frame/Sheet'
+import { MenuRow, Sheet } from '../frame/Sheet'
 import { useT } from '../i18n/i18n'
-import type { MiniApp } from '../miniapps/contract'
+import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp } from '../miniapps/contract'
 import { miniApp } from '../miniapps/registry'
 import { PHASES, bookName, type BookEntry, type Phase, type Project } from '../projects/model'
 import { receiveWork, workOf, type Received, type WorkFile } from '../projects/work'
 import { exampleWork } from './exampleWork'
+
+type Place = { chapter: number; verse: number }
 
 export function BookScreen({
   project,
@@ -29,10 +32,9 @@ export function BookScreen({
   onReceive,
   onGlossary,
   lastApp,
+  placeFor,
 }: {
   project: Project
-  /** The mini app the person last opened from this book. */
-  lastApp?: string | null
   book: BookEntry
   /** The book's chapters whose texts and helps are on this phone, in order. */
   chapters: PrototypeData[]
@@ -43,36 +45,64 @@ export function BookScreen({
   onReceive(): void
   /** The project's glossary, shared by all its books. */
   onGlossary(): void
+  /** The mini app the person last opened from this book. */
+  lastApp?: string | null
+  /** Where the person left a mini app in this book, if they opened it. */
+  placeFor(app: string): Place | null
 }) {
   const t = useT()
   const name = bookName(book.code)
   const at = PHASES.indexOf(book.phase)
   const appsOf = (phase: Phase) => project.miniApps[phase].map((id) => miniApp(id)).filter((a): a is MiniApp => Boolean(a))
-  // What «Continue» opens and the chapters' bars count: the mini app last worked in, if the project still uses it, or
-  // else the first of the step the book is in.
   const allApps = PHASES.flatMap((p) => appsOf(p)).filter((a) => !a.comingSoon)
-  const first = allApps.find((a) => a.id === lastApp) ?? appsOf(book.phase).find((a) => !a.comingSoon)
-  const [openChapter, setOpenChapter] = useState<number | null>(null)
+  // Where «Continue» goes: the mini app last worked in, if the project still uses it, or else the first of the step
+  // the book is in.
+  const current = allApps.find((a) => a.id === lastApp) ?? appsOf(book.phase).find((a) => !a.comingSoon)
+  // The step shown: the one of the mini app last worked in, so its card is in sight.
+  const [shown, setShown] = useState<Phase>(current?.phase ?? book.phase)
+  const [byChapter, setByChapter] = useState<string | null>(null)
+  const [more, setMore] = useState(false)
   const [receiving, setReceiving] = useState(false)
   const [received, setReceived] = useState<{ file: WorkFile; result: Received } | null>(null)
-  // Work received changes what the chapters show: drawn again after it.
+  // Work received changes what the cards show: drawn again after it.
   const [, setGathered] = useState(0)
 
   const versesOf = (c: PrototypeData) => c.verses.map((v) => v.verse)
-  const doneIn = (app: MiniApp, c: PrototypeData) => versesOf(c).filter((v) => app.done!({ book: book.code, chapter: c.chapter, verse: v })).length
-  const progress = (app: MiniApp): { done: number; total: number } | null => {
-    if (!chapters.length || !app.done) return null
-    const total = chapters.reduce((n, c) => n + c.verses.length, 0)
-    const done = chapters.reduce((n, c) => n + doneIn(app, c), 0)
-    return { done, total }
-  }
+  const isDone = (app: MiniApp, chapter: number, verse: number) => app.done!({ book: book.code, chapter, verse })
+  const doneIn = (app: MiniApp, c: PrototypeData) => versesOf(c).filter((v) => isDone(app, c.chapter, v)).length
+  const totalVerses = chapters.reduce((n, c) => n + c.verses.length, 0)
+  const doneOf = (app: MiniApp) => chapters.reduce((n, c) => n + doneIn(app, c), 0)
   // Whole percents, rounded down: 99 % until every verse is done, never 100 % with one left.
   const pct = (done: number, total: number) => (total ? Math.floor((100 * done) / total) : 0)
   const bar = (done: number, total: number) => (
-    <span className="chapter-row-bar" aria-hidden="true">
+    <span className="progress-bar" aria-hidden="true">
       <span style={{ width: `${total ? (100 * done) / total : 0}%` }} />
     </span>
   )
+  const placeName = (p: Place) =>
+    p.verse === BOOK_INTRO
+      ? t('libro.introLibro', { libro: name })
+      : p.verse === CHAPTER_INTRO
+        ? t('libro.introCapitulo', { libro: name, capitulo: p.chapter })
+        : `${name} ${p.chapter}:${p.verse}`
+  /** The first verse of the book a mini app has still to do. */
+  const nextOf = (app: MiniApp): Place | null => {
+    for (const c of chapters) for (const v of versesOf(c)) if (!isDone(app, c.chapter, v)) return { chapter: c.chapter, verse: v }
+    return null
+  }
+  /** How far a step has gone: the verses done in all its mini apps that count, of all they have to do. */
+  const stepPct = (phase: Phase) => {
+    const counted = appsOf(phase).filter((a) => !a.comingSoon && a.done)
+    if (!counted.length || !totalVerses) return null
+    return pct(
+      counted.reduce((n, a) => n + doneOf(a), 0),
+      counted.length * totalVerses
+    )
+  }
+
+  const resumeAt = current ? placeFor(current.id) : null
+  const shownAt = PHASES.indexOf(shown)
+  const shownApps = appsOf(shown)
 
   return (
     <div className="screen">
@@ -84,7 +114,9 @@ export function BookScreen({
           <span className="header-app">{name}</span>
           <span className="header-person">{project.name}</span>
         </div>
-        <span />
+        <button type="button" className="button-quiet header-more" onClick={() => setMore(true)}>
+          {t('libro.mas')}
+        </button>
       </header>
       <main className="main">
         {!chapters.length ? (
@@ -95,115 +127,143 @@ export function BookScreen({
             </button>
           </>
         ) : (
-          first && (
-            <button type="button" className="button-primary" onClick={() => onOpen(first)}>
-              {t('libro.seguir', { app: t(`${first.id}.nombre`) })}
-            </button>
+          current && (
+            // Where the person left off, and the one filled button of the screen to go on there.
+            <section className="book-resume" aria-label={t(resumeAt ? 'libro.sigaDonde' : 'libro.empieceAqui')}>
+              <span className="book-resume-kicker">{t(resumeAt ? 'libro.sigaDonde' : 'libro.empieceAqui')}</span>
+              <span className="book-resume-what">
+                {t(`${current.id}.nombre`)}
+                {resumeAt && ` · ${placeName(resumeAt)}`}
+              </span>
+              <button type="button" className="button-primary" onClick={() => onOpen(current)}>
+                {t(resumeAt ? 'libro.continuar' : 'libro.empezar')} →
+              </button>
+            </section>
           )
         )}
 
-        {chapters.length > 0 && first && (
-          <section className="chapters" aria-labelledby="capitulos">
-            <h2 id="capitulos">{t('libro.capitulos')}</h2>
-            {first.done && <p className="quiet chapters-of">{t('libro.avanceEn', { app: t(`${first.id}.nombre`) })}</p>}
-            <ul className="chapter-list">
-              {chapters.map((c) => {
-                const work = workOf(book.code, c.chapter, versesOf(c))
-                const done = first.done ? doneIn(first, c) : null
-                const open = openChapter === c.chapter
-                return (
-                  <li key={c.chapter} className={open ? 'is-open' : undefined}>
-                    <button type="button" className="chapter-row" aria-expanded={open} onClick={() => setOpenChapter(open ? null : c.chapter)}>
-                      <span className="chapter-row-name">{t('libro.capitulo', { n: c.chapter })}</span>
-                      {done !== null && bar(done, c.verses.length)}
-                      {done !== null && <span className="chapter-row-count">{t('libro.avance', { hechos: done, total: c.verses.length, pct: pct(done, c.verses.length) })}</span>}
-                      {work.people.length > 0 && (
-                        <span className="chapter-row-people">{work.people.map(([who, n]) => t('libro.quien', { nombre: who, n })).join(' · ')}</span>
-                      )}
-                      {work.choices > 0 && <span className="chapter-row-choices">{t('libro.paraElegir', { n: work.choices })}</span>}
-                    </button>
-                    {/* Touched, the chapter shows how far each mini app has gone in it, each opening there. */}
-                    {open && (
-                      <ul className="chapter-apps">
-                        {allApps.map((app) => {
-                          const n = app.done ? doneIn(app, c) : null
-                          return (
-                            <li key={app.id}>
-                              <button type="button" className={app === first ? 'chapter-app is-current' : 'chapter-app'} onClick={() => onOpen(app, c.chapter)}>
-                                <span className="chapter-app-name">{t(`${app.id}.nombre`)}</span>
-                                {n !== null && bar(n, c.verses.length)}
-                                {n !== null && <span className="chapter-row-count">{t('libro.hechosDe', { hechos: n, total: c.verses.length, pct: pct(n, c.verses.length) })}</span>}
-                              </button>
-                            </li>
-                          )
-                        })}
-                      </ul>
-                    )}
-                  </li>
-                )
-              })}
-            </ul>
-            <button type="button" className="button-quiet" onClick={() => setReceiving(true)}>
-              {t('libro.recibirTrabajo')}
-            </button>
-            <button type="button" className="button-quiet" onClick={onGlossary}>
-              {t('libro.glosario')}
-            </button>
-          </section>
-        )}
-
-        <ol className="steps">
+        {/* The steps, always in sight as tabs, each with how far it has gone; the one the book is in, marked. */}
+        <div className="book-steps" role="tablist" aria-label={t('libro.pasos')}>
           {PHASES.map((phase, i) => {
-            const state = i < at ? 'hecho' : i === at ? 'enCurso' : 'pendiente'
-            const apps = appsOf(phase)
+            const p = stepPct(phase)
             return (
-              <li key={phase} className={`step is-${state}`}>
-                <details open={i === at}>
-                  <summary>
-                    <span className="step-name">{t(`pasos.${phase}`)}</span>
-                    <span className="step-state">{t(`pasos.${state}`)}</span>
-                  </summary>
-                  <p className="quiet">{t(`pasos.${phase}Ayuda`)}</p>
-                  {apps.length === 0 && <p className="quiet">{t('libro.ningunaApp')}</p>}
-                  <ul className="step-apps">
-                    {apps.map((app) => {
-                      const p = progress(app)
+              <button
+                key={phase}
+                type="button"
+                role="tab"
+                aria-selected={phase === shown}
+                className={i === at ? 'book-step is-current' : 'book-step'}
+                onClick={() => {
+                  setShown(phase)
+                  setByChapter(null)
+                }}
+              >
+                <span>{t(`pasos.${phase}`)}</span>
+                <span className="book-step-state">{i < at ? '✓' : p !== null && p > 0 ? `${p} %` : ''}</span>
+              </button>
+            )
+          })}
+        </div>
+        <p className="quiet book-step-about">
+          {t(`pasos.${shown}Ayuda`)}
+          {shownAt === at && ` · ${t('pasos.enCurso')}`}
+        </p>
+
+        {shownApps.length === 0 && <p className="quiet">{t('libro.ningunaApp')}</p>}
+        <ul className="tool-cards">
+          {shownApps.map((app) => {
+            const done = app.done ? doneOf(app) : null
+            const next = app.done ? nextOf(app) : null
+            const place = placeFor(app.id)
+            const go = app.comingSoon ? null : done !== null && !next ? 'libro.ver' : place ? 'libro.continuar' : 'libro.empezar'
+            const open = byChapter === app.id
+            return (
+              <li key={app.id} className={app === current ? 'tool-card is-current' : 'tool-card'}>
+                <button type="button" className="tool-card-main" disabled={app.comingSoon || !chapters.length} onClick={() => onOpen(app)}>
+                  <span className="tool-card-head">
+                    <span className="tool-card-name">
+                      {t(`${app.id}.nombre`)}
+                      {app.comingSoon && <span className="badge">{t('catalogo.pronto')}</span>}
+                    </span>
+                    {go && <span className="tool-card-go">{t(go)} →</span>}
+                  </span>
+                  <span className="quiet">{t(`${app.id}.descripcion`)}</span>
+                  {done !== null && totalVerses > 0 && (
+                    <span className="tool-progress">
+                      {bar(done, totalVerses)}
+                      <span>{t('libro.avance', { hechos: done, total: totalVerses, pct: pct(done, totalVerses) })}</span>
+                    </span>
+                  )}
+                </button>
+                {done !== null && chapters.length > 0 && (
+                  <div className="tool-card-foot">
+                    <span className="quiet">{next ? t('libro.siguiente', { lugar: placeName(next) }) : t('libro.todoHecho')}</span>
+                    <button type="button" className="button-quiet" aria-expanded={open} onClick={() => setByChapter(open ? null : app.id)}>
+                      {t('libro.porCapitulo')} {open ? '▴' : '▾'}
+                    </button>
+                  </div>
+                )}
+                {open && (
+                  <ul className="tool-chapters">
+                    {chapters.map((c) => {
+                      const n = doneIn(app, c)
+                      // Who wrote each chapter, for the translation: a team may split a book and gather it here.
+                      const work = app.phase === 'traduccion' ? workOf(book.code, c.chapter, versesOf(c)) : null
                       return (
-                        <li key={app.id}>
-                          <button type="button" className="app-row" disabled={app.comingSoon || !chapters.length} onClick={() => onOpen(app)}>
-                            <span className="app-row-name">
-                              {t(`${app.id}.nombre`)}
-                              {app.comingSoon && <span className="badge">{t('catalogo.pronto')}</span>}
-                            </span>
-                            <span className="quiet">{t(`${app.id}.descripcion`)}</span>
-                            {/* Its progress in the whole book, seen before opening it. */}
-                            {p && (
-                              <span className="app-row-progress">
-                                {bar(p.done, p.total)}
-                                <span>{t('libro.avance', { hechos: p.done, total: p.total, pct: pct(p.done, p.total) })}</span>
-                              </span>
+                        <li key={c.chapter}>
+                          <button type="button" className="tool-chapter" onClick={() => onOpen(app, c.chapter)}>
+                            <span className="tool-chapter-name">{t('libro.capitulo', { n: c.chapter })}</span>
+                            {bar(n, c.verses.length)}
+                            <span className="tool-chapter-count">{t('libro.hechosDe', { hechos: n, total: c.verses.length, pct: pct(n, c.verses.length) })}</span>
+                            {work && work.people.length > 0 && (
+                              <span className="tool-chapter-people">{work.people.map(([who, k]) => t('libro.quien', { nombre: who, n: k })).join(' · ')}</span>
                             )}
+                            {work && work.choices > 0 && <span className="tool-chapter-choices">{t('libro.paraElegir', { n: work.choices })}</span>}
                           </button>
                         </li>
                       )
                     })}
                   </ul>
-                  {i === at && i < PHASES.length - 1 && (
-                    <button type="button" className="button-quiet" onClick={() => onPhase(PHASES[i + 1])}>
-                      {t('libro.pasarA', { paso: t(`pasos.${PHASES[i + 1]}`) })} ›
-                    </button>
-                  )}
-                  {i < at && (
-                    <button type="button" className="button-quiet" onClick={() => onPhase(phase)}>
-                      ‹ {t('libro.volverA', { paso: t(`pasos.${phase}`) })}
-                    </button>
-                  )}
-                </details>
+                )}
               </li>
             )
           })}
-        </ol>
+        </ul>
+
+        {/* Moving the book on, said plainly, at the foot of the step it is in; or back, or ahead, from another. */}
+        {shownAt === at && at < PHASES.length - 1 && (
+          <button type="button" className="button-quiet book-pass" onClick={() => onPhase(PHASES[at + 1])}>
+            {t('libro.terminadoPasar', { paso: t(`pasos.${shown}`), siguiente: t(`pasos.${PHASES[at + 1]}`) })} ›
+          </button>
+        )}
+        {shownAt !== at && (
+          <button type="button" className="button-quiet book-pass" onClick={() => onPhase(shown)}>
+            {shownAt < at ? `‹ ${t('libro.volverA', { paso: t(`pasos.${shown}`) })}` : `${t('libro.pasarA', { paso: t(`pasos.${shown}`) })} ›`}
+          </button>
+        )}
       </main>
+
+      {more && (
+        <Sheet title={t('libro.mas')} onClose={() => setMore(false)}>
+          <MenuRow
+            label={t('libro.recibirTrabajo')}
+            description={t('libro.recibirTrabajoAyuda')}
+            disabled={!chapters.length}
+            onClick={() => {
+              setMore(false)
+              setReceiving(true)
+            }}
+          />
+          <MenuRow
+            label={t('libro.glosario')}
+            description={t('libro.glosarioAyuda')}
+            onClick={() => {
+              setMore(false)
+              onGlossary()
+            }}
+          />
+        </Sheet>
+      )}
 
       {receiving && (
         <Sheet

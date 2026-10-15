@@ -188,6 +188,7 @@ export function App() {
           chapters={chaptersFor(bookScreen.book)}
           onBack={home}
           lastApp={lastAppOf(person, bookScreen.book)}
+          placeFor={(app) => placeOf(person, bookScreen.book, app)}
           onOpen={(app, chapter) => {
             keepLastApp(person, bookScreen.book, app.id)
             openAt(bookScreen.book, app, chapter)
