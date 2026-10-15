@@ -16,11 +16,7 @@
   --danger: #a32d2d;
   --radius: 10px;
   --touch: 44px;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  font-size: 17px;
-  line-height: 1.5;
-  color: var(--text);
-  background: var(--bg);
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color-scheme: light;
 }
 
@@ -62,7 +58,8 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); }
+/* On body, not :root: a host page may set body's font itself (the published-page skeleton sets 14 px). */
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 17px; line-height: 1.5; }
 h1 { font-size: 1.3rem; margin-block: 0.25rem 1rem; font-weight: 600; }
 h2 { font-size: 1.1rem; margin: 0; font-weight: 600; }
 h3 { font-size: 1rem; margin-block: 1.25rem 0.5rem; font-weight: 600; }
