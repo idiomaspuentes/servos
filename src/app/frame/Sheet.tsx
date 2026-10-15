@@ -1,6 +1,13 @@
-/** A sheet that comes up from the bottom (philosophy, layer «hoja que sube»): a list, an article, a menu. */
+/**
+ * A sheet that comes up from the bottom (philosophy, layer «hoja que sube»): a list, an article, a menu.
+ *
+ * It is drawn in the page's body, not where it is opened: inside a moved pane (`Panes` moves its row by a transform)
+ * a fixed box is fixed to that row, not to the screen, and opened off screen on a phone and cut at the top on a wide
+ * one. Events still reach the tree it was opened from, so a finger on the sheet must not swipe the panes behind it.
+ */
 
 import { useEffect, useRef, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { useT } from '../i18n/i18n'
 
 export function Sheet({ title, onClose, children }: { title: string; onClose(): void; children: ReactNode }) {
@@ -12,8 +19,8 @@ export function Sheet({ title, onClose, children }: { title: string; onClose(): 
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
-  return (
-    <div className="sheet-backdrop" onClick={onClose}>
+  return createPortal(
+    <div className="sheet-backdrop" onClick={onClose} onPointerDown={(e) => e.stopPropagation()}>
       <div
         className="sheet"
         role="dialog"
@@ -31,7 +38,8 @@ export function Sheet({ title, onClose, children }: { title: string; onClose(): 
         </div>
         <div className="sheet-body">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 

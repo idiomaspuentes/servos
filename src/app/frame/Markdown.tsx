@@ -7,7 +7,9 @@ import type { ReactNode } from 'react'
 
 function inline(text: string): ReactNode[] {
   const out: ReactNode[] = []
-  const pattern = /(\*\*[^*]+\*\*|\*[^*]+\*|_[^_]+_|\[[^\]]+\]\([^)]+\))/g
+  // A link may have a space before its target («[apóstrofe] (./figs-apostrophe/01.md)», as es-419's articles write
+  // some): then only a target that looks like a path, so a plain parenthesis after brackets stays text.
+  const pattern = /(\*\*[^*]+\*\*|\*[^*]+\*|_[^_]+_|\[[^\]]+\](?:\([^)]+\)| \([^\s)]*[/:.][^\s)]*\)))/g
   let last = 0
   let i = 0
   for (const match of text.matchAll(pattern)) {
