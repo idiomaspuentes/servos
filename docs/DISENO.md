@@ -75,6 +75,10 @@ la misma; las preguntas no.
   quien lo hizo.
 - Cuando haya internet, una persona puede vincular su nombre con su cuenta de Door43 para subir su trabajo
   (sección 8).
+- **La primera vez** que se abre la app pregunta solo lo necesario: el idioma de la app y «¿Cómo se llama?», con un
+  botón, «Empezar». Quien solo quiere conocerla entra al ejemplo. Otras personas que usan el mismo teléfono se
+  agregan desde el menú de la persona. Quién usa el teléfono y quién trabaja ahora se guardan (en el prototipo:
+  `servos.prototipo.personas`), para que cada cambio lleve el nombre correcto también después de cerrar la app.
 
 ## 6. Versiones y choques
 
@@ -290,6 +294,13 @@ Como en `usfm-editor`:
 
 **Por decidir:** a qué organización y repositorio de Door43 va cada proyecto, y quién lo crea la primera vez.
 
+**USFM, de ida y vuelta** (prototipo): un libro empezado en otra app se trae desde su archivo USFM («Agregar un
+libro › Desde un archivo USFM»). Se lee el texto de cada versículo (sin alineación ni notas al pie), un puente como
+versículos unidos, y se junta como un libro compartido: antes de escribir nada dice qué trae y qué cambia, y lo
+escrito distinto queda como dos versiones para elegir. Al revés, «Más › Guardar el libro en USFM» escribe el
+borrador con la forma del texto puente (sus párrafos, la poesía línea por línea, los versículos unidos como
+` 1-2`), para Paratext, translationCore o Door43 a mano.
+
 ## 9. La interfaz se traduce dentro de la app
 
 - Idiomas iniciales: **español, portugués e inglés**.
@@ -301,6 +312,9 @@ Como en `usfm-editor`:
   - qué frases nuevas le faltan;
   - qué frases quedaron **invalidadas** porque el texto original cambió, mostrando el antes y el después.
 - La comprobación de claves y marcadores que Taller hace con `verify:config` se repite aquí.
+- Hecho en el prototipo: «Traducir la app › Pasar esta traducción a otro teléfono» la guarda como archivo o como
+  texto, y «Idioma de la app › Recibir una traducción» la junta en otro teléfono: entran las frases nuevas y las que
+  ese teléfono tradujo distinto se quedan como estaban.
 
 ## 10. Preparada para la traducción oral
 
