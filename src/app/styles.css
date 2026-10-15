@@ -369,6 +369,8 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .word { display: inline; border: 0; background: none; padding: 0.1em 0; margin: 0; min-height: 0; font: inherit; color: inherit; cursor: pointer; border-radius: 3px; text-align: inherit; }
 .word:hover { background: var(--surface-soft); }
 .word.is-lit { background: var(--mark); }
+/* A word the glossary has an entry for: a decision is there to read */
+.word.has-gloss { text-decoration: underline dotted var(--accent) 2px; text-underline-offset: 0.25em; }
 .word-group { white-space: nowrap; }
 .word:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 

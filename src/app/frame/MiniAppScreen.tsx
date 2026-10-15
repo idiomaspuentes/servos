@@ -167,6 +167,7 @@ export function MiniAppScreen({
           verse={position.verse}
           verses={verses}
           comments={options?.comments ?? true}
+          glossary={options?.glossary}
           textAbbreviation={text.abbreviation}
           onMark={onMark}
         />

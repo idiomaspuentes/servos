@@ -43,6 +43,18 @@ export function placesOfOriginals(data: PrototypeData, originals: number[]): Pla
 }
 
 /**
+ * The words of every text that the glossary has an entry for: the original's whose Strong number an entry holds, and
+ * the bridge words aligned to them. Marked in the texts, so the person sees what the team already decided.
+ */
+export function glossedPlaces(data: PrototypeData, glossary: GlossaryEntry[]): Record<string, Set<number>> {
+  const original = data.texts.find((x) => x.original)
+  const strongs = new Set(glossary.flatMap((e) => e.strong.split(';').map((s) => s.split(':').pop() ?? '')).filter(Boolean))
+  if (!original?.words || !strongs.size) return {}
+  const originals = original.words.map((w, i) => (strongs.has(w.strong.split(':').pop() ?? '') ? i : -1)).filter((i) => i >= 0)
+  return Object.fromEntries(Object.entries(placesOfOriginals(data, originals)).map(([abbr, places]) => [abbr, new Set(places)]))
+}
+
+/**
  * The glossary's entries about a touched word: the team's decision on how to translate the original word it stands
  * for, whichever text it was touched in.
  */
@@ -152,11 +164,14 @@ export function WordLines({
   lit,
   onWord,
   writing,
+  glossed,
 }: {
   lines: WordLine[]
   verse: number
   lit: Set<number>
   onWord(place: number): void
+  /** Words the glossary has an entry for: marked, so a decision is seen before it is asked for. */
+  glossed?: Set<number>
   /** The line that the line being written translates, to stand out from the rest of the verse. */
   writing?: number
 }) {
@@ -166,7 +181,12 @@ export function WordLines({
         <p key={i} className={i === writing ? 'usfm-line is-writing-line' : 'usfm-line'} data-marker={line.marker}>
           {i === 0 && <span className="verse-number">{verse} </span>}
           {groups(line.pieces, (place, text, key) => (
-            <button key={key} type="button" className={lit.has(place) ? 'word is-lit' : 'word'} onClick={() => onWord(place)}>
+            <button
+              key={key}
+              type="button"
+              className={`word${lit.has(place) ? ' is-lit' : ''}${glossed?.has(place) ? ' has-gloss' : ''}`}
+              onClick={() => onWord(place)}
+            >
               {text}
             </button>
           ))}

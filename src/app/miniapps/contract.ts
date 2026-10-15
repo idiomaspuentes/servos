@@ -11,6 +11,7 @@
 import type { ComponentType, ReactNode } from 'react'
 import type { BaseLanguage, T, Texts } from '../i18n/i18n'
 import type { PrototypeData } from '../../prototype/data'
+import type { GlossaryEntry } from '../projects/glossary'
 import type { Phase } from '../projects/model'
 
 /** What a mini app can ask the device for. The catalog says honestly what is missing (philosophy, principle 8). */
@@ -61,9 +62,10 @@ export interface MiniAppContext {
     /**
      * The helps panel for a mini app that places it itself (`helps: false`), e.g. in a pane: of the open verse, or of
      * the verses given (a section's, all together). With the study's notes on them as «Comments», unless
-     * `comments: false` (the study itself, which shows them as its own pane).
+     * `comments: false` (the study itself, which shows them as its own pane). With the project's `glossary`, its
+     * entries about the words of those verses as «Glossary».
      */
-    helps(verses?: number[], options?: { comments?: boolean }): ReactNode
+    helps(verses?: number[], options?: { comments?: boolean; glossary?: GlossaryEntry[] }): ReactNode
     /** What the header says about the work (philosophy, principle 8): nothing changed yet, or saved on this phone. */
     setSaved(state: 'sinCambios' | 'guardado'): void
     /** Work a verse or a section at a time; the position line then moves by that. Kept for the next visit. */

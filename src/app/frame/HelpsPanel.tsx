@@ -7,13 +7,14 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { PrototypeData } from '../../prototype/data'
 import { useT } from '../i18n/i18n'
+import { entriesAbout, type GlossaryEntry } from '../projects/glossary'
 import { studyNotesAbout } from '../projects/work'
 import { Markdown } from './Markdown'
 import { rangeOf } from './PlacePicker'
 import { showInPane } from './Panes'
 import { Sheet } from './Sheet'
 
-type Tab = 'notas' | 'preguntas' | 'palabras' | 'comentarios'
+type Tab = 'glosario' | 'notas' | 'preguntas' | 'palabras' | 'comentarios'
 
 /** Each help once, though it covers several of the verses shown (a note on 3–4 is in both), with its first verse. */
 function once<T extends { id: string }>(lists: Array<{ verse: number; items: T[] }>): Array<T & { verse: number }> {
@@ -27,6 +28,7 @@ export function HelpsPanel({
   verse,
   verses,
   comments = false,
+  glossary,
   textAbbreviation,
   onMark,
 }: {
@@ -36,6 +38,8 @@ export function HelpsPanel({
   verses?: number[]
   /** Whether the study's notes on these verses are a tab («Comments»), when there are any. */
   comments?: boolean
+  /** The project's glossary: its entries about the words of these verses are a tab («Glossary»), when there are any. */
+  glossary?: GlossaryEntry[]
   textAbbreviation: string
   onMark(words: string | null): void
 }) {
@@ -48,6 +52,15 @@ export function HelpsPanel({
   const words = once(of.map((v) => ({ verse: v.verse, items: v.words })))
   const several = shown.length > 1
   const studyNotes = comments ? studyNotesAbout(data.book.id, data.chapter, shown) : []
+  // The team's decisions on the words of these verses, in the order the words come.
+  const decided = (() => {
+    const original = data.texts.find((x) => x.original)
+    if (!glossary?.length || !original?.words) return []
+    const places = shown.flatMap((v) => (original.lines[v] ?? []).flatMap((l) => l.pieces.map((p) => p.word).filter((w): w is number => w !== undefined)))
+    const out: GlossaryEntry[] = []
+    for (const p of places) for (const e of entriesAbout(glossary, [original.words[p]?.strong ?? ''])) if (!out.includes(e)) out.push(e)
+    return out
+  })()
   const [tab, setTab] = useState<Tab>('notas')
   const [index, setIndex] = useState(0)
   const [answer, setAnswer] = useState(false)
@@ -58,8 +71,20 @@ export function HelpsPanel({
     setAnswer(false)
   }, [shown.join(','), tab]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Another verse may have no decisions: its glossary tab is gone, so the notes are shown.
+  useEffect(() => {
+    if (tab === 'glosario' && !decided.length) setTab('notas')
+  }, [tab, decided.length])
   const count =
-    tab === 'notas' ? notes.length : tab === 'preguntas' ? questions.length : tab === 'palabras' ? words.length : studyNotes.length
+    tab === 'glosario'
+      ? decided.length
+      : tab === 'notas'
+        ? notes.length
+        : tab === 'preguntas'
+          ? questions.length
+          : tab === 'palabras'
+            ? words.length
+            : studyNotes.length
   const note = tab === 'notas' ? notes[index] : undefined
   // In a section, which verse the help shown is on.
   const current = tab === 'notas' ? notes[index] : tab === 'preguntas' ? questions[index] : tab === 'palabras' ? words[index] : undefined
@@ -70,6 +95,8 @@ export function HelpsPanel({
   useLayoutEffect(() => showInPane(self.current), [index, tab])
 
   const tabs: Array<{ id: Tab; label: string }> = [
+    // What the team decided comes first, when it decided anything about these verses.
+    ...(decided.length ? [{ id: 'glosario' as const, label: t('ayudas.glosarioN', { n: decided.length }) }] : []),
     { id: 'notas', label: t('ayudas.notas', { n: notes.length }) },
     { id: 'preguntas', label: t('ayudas.preguntas', { n: questions.length }) },
     { id: 'palabras', label: t('ayudas.palabras', { n: words.length }) },
@@ -107,6 +134,21 @@ export function HelpsPanel({
                 {t('ayudas.leerArticulo', { titulo: data.academy[note.academy].title })}
               </button>
             )}
+          </>
+        )}
+
+        {tab === 'glosario' && decided[index] && (
+          <>
+            <p className="help-quote help-bridge">{decided[index].rendering}</p>
+            <p className="help-original" lang={original?.lang} dir={original?.dir}>
+              {decided[index].lemma}
+            </p>
+            {decided[index].alternatives.length > 0 && <p className="quiet">{t('ayudas.tambien', { formas: decided[index].alternatives.join(', ') })}</p>}
+            {decided[index].note && <p className="study-other-text">{decided[index].note}</p>}
+            <p className="quiet">
+              {t(decided[index].status === 'agreed' ? 'ayudas.acordada' : 'ayudas.propuesta')}
+              {decided[index].by && ` · ${t('ayudas.glosarioDe', { nombre: decided[index].by })}`}
+            </p>
           </>
         )}
 

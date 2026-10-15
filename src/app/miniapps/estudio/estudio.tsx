@@ -15,7 +15,7 @@ import { ChapterLines } from '../../frame/ChapterLines'
 import { Markdown } from '../../frame/Markdown'
 import { Panes, useWide, type Pane } from '../../frame/Panes'
 import { passageOf } from '../../frame/PlacePicker'
-import { useWordHelps } from '../../frame/TouchWords'
+import { glossedPlaces, useWordHelps } from '../../frame/TouchWords'
 import { readGlossary } from '../../projects/glossary'
 import { studyNoteOn, studyNotesAbout, writeStudyNote } from '../../projects/work'
 import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type MiniAppCenterProps } from '../contract'
@@ -56,6 +56,8 @@ function Center({ context }: MiniAppCenterProps) {
   // A word that will be hard to translate goes into the note when it is found, on a line of its own.
   const noteWord = (word: string) => toNote(withLine(note.text, `«${word}»: `))
   // The glossary is looked up while studying too: how the team already decided to translate a word.
+  const glossary = readGlossary(context.project.id)
+  const glossed = glossedPlaces(data, glossary)
   const { lit, touch, card } = useWordHelps({
     data,
     resetKey: unitKey,
@@ -63,7 +65,7 @@ function Center({ context }: MiniAppCenterProps) {
     bridge: textAbbreviation,
     verses: shown,
     onNote: noteWord,
-    glossary: readGlossary(context.project.id),
+    glossary,
   })
 
   const intro = position.verse === BOOK_INTRO ? data.bookIntro : position.verse === CHAPTER_INTRO ? data.intro : undefined
@@ -109,6 +111,7 @@ function Center({ context }: MiniAppCenterProps) {
             at={shown[0]}
             line={null}
             only
+            glossed={glossed[x.abbreviation]}
             lit={lit(x.abbreviation)}
             hint={hint}
             onWord={(verse, place) => touch(x.abbreviation, verse, place)}

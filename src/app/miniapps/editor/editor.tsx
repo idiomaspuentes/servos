@@ -9,7 +9,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Panes, type Pane } from '../../frame/Panes'
-import { useWordHelps, type GlossaryTarget } from '../../frame/TouchWords'
+import { glossedPlaces, useWordHelps, type GlossaryTarget } from '../../frame/TouchWords'
 import { keepGlossary, readGlossary, upsertEntry } from '../../projects/glossary'
 import { GlossarySheet } from './GlossarySheet'
 import type { MiniApp, MiniAppCenterProps } from '../contract'
@@ -90,6 +90,7 @@ function Center({ context }: MiniAppCenterProps) {
   // The project's glossary: a touched word shows the team's decision first, and the translator can add one.
   const [glossary, setGlossary] = useState(() => readGlossary(context.project.id))
   const [adding, setAdding] = useState<GlossaryTarget | null>(null)
+  const glossed = glossedPlaces(data, glossary)
   const { lit, touch, card, helpsOpened } = useWordHelps({
     data,
     resetKey: openKey,
@@ -194,6 +195,7 @@ function Center({ context }: MiniAppCenterProps) {
           text={x}
           shown={shown}
           at={position.verse}
+          glossed={glossed[x.abbreviation]}
           line={writingLine?.verse === position.verse ? writingLine.line : null}
           lit={lit(x.abbreviation)}
           hint={hint}
@@ -202,7 +204,7 @@ function Center({ context }: MiniAppCenterProps) {
         />
       ),
     })),
-    { id: 'ayudas', label: t('editor.panelAyudas'), content: frame.helps() },
+    { id: 'ayudas', label: t('editor.panelAyudas'), content: frame.helps(undefined, { glossary }) },
   ]
 
   return (

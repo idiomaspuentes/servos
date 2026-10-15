@@ -18,6 +18,7 @@ export function ChapterLines({
   onWord,
   under,
   only = false,
+  glossed,
 }: {
   text: PrototypeText
   /** The verses open: the verse, or those of its section. */
@@ -37,6 +38,8 @@ export function ChapterLines({
   under(verse: number): ReactNode
   /** Only the verses open, larger, for reading them alone (the study); else the whole chapter, the open ones lit. */
   only?: boolean
+  /** Words the glossary has an entry for. */
+  glossed?: Set<number>
 }) {
   const current = useRef<HTMLDivElement>(null)
   const count = text.lines[at]?.length ?? 0
@@ -69,7 +72,7 @@ export function ChapterLines({
       {verses.map((v) => (
         <div key={v} ref={v === at ? current : undefined}>
           <div className={shown.includes(v) ? 'chapter-verse is-current' : 'chapter-verse'} dir={text.dir ?? 'ltr'} lang={text.lang}>
-            <WordLines lines={text.lines[v]} verse={v} lit={lit} onWord={(place) => onWord(v, place)} writing={v === at ? writing : undefined} />
+            <WordLines lines={text.lines[v]} verse={v} lit={lit} onWord={(place) => onWord(v, place)} writing={v === at ? writing : undefined} glossed={glossed} />
           </div>
           {under(v)}
         </div>

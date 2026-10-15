@@ -228,5 +228,6 @@
   "glosario.juntado": "Se juntó. Nuevas: {nuevas} · ya estaban igual: {iguales} · con otra forma para decidir: {otras}.",
   "glosario.guardado": "Se guardó el archivo {archivo}.",
   "glosario.copiado": "Se copió el texto del glosario. Péguelo en un mensaje.",
-  "glosario.noCopiado": "No se pudo copiar. Guárdelo como archivo."
+  "glosario.noCopiado": "No se pudo copiar. Guárdelo como archivo.",
+  "ayudas.glosarioN": "Glosario {n}"
 }

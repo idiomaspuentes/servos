@@ -228,5 +228,6 @@
   "glosario.juntado": "Joined. New: {nuevas} · already the same: {iguales} · with another form to decide: {otras}.",
   "glosario.guardado": "The file {archivo} was saved.",
   "glosario.copiado": "The glossary's text was copied. Paste it into a message.",
-  "glosario.noCopiado": "It could not be copied. Save it as a file."
+  "glosario.noCopiado": "It could not be copied. Save it as a file.",
+  "ayudas.glosarioN": "Glossary {n}"
 }

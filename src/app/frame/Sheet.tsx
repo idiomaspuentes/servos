@@ -13,12 +13,16 @@ import { useT } from '../i18n/i18n'
 export function Sheet({ title, onClose, children }: { title: string; onClose(): void; children: ReactNode }) {
   const t = useT()
   const panel = useRef<HTMLDivElement>(null)
+  // The sheet takes the focus once, as it opens. Taken again on every drawing (a new `onClose` each time) it was taken
+  // from a field just touched: the keyboard coming up redraws the screen, and went away again.
+  useEffect(() => panel.current?.focus(), [])
+  const close = useRef(onClose)
+  close.current = onClose
   useEffect(() => {
-    panel.current?.focus()
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close.current()
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [])
   return createPortal(
     <div className="sheet-backdrop" onClick={onClose} onPointerDown={(e) => e.stopPropagation()}>
       <div
