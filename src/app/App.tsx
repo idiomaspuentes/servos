@@ -15,7 +15,7 @@ import { keepLastApp, keepPlace, lastAppOf, placeOf } from './projects/work'
 import { AddBookSheet } from './screens/AddBook'
 import { BookScreen } from './screens/BookScreen'
 import { ChooseScreen } from './screens/ChooseScreen'
-import { closeTopSheet } from './frame/Sheet'
+import { closeTopSheet, onSheets } from './frame/Sheet'
 import { GlossaryScreen } from './screens/GlossaryScreen'
 import { Home, type Resume } from './screens/Home'
 import { Language, TestModeBar } from './screens/Language'
@@ -143,6 +143,8 @@ export function App() {
   goBack.current =
     screen.kind === 'app' ? leaveApp : screen.kind === 'glossary' || screen.kind === 'receive' || screen.kind === 'recibir' || screen.kind === 'elegir' ? () => setScreen(screen.back) : home
   const armed = useRef(false)
+  // An entry kept for a sheet open on home (home keeps none of its own).
+  const sheetEntry = useRef(false)
   const away = useRef(false)
   away.current = screen.kind !== 'home'
   const skip = useRef(false)
@@ -158,6 +160,10 @@ export function App() {
         if (away.current) {
           history.pushState({ servos: true }, '')
           armed.current = true
+        } else {
+          // Home's entry for the sheet was the one taken: nothing to take back when it closes.
+          armed.current = false
+          sheetEntry.current = false
         }
         return
       }
@@ -167,6 +173,30 @@ export function App() {
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
   }, [])
+  // On home, a sheet opened keeps an entry, so the back button closes it instead of leaving the app; closed by its own
+  // button, the entry is taken back. Away from home the screen's entry serves.
+  useEffect(
+    () =>
+      onSheets((count) => {
+        try {
+          if (away.current) {
+            sheetEntry.current = false
+          } else if (count > 0 && !armed.current) {
+            history.pushState({ servos: true }, '')
+            armed.current = true
+            sheetEntry.current = true
+          } else if (count === 0 && sheetEntry.current) {
+            sheetEntry.current = false
+            armed.current = false
+            skip.current = true
+            history.back()
+          }
+        } catch {
+          /* a frame that refuses history: the sheet still closes by its button */
+        }
+      }),
+    []
+  )
   useEffect(() => {
     try {
       if (screen.kind !== 'home' && !armed.current) {

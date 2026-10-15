@@ -13,6 +13,24 @@ import { useT } from '../i18n/i18n'
 /** The sheets open, the last on top: the phone's back button closes the top one before it leaves a screen. */
 const open: Array<{ close(): void }> = []
 
+/**
+ * Told how many sheets are open when that changes: where a screen keeps no entry in the browser's history of its own
+ * (home), one is kept while a sheet is open, so the phone's back button closes it there too. Told once the opening or
+ * closing settles (a sheet drawn twice in development comes and goes in one go).
+ */
+const listeners = new Set<(count: number) => void>()
+let told = 0
+const tell = () =>
+  queueMicrotask(() => {
+    if (open.length === told) return
+    told = open.length
+    listeners.forEach((fn) => fn(told))
+  })
+export function onSheets(fn: (count: number) => void): () => void {
+  listeners.add(fn)
+  return () => void listeners.delete(fn)
+}
+
 /** Closes the sheet on top, if one is open; whether one was. */
 export function closeTopSheet(): boolean {
   const top = open[open.length - 1]
@@ -32,7 +50,11 @@ export function Sheet({ title, onClose, children }: { title: string; onClose(): 
   useEffect(() => {
     const entry = { close: () => close.current() }
     open.push(entry)
-    return () => void open.splice(open.indexOf(entry), 1)
+    tell()
+    return () => {
+      open.splice(open.indexOf(entry), 1)
+      tell()
+    }
   }, [])
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close.current()
