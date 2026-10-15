@@ -182,6 +182,8 @@ textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
 .picker-heading { margin-block: 0.5rem; font-size: 0.95rem; }
 .chapter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr)); gap: 0.5rem; }
 .chapter-cell { display: flex; flex-direction: column; align-items: center; gap: 0.1rem; min-height: 3.5rem; padding: 0.35rem; }
+.chapter-cell.is-done { background: var(--done-soft); }
+.chapter-cell.is-done .chapter-cell-done { color: var(--done); font-weight: 600; }
 .chapter-cell.is-open { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 .chapter-cell[aria-current='true'] .chapter-cell-number { color: var(--accent); }
 .chapter-cell-number { font-size: 1.1rem; font-weight: 600; }

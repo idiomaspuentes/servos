@@ -94,7 +94,7 @@ export function PlacePicker({
             <button
               key={c}
               type="button"
-              className={c === open ? 'chapter-cell is-open' : 'chapter-cell'}
+              className={`chapter-cell${c === open ? ' is-open' : ''}${done !== null && verses.length > 0 && done >= verses.length ? ' is-done' : ''}`}
               aria-current={c === chapter}
               aria-pressed={c === open}
               onClick={() => setOpen(c)}
