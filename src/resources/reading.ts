@@ -112,18 +112,49 @@ export interface BookOnDevice {
   chapters: Array<{ number: number; verseCount: number }>
 }
 
-/** The books of a text that can be read: those with their table of chapters prepared. */
+/**
+ * The book's name as the text itself gives it: `\toc2` (its short name), else `\h`. The header rows sit in the book's
+ * chapter 0 of the source. tc-study's own `bookName` is the book code («TIT»), and `\h` is sometimes left untranslated
+ * (es-419 GST Titus says «Titus»), so `\toc2` comes first.
+ */
+async function bookNameInText(stores: ResourceStores, textKey: string, book: string): Promise<string | null> {
+  const [row] = await stores.cache.getByPrefix(`scripture-usj:${textKey}:${book}:0`)
+  const raw = row ? JSON.stringify(row.entry) : ''
+  const find = (marker: string) => raw.match(new RegExp(`"marker":"${marker}","content":\\["([^"]+)"`))?.[1]?.trim()
+  return find('toc2') ?? find('h') ?? null
+}
+
+/**
+ * The books of a text that can be read, with their chapters. The chapters come from the prepared chapters on the
+ * device, not from the prepared table of chapters: tc-study's warm jobs rewrite that table chapter by chapter, and it
+ * keeps only the last one.
+ */
 export async function booksOfText(stores: ResourceStores, textKey: string): Promise<BookOnDevice[]> {
   const prefix = `prepared:scripture:${textKey}:`
-  const books: BookOnDevice[] = []
+  const byBook = new Map<string, Map<number, number>>()
+  const navName = new Map<string, string>()
   for (const row of await stores.cache.getByPrefix(prefix)) {
-    if (!row.key.endsWith(':nav')) continue
-    const nav = unwrapVersioned<ScriptureNavRecord>(row.entry, SCRIPTURE_PREPARE_VERSION)
-    if (!nav) continue
-    books.push({ book: nav.bookId.toLowerCase(), name: nav.bookName, chapters: nav.chapters })
+    const [book, unit, tier] = row.key.slice(prefix.length).split(':')
+    if (unit === 'nav') {
+      const nav = unwrapVersioned<ScriptureNavRecord>(row.entry, SCRIPTURE_PREPARE_VERSION)
+      if (nav) navName.set(book, nav.bookName)
+      continue
+    }
+    if (tier !== 'light') continue
+    const light = unwrapVersioned<ScriptureLightChapter>(row.entry, SCRIPTURE_PREPARE_VERSION)
+    if (!light) continue
+    const verses = new Set(light.blocks.flatMap((b) => b.inline.filter((i) => i.kind === 'verse').map((i) => (i as { verseNumber: number }).verseNumber)))
+    const chapters = byBook.get(book) ?? new Map<number, number>()
+    chapters.set(Number(unit), verses.size)
+    byBook.set(book, chapters)
   }
-  const order = inBibleOrder(books.map((b) => b.book))
-  return books.sort((a, b) => order.indexOf(a.book) - order.indexOf(b.book))
+  const books: BookOnDevice[] = []
+  for (const book of inBibleOrder(byBook.keys())) {
+    const chapters = [...byBook.get(book)!.entries()].sort((a, b) => a[0] - b[0]).map(([number, verseCount]) => ({ number, verseCount }))
+    const name = (await bookNameInText(stores, textKey, book)) ?? navName.get(book) ?? book.toUpperCase()
+    books.push({ book, name, chapters })
+  }
+  return books
 }
 
 export type ChapterPiece = { kind: 'heading'; text: string } | { kind: 'paragraph'; verses: Array<{ verse: number; text: string }> }

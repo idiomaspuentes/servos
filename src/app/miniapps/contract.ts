@@ -1,0 +1,77 @@
+/**
+ * What a mini app is, for Servos (design, section 4; philosophy, principle 10). A mini app declares little and draws
+ * only its center: the frame (header, position line, helps panel, menus) belongs to the app, and data comes through one
+ * door (`MiniAppContext`). One registry, no other: what made tc-study hard to extend was a registry per concern
+ * (resource types, panel entries, modes, groups, viewers, loaders, plugins).
+ *
+ * Mini apps are built into the app for now. Nothing here stops them from being loaded from a pack later: a mini app
+ * is plain data plus one component, and it reaches the device's data only through the context it is given.
+ */
+
+import type { ComponentType } from 'react'
+import type { BaseLanguage, T, Texts } from '../i18n/i18n'
+import type { PrototypeData } from '../../prototype/data'
+
+/** What a mini app can ask the device for. The catalog says honestly what is missing (philosophy, principle 8). */
+export type ResourceNeed = 'text' | 'notes' | 'questions' | 'words' | 'academy'
+
+/** Where the person is: a verse of a chapter of a book. */
+export interface Position {
+  book: string
+  chapter: number
+  verse: number
+}
+
+/** The one door to data. In the prototype it serves a fixed chapter; wired, it reads `src/resources`. */
+export interface MiniAppContext {
+  t: T
+  person: { name: string }
+  data: PrototypeData
+  /** The bridge text shown (`TPL` or `TPS`). */
+  textAbbreviation: string
+  /** The verse texts of the current chapter in the bridge text shown. */
+  verseText(verse: number): string
+  position: Position
+  goTo(position: Position): void
+  /** Words of the bridge text to mark in the open verse (from the help the person is reading). */
+  marked: string | null
+  /** What the frame can do for a mini app. */
+  frame: {
+    /** Show the other bridge text. */
+    switchText(): void
+    /** Open the whole chapter in a sheet. */
+    showChapter(): void
+  }
+}
+
+export interface MiniAppCenterProps {
+  context: MiniAppContext
+}
+
+export interface MiniAppAction {
+  /** Text keys of the mini app's own group, or of the frame's. */
+  label: string
+  description?: string
+  run(context: MiniAppContext): void
+}
+
+export interface MiniApp {
+  /** Stable id, also the group of its texts (`{id}.{name}`). */
+  id: string
+  /** Its texts in the three base languages; `nombre` and `descripcion` are required. */
+  texts: Record<BaseLanguage, Texts & { nombre: string; descripcion: string }>
+  needs: ResourceNeed[]
+  /** Verse by verse for now; chapter and book come when a mini app needs them. */
+  unit: 'verse'
+  /** Whether the helps panel shows under its center. */
+  helps: boolean
+  /** Whether it changes the project's text; then the header says whether the work is saved (philosophy, principle 8). */
+  writes: boolean
+  /** Its one filled button (philosophy, principle 7), usually leading to the next verse or step. */
+  primary?: MiniAppAction
+  /** Its "More" menu: what it uses rarely. */
+  more?: MiniAppAction[]
+  Center: ComponentType<MiniAppCenterProps>
+  /** Shown in the catalog but not openable yet. */
+  comingSoon?: boolean
+}

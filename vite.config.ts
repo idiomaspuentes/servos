@@ -1,6 +1,7 @@
 /// <reference types="vitest/config" />
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
 /**
@@ -11,6 +12,7 @@ import { defineConfig } from 'vite'
 const BT = resolve(dirname(fileURLToPath(import.meta.url)), '../bt-synergy/packages')
 
 export default defineConfig({
+  plugins: [react()],
   resolve: {
     alias: [
       { find: /^@bt-synergy\/catalog-manager\/core$/, replacement: `${BT}/catalog-manager/src/core.ts` },

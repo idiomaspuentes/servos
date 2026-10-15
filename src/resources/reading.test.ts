@@ -36,8 +36,13 @@ const ROWS = [
   receipt(GLT, `usj:${USJ_PROCESSING_VERSION}`),
   { key: `scripture-usj:${GLT}:tit:1`, entry: { content: {} } },
   {
+    // The book's header, as tc-study keeps it: `\h` left in English, `	oc2` translated.
+    key: `scripture-usj:${GLT}:tit:0`,
+    entry: { content: { usj: { content: [{ type: 'para', marker: 'h', content: ['Titus'] }, { type: 'para', marker: 'toc2', content: ['Tito'] }] } } },
+  },
+  {
     key: `prepared:scripture:${GLT}:tit:nav`,
-    entry: envelope({ version: SCRIPTURE_PREPARE_VERSION, bookId: 'tit', bookName: 'Tito', chapters: [{ number: 1, verseCount: 16 }] }, SCRIPTURE_PREPARE_VERSION),
+    entry: envelope({ version: SCRIPTURE_PREPARE_VERSION, bookId: 'tit', bookName: 'TIT', chapters: [{ number: 3, verseCount: 15 }] }, SCRIPTURE_PREPARE_VERSION),
   },
   {
     key: `prepared:scripture:${GLT}:tit:1:light`,
@@ -119,7 +124,8 @@ describe('abrir un paquete de recursos', () => {
       [GLT, 'scripture', ['tit']],
       [TN, 'notes', ['tit']],
     ])
-    expect(await booksOfText(stores, GLT)).toEqual([{ book: 'tit', name: 'Tito', chapters: [{ number: 1, verseCount: 16 }] }])
+    // The name comes from the text's 	oc2, the chapters from the prepared chapters: tc-study's table keeps only the last.
+    expect(await booksOfText(stores, GLT)).toEqual([{ book: 'tit', name: 'Tito', chapters: [{ number: 1, verseCount: 2 }] }])
   })
 })
 
