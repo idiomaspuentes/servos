@@ -51,6 +51,7 @@ export function MiniAppScreen({
   data,
   person,
   project,
+  bookTitle,
   position,
   onPosition,
   textAbbreviation,
@@ -69,6 +70,8 @@ export function MiniAppScreen({
   dataOf(chapter: number): PrototypeData | null
   person: string
   project: MiniAppContext['project']
+  /** The book's name as the team says it. */
+  bookTitle?: string
   position: Position
   onPosition(p: Position): void
   textAbbreviation: string
@@ -120,7 +123,8 @@ export function MiniAppScreen({
   const at = Math.max(0, stops.findIndex((s) => s.includes(position.verse)))
   const shown = stops[at] ?? [position.verse]
   const goStop = (index: number) => onPosition({ ...position, verse: stops[index][0] })
-  const passage = passageOf(data.book.name, position.chapter, shown, t)
+  const title = bookTitle ?? data.book.name
+  const passage = passageOf(title, position.chapter, shown, t)
   // A place another mini app left (an introduction, where this one has none) becomes this one's first stop.
   const lost = !stops.some((s) => s.includes(position.verse))
   useEffect(() => {
@@ -151,6 +155,7 @@ export function MiniAppScreen({
   const atEnd = at >= stops.length - 1 && after === null
 
   const context: MiniAppContext = {
+    bookTitle: title,
     t,
     person: { name: person },
     project,
@@ -202,7 +207,7 @@ export function MiniAppScreen({
       <header className="header">
         <button type="button" className="button-quiet header-back" onClick={onBack}>
           {/* Where it goes back to: the mini app it was opened from, or the book. */}
-          ‹ {backLabel ?? data.book.name}
+          ‹ {backLabel ?? title}
         </button>
         <div className="header-title">
           <span className="header-app">{t(`${app.id}.nombre`)}</span>
@@ -236,7 +241,7 @@ export function MiniAppScreen({
         </nav>
       )}
       <p className="position-crossed" role="status" aria-live="polite">
-        {crossed !== null && <span>{t('marco.capituloNuevo', { libro: data.book.name, capitulo: crossed })}</span>}
+        {crossed !== null && <span>{t('marco.capituloNuevo', { libro: title, capitulo: crossed })}</span>}
       </p>
 
       <main className={app.fills ? 'main main-fill' : 'main'}>
@@ -247,7 +252,7 @@ export function MiniAppScreen({
             {backLabel && app.primary.returning
               ? t(app.primary.returning, { app: backLabel })
               : atEnd
-                ? t('marco.listoVolver', { libro: data.book.name })
+                ? t('marco.listoVolver', { libro: title })
                 : t(app.primary.label)}
           </button>
         )}
@@ -257,7 +262,7 @@ export function MiniAppScreen({
       {verseList && (
         <PlacePicker
           app={app}
-          bookName={data.book.name}
+          bookName={title}
           bookId={data.book.id}
           chapters={chapters}
           dataOf={dataOf}
@@ -291,7 +296,7 @@ export function MiniAppScreen({
       )}
 
       {chapter && (
-        <Sheet title={`${data.book.name} ${position.chapter} · ${text.abbreviation}`} onClose={() => setChapter(false)}>
+        <Sheet title={`${title} ${position.chapter} · ${text.abbreviation}`} onClose={() => setChapter(false)}>
           {text.pieces.map((piece, i) =>
             piece.kind === 'heading' ? (
               <h3 key={i}>{piece.text}</h3>

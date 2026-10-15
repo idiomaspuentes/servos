@@ -29,7 +29,7 @@ export function GlossaryEntrySheet({
 }: {
   entry: GlossaryEntry
   /** The project's books whose texts are on this phone. */
-  books: Array<{ code: string; chapters: PrototypeData[] }>
+  books: Array<{ code: string; name: string; chapters: PrototypeData[] }>
   person: string
   /** The direction of the original (Hebrew is right to left). */
   dir?: 'ltr' | 'rtl'
@@ -126,7 +126,7 @@ export function GlossaryEntrySheet({
                   <li key={`${u.book}.${u.chapter}.${u.verse}`}>
                     <button type="button" className={`glossary-use is-${u.state}`} onClick={() => onOpenVerse(u)}>
                       <span className="glossary-use-place">
-                        {bookName(u.book)} {u.chapter}:{u.verse}
+                        {books.find((b) => b.code === u.book)?.name ?? bookName(u.book)} {u.chapter}:{u.verse}
                       </span>
                       <span className="glossary-use-state">
                         {u.state === 'uses' ? `✓ ${t('glosario.loUsa')}` : u.state === 'other' ? t('glosario.diceOtra') : t('glosario.sinTraducir')}

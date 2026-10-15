@@ -40,6 +40,8 @@ export interface MiniAppContext {
   person: { name: string }
   /** The project the book belongs to: what is shared across its books (its glossary). */
   project: { id: string; name: string; languageCode: string; font?: string }
+  /** The book's name as the team says it (or the bridge text's, until it is named). */
+  bookTitle: string
   data: PrototypeData
   /** The bridge text shown (`TPL` or `TPS`). */
   textAbbreviation: string

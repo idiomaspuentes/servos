@@ -10,19 +10,22 @@ import { useProjectFont } from '../frame/fonts'
 import { TwoVersions } from '../frame/TwoVersions'
 import { WordLines } from '../frame/TouchWords'
 import { useT } from '../i18n/i18n'
-import { bookName, type Project } from '../projects/model'
+import type { Project } from '../projects/model'
 import { versesToChoose } from '../projects/versions'
 import { authorOf, chooseVersion, otherVersion, readDraft } from '../projects/work'
 
 export function ChooseScreen({
   project,
   book,
+  title,
   chapters,
   textAbbreviation,
   onBack,
 }: {
   project: Project
   book: string
+  /** The book's name as the team says it. */
+  title: string
   chapters: PrototypeData[]
   /** The bridge text the person reads by (TPL by default). */
   textAbbreviation: string
@@ -36,7 +39,7 @@ export function ChooseScreen({
   const [source, setSource] = useState(false)
   useProjectFont(project.font)
 
-  const name = bookName(book)
+  const name = title
   const place = queue[at]
   const data = place && chapters.find((c) => c.chapter === place.chapter)
   const bridge = data && (data.texts.find((x) => x.abbreviation === textAbbreviation) ?? data.texts.find((x) => !x.original))

@@ -17,7 +17,7 @@ import { MenuRow, Sheet } from '../frame/Sheet'
 import { useT } from '../i18n/i18n'
 import type { MiniApp } from '../miniapps/contract'
 import { miniApp } from '../miniapps/registry'
-import { PHASES, bookName, type BookEntry, type Phase, type Project } from '../projects/model'
+import { PHASES, bookName, titleOf, type BookEntry, type Phase, type Project } from '../projects/model'
 import { doneIn as doneInBook, percent as pct, placeLabel, stepPercent, versesOf } from '../projects/progress'
 import { versesToChoose } from '../projects/versions'
 import { workOf } from '../projects/work'
@@ -34,6 +34,7 @@ export function BookScreen({
   onBack,
   onOpen,
   onPhase,
+  onName,
   onReceive,
   onGlossary,
   onReceiveWork,
@@ -50,6 +51,8 @@ export function BookScreen({
   /** Opens a mini app where the person left off, or at a chapter. */
   onOpen(app: MiniApp, chapter?: number): void
   onPhase(phase: Phase): void
+  /** The book's name as the team says it (empty: as the bridge text names it). */
+  onName(name: string): void
   onReceive(): void
   /** The project's glossary, shared by all its books. */
   onGlossary(): void
@@ -64,7 +67,10 @@ export function BookScreen({
   placeFor(app: string): Place | null
 }) {
   const t = useT()
-  const name = bookName(book.code)
+  // The book as the team named it in its language; the bridge text's name, until then and beside it.
+  const name = titleOf(project, book.code)
+  const source = bookName(book.code)
+  const [naming, setNaming] = useState(false)
   const at = PHASES.indexOf(book.phase)
   const appsOf = (phase: Phase) => project.miniApps[phase].map((id) => miniApp(id)).filter((a): a is MiniApp => Boolean(a))
   const allApps = PHASES.flatMap((p) => appsOf(p)).filter((a) => !a.comingSoon)
@@ -108,13 +114,19 @@ export function BookScreen({
         </button>
         <div className="header-title">
           <span className="header-app">{name}</span>
-          <span className="header-person">{project.name}</span>
+          <span className="header-person">{book.name ? `${project.name} · ${source}` : project.name}</span>
         </div>
         <button type="button" className="button-quiet header-more" onClick={() => setMore(true)}>
           {t('libro.mas')}
         </button>
       </header>
       <main className="main">
+        {!book.name && (
+          // Once, until the team names it: its name is the team's, in its language.
+          <button type="button" className="button-quiet book-name-ask" onClick={() => setNaming(true)}>
+            {t('libro.nombrarPregunta', { libro: source, idioma: project.languageName })}
+          </button>
+        )}
         {!chapters.length ? (
           <>
             <p className="notice">{t('libro.faltaPaquete', { libro: name })}</p>
@@ -260,6 +272,14 @@ export function BookScreen({
           }}
         >
           <MenuRow
+            label={t('libro.nombre')}
+            description={book.name ? t('libro.nombreEs', { idioma: project.languageName, nombre: book.name }) : t('libro.nombreSinPoner', { libro: source })}
+            onClick={() => {
+              setMore(false)
+              setNaming(true)
+            }}
+          />
+          <MenuRow
             label={t('libro.compartir')}
             description={t('libro.compartirAyuda')}
             onClick={() => {
@@ -272,7 +292,7 @@ export function BookScreen({
               label={t('libro.usfm')}
               description={t('libro.usfmAyuda')}
               onClick={async () => {
-                const saved = await saveFile(`${book.code.toUpperCase()}.usfm`, bookUsfm(book.code, project.name, chapters), 'text/plain')
+                const saved = await saveFile(`${book.code.toUpperCase()}.usfm`, bookUsfm(book.code, project.name, chapters, 'TPL', book.name), 'text/plain')
                 setSaidMore(saved.state === 'saved' ? t('compartir.guardado', { archivo: saved.name }) : saved.state === 'declined' ? null : t('compartir.noGuardado'))
               }}
             />
@@ -301,7 +321,57 @@ export function BookScreen({
         </Sheet>
       )}
 
+      {naming && (
+        <BookNameSheet
+          source={source}
+          language={project.languageName}
+          name={book.name ?? ''}
+          onSave={(n) => {
+            onName(n)
+            setNaming(false)
+          }}
+          onClose={() => setNaming(false)}
+        />
+      )}
       {sharing && <ShareSheet project={project} books={[book.code]} person={person} onClose={() => setSharing(false)} />}
     </div>
+  )
+}
+
+/** Naming the book as the team says it in its language: the bridge text's name beside it, so it is clear which one. */
+function BookNameSheet({
+  source,
+  language,
+  name,
+  onSave,
+  onClose,
+}: {
+  source: string
+  language: string
+  name: string
+  onSave(name: string): void
+  onClose(): void
+}) {
+  const t = useT()
+  const [value, setValue] = useState(name)
+  return (
+    <Sheet title={t('libro.nombre')} onClose={onClose} dirty={value.trim() !== name.trim()}>
+      <form
+        className="glossary-form"
+        onSubmit={(e) => {
+          e.preventDefault()
+          onSave(value)
+        }}
+      >
+        <label className="field">
+          <span className="field-label">{t('libro.nombreComo', { libro: source, idioma: language })}</span>
+          <input value={value} onChange={(e) => setValue(e.target.value)} placeholder={source} autoFocus enterKeyHint="done" />
+        </label>
+        <p className="quiet">{t('libro.nombreDonde')}</p>
+        <button type="submit" className="button-primary" disabled={value.trim() === name.trim()}>
+          {t('libro.nombreGuardar')}
+        </button>
+      </form>
+    </Sheet>
   )
 }

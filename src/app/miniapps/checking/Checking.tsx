@@ -260,7 +260,7 @@ export function checkingCenter<I extends Checkable>(kind: CheckKind<I>) {
               </button>
             ) : (
               <button type="button" className="button-primary" onClick={frame.back}>
-                {t('marco.listoVolver', { libro: context.data.book.name })}
+                {t('marco.listoVolver', { libro: context.bookTitle })}
               </button>
             )}
             <button type="button" className="button-quiet" onClick={() => setFinished(false)}>

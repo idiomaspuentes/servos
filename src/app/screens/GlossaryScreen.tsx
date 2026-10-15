@@ -39,7 +39,7 @@ export function GlossaryScreen({
 }: {
   project: Project
   /** The project's books whose texts are on this phone: where each word is looked for. */
-  books: Array<{ code: string; chapters: PrototypeData[] }>
+  books: Array<{ code: string; name: string; chapters: PrototypeData[] }>
   person: string
   /** Where «‹» goes back to, named. */
   backLabel: string

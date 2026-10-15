@@ -8,7 +8,7 @@ import { useState } from 'react'
 import { saveFile } from '../frame/saveFile'
 import { Sheet } from '../frame/Sheet'
 import { useT } from '../i18n/i18n'
-import { bookName, type Project } from '../projects/model'
+import { titleOf, type Project } from '../projects/model'
 import { shareFileName, shareProject } from '../projects/share'
 
 export function ShareSheet({ project, books, person, onClose }: { project: Project; books: string[]; person: string; onClose(): void }) {
@@ -18,7 +18,7 @@ export function ShareSheet({ project, books, person, onClose }: { project: Proje
   const file = () => shareProject(project, chosen, person)
   const save = async () => {
     const shared = file()
-    const name = shareFileName(shared, chosen.map(bookName))
+    const name = shareFileName(shared, chosen.map((c) => titleOf(project, c)))
     const saved = await saveFile(name, JSON.stringify(shared))
     // Said only when it was saved: a file refused or not possible here is not reported as done.
     setSaid(saved.state === 'saved' ? t('compartir.guardado', { archivo: saved.name }) : saved.state === 'declined' ? null : t('compartir.noGuardado'))
@@ -33,7 +33,7 @@ export function ShareSheet({ project, books, person, onClose }: { project: Proje
   }
 
   return (
-    <Sheet title={t(books.length === 1 ? 'compartir.libroTitulo' : 'compartir.proyectoTitulo', { libro: bookName(books[0] ?? ''), proyecto: project.name })} onClose={onClose}>
+    <Sheet title={t(books.length === 1 ? 'compartir.libroTitulo' : 'compartir.proyectoTitulo', { libro: titleOf(project, books[0] ?? ''), proyecto: project.name })} onClose={onClose}>
       <div className="share">
         {books.length > 1 && (
           <fieldset className="field">
@@ -45,7 +45,7 @@ export function ShareSheet({ project, books, person, onClose }: { project: Proje
                   checked={chosen.includes(code)}
                   onChange={() => setChosen((now) => (now.includes(code) ? now.filter((c) => c !== code) : [...now, code]))}
                 />
-                {bookName(code)}
+                {titleOf(project, code)}
               </label>
             ))}
           </fieldset>

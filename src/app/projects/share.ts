@@ -45,6 +45,8 @@ interface SharedAlignment {
 export interface SharedBook {
   code: string
   phase: Phase
+  /** Its name in the team's language, if the team gave it one. */
+  name?: string
   verses: SharedVerse[]
   others: Array<{ chapter: number; verse: number; text: string; by: string }>
   alignments: SharedAlignment[]
@@ -145,7 +147,7 @@ export function shareProject(project: Project, codes: string[], from: string, no
     from,
     at: now.toISOString(),
     project: rest,
-    books: books.filter((b) => codes.includes(b.code)).map((b) => shareBook(b.code, b.phase)),
+    books: books.filter((b) => codes.includes(b.code)).map((b) => ({ ...shareBook(b.code, b.phase), ...(b.name ? { name: b.name } : {}) })),
     glossary: readGlossary(project.id),
   }
 }
@@ -289,8 +291,12 @@ export function receiveShared(
       : { ...file.project, id: freeId(file.project.id, projects), books: [] as BookEntry[] }
   const books = file.books.filter((b) => codes.includes(b.code))
   const received = books.map((b) => receiveBook(b, !target.books.some((x) => x.code === b.code)))
-  const added = books.filter((b) => !target.books.some((x) => x.code === b.code)).map((b) => ({ code: b.code, phase: b.phase }))
-  const updated: Project = { ...target, books: [...target.books, ...added] }
+  const added = books
+    .filter((b) => !target.books.some((x) => x.code === b.code))
+    .map((b) => ({ code: b.code, phase: b.phase, ...(b.name ? { name: b.name } : {}) }))
+  // A name the book did not have here comes in; one it had stays.
+  const named = target.books.map((x) => (x.name ? x : { ...x, name: books.find((b) => b.code === x.code)?.name }))
+  const updated: Project = { ...target, books: [...named.map((x) => (x.name ? x : { code: x.code, phase: x.phase })), ...added] }
   const { gathered, changed } = gatherGlossary(readGlossary(updated.id), file.glossary ?? [])
   for (const entry of changed) saveGlossaryEntry(updated.id, entry)
   const next = destination.kind === 'join' ? projects.map((p) => (p.id === updated.id ? updated : p)) : [...projects, updated]

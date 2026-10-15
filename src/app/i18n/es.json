@@ -593,5 +593,12 @@
   "idioma.rotas": "Frases que no entraron porque sus marcas (lo que va entre llaves) no son las del original: {n}.",
   "marco.sinGuardar": "Lo que escribió todavía no se guardó.",
   "marco.seguirEscribiendo": "Seguir escribiendo",
-  "marco.cerrarSinGuardar": "Cerrar sin guardar"
+  "marco.cerrarSinGuardar": "Cerrar sin guardar",
+  "libro.nombre": "Nombre del libro",
+  "libro.nombreEs": "En {idioma}: {nombre}",
+  "libro.nombreSinPoner": "Todavía como en el texto puente: {libro}",
+  "libro.nombrarPregunta": "¿Cómo se dice «{libro}» en {idioma}? Escribir el nombre",
+  "libro.nombreComo": "Cómo se dice «{libro}» en {idioma}",
+  "libro.nombreDonde": "Así se ve en la app, y así va en el título del libro al guardarlo en USFM o publicarlo.",
+  "libro.nombreGuardar": "Guardar el nombre"
 }

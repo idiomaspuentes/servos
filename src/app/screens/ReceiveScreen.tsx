@@ -157,7 +157,7 @@ export function ReceiveScreen({
               {examples.map((ex) => (
                 <MenuRow
                   key={`${ex.from}.${ex.books.map((b) => b.code).join()}`}
-                  label={t('recibir.ejemploDe', { nombre: ex.from, que: ex.books.map((b) => bookName(b.code)).join(', ') })}
+                  label={t('recibir.ejemploDe', { nombre: ex.from, que: ex.books.map((b) => b.name || bookName(b.code)).join(', ') })}
                   description={t('recibir.versiculosN', { n: ex.books.reduce((n, b) => n + b.verses.length, 0) })}
                   onClick={() => open(JSON.stringify(ex))}
                 />
@@ -178,7 +178,7 @@ export function ReceiveScreen({
           <span className="book-resume-kicker">{t('recibir.de', { nombre: file.from, fecha: new Date(file.at).toLocaleDateString(document.documentElement.lang || undefined) })}</span>
           <span className="book-resume-what">{file.project.name}</span>
           <span className="quiet">
-            {file.project.languageName} ({file.project.languageCode}) · {file.books.map((b) => bookName(b.code)).join(', ')}
+            {file.project.languageName} ({file.project.languageCode}) · {file.books.map((b) => b.name || bookName(b.code)).join(', ')}
             {file.glossary?.length ? ` · ${t('recibir.glosarioN', { n: file.glossary.length })}` : ''}
           </span>
         </section>

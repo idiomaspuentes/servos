@@ -8,7 +8,7 @@
  */
 
 import { useT } from '../i18n/i18n'
-import { bookName, type Project } from '../projects/model'
+import { titleOf, type Project } from '../projects/model'
 
 export interface Resume {
   projectId: string
@@ -57,7 +57,7 @@ export function Home({
         {resumeProject && resumeBook && (
           <section className="book-resume" aria-label={t('libro.sigaDonde')}>
             <span className="book-resume-kicker">{t('libro.sigaDonde')}</span>
-            <span className="book-resume-what">{resumeAt ?? `${bookName(resumeBook.code)} · ${t(`pasos.${resumeBook.phase}`)}`}</span>
+            <span className="book-resume-what">{resumeAt ?? `${titleOf(resumeProject, resumeBook.code)} · ${t(`pasos.${resumeBook.phase}`)}`}</span>
             <span className="quiet book-resume-project">{resumeProject.name}</span>
             <button type="button" className="button-primary" onClick={() => onResume(resume!)}>
               {t('libro.continuar')} →
@@ -84,7 +84,7 @@ export function Home({
                 const pct = progressOf(p, b.code)
                 return (
                   <button key={b.code} type="button" className="book-tile" onClick={() => onBook(p.id, b.code)}>
-                    <span className="book-tile-name">{bookName(b.code)}</span>
+                    <span className="book-tile-name">{titleOf(p, b.code)}</span>
                     <span className="book-tile-phase">
                       {t(`pasos.${b.phase}Corto`)}
                       {pct !== null && ` · ${pct} %`}

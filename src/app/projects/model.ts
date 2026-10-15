@@ -15,6 +15,8 @@ export interface BookEntry {
   code: string
   /** The step the book is in. */
   phase: Phase
+  /** Its name as the team says it in its language («Jonás» in the bridge text, «Jonasmanta» in theirs). */
+  name?: string
 }
 
 export interface Project {
@@ -59,6 +61,13 @@ export const BOOKS: Array<[string, string]> = [
 ]
 
 export const bookName = (code: string) => BOOKS.find(([c]) => c === code)?.[1] ?? code.toUpperCase()
+
+/**
+ * A book's name where the team works on it: as the team named it in its language, or, until it does, as the bridge
+ * text names it. Choosing a book to add, the bridge text's names are the ones shown (it is the list they are known by).
+ */
+export const titleOf = (project: { books: BookEntry[] } | undefined, code: string) =>
+  project?.books.find((b) => b.code === code)?.name?.trim() || bookName(code)
 
 const STORAGE_KEY = 'servos.prototipo.proyectos'
 

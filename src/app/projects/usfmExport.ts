@@ -11,8 +11,9 @@ import { joinedTo, readDraft } from './work'
 
 const isPoem = (marker: string) => /^q\d?$|^qm\d?$/.test(marker)
 
-export function bookUsfm(code: string, projectName: string, chapters: PrototypeData[], bridge = 'TPL'): string {
-  const name = bookName(code)
+export function bookUsfm(code: string, projectName: string, chapters: PrototypeData[], bridge = 'TPL', title?: string): string {
+  // The name the team gave the book, else the bridge text's.
+  const name = title?.trim() || bookName(code)
   const out = [`\\id ${code.toUpperCase()} ${projectName}`, '\\usfm 3.0', '\\ide UTF-8', `\\h ${name}`, `\\toc1 ${name}`, `\\toc2 ${name}`, `\\mt ${name}`]
   for (const data of chapters) {
     const text = data.texts.find((x) => x.abbreviation === bridge) ?? data.texts.find((x) => !x.original)

@@ -9,7 +9,7 @@ import { MiniAppScreen } from './frame/MiniAppScreen'
 import { useT } from './i18n/i18n'
 import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type Position } from './miniapps/contract'
 import { miniApp } from './miniapps/registry'
-import { bookName, loadProjects, saveProjects, type Phase, type Project } from './projects/model'
+import { loadProjects, saveProjects, titleOf, type Phase, type Project } from './projects/model'
 import { placeLabel, stepPercent } from './projects/progress'
 import { keepLastApp, keepPlace, lastAppOf, placeOf } from './projects/work'
 import { AddBookSheet } from './screens/AddBook'
@@ -239,7 +239,7 @@ export function App() {
           resume={resume}
           resumeAt={
             resume && resumeApp
-              ? `${t(`${resumeApp.id}.nombre`)} · ${resumePlace ? placeLabel(t, bookName(resume.book), resumePlace) : bookName(resume.book)}`
+              ? `${t(`${resumeApp.id}.nombre`)} · ${resumePlace ? placeLabel(t, titleOf(project(resume.projectId), resume.book), resumePlace) : titleOf(project(resume.projectId), resume.book)}`
               : null
           }
           progressOf={(p, code) => {
@@ -285,6 +285,13 @@ export function App() {
             setScreen({ kind: 'app', projectId: bookScreen.projectId, book: bookScreen.book, id: app.id })
           }}
           onPhase={(phase) => setPhase(bookScreen.projectId, bookScreen.book, phase)}
+          onName={(name) =>
+            setProjects(
+              projects.map((p) =>
+                p.id !== bookScreen.projectId ? p : { ...p, books: p.books.map((b) => (b.code === bookScreen.book ? { ...b, name: name.trim() || undefined } : b)) }
+              )
+            )
+          }
           onReceive={() => setScreen({ kind: 'receive', back: bookScreen })}
           onGlossary={() => setScreen({ kind: 'glossary', projectId: bookScreen.projectId, back: bookScreen })}
           onReceiveWork={() => setScreen({ kind: 'recibir', back: bookScreen, projectId: bookScreen.projectId, book: bookScreen.book })}
@@ -296,9 +303,9 @@ export function App() {
       {screen.kind === 'glossary' && project(screen.projectId) && (
         <GlossaryScreen
           project={project(screen.projectId)!}
-          books={project(screen.projectId)!.books.map((b) => ({ code: b.code, chapters: chaptersFor(b.code) }))}
+          books={project(screen.projectId)!.books.map((b) => ({ code: b.code, name: titleOf(project(screen.projectId), b.code), chapters: chaptersFor(b.code) }))}
           person={person}
-          backLabel={screen.back.kind === 'book' ? bookName(screen.back.book) : t('marco.volver')}
+          backLabel={screen.back.kind === 'book' ? titleOf(project(screen.projectId), screen.back.book) : t('marco.volver')}
           openEntry={screen.entry}
           onBack={() => setScreen(screen.back)}
           onOpenVerse={(use, entry) => {
@@ -317,6 +324,7 @@ export function App() {
           dataOf={(chapter) => chapterOf(appScreen.book, chapter)}
           person={person}
           project={project(appScreen.projectId)!}
+          bookTitle={titleOf(project(appScreen.projectId), appScreen.book)}
           position={position}
           onPosition={setPosition}
           textAbbreviation={text}
@@ -368,6 +376,7 @@ export function App() {
         <ChooseScreen
           project={project(screen.projectId)!}
           book={screen.book}
+          title={titleOf(project(screen.projectId), screen.book)}
           chapters={chaptersFor(screen.book)}
           textAbbreviation={text}
           onBack={() => setScreen(screen.back)}

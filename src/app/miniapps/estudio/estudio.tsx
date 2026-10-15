@@ -86,7 +86,7 @@ function Center({ context }: MiniAppCenterProps) {
           <Markdown text={intro} />
         </article>
         <button type="button" className="button-primary study-next" onClick={frame.next}>
-          {frame.atEnd ? t('marco.listoVolver', { libro: data.book.name }) : t('estudio.seguir')}
+          {frame.atEnd ? t('marco.listoVolver', { libro: context.bookTitle }) : t('estudio.seguir')}
         </button>
       </div>
     )
@@ -155,7 +155,7 @@ function Center({ context }: MiniAppCenterProps) {
       content: (
         <StudyNotes
           ref={box}
-          passage={passageOf(data.book.name, position.chapter, shown, t)}
+          passage={passageOf(context.bookTitle, position.chapter, shown, t)}
           verses={shown}
           text={note.text}
           by={note.by}
@@ -178,7 +178,7 @@ function Center({ context }: MiniAppCenterProps) {
     <div className="study" ref={root}>
       <Panes panes={panes} label={t('estudio.paneles')} fixed="nota" open={open} onPane={setPane} holdFocus={false} />
       <button type="button" className="button-primary study-next" onClick={button.run}>
-        {button.run === frame.next && frame.atEnd ? t('marco.listoVolver', { libro: data.book.name }) : t(button.label)}
+        {button.run === frame.next && frame.atEnd ? t('marco.listoVolver', { libro: context.bookTitle }) : t(button.label)}
       </button>
     </div>
   )

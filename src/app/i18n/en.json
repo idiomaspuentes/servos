@@ -593,5 +593,12 @@
   "idioma.rotas": "Phrases left out because their marks (what goes between braces) are not the original's: {n}.",
   "marco.sinGuardar": "What you wrote is not saved yet.",
   "marco.seguirEscribiendo": "Keep writing",
-  "marco.cerrarSinGuardar": "Close without saving"
+  "marco.cerrarSinGuardar": "Close without saving",
+  "libro.nombre": "Book name",
+  "libro.nombreEs": "In {idioma}: {nombre}",
+  "libro.nombreSinPoner": "Still as in the bridge text: {libro}",
+  "libro.nombrarPregunta": "How do you say «{libro}» in {idioma}? Write the name",
+  "libro.nombreComo": "How «{libro}» is said in {idioma}",
+  "libro.nombreDonde": "This is how it shows in the app, and how it goes in the book's title when saved as USFM or published.",
+  "libro.nombreGuardar": "Save the name"
 }
