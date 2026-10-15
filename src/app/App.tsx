@@ -20,7 +20,9 @@ import { GlossaryScreen } from './screens/GlossaryScreen'
 import { Home, type Resume } from './screens/Home'
 import { Language, TestModeBar } from './screens/Language'
 import { AddProjectSheet, NewProject } from './screens/NewProject'
-import { PEOPLE, PersonMenu } from './screens/PersonMenu'
+import { PersonMenu } from './screens/PersonMenu'
+import { Welcome } from './screens/Welcome'
+import { EXAMPLE_PEOPLE, addPerson, loadPeople, savePeople, type People } from './projects/people'
 import { ProjectSettings } from './screens/ProjectSettings'
 import { ReceivePack } from './screens/ReceivePack'
 import { ReceiveScreen } from './screens/ReceiveScreen'
@@ -56,7 +58,14 @@ export function App() {
   const [projects, setProjectsState] = useState<Project[]>(loadProjects)
   const [screen, setScreen] = useState<Screen>({ kind: 'home' })
   const [resume, setResumeState] = useState<Resume | null>(loadResume)
-  const [person, setPerson] = useState(PEOPLE[0])
+  // Who uses this phone, and who is working now: kept, since every change carries the name. Null the first time.
+  const [people, setPeopleState] = useState<People | null>(loadPeople)
+  const setPeople = (next: People) => {
+    setPeopleState(next)
+    savePeople(next)
+  }
+  const person = people?.current ?? EXAMPLE_PEOPLE[0]
+  const setPerson = (name: string) => people && setPeople({ ...people, current: name })
   const [personMenu, setPersonMenu] = useState(false)
   const [language, setLanguage] = useState(false)
   const [addProject, setAddProject] = useState(false)
@@ -173,6 +182,15 @@ export function App() {
       /* a frame that refuses history: the arrows still work */
     }
   }, [screen])
+
+  if (!people) {
+    return (
+      <>
+        <TestModeBar />
+        <Welcome onStart={(name, example) => setPeople(example ? { names: EXAMPLE_PEOPLE, current: name } : addPerson(null, name))} />
+      </>
+    )
+  }
 
   return (
     <>
@@ -349,9 +367,14 @@ export function App() {
       {personMenu && (
         <PersonMenu
           person={person}
+          people={people.names}
           onClose={() => setPersonMenu(false)}
           onPerson={(name) => {
             setPerson(name)
+            setPersonMenu(false)
+          }}
+          onAdd={(name) => {
+            setPeople(addPerson(people, name))
             setPersonMenu(false)
           }}
           onReceive={() => {

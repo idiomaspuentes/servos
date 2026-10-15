@@ -550,5 +550,14 @@
   "glosario.loUsa": "Lo usa",
   "glosario.diceOtra": "Dice otra cosa",
   "glosario.sinTraducir": "Sin traducir",
-  "ajustes.enUso": "en uso: {n}"
+  "ajustes.enUso": "en uso: {n}",
+  "bienvenida.que": "Para traducir la Biblia en su idioma, en equipo, con o sin internet.",
+  "bienvenida.nombre": "¿Cómo se llama?",
+  "bienvenida.nombreAyuda": "Su nombre queda en cada cosa que haga. Si otras personas usan este teléfono, se agregan después.",
+  "bienvenida.empezar": "Empezar",
+  "bienvenida.ejemploAyuda": "¿Solo quiere conocer la app? Hay un ejemplo con un equipo que traduce Jonás, Tito y Rut al kichwa.",
+  "bienvenida.ejemplo": "Ver el ejemplo como {nombre}",
+  "persona.agregar": "Agregar una persona",
+  "persona.nombreNuevo": "Nombre de quien va a trabajar",
+  "persona.agregarYTrabajar": "Agregar y trabajar con este nombre"
 }

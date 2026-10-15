@@ -722,3 +722,13 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .diagram-gloss, .diagram-morph, .diagram-aligned { max-width: 100%; font-size: 0.7rem; line-height: 1.2; color: var(--text-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; }
 .diagram-morph { font-style: italic; }
 .diagram-aligned { color: var(--text); }
+
+/* The first time: what the app is, its language, and who works */
+.welcome .main { padding-block-start: 2.5rem; }
+.welcome-title { margin: 0; font-size: 2rem; letter-spacing: 0.01em; }
+.welcome-what { margin: 0 0 0.5rem; font-size: 1.1rem; color: var(--text-soft); }
+.welcome-languages { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
+.welcome-name { display: flex; flex-direction: column; gap: 0.75rem; }
+.welcome-example { display: flex; flex-direction: column; gap: 0.4rem; margin-block-start: 1rem; padding-block-start: 1rem; border-block-start: 1px solid var(--line); }
+.welcome-example p { margin: 0; }
+.person-add { display: flex; flex-direction: column; gap: 0.5rem; margin-block-start: 0.5rem; }

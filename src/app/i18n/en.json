@@ -550,5 +550,14 @@
   "glosario.loUsa": "Uses it",
   "glosario.diceOtra": "Says something else",
   "glosario.sinTraducir": "Not translated",
-  "ajustes.enUso": "in use: {n}"
+  "ajustes.enUso": "in use: {n}",
+  "bienvenida.que": "To translate the Bible into your language, as a team, with or without internet.",
+  "bienvenida.nombre": "What is your name?",
+  "bienvenida.nombreAyuda": "Your name goes with everything you do. If other people use this phone, they are added later.",
+  "bienvenida.empezar": "Start",
+  "bienvenida.ejemploAyuda": "Just want to get to know the app? There is an example with a team translating Jonah, Titus and Ruth into Kichwa.",
+  "bienvenida.ejemplo": "See the example as {nombre}",
+  "persona.agregar": "Add a person",
+  "persona.nombreNuevo": "Name of who is going to work",
+  "persona.agregarYTrabajar": "Add and work with this name"
 }

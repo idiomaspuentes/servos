@@ -3,7 +3,8 @@
 import { BASE_LANGUAGES, PSEUDO_LANGUAGE, baseText, useI18n } from '../i18n/i18n'
 import { MenuRow, Sheet } from '../frame/Sheet'
 
-const NAMES: Record<string, string> = { es: 'Español', pt: 'Português', en: 'English' }
+/** Each language in its own words. */
+export const LANGUAGE_NAMES: Record<string, string> = { es: 'Español', pt: 'Português', en: 'English' }
 
 export function Language({ onClose }: { onClose(): void }) {
   const { t, language, localLanguages, setLanguage } = useI18n()
@@ -15,7 +16,7 @@ export function Language({ onClose }: { onClose(): void }) {
     <Sheet title={t('idioma.titulo')} onClose={onClose}>
       <h3 className="menu-heading">{t('idioma.base')}</h3>
       {BASE_LANGUAGES.map((code) => (
-        <MenuRow key={code} label={`${NAMES[code]}${code === language ? ' ✓' : ''}`} onClick={() => choose(code)} />
+        <MenuRow key={code} label={`${LANGUAGE_NAMES[code]}${code === language ? ' ✓' : ''}`} onClick={() => choose(code)} />
       ))}
       {localLanguages.length > 0 && <h3 className="menu-heading">{t('idioma.locales')}</h3>}
       {localLanguages.map((l) => (
