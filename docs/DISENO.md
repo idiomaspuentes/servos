@@ -56,8 +56,8 @@ nuevas sin tocar las demás.
 |---|---|---|
 | **Estudio** | Leer el libro con sus recursos antes de traducir: textos puente, notas, preguntas, palabras, academia | La lectura de ayudas pegadas al versículo de Taller |
 | **Editor** | Escribir el borrador, versículo por versículo, con los textos puente al lado | El editor de USFM de `usfm-ast`; las reglas de escritura del USFM de Taller (poesía, notas) |
-| **Revisor de desafíos** | Comprobar que cada desafío de traducción quedó bien resuelto: fiel, claro, natural y preciso, entendiendo la nota, el TPL y el TPS | La interfaz casi idéntica a la de Taller; cambian las preguntas de comprobación de ese paso |
-| **Revisor de palabras clave** | Comprobar cómo se tradujo cada palabra clave en todo el libro | El revisor de palabras de Taller |
+| **Revisar con las notas** | Comprobar que cada frase difícil (las notas que enlazan a la Academia) quedó traducida como explica su nota y se entiende bien. Tres pasos por nota: leer la nota, marcar en el borrador las palabras que lo dicen, responder (bien, mejorarla ahora en el editor, mejorarla después). Por versículo, o por categoría y figura | La revisión de translationCore 3 y 4 y la Afinación de Taller (texto de referencia cambiable, marcar palabras con el dedo) |
+| **Revisar con las palabras** | Comprobar cada uso de una palabra (términos clave, otros términos, nombres) con los mismos tres pasos, y en el tercero cómo se tradujo en los demás lugares del libro: donde significa lo mismo, igual; donde significa otra cosa, según su sentido. Palabra por palabra, o por versículo | «Revisar palabras clave» de Taller; los dos revisores comparten `miniapps/checking` |
 | **Alineador** | Alinear el texto con el original o con otro idioma (TPL, TPS, español, portugués…) | El alineador de `usfm-ast` / `usfm-editor` |
 | **Publicar** | Preparar una publicación, aunque sea parcial, sin internet | Sección 8 |
 

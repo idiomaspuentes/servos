@@ -99,19 +99,20 @@ export interface NoteCheck {
 /** The words of a verse as the translator touches them: what spaces part. */
 export const wordsOfVerse = (text: string) => text.split(/\s+/).filter(Boolean)
 
-const key = (book: string, noteId: string) => `servos.prototipo.revisionNota.${book}.${noteId}`
+/** Where a check is kept: the store names the kind of check (`revisionNota`, `revisionPalabra`), the id what is checked. */
+const key = (book: string, id: string, store: string) => `servos.prototipo.${store}.${book}.${id}`
 
-export function readCheck(book: string, noteId: string): NoteCheck | null {
+export function readCheck(book: string, id: string, store = 'revisionNota'): NoteCheck | null {
   try {
-    return JSON.parse(localStorage.getItem(key(book, noteId)) ?? 'null') as NoteCheck | null
+    return JSON.parse(localStorage.getItem(key(book, id, store)) ?? 'null') as NoteCheck | null
   } catch {
     return null
   }
 }
 
-export function writeCheck(book: string, noteId: string, check: NoteCheck) {
+export function writeCheck(book: string, id: string, check: NoteCheck, store = 'revisionNota') {
   try {
-    localStorage.setItem(key(book, noteId), JSON.stringify(check))
+    localStorage.setItem(key(book, id, store), JSON.stringify(check))
   } catch {
     /* kept on screen for this visit */
   }

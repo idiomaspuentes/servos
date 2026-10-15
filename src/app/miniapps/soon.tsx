@@ -23,18 +23,6 @@ export const editorVoz = soon('editorVoz', 'traduccion', ['text'], {
   en: { nombre: 'Translate by voice', descripcion: 'Say each verse in your language and record it, instead of writing it' },
 })
 
-export const revisorPalabras = soon(
-  'revisorPalabras',
-  'revision',
-  ['text', 'words'],
-  {
-    es: { nombre: 'Revisar las palabras clave', descripcion: 'Ver cómo se tradujo cada palabra clave, en todo el libro', queRevisa: 'Palabras clave' },
-    pt: { nombre: 'Revisar as palavras-chave', descripcion: 'Ver como cada palavra-chave foi traduzida, em todo o livro', queRevisa: 'Palavras-chave' },
-    en: { nombre: 'Check the key words', descripcion: 'See how each key word was translated, across the book', queRevisa: 'Key words' },
-  },
-  'revisorPalabras.queRevisa'
-)
-
 export const revisorAlineacion = soon(
   'revisorAlineacion',
   'revision',

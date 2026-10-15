@@ -10,7 +10,8 @@ import { editor } from './editor/editor'
 import { estudio } from './estudio/estudio'
 import { revisor } from './revisor/revisor'
 import { revisorNotas } from './revisorNotas/revisorNotas'
-import { comunitaria, editorVoz, publicar, revisorAlineacion, revisorPalabras } from './soon'
+import { revisorPalabras } from './revisorPalabras/revisorPalabras'
+import { comunitaria, editorVoz, publicar, revisorAlineacion } from './soon'
 
 const apps: MiniApp[] = []
 
