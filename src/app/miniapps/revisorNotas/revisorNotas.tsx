@@ -359,13 +359,6 @@ function NoteSteps({
         {step === 3 && (
           <>
             <p className="review-instruction">{t('revisorNotas.pregunta')}</p>
-            <p className="review-reminder">
-              <span className="quiet">{figure}</span>
-              <button type="button" className="button-quiet" onClick={() => goStep(1)}>
-                {t('revisorNotas.releer')}
-              </button>
-            </p>
-            {quote}
             <section className="review-mine">
               <h3>{t('revisorNotas.suTraduccion')}</h3>
               {notThere ? (
@@ -379,6 +372,20 @@ function NoteSteps({
                     </span>
                   ))}
                 </p>
+              )}
+            </section>
+            {/* The note again, with its phrase, under the words marked: what they are weighed against. */}
+            <section className="review-again" aria-label={t('revisorNotas.loQueExplica')}>
+              <h3>{t('revisorNotas.loQueExplica')}</h3>
+              {quote}
+              <p className="review-again-figure">{figure}</p>
+              <div className="review-note">
+                <Markdown text={item.note.note} />
+              </div>
+              {academy && (
+                <button type="button" className="button-quiet review-again-article" onClick={() => setArticle(true)}>
+                  {t('revisorNotas.leerArticulo', { titulo: academy.title })}
+                </button>
               )}
             </section>
             {state === 'bien' && before && <p className="review-done">✓ {t('revisorNotas.quedoBien', { nombre: before.by })}</p>}
@@ -592,7 +599,7 @@ export const revisorNotas: MiniApp = {
       marqueAqui: 'En su traducción, toque o deslice el dedo sobre las palabras que dicen lo resaltado:',
       suTraduccion: 'Su traducción',
       aDecidir: 'Seguir',
-      releer: 'Leer la nota otra vez',
+      loQueExplica: 'Lo que explica la nota',
       marcoNoEsta: 'Marcó que no está en su traducción.',
       noEsta: 'No está en mi traducción',
       sinTraducir: 'Este versículo todavía no está traducido.',
@@ -648,7 +655,7 @@ export const revisorNotas: MiniApp = {
       marqueAqui: 'Na sua tradução, toque ou deslize o dedo sobre as palavras que dizem o destacado:',
       suTraduccion: 'Sua tradução',
       aDecidir: 'Seguir',
-      releer: 'Ler a nota de novo',
+      loQueExplica: 'O que a nota explica',
       marcoNoEsta: 'Marcou que não está na sua tradução.',
       noEsta: 'Não está na minha tradução',
       sinTraducir: 'Este versículo ainda não está traduzido.',
@@ -704,7 +711,7 @@ export const revisorNotas: MiniApp = {
       marqueAqui: 'In your translation, touch or slide your finger over the words that say what is lit:',
       suTraduccion: 'Your translation',
       aDecidir: 'Continue',
-      releer: 'Read the note again',
+      loQueExplica: 'What the note explains',
       marcoNoEsta: 'You marked that it is not in your translation.',
       noEsta: 'It is not in my translation',
       sinTraducir: 'This verse is not translated yet.',
