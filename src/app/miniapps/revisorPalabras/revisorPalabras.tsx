@@ -49,6 +49,8 @@ const words: CheckKind<Use> = {
   subgroupName: wordName,
   quoteOf: (item, text) => (text.original ? item.original : ''),
   // A word read, or checked, at another place starts at finding it: its article was read there.
+  // Comparing with the other places asks for some: until the word is checked elsewhere, only whether it is right here.
+  question: (item, all, renderingAt) => (all.some((o) => o.article === item.article && o.id !== item.id && renderingAt(o)) ? 'pregunta' : 'preguntaSola'),
   firstStep: (item, all, answered) => (read.has(item.article) || all.some((o) => o.article === item.article && o.id !== item.id && answered(o)) ? 2 : 1),
   Read,
   Against,
@@ -115,6 +117,7 @@ function Against({ item, data, lookup, context, here, all, renderingAt, go }: Ag
   const others = uses.filter((u) => u.id !== item.id)
   const renderings = renderingsOf(uses.map((u) => ({ use: u, text: u.id === item.id ? here : (renderingAt(u) ?? '') })))
   const unchecked = others.filter((u) => !renderingAt(u))
+  const compared = others.length - unchecked.length
   // Places to go to, a verse once: «1:14 ×3» rather than the same verse three times.
   const chips = (list: Use[]) =>
     [...new Map(list.map((u) => [`${u.chapter}:${u.verse}`, u])).values()].map((u) => {
@@ -128,17 +131,26 @@ function Against({ item, data, lookup, context, here, all, renderingAt, go }: Ag
     })
   return (
     <section className="review-again" aria-label={t('revisorPalabras.enElLibro')}>
-      {/* No quote of the source here: the heading names the word, and a quote above the renderings read as one of them. */}
-      <h3>{t('revisorPalabras.enElLibro', { palabra: wordName(item, lookup) })}</h3>
+      {/* No quote of the source here: the heading names the word, and a quote above the renderings read as one of them.
+          Nothing to compare with until the word is checked at another place: then only where it is still to check. */}
       {others.length === 0 ? (
         <p className="quiet">{t('revisorPalabras.unaSolaVez')}</p>
+      ) : compared === 0 ? (
+        <div className="review-not-yet">
+          <p className="quiet">{t('revisorPalabras.sinOtros')}</p>
+          <span className="review-places">{chips(unchecked)}</span>
+        </div>
       ) : (
+        <>
+        <h3>{t('revisorPalabras.enElLibro', { palabra: wordName(item, lookup) })}</h3>
         <ul className="review-renderings">
           {renderings.map((r) => (
             <li key={r.text}>
               <strong>{r.text}</strong>
               <span className="review-places">
-                {r.places.some(({ use }) => use.id === item.id) && <span className="review-place is-here">{t('revisorPalabras.aqui')}</span>}
+                {r.places.some(({ use }) => use.id === item.id) && (
+                  <span className="review-here">{t('revisorPalabras.esteVersiculo', { lugar: `${item.chapter}:${item.verse}` })}</span>
+                )}
                 {chips(r.places.map(({ use }) => use).filter((u) => u.id !== item.id))}
               </span>
             </li>
@@ -152,6 +164,7 @@ function Against({ item, data, lookup, context, here, all, renderingAt, go }: Ag
             </li>
           )}
         </ul>
+        </>
       )}
       <Glossary entries={glossaryOf(item, data, context.project.id)} />
       {article && (
@@ -206,7 +219,9 @@ export const revisorPalabras: MiniApp = {
       siBien: 'Sí, está bien aquí',
       quedoBien: 'Está bien aquí ({nombre})',
       enElLibro: 'Cómo tradujo «{palabra}» en el libro',
-      aqui: 'aquí',
+      esteVersiculo: '{lugar} (este versículo)',
+      sinOtros: 'Todavía no ha revisado esta palabra en otros lugares del libro. Cuando lo haga, aquí verá cómo la tradujo en cada uno:',
+      preguntaSola: '¿Tradujo bien esta palabra aquí, según lo que significa en este versículo?',
       sinRevisar: 'Sin revisar ({n}):',
       unaSolaVez: 'Es el único lugar del libro donde aparece.',
       enGlosario: 'En el glosario del proyecto:',
@@ -241,7 +256,9 @@ export const revisorPalabras: MiniApp = {
       siBien: 'Sim, está bem aqui',
       quedoBien: 'Está bem aqui ({nombre})',
       enElLibro: 'Como traduziu «{palabra}» no livro',
-      aqui: 'aqui',
+      esteVersiculo: '{lugar} (este versículo)',
+      sinOtros: 'Ainda não revisou esta palavra em outros lugares do livro. Quando o fizer, aqui verá como a traduziu em cada um:',
+      preguntaSola: 'Traduziu bem esta palavra aqui, segundo o que significa neste versículo?',
       sinRevisar: 'Sem revisar ({n}):',
       unaSolaVez: 'É o único lugar do livro onde aparece.',
       enGlosario: 'No glossário do projeto:',
@@ -276,7 +293,9 @@ export const revisorPalabras: MiniApp = {
       siBien: 'Yes, it is right here',
       quedoBien: 'Right here ({nombre})',
       enElLibro: 'How you translated «{palabra}» in the book',
-      aqui: 'here',
+      esteVersiculo: '{lugar} (this verse)',
+      sinOtros: 'You have not checked this word at other places in the book yet. When you do, here you will see how you translated it at each:',
+      preguntaSola: 'Did you translate this word right here, by what it means in this verse?',
       sinRevisar: 'Not checked ({n}):',
       unaSolaVez: 'It is the only place in the book where it appears.',
       enGlosario: 'In the project glossary:',

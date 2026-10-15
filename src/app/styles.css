@@ -473,7 +473,10 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .review-renderings .review-unchecked { border-style: dashed; background: none; }
 .review-places { display: flex; flex-wrap: wrap; gap: 0.3rem; }
 .review-place { min-height: 36px; min-width: 3rem; padding: 0.15rem 0.6rem; border: 1px solid var(--line); border-radius: 999px; background: var(--bg); color: var(--accent); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
-.review-place.is-here { display: inline-grid; place-items: center; background: var(--mark); border-color: var(--text-soft); color: var(--text); font-weight: 600; }
+/* The verse being checked, among the places: said, not a button, as it is where one already is */
+.review-here { display: inline-flex; align-items: center; min-height: 36px; padding-inline: 0.2rem; color: var(--text-soft); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.review-not-yet { display: flex; flex-direction: column; gap: 0.4rem; }
+.review-not-yet .quiet { margin: 0; }
 .review-glossary { margin: 0; display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: baseline; }
 .review-again-article { align-self: flex-start; width: auto; min-height: var(--touch); padding-inline: 0; }
 .review-next { flex: none; display: flex; flex-direction: column; gap: 0.25rem; padding: 0.5rem 1rem; max-width: 46rem; margin-inline: auto; width: 100%; }

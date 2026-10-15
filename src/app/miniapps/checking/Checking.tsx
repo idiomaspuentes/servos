@@ -71,6 +71,11 @@ export interface CheckKind<I extends Checkable> {
   quoteOf(item: I, text: PrototypeText): string
   /** Where a check not answered starts: reading, or (a word read at another place) finding it. */
   firstStep?(item: I, all: I[], answered: (item: I) => boolean): Step
+  /**
+   * The third step's question, a text key of its own (`pregunta` when not given): words ask to compare with the other
+   * places only once there are some checked to compare with.
+   */
+  question?(item: I, all: I[], renderingAt: (item: I) => string | null): string
   /** The first step: what the help says. */
   Read: ComponentType<StepProps<I>>
   /** The third step, under the words marked: what they are weighed against. */
@@ -437,7 +442,7 @@ function CheckSteps<I extends Checkable>({
 
         {step === 3 && (
           <>
-            <p className="review-instruction">{t(k('pregunta'))}</p>
+            <p className="review-instruction">{t(k(kind.question?.(item, all, renderingAt) ?? 'pregunta'))}</p>
             <section className="review-mine">
               <h3>{t(k('suTraduccion'))}</h3>
               {notThere ? (
