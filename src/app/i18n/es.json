@@ -80,7 +80,6 @@
   "interfaz.faltaMarca": "Falta {marca}: la app pone ahí un dato.",
   "interfaz.sobraMarca": "{marca} no está en el original.",
   "interfaz.muyLarga": "Puede no caber en un teléfono.",
-  "interfaz.soloFaltan": "Mostrar solo las que faltan",
   "pasos.estudio": "Estudio",
   "pasos.estudioAyuda": "Entender el pasaje antes de traducir",
   "pasos.traduccion": "Traducción",
@@ -456,5 +455,15 @@
   "interfaz.grupo.lx": "Léxico: qué significa una palabra del original",
   "interfaz.grupo.mo": "Gramática de las palabras del original",
   "interfaz.grupo.st": "Cómo está armada la oración",
-  "interfaz.grupo.vh": "Qué dice el verbo del original"
+  "interfaz.grupo.vh": "Qué dice el verbo del original",
+  "interfaz.alIdioma": "Al {idioma}",
+  "interfaz.partes": "Partes",
+  "interfaz.frase": "La frase",
+  "interfaz.fraseN": "frase {n} de {total}",
+  "interfaz.ponerMarca": "Tóquelo para ponerlo:",
+  "interfaz.anterior": "Anterior",
+  "interfaz.siguiente": "Siguiente",
+  "interfaz.todas": "No falta ninguna frase.",
+  "interfaz.seGuarda": "Lo que escribe se guarda en este teléfono y se ve enseguida en toda la app.",
+  "interfaz.tambienHechas": "Pasar también por las ya traducidas"
 }

@@ -80,7 +80,6 @@
   "interfaz.faltaMarca": "{marca} is missing: the app puts a value there.",
   "interfaz.sobraMarca": "{marca} is not in the original.",
   "interfaz.muyLarga": "It may not fit on a phone.",
-  "interfaz.soloFaltan": "Show only the missing ones",
   "pasos.estudio": "Study",
   "pasos.estudioAyuda": "Understand the passage before translating",
   "pasos.traduccion": "Translation",
@@ -258,5 +257,15 @@
   "interfaz.grupo.lx": "Lexicon: what a word of the original means",
   "interfaz.grupo.mo": "Grammar of the words of the original",
   "interfaz.grupo.st": "How the sentence is built",
-  "interfaz.grupo.vh": "What the verb of the original says"
+  "interfaz.grupo.vh": "What the verb of the original says",
+  "interfaz.alIdioma": "Into {idioma}",
+  "interfaz.partes": "Parts",
+  "interfaz.frase": "The phrase",
+  "interfaz.fraseN": "phrase {n} of {total}",
+  "interfaz.ponerMarca": "Touch it to put it in:",
+  "interfaz.anterior": "Previous",
+  "interfaz.siguiente": "Next",
+  "interfaz.todas": "No phrase is left.",
+  "interfaz.seGuarda": "What you write is saved on this phone and shows at once across the app.",
+  "interfaz.tambienHechas": "Also go through those already translated"
 }

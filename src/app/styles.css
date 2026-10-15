@@ -207,6 +207,13 @@ textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
 .translate-group-name { font-weight: 600; }
 .translate-group-count { font-size: 0.85rem; color: var(--text-soft); font-variant-numeric: tabular-nums; }
 .translate-progress { margin: 0; }
+/* Translating the app a phrase at a time: where it is seen, the original, the box, and on */
+.translate-card { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.translate-where { align-self: flex-start; width: auto; min-height: var(--touch); padding: 0; border: 0; background: none; text-align: start; }
+.translate-original-text { margin: -0.25rem 0 0.25rem; font-size: 1.15rem; line-height: 1.45; }
+.translate-box { min-height: 3.5rem; field-sizing: content; resize: none; font-size: 1.1rem; }
+.translate-marks { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+.translate-steps { display: grid; grid-template-columns: 1fr 2fr; gap: 0.5rem; }
 .resources ul { padding-inline-start: 1.25rem; }
 .pack-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
 .pack-list li { display: flex; flex-direction: column; }
