@@ -83,6 +83,9 @@ async function chapterData(stores: ResourceStores, bookId: string, chapter: numb
     twl: { TPL: await alignedPlaces(stores, TWL, GLT, bookId, chapter), TPS: await alignedPlaces(stores, TWL, GST, bookId, chapter) },
   }
   const originalPlace = new Map(words3[original.abbreviation].words.map((w, i) => [w.own, i]))
+  const originalWords = (await originalWordsOf(stores, original.key, bookId, chapter)) ?? []
+  const originalsOfVerse = (verse: number) =>
+    (words3[original.abbreviation].lines[verse] ?? []).flatMap((l) => l.pieces.map((p) => p.word).filter((w): w is number => w !== undefined))
   const toOriginal = (abbr: 'TPL' | 'TPS') =>
     words3[abbr].words.map((w) => w.originals.map((key) => originalPlace.get(key)).filter((p): p is number => p !== undefined))
   const placesOf = (helps: 'tn' | 'twl', id: string): Places => {
@@ -96,6 +99,41 @@ async function chapterData(stores: ResourceStores, bookId: string, chapter: numb
       }
     }
     return { TPL: tpl, TPS: tps, [original.abbreviation]: [...originals].sort((a, b) => a - b) }
+  }
+  /**
+   * The places of one of several links of the same words in a verse. The cached alignment of a word link does not know
+   * which occurrence it is, so links of the same words (יְהוָה twice in Jonah 1:3, three times in 1:14) come with the
+   * places of all of them; the k-th link takes the k-th of them in reading order. Where a text's places do not part
+   * evenly, its share is found through the original words the TPL's share translates.
+   */
+  const nthPlaces = (places: Places, nth: number, of: number, verse: number): Places => {
+    const share = (list: number[] | undefined) => {
+      const sorted = [...(list ?? [])].sort((x, y) => x - y)
+      if (!sorted.length || sorted.length % of !== 0) return null
+      const size = sorted.length / of
+      return sorted.slice(nth * size, (nth + 1) * size)
+    }
+    const tpl = share(places.TPL)
+    if (!tpl) return places
+    const originals = new Set<number>()
+    for (const at of tpl) for (const key of words3.TPL.words[at]?.originals ?? []) {
+      const place = originalPlace.get(key)
+      if (place !== undefined) originals.add(place)
+    }
+    const own = share(places[original.abbreviation])
+    // The original's share, when the TPL's leads to one word that all of them lead to (the alignment knows one): the
+    // k-th word of the verse with its Strong number, if there are as many as links.
+    if (originals.size === 1) {
+      const strong = originalWords[[...originals][0]]?.strong
+      const same = originalsOfVerse(verse).filter((p) => strong && originalWords[p]?.strong === strong)
+      if (same.length === of) {
+        originals.clear()
+        originals.add(same[nth])
+      }
+    }
+    const tpsThrough = (places.TPS ?? []).filter((at) => (words3.TPS.words[at]?.originals ?? []).some((key) => originals.has(originalPlace.get(key) ?? -1)))
+    const tps = share(places.TPS) ?? (tpsThrough.length ? tpsThrough : (places.TPS ?? []))
+    return { TPL: tpl, TPS: tps, [original.abbreviation]: originals.size ? [...originals].sort((x, y) => x - y) : (own ?? places[original.abbreviation] ?? []) }
   }
 
   const twStamp = resourceContentStamp(await stores.catalog.get(TW))
@@ -137,7 +175,19 @@ async function chapterData(stores: ResourceStores, bookId: string, chapter: numb
       questions: questions.filter((q) => referenceCovers(q.reference, chapter, verse)).map((q) => ({ id: q.id, question: q.question, response: q.response })),
       words: links
         .filter((l) => referenceCovers(l.reference, chapter, verse))
-        .map((l) => ({ id: l.id, original: l.origWords, article: l.articlePath, keyTerm: l.tags.includes('keyterm'), places: placesOf('twl', l.id) })),
+        .map((l, _, here) => {
+          const places = placesOf('twl', l.id)
+          // Links to the same article given the same places are one link per occurrence, in order (see `nthPlaces`); not
+          // by their words, which differ in their accents (יְהוָ֔ה, יְהוָ֑ה).
+          const twins = here.filter((o) => o.articlePath === l.articlePath && JSON.stringify(placesOf('twl', o.id)) === JSON.stringify(places))
+          return {
+            id: l.id,
+            original: l.origWords,
+            article: l.articlePath,
+            keyTerm: l.tags.includes('keyterm'),
+            places: twins.length > 1 ? nthPlaces(places, twins.indexOf(l), twins.length, verse) : places,
+          }
+        }),
     })
   }
 
