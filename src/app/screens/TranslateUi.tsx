@@ -10,7 +10,7 @@ import { BASE_LANGUAGES, allKeys, baseText, marksOf, useI18n, type BaseLanguage 
 import { miniApps } from '../miniapps/registry'
 
 const NAMES: Record<BaseLanguage, string> = { es: 'Español', pt: 'Português', en: 'English' }
-const SCREEN_ORDER = ['marco', 'ayudas', 'catalogo', 'persona', 'paquete', 'idioma', 'interfaz']
+const SCREEN_ORDER = ['marco', 'ayudas', 'inicio', 'agregar', 'nuevo', 'libroNuevo', 'libro', 'pasos', 'ajustes', 'catalogo', 'persona', 'paquete', 'idioma', 'interfaz']
 
 function problems(original: string, text: string, t: ReturnType<typeof useI18n>['t']): string[] {
   if (!text.trim()) return []

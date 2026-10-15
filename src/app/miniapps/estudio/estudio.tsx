@@ -22,6 +22,7 @@ const lastVerse = (c: Parameters<NonNullable<MiniApp['primary']>['run']>[0]) =>
 export const estudio: MiniApp = {
   id: 'estudio',
   needs: ['text', 'notes', 'questions', 'words', 'academy'],
+  phase: 'estudio',
   unit: 'verse',
   helps: true,
   writes: false,

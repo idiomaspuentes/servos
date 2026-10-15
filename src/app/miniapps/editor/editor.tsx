@@ -51,6 +51,7 @@ function Center({ context }: MiniAppCenterProps) {
 export const editor: MiniApp = {
   id: 'editor',
   needs: ['text', 'notes', 'words'],
+  phase: 'traduccion',
   unit: 'verse',
   helps: true,
   writes: true,

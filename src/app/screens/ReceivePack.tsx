@@ -99,7 +99,7 @@ export function ReceivePack({ onBack, onStudy }: { onBack(): void; onStudy(): vo
           <>
             <p role="status">{t('paquete.listo', { libros: books(step.summary) })}</p>
             <button type="button" className="button-primary" onClick={onStudy}>
-              {t('paquete.irAEstudio')}
+              {t('marco.volver')}
             </button>
           </>
         )}

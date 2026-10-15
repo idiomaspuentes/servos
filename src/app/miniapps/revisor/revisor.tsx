@@ -5,6 +5,7 @@ import type { MiniApp } from '../contract'
 export const revisor: MiniApp = {
   id: 'revisor',
   needs: ['text', 'notes'],
+  phase: 'revision',
   unit: 'verse',
   helps: true,
   writes: false,

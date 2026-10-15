@@ -11,6 +11,7 @@
 import type { ComponentType } from 'react'
 import type { BaseLanguage, T, Texts } from '../i18n/i18n'
 import type { PrototypeData } from '../../prototype/data'
+import type { Phase } from '../projects/model'
 
 /** What a mini app can ask the device for. The catalog says honestly what is missing (philosophy, principle 8). */
 export type ResourceNeed = 'text' | 'notes' | 'questions' | 'words' | 'academy'
@@ -58,6 +59,10 @@ export interface MiniAppAction {
 export interface MiniApp {
   /** Stable id, also the group of its texts (`{id}.{name}`). */
   id: string
+  /** The step it belongs to. A project chooses which mini apps each step uses. */
+  phase: Phase
+  /** For a step with several of the same kind (review): what this one looks at, a text key («notas»…). */
+  checks?: string
   /** Its texts in the three base languages; `nombre` and `descripcion` are required. */
   texts: Record<BaseLanguage, Texts & { nombre: string; descripcion: string }>
   needs: ResourceNeed[]

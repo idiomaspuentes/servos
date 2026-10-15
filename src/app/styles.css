@@ -177,3 +177,61 @@ textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
 .translate-group { border-block-end: 1px solid var(--line); }
 .translate-row { padding-block: 0.75rem; border-block-start: 1px dashed var(--line); display: flex; flex-direction: column; gap: 0.35rem; }
 .translate-original { margin: 0; display: flex; flex-direction: column; }
+
+/* Home: «Continue», projects and their books (translationCore 4's Home) */
+.resume { display: flex; flex-direction: column; align-items: center; gap: 0.1rem; padding-block: 0.75rem; }
+.resume-project { font-weight: 400; font-size: 0.85rem; opacity: 0.9; }
+.project-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.project-card h2 { text-wrap: balance; }
+.project-card p { margin: 0; }
+.book-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: 0.5rem; }
+.book-tile { display: flex; flex-direction: column; align-items: flex-start; text-align: start; background: var(--surface-soft); }
+.book-tile-name { font-weight: 600; }
+.book-tile-phase { font-size: 0.85rem; color: var(--text-soft); }
+.card-actions { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-inline: -0.9rem; }
+
+/* New Bible */
+.field-row { display: grid; grid-template-columns: minmax(0, 1fr) 6.5rem; gap: 0.75rem; }
+fieldset.field { border: 0; padding: 0; margin: 0; }
+.choice-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.choice.is-on, .option.is-on, .book-chip.is-on { border-color: var(--accent); background: var(--accent-soft); color: var(--text); box-shadow: inset 0 0 0 1px var(--accent); }
+.option { display: flex; flex-direction: column; align-items: flex-start; text-align: start; gap: 0.15rem; width: 100%; }
+.option-title { font-weight: 600; }
+.advanced summary { min-height: var(--touch); display: flex; align-items: center; color: var(--accent); cursor: pointer; }
+
+/* Add a book */
+.book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); gap: 0.4rem; }
+.book-chip { font-size: 0.9rem; text-align: start; padding-inline: 0.6rem; }
+.book-chip.is-in { display: flex; align-items: center; min-height: var(--touch); border-radius: var(--radius); padding-inline: 0.6rem; font-size: 0.9rem; color: var(--text-soft); background: var(--surface-soft); }
+.back-link { align-self: flex-start; padding-inline: 0; }
+.sheet-foot { position: sticky; inset-block-end: 0; background: var(--surface); padding-block: 0.75rem 0; }
+
+/* A book's steps */
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.step { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.step details { padding-inline: 1rem; }
+.step details[open] { padding-block-end: 0.75rem; }
+.step summary { min-height: var(--touch); display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; cursor: pointer; padding-block: 0.5rem; }
+.step-name { font-weight: 600; }
+.step-state { font-size: 0.8rem; color: var(--text-soft); }
+.step.is-enCurso { border-color: var(--accent); }
+.step.is-enCurso .step-state { color: var(--accent); font-weight: 600; }
+.step-apps { list-style: none; margin: 0 0 0.5rem; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.app-row { display: flex; flex-direction: column; align-items: flex-start; text-align: start; gap: 0.15rem; width: 100%; }
+.app-row-name { font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; }
+.app-row-progress { font-size: 0.85rem; color: var(--accent); font-weight: 600; }
+
+/* Checking with the notes */
+.translation { font-size: 1.15rem; }
+.decisions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.4rem; }
+.decision { padding-inline: 0.3rem; line-height: 1.25; overflow-wrap: anywhere; }
+.decision.is-bien { background: var(--accent-soft); border-color: var(--accent); }
+.decision.is-cambiar { background: var(--warn-bg); color: var(--warn-text); border-color: var(--warn-text); }
+.decision.is-pendiente { background: var(--surface-soft); border-color: var(--text-soft); }
+
+/* Project settings */
+.settings-phase { border: 1px solid var(--line); border-radius: var(--radius); padding: 0.25rem 1rem 0.5rem; margin: 0; background: var(--surface); }
+.settings-phase legend { font-weight: 600; padding-inline: 0.25rem; }
+.check-two-lines { align-items: flex-start; padding-block: 0.5rem; }
+.check-two-lines > span { display: flex; flex-direction: column; }
+.check-two-lines input { margin-block-start: 0.3rem; }
