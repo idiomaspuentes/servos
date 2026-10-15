@@ -125,7 +125,7 @@ export function GlossaryScreen({
           <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('glosario.buscarAyuda')} />
         </label>
 
-        {entries.length === 0 && <p className="notice">{t('glosario.vacio')}</p>}
+        {entries.length === 0 && <p className="quiet">{t('glosario.vacio')}</p>}
         <ul className="glossary-list">
           {shown.map((e) => (
             <li key={e.id}>
@@ -144,7 +144,7 @@ export function GlossaryScreen({
         </ul>
 
         {said && !sharing && (
-          <p className="notice" role="status">
+          <p className="status" role="status">
             {said}
           </p>
         )}
@@ -227,7 +227,7 @@ export function GlossaryScreen({
             {/* Not two buttons that never work: said, until it does. */}
             <p className="quiet">{t('glosario.door43Pronto', { repo: `${project.languageCode || '…'}_tg` })}</p>
             {said && (
-              <p className="notice" role="status">
+              <p className="status" role="status">
                 {said}
               </p>
             )}

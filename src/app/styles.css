@@ -152,6 +152,8 @@ textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
 .helps-steps { display: flex; justify-content: space-between; align-items: center; gap: 0.25rem; border-block-start: 1px solid var(--line); margin-block-start: 0.75rem; padding-block-start: 0.25rem; }
 .badge { font-size: 0.75rem; background: var(--accent-soft); color: var(--accent); border-radius: 999px; padding: 0.1rem 0.5rem; margin-inline-start: 0.5rem; font-weight: 600; }
 .notice { background: var(--warn-bg); color: var(--warn-text); padding: 0.75rem; border-radius: var(--radius); }
+/* What is normal (saved, copied, left for later) is said plainly, without the colour kept for what went wrong */
+.status { margin: 0; padding: 0.6rem 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--text); }
 .markdown ul { padding-inline-start: 1.25rem; margin-block: 0 0.75rem; }
 
 /* Sheets */

@@ -91,7 +91,7 @@ export function ReceiveScreen({
               <li key={b.code}>
                 <strong>{bookName(b.code)}</strong>
                 <span className="quiet">{t('recibir.entraron', { n: b.taken, iguales: b.same })}</span>
-                {b.choices > 0 && <span className="notice">{t('recibir.paraElegirDespues', { n: b.choices })}</span>}
+                {b.choices > 0 && <span className="quiet">{t('recibir.paraElegirDespues', { n: b.choices })}</span>}
                 {b.alignmentsTaken + b.checksTaken > 0 && <span className="quiet">{t('recibir.capas', { n: b.alignmentsTaken + b.checksTaken })}</span>}
               </li>
             ))}

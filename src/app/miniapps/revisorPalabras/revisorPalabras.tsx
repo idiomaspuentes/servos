@@ -118,6 +118,10 @@ function Against({ item, data, lookup, context, here, all, renderingAt, go }: Ag
   const renderings = renderingsOf(uses.map((u) => ({ use: u, text: u.id === item.id ? here : (renderingAt(u) ?? '') })))
   const unchecked = others.filter((u) => !renderingAt(u))
   const compared = others.length - unchecked.length
+  // A word used all through the book has many places still to check: the first few, and the rest a touch away, so the
+  // answer is not pushed far down.
+  const [allPlaces, setAllPlaces] = useState(false)
+  const FEW = 8
   // Places to go to, a verse once: «1:14 ×3» rather than the same verse three times.
   const chips = (list: Use[]) =>
     [...new Map(list.map((u) => [`${u.chapter}:${u.verse}`, u])).values()].map((u) => {
@@ -159,7 +163,12 @@ function Against({ item, data, lookup, context, here, all, renderingAt, go }: Ag
             <li className="review-unchecked">
               <span className="quiet">{t('revisorPalabras.sinRevisar', { n: unchecked.length })}</span>
               <span className="review-places">
-                {chips(unchecked)}
+                {allPlaces ? chips(unchecked) : chips(unchecked).slice(0, FEW)}
+                {!allPlaces && chips(unchecked).length > FEW && (
+                  <button type="button" className="button-quiet review-more-places" onClick={() => setAllPlaces(true)}>
+                    {t('revisorPalabras.verTodos', { n: chips(unchecked).length - FEW })}
+                  </button>
+                )}
               </span>
             </li>
           )}
@@ -225,6 +234,7 @@ export const revisorPalabras: MiniApp = {
       sinOtros: 'Todavía no ha revisado esta palabra en otros lugares del libro. Cuando lo haga, aquí verá cómo la tradujo en cada uno:',
       preguntaSola: '¿Tradujo bien esta palabra aquí, según lo que significa en este versículo?',
       sinRevisar: 'Sin revisar ({n}):',
+      verTodos: 'y {n} más',
       unaSolaVez: 'Es el único lugar del libro donde aparece.',
       enGlosario: 'En el glosario del proyecto:',
       articuloEntero: 'Leer el artículo entero',
@@ -262,6 +272,7 @@ export const revisorPalabras: MiniApp = {
       sinOtros: 'Ainda não revisou esta palavra em outros lugares do livro. Quando o fizer, aqui verá como a traduziu em cada um:',
       preguntaSola: 'Traduziu bem esta palavra aqui, segundo o que significa neste versículo?',
       sinRevisar: 'Sem revisar ({n}):',
+      verTodos: 'e mais {n}',
       unaSolaVez: 'É o único lugar do livro onde aparece.',
       enGlosario: 'No glossário do projeto:',
       articuloEntero: 'Ler o artigo inteiro',
@@ -299,6 +310,7 @@ export const revisorPalabras: MiniApp = {
       sinOtros: 'You have not checked this word at other places in the book yet. When you do, here you will see how you translated it at each:',
       preguntaSola: 'Did you translate this word right here, by what it means in this verse?',
       sinRevisar: 'Not checked ({n}):',
+      verTodos: 'and {n} more',
       unaSolaVez: 'It is the only place in the book where it appears.',
       enGlosario: 'In the project glossary:',
       articuloEntero: 'Read the whole article',

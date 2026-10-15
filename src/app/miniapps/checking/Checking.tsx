@@ -433,7 +433,12 @@ function CheckSteps<I extends Checkable>({
         ? words.length
           ? { label: k('aDecidir'), run: () => goStep(3), off: !chosen }
           : { label: k('traducirAhora'), run: correct, off: false }
-        : null
+        : // The third step's «right», the answer most given, stays at the foot like the steps before it; the others
+          // (correct it, leave it for later) are in the screen under the comparison. Writing why it waits, that is
+          // the one thing.
+          later
+          ? null
+          : { label: k('siBien'), run: () => answer('bien'), off: false }
 
   return (
     <>
@@ -509,15 +514,13 @@ function CheckSteps<I extends Checkable>({
             <kind.Against {...props} here={notThere ? '' : renderingOf(words, picked)} all={all} renderingAt={renderingAt} go={go} />
             {state === 'bien' && before && <p className="review-done">✓ {t(k('quedoBien'), { nombre: before.by })}</p>}
             {state === 'despues' && before && (
-              <p className="notice">
+              <p className="status">
                 {t(k('paraDespues'), { razon: t(k(`razon.${before.reason ?? 'equipo'}`)), nombre: before.by })}
                 {before.comment ? ` «${before.comment}»` : ''}
               </p>
             )}
             <section className="review-answer">
-              <button type="button" className="button-primary" onClick={() => answer('bien')}>
-                {t(k('siBien'))}
-              </button>
+              <p className="quiet review-answer-other">{t(k('siNo'))}</p>
               <div className="glossary-actions">
                 <button type="button" className="button-secondary" onClick={correct}>
                   {t(k('corregirAhora'))}
@@ -683,6 +686,7 @@ export const checkingTexts = {
     ningunaAqui: 'Este versículo no tiene nada que revisar aquí.',
     ningunaDelGrupo: 'Este versículo no tiene nada de «{grupo}».',
     irSiguiente: 'Ir al siguiente ({lugar})',
+    siNo: '¿No está bien?',
     listas: 'Quedaron revisadas todas: {n}.',
     grupoListo: 'Quedaron revisadas todas las de «{grupo}»: {n}.',
     seguirFaltan: 'Seguir con las que faltan ({n})',
@@ -718,6 +722,7 @@ export const checkingTexts = {
     ningunaAqui: 'Este versículo não tem nada para revisar aqui.',
     ningunaDelGrupo: 'Este versículo não tem nada de «{grupo}».',
     irSiguiente: 'Ir para o próximo ({lugar})',
+    siNo: 'Não está bem?',
     listas: 'Ficaram todas revisadas: {n}.',
     grupoListo: 'Ficaram revisadas todas as de «{grupo}»: {n}.',
     seguirFaltan: 'Seguir com as que faltam ({n})',
@@ -753,6 +758,7 @@ export const checkingTexts = {
     ningunaAqui: 'This verse has nothing to check here.',
     ningunaDelGrupo: 'This verse has nothing of «{grupo}».',
     irSiguiente: 'Go to the next ({lugar})',
+    siNo: 'Not right?',
     listas: 'All checked: {n}.',
     grupoListo: 'All of «{grupo}» checked: {n}.',
     seguirFaltan: 'Go on with the ones left ({n})',

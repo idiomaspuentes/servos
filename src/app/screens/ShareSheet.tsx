@@ -59,7 +59,7 @@ export function ShareSheet({ project, books, person, onClose }: { project: Proje
         </button>
         <p className="quiet">{t('compartir.como')}</p>
         {said && (
-          <p className="notice" role="status">
+          <p className="status" role="status">
             {said}
           </p>
         )}
