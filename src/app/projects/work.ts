@@ -14,6 +14,7 @@ const draftKey = (book: string, chapter: number, verse: number) => `${KEY}.borra
 const authorKey = (book: string, chapter: number, verse: number) => `${KEY}.autor.${book}.${chapter}.${verse}`
 const otherKey = (book: string, chapter: number, verse: number) => `${KEY}.otra.${book}.${chapter}.${verse}`
 const placeKey = (person: string, book: string, app: string) => `${KEY}.posicion.${person}.${book}.${app}`
+const joinKey = (book: string, chapter: number, verse: number) => `${KEY}.union.${book}.${chapter}.${verse}`
 
 function read(key: string): string | null {
   try {
@@ -35,9 +36,65 @@ function write(key: string, value: string | null) {
 /** The verse as written: its lines parted by `\n`, or empty. */
 export const readDraft = (book: string, chapter: number, verse: number): string => read(draftKey(book, chapter, verse)) ?? ''
 
-/** Who wrote the verse last, or null when nobody has. */
-export const authorOf = (book: string, chapter: number, verse: number): string | null =>
-  readDraft(book, chapter, verse).trim() ? read(authorKey(book, chapter, verse)) : null
+/** Who wrote the verse last, or null when nobody has; of a verse joined to the one before, who wrote them together. */
+export const authorOf = (book: string, chapter: number, verse: number): string | null => {
+  const at = joinStartOf(book, chapter, verse)
+  return readDraft(book, chapter, at).trim() ? read(authorKey(book, chapter, at)) : null
+}
+
+/**
+ * Verses joined: when a language says two verses (or more) in one sentence, as USFM's `\v 1-2`. The join is kept on the
+ * first verse (the last one it reaches), and so is the text of them all; the others stay empty while joined.
+ */
+export function joinedTo(book: string, chapter: number, verse: number): number | null {
+  const end = Number(read(joinKey(book, chapter, verse)))
+  return Number.isFinite(end) && end > verse ? end : null
+}
+
+/** The verse whose text says this one: the first of the verses it is joined with, or itself. */
+export function joinStartOf(book: string, chapter: number, verse: number): number {
+  for (let start = verse - 1; start >= Math.max(1, verse - 30); start--) {
+    const end = joinedTo(book, chapter, start)
+    if (end !== null) return end >= verse ? start : verse
+  }
+  return verse
+}
+
+/** The verses said together with this one, in order: itself alone when it is not joined. */
+export function joinedVerses(book: string, chapter: number, verse: number): number[] {
+  const start = joinStartOf(book, chapter, verse)
+  const end = joinedTo(book, chapter, start) ?? start
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i)
+}
+
+/** What translates a verse: its own text, or that of the verses it is joined with. */
+export const textOf = (book: string, chapter: number, verse: number): string => readDraft(book, chapter, joinStartOf(book, chapter, verse))
+
+/**
+ * Joins the verses this one is in with the next verse (and with those that one is joined with): their texts follow
+ * one another in the first verse, and the next stays empty while joined.
+ */
+export function joinWithNext(book: string, chapter: number, verse: number, by: string) {
+  const start = joinStartOf(book, chapter, verse)
+  const next = (joinedTo(book, chapter, start) ?? start) + 1
+  const end = joinedTo(book, chapter, next) ?? next
+  const text = [readDraft(book, chapter, start), ...Array.from({ length: end - next + 1 }, (_, i) => readDraft(book, chapter, next + i))]
+    .map((x) => x.trim())
+    .filter(Boolean)
+    .join(' ')
+  writeDraft(book, chapter, start, text, by)
+  for (let v = next; v <= end; v++) {
+    write(draftKey(book, chapter, v), null)
+    write(authorKey(book, chapter, v), null)
+  }
+  write(joinKey(book, chapter, next), null)
+  write(joinKey(book, chapter, start), String(end))
+}
+
+/** Separates the verses this one is joined with: the text stays in the first, for the person to share out. */
+export function separateJoined(book: string, chapter: number, verse: number) {
+  write(joinKey(book, chapter, joinStartOf(book, chapter, verse)), null)
+}
 
 export function writeDraft(book: string, chapter: number, verse: number, text: string, by: string) {
   write(draftKey(book, chapter, verse), text)
@@ -83,7 +140,7 @@ export function workOf(book: string, chapter: number, verses: number[]): WorkDon
   let choices = 0
   for (const v of verses) {
     const by = authorOf(book, chapter, v)
-    if (readDraft(book, chapter, v).trim()) written++
+    if (textOf(book, chapter, v).trim()) written++
     if (by) people.set(by, (people.get(by) ?? 0) + 1)
     if (otherVersion(book, chapter, v)) choices++
   }

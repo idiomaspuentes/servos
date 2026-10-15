@@ -35,11 +35,13 @@ export interface SourceWords {
 }
 
 /**
- * The words of a source in a verse. For the original, each with its lemma and Strong number (what a link to it
- * keeps); for a bridge text, its words alone.
+ * The words of a source in a verse, or in the verses joined with it (aligned together, as they are written). For the
+ * original, each with its lemma and Strong number (what a link to it keeps); for a bridge text, its words alone.
  */
-export function sourceWords(text: PrototypeText, verse: number, sid: string): SourceWords {
-  const pieces = (text.lines[verse] ?? []).flatMap((l) => l.pieces.filter((p): p is { text: string; word: number } => p.word !== undefined))
+export function sourceWords(text: PrototypeText, verses: number | number[], sid: string): SourceWords {
+  const pieces = ([] as number[])
+    .concat(verses)
+    .flatMap((verse) => (text.lines[verse] ?? []).flatMap((l) => l.pieces.filter((p): p is { text: string; word: number } => p.word !== undefined)))
   const key = (w: string) => normalizeWordForAlignmentMatch(w)
   const total = new Map<string, number>()
   for (const p of pieces) total.set(key(p.text), (total.get(key(p.text)) ?? 0) + 1)

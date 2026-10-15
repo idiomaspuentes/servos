@@ -17,7 +17,7 @@ import { WordLines, wordsOf } from '../../frame/TouchWords'
 import { WordPicker } from '../../frame/WordPicker'
 import { readCheck, stateOf, wordsOfVerse, writeCheck, type CheckState, type NoteCheck } from '../../projects/noteChecks'
 import { renderingOf } from '../../projects/wordChecks'
-import { readDraft } from '../../projects/work'
+import { textOf } from '../../projects/work'
 import type { MiniAppCenterProps, MiniAppContext, Position } from '../contract'
 
 /** A thing to check: where it is, its words in each text, and the group and subgroup it is gone through by. */
@@ -89,7 +89,8 @@ type Filter = { kind: 'todas' } | { kind: 'categoria'; id: string } | { kind: 'f
 
 const sameFilter = (a: Filter, b: Filter) => a.kind === b.kind && ('id' in a ? a.id : '') === ('id' in b ? b.id : '')
 
-export const verseTextOf = (book: string, chapter: number, verse: number) => readDraft(book, chapter, verse).replace(/\n/g, ' ')
+// A verse joined to others is said by their text together.
+export const verseTextOf = (book: string, chapter: number, verse: number) => textOf(book, chapter, verse).replace(/\n/g, ' ')
 
 /**
  * Each reviewer's own state, kept while the app is open: going to the editor and back draws the reviewer anew, and it

@@ -81,6 +81,7 @@ export function MiniAppScreen({
   const [marked, setMarked] = useState<string | null>(null)
   const [verseList, setVerseList] = useState(false)
   const [more, setMore] = useState(false)
+  const [redrawn, setRedrawn] = useState(0)
   const [chapter, setChapter] = useState(false)
   const [saved, setSaved] = useState<'sinCambios' | 'guardado'>('sinCambios')
   const onMark = useCallback((w: string | null) => setMarked(w), [])
@@ -186,6 +187,8 @@ export function MiniAppScreen({
     },
   }
   const Center = app.Center
+  // The actions of «More» offered where the person is.
+  const offered = (app.more ?? []).filter((action) => !action.when || action.when(context))
 
   return (
     // While writing on a phone the header and the filled button step aside: the keyboard leaves room for little more
@@ -204,7 +207,7 @@ export function MiniAppScreen({
           </span>
         </div>
         {/* «More» only when the mini app has something there: an empty or make-believe menu is not offered. */}
-        {app.more?.length ? (
+        {offered.length ? (
           <button type="button" className="button-quiet" onClick={() => setMore(true)}>
             {t('marco.mas')}
           </button>
@@ -230,7 +233,8 @@ export function MiniAppScreen({
       </p>
 
       <main className={app.fills ? 'main main-fill' : 'main'}>
-        <Center context={context} />
+        {/* Drawn anew after an action of «More» changed what it shows (verses joined). */}
+        <Center key={redrawn} context={context} />
         {app.primary && (
           <button type="button" className="button-primary" onPointerDown={keep} onClick={() => app.primary!.run(context)}>
             {backLabel && app.primary.returning ? t(app.primary.returning, { app: backLabel }) : t(app.primary.label)}
@@ -260,7 +264,7 @@ export function MiniAppScreen({
 
       {more && (
         <Sheet title={t('marco.mas')} onClose={() => setMore(false)}>
-          {app.more?.map((action) => (
+          {offered.map((action) => (
             <MenuRow
               key={action.label}
               label={t(action.label)}
@@ -268,6 +272,7 @@ export function MiniAppScreen({
               onClick={() => {
                 setMore(false)
                 action.run(context)
+                setRedrawn((n) => n + 1)
               }}
             />
           ))}

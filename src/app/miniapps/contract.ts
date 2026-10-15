@@ -93,6 +93,8 @@ export interface MiniAppCenterProps {
 export interface MiniAppAction {
   /** Text keys of the mini app's own group, or of the frame's. */
   label: string
+  /** Whether it is offered where the person is (separating verses, only where some are joined); always, without it. */
+  when?(context: MiniAppContext): boolean
   /**
    * Its label when the mini app was opened from another one (the editor from the review), where `frame.next` goes
    * back to it rather than on: «Save and go back». Given `{app}`, the other one's name.

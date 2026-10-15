@@ -13,7 +13,18 @@ import { glossedPlaces, useWordHelps, type GlossaryTarget } from '../../frame/To
 import { readGlossaryFor, saveGlossaryEntry } from '../../projects/glossary'
 import { GlossarySheet } from './GlossarySheet'
 import type { MiniApp, MiniAppCenterProps } from '../contract'
-import { authorOf, chooseVersion, otherVersion, readDraft, writeDraft, type OtherVersion } from '../../projects/work'
+import {
+  authorOf,
+  chooseVersion,
+  joinedVerses,
+  joinWithNext,
+  otherVersion,
+  readDraft,
+  separateJoined,
+  textOf,
+  writeDraft,
+  type OtherVersion,
+} from '../../projects/work'
 import { ChapterLines } from '../../frame/ChapterLines'
 import { LineFields, lineFieldId } from './LineFields'
 
@@ -30,20 +41,32 @@ function readOthers(book: string, chapter: number, verses: number[]): Record<num
   return Object.fromEntries(verses.map((v) => [v, otherVersion(book, chapter, v)]))
 }
 
+/** Verses said together (joined) are written in one box, kept on the first: the verses open, as those boxes. */
+function unitsOf(book: string, chapter: number, verses: number[]): number[][] {
+  const out: number[][] = []
+  for (const v of verses) if (!out.some((u) => u.includes(v))) out.push(joinedVerses(book, chapter, v))
+  return out
+}
+const unitLabel = (unit: number[]) => (unit.length > 1 ? `${unit[0]}–${unit[unit.length - 1]}` : String(unit[0]))
+
 function Center({ context }: MiniAppCenterProps) {
-  const { position, marked, t, data, textAbbreviation, frame, shown, goTo } = context
+  const { position, marked, t, data, textAbbreviation, frame, goTo } = context
+  // The verses open, with those joined to them: a verse joined to the one before opens their box.
+  const units = unitsOf(position.book, position.chapter, context.shown)
+  const shown = units.flat()
+  const starts = units.map((u) => u[0])
   // What is open: the verse, or the verses of its section. Within a section the position follows the verse being
   // written (so the helps are that verse's), and nothing else changes.
   const openKey = `${position.book}.${position.chapter}.${shown.join(',')}`
-  const [drafts, setDrafts] = useState(() => readDrafts(position.book, position.chapter, shown))
-  const [others, setOthers] = useState(() => readOthers(position.book, position.chapter, shown))
+  const [drafts, setDrafts] = useState(() => readDrafts(position.book, position.chapter, starts))
+  const [others, setOthers] = useState(() => readOthers(position.book, position.chapter, starts))
   const [shownKey, setShownKey] = useState(openKey)
   // The line the cursor is in, by its field's id (`editor-v2`, `editor-v2-l3`): the texts show the same line apart.
   const [writingLine, setWritingLine] = useState<{ verse: number; line: number } | null>(null)
   if (shownKey !== openKey) {
     setShownKey(openKey)
-    setDrafts(readDrafts(position.book, position.chapter, shown))
-    setOthers(readOthers(position.book, position.chapter, shown))
+    setDrafts(readDrafts(position.book, position.chapter, starts))
+    setOthers(readOthers(position.book, position.chapter, starts))
   }
 
   // Going on to another verse or section while writing: the cursor goes to its first line, and the keyboard stays up.
@@ -160,18 +183,20 @@ function Center({ context }: MiniAppCenterProps) {
           }, 0)
         }}
       >
-        {shown.map((v) => {
-          const markers = markersOf(v)
+        {units.map((unit) => {
+          const v = unit[0]
+          const markers = unit.flatMap(markersOf)
           const poem = markers.some(isPoemLine)
           return (
             // In a section each verse keeps its own fields, its number before them: the text is still kept verse by
             // verse, so a section and a verse at a time read and write the same drafts.
             <div
               key={v}
-              className={shown.length > 1 ? 'edit-verse in-section' : 'edit-verse'}
-              onFocus={() => v !== position.verse && goTo({ ...position, verse: v })}
+              className={units.length > 1 ? 'edit-verse in-section' : 'edit-verse'}
+              onFocus={() => !unit.includes(position.verse) && goTo({ ...position, verse: v })}
             >
-              {shown.length > 1 && <span className="edit-verse-number" aria-hidden="true">{v}</span>}
+              {units.length > 1 && <span className="edit-verse-number" aria-hidden="true">{unitLabel(unit)}</span>}
+              {units.length === 1 && unit.length > 1 && <p className="edit-joined">{t('editor.unidos', { versiculos: unitLabel(unit) })}</p>}
               <div className="edit-verse-body">
                 {others[v] && (
                   // Received from another computer while this one had its own text: both stay until someone chooses.
@@ -197,7 +222,7 @@ function Center({ context }: MiniAppCenterProps) {
                   text={drafts[v] ?? ''}
                   markers={markers}
                   poem={poem}
-                  label={t('editor.suVersiculo', { v })}
+                  label={t('editor.suVersiculo', { v: unitLabel(unit) })}
                   placeholder={(line) => (poem ? t('editor.renglon', { n: line }) : t('editor.cajaVacia'))}
                   addLabel={t('editor.otroRenglon')}
                   onChange={(value) => write(v, value)}
@@ -271,11 +296,30 @@ export const editor: MiniApp = {
   phase: 'traduccion',
   unit: 'verse',
   sections: true,
-  done: (at) => Boolean(readDraft(at.book, at.chapter, at.verse).trim()),
+  // A verse joined to the one before is translated with it.
+  done: (at) => Boolean(textOf(at.book, at.chapter, at.verse).trim()),
   helps: false,
   fills: true,
   writes: true,
   Center,
+  more: [
+    {
+      label: 'editor.unir',
+      description: 'editor.unirAyuda',
+      // Not past the chapter's last verse.
+      when: (c) => {
+        const unit = joinedVerses(c.position.book, c.position.chapter, c.position.verse)
+        return c.position.verse > 0 && c.data.verses.some((v) => v.verse === unit[unit.length - 1] + 1)
+      },
+      run: (c) => joinWithNext(c.position.book, c.position.chapter, c.position.verse, c.person.name),
+    },
+    {
+      label: 'editor.separar',
+      description: 'editor.separarAyuda',
+      when: (c) => joinedVerses(c.position.book, c.position.chapter, c.position.verse).length > 1,
+      run: (c) => separateJoined(c.position.book, c.position.chapter, c.position.verse),
+    },
+  ],
   primary: {
     label: 'editor.guardarSeguir',
     returning: 'editor.guardarVolver',
@@ -283,6 +327,11 @@ export const editor: MiniApp = {
   },
   texts: {
     es: {
+      unir: 'Unir con el siguiente versículo',
+      unirAyuda: 'Cuando su idioma dice este versículo y el siguiente en una sola frase: se escriben juntos, como 1–2',
+      separar: 'Separar los versículos unidos',
+      separarAyuda: 'El texto queda en el primero; luego reparta lo que dice cada uno',
+      unidos: 'Versículos {versiculos}, unidos: se escriben juntos.',
       nombre: 'Editor',
       descripcion: 'Escribir el versículo en su idioma, con el texto puente al lado',
       textoPuente: 'Texto puente: {texto}',
@@ -316,6 +365,11 @@ export const editor: MiniApp = {
       guardarVolver: 'Guardar y volver',
     },
     pt: {
+      unir: 'Juntar com o próximo versículo',
+      unirAyuda: 'Quando sua língua diz este versículo e o próximo numa só frase: escrevem-se juntos, como 1–2',
+      separar: 'Separar os versículos juntados',
+      separarAyuda: 'O texto fica no primeiro; depois reparta o que diz cada um',
+      unidos: 'Versículos {versiculos}, juntados: escrevem-se juntos.',
       nombre: 'Editor',
       descripcion: 'Escrever o versículo no seu idioma, com o texto ponte ao lado',
       textoPuente: 'Texto ponte: {texto}',
@@ -349,6 +403,11 @@ export const editor: MiniApp = {
       guardarVolver: 'Salvar e voltar',
     },
     en: {
+      unir: 'Join with the next verse',
+      unirAyuda: 'When your language says this verse and the next in one sentence: they are written together, as 1–2',
+      separar: 'Separate the joined verses',
+      separarAyuda: 'The text stays in the first; then share out what each says',
+      unidos: 'Verses {versiculos}, joined: they are written together.',
       nombre: 'Editor',
       descripcion: 'Write the verse in your language, with the bridge text beside it',
       textoPuente: 'Bridge text: {texto}',

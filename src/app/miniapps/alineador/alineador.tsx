@@ -39,11 +39,16 @@ import type { AlignmentGroup } from '@usfm-tools/types'
 import { chapterOf } from '../../../prototype/data'
 import { placesOfOriginals, wordAt } from '../../frame/TouchWords'
 import { alignmentFor, draftTokens, readAlignment, sourceWords, writeAlignment } from '../../projects/alignment'
-import { readDraft } from '../../projects/work'
+import { joinedVerses, textOf } from '../../projects/work'
 import type { MiniApp, MiniAppCenterProps, Position } from '../contract'
 
-const verseTextOf = (book: string, chapter: number, verse: number) => readDraft(book, chapter, verse).replace(/\n/g, ' ')
-const sidOf = (at: Position) => `${at.book.toUpperCase()} ${at.chapter}:${at.verse}`
+const verseTextOf = (book: string, chapter: number, verse: number) => textOf(book, chapter, verse).replace(/\n/g, ' ')
+/** The verses aligned together where the person is: the verse, or the verses joined with it (kept on the first). */
+const unitOf = (at: Position) => joinedVerses(at.book, at.chapter, at.verse)
+const sidOf = (at: Position) => {
+  const unit = unitOf(at)
+  return `${at.book.toUpperCase()} ${at.chapter}:${unit.length > 1 ? `${unit[0]}-${unit[unit.length - 1]}` : unit[0]}`
+}
 
 /** The source chosen for a book, kept for the next visit: the TPL until another is chosen. */
 const sourceKey = (book: string) => `servos.prototipo.alineacion.fuente.${book}`
@@ -80,9 +85,11 @@ function Center({ context }: MiniAppCenterProps) {
   const source = data.texts.find((x) => x.abbreviation === sourceId) ?? data.texts[0]
   const text = verseTextOf(book, position.chapter, position.verse)
   const sid = sidOf(position)
+  const unit = unitOf(position)
+  const verse = unit[0]
   const draft = useMemo(() => draftTokens(text, sid), [text, sid])
-  const { tokens: original, places } = useMemo(() => sourceWords(source, position.verse, sid), [source, position.verse, sid])
-  const historyKey = `${book}.${position.chapter}.${position.verse}.${source.abbreviation}.${text}`
+  const { tokens: original, places } = useMemo(() => sourceWords(source, unit, sid), [source, sid]) // eslint-disable-line react-hooks/exhaustive-deps
+  const historyKey = `${book}.${position.chapter}.${verse}.${source.abbreviation}.${text}`
 
   const [groups, setGroups] = useState<AlignmentGroup[]>([])
   const [history, setHistoryState] = useState<History>(NONE)
@@ -95,11 +102,11 @@ function Center({ context }: MiniAppCenterProps) {
   const [carrying, setCarrying] = useState<string | null>(null)
   // A new verse, or another source: its links as kept, following the words of the draft that stayed, and its history.
   useEffect(() => {
-    setGroups(alignmentFor(readAlignment(book, position.chapter, position.verse, source.abbreviation), text))
+    setGroups(alignmentFor(readAlignment(book, position.chapter, verse, source.abbreviation), text))
     setHistoryState(histories.get(historyKey) ?? NONE)
     setWords([])
     setPicked([])
-  }, [book, position.chapter, position.verse, source.abbreviation, text, historyKey])
+  }, [book, position.chapter, verse, source.abbreviation, text, historyKey])
 
   const boxes = useMemo(() => deriveAlignmentBoxes(original, groups, draft), [original, groups, draft])
   const aligned = useMemo(() => computeAlignedSourceIndices(draft, boxes), [draft, boxes])
@@ -107,7 +114,7 @@ function Center({ context }: MiniAppCenterProps) {
 
   const keep = (next: AlignmentGroup[]) => {
     setGroups(next)
-    writeAlignment(book, position.chapter, position.verse, source.abbreviation, { groups: next, text, by: person.name, at: new Date().toISOString() })
+    writeAlignment(book, position.chapter, verse, source.abbreviation, { groups: next, text, by: person.name, at: new Date().toISOString() })
     frame.setSaved('guardado')
   }
   const change = (next: AlignmentGroup[] | null) => {
@@ -474,8 +481,9 @@ export const alineador: MiniApp = {
     if (!data || !text.trim()) return false
     const source = data.texts.find((x) => x.abbreviation === readSource(at.book)) ?? data.texts[0]
     const draft = draftTokens(text, sidOf(at))
-    const { tokens } = sourceWords(source, at.verse, sidOf(at))
-    const groups = alignmentFor(readAlignment(at.book, at.chapter, at.verse, source.abbreviation), text)
+    const unit = unitOf(at)
+    const { tokens } = sourceWords(source, unit, sidOf(at))
+    const groups = alignmentFor(readAlignment(at.book, at.chapter, unit[0], source.abbreviation), text)
     return computeAlignedSourceIndices(draft, deriveAlignmentBoxes(tokens, groups, draft)).every(Boolean)
   },
   Center,

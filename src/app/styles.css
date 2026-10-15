@@ -208,6 +208,7 @@ textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
 .translate-group-count { font-size: 0.85rem; color: var(--text-soft); font-variant-numeric: tabular-nums; }
 .translate-progress { margin: 0; }
 .picker-legend { margin: -0.25rem 0 0.25rem; font-size: 0.85rem; }
+.edit-joined { margin: 0 0 0.35rem; font-size: 0.85rem; font-weight: 600; color: var(--accent); }
 /* The settings' one button stays in sight at the foot while the mini apps are chosen */
 .settings-save { position: sticky; bottom: 0; z-index: 2; margin-inline: -1rem; padding: 0.5rem 1rem calc(0.5rem + env(safe-area-inset-bottom, 0px)); background: var(--bg); border-block-start: 1px solid var(--line); }
 /* The long-phrases test, on: floating over every screen, with its way out */
