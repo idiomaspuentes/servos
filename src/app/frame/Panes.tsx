@@ -44,7 +44,7 @@ export function showInPane(box: HTMLElement | null) {
 /** Where a screen is wide enough for two panes side by side. */
 const WIDE = '(min-width: 900px)'
 
-function useWide(): boolean {
+export function useWide(): boolean {
   const [wide, setWide] = useState(() => typeof window !== 'undefined' && window.matchMedia(WIDE).matches)
   useEffect(() => {
     const query = window.matchMedia(WIDE)

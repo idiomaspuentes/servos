@@ -193,5 +193,6 @@
   "marco.porVersiculo": "Versículo",
   "marco.porSeccion": "Sección",
   "ayudas.comentarios": "Comentarios {n}",
-  "ayudas.comentarioDe": "Versículos {versiculos} · {nombre}"
+  "ayudas.comentarioDe": "Versículos {versiculos} · {nombre}",
+  "ayudas.anotarPalabra": "Anotar esta palabra"
 }

@@ -17,6 +17,7 @@ export function ChapterLines({
   hint,
   onWord,
   under,
+  only = false,
 }: {
   text: PrototypeText
   /** The verses open: the verse, or those of its section. */
@@ -34,6 +35,8 @@ export function ChapterLines({
   onWord(verse: number, place: number): void
   /** What goes under a verse (the helps of a touched word). */
   under(verse: number): ReactNode
+  /** Only the verses open, larger, for reading them alone (the study); else the whole chapter, the open ones lit. */
+  only?: boolean
 }) {
   const current = useRef<HTMLDivElement>(null)
   const count = text.lines[at]?.length ?? 0
@@ -54,9 +57,12 @@ export function ChapterLines({
     pane.scrollTop = Math.max(0, pane.scrollTop + (r.top - p.top) - (pane.clientHeight - r.height) / 2)
   }, [at, writing, text.key])
 
-  const verses = Object.keys(text.lines).map(Number).sort((a, b) => a - b)
+  const verses = Object.keys(text.lines)
+    .map(Number)
+    .sort((a, b) => a - b)
+    .filter((v) => !only || shown.includes(v))
   return (
-    <div className={text.original ? 'chapter-lines is-original' : 'chapter-lines'}>
+    <div className={`chapter-lines${text.original ? ' is-original' : ''}${only ? ' is-alone' : ''}`}>
       <p className="chapter-lines-title">
         {text.title} · {hint}
       </p>

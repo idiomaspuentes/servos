@@ -164,11 +164,14 @@ export function WordHelpCard({
   touched,
   onIndex,
   onClose,
+  onNote,
 }: {
   data: PrototypeData
   touched: Touched
   onIndex(index: number): void
   onClose(): void
+  /** For a mini app where the person writes notes (the study): take the touched word into the note. */
+  onNote?(word: string): void
 }) {
   const t = useT()
   const [article, setArticle] = useState<{ title: string; markdown: string } | null>(null)
@@ -264,6 +267,12 @@ export function WordHelpCard({
         </>
       )}
 
+      {onNote && (
+        <button type="button" className="button-quiet word-help-note" onClick={() => onNote(word)}>
+          + {t('ayudas.anotarPalabra')}
+        </button>
+      )}
+
       {count > 1 && (
         <div className="helps-steps">
           <button type="button" className="button-quiet" disabled={touched.index === 0} onClick={() => onIndex(touched.index - 1)}>
@@ -298,6 +307,7 @@ export function useWordHelps({
   marked,
   bridge,
   verses,
+  onNote,
 }: {
   data: PrototypeData
   resetKey: string
@@ -307,6 +317,8 @@ export function useWordHelps({
   bridge: string
   /** The verses whose notes `marked` may come from. */
   verses: number[]
+  /** Offered on each card, for a mini app where the person writes notes. */
+  onNote?(word: string): void
 }) {
   const [touched, setTouched] = useState<Touched | null>(null)
   const [helpsRead, setHelpsRead] = useState(false)
@@ -333,7 +345,13 @@ export function useWordHelps({
       ),
     card: (abbreviation: string, verse: number) =>
       touched && touched.abbreviation === abbreviation && touched.verse === verse ? (
-        <WordHelpCard data={data} touched={touched} onIndex={(index) => setTouched({ ...touched, index })} onClose={() => setTouched(null)} />
+        <WordHelpCard
+          data={data}
+          touched={touched}
+          onIndex={(index) => setTouched({ ...touched, index })}
+          onClose={() => setTouched(null)}
+          onNote={onNote}
+        />
       ) : null,
     helpsOpened: () => setHelpsRead(true),
   }
