@@ -1,14 +1,15 @@
 /**
  * Editor: write the verse in the language of the project, a line to a field as the text translated from sets it
- * (`LineFields`), a verse at a time or a section at a time, as the person chooses. On a phone the box and the texts to read are panes side by side: a finger slides to the bridge
- * texts, the original or the helps and back, and the keyboard stays up all the while. A word touched in any of them
- * brings its notes and translation words under its verse (`TouchWords`). In the prototype a draft is
- * kept in this browser only; wired, every change goes to the journal (design, section 6).
+ * (`LineFields`), a verse at a time or a section at a time, as the person chooses. The boxes and each text to read
+ * are panes side by side, one in sight: a finger slides to the bridge texts, the original or the helps and back, and
+ * the keyboard stays up all the while. A word touched in a text brings its notes and translation words under its
+ * verse (`TouchWords`). In the prototype a draft is kept in this browser only; wired, every change goes to the
+ * journal (design, section 6).
  */
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Panes, type Pane } from '../../frame/Panes'
-import { helpsOfWord, litPlaces, WordHelpCard, WordLines, type Touched } from '../../frame/TouchWords'
+import { helpsOfWord, litPlaces, WordHelpCard, type Touched } from '../../frame/TouchWords'
 import type { MiniApp, MiniAppCenterProps } from '../contract'
 import { ChapterLines } from './ChapterLines'
 import { LineFields, lineFieldId } from './LineFields'
@@ -122,25 +123,12 @@ function Center({ context }: MiniAppCenterProps) {
     </div>
   )
 
-  // The text and the box share the pane's height: with the keyboard up the box stays right above it, and the text (and
-  // the helps of a touched word) scrolls in what is left, so neither is pushed out of sight by the other.
+  // Only the boxes: the texts to translate from are panes of their own, a swipe away. Both in one pane left each a
+  // sliver once the keyboard was up, and the person could not tell the text being written from the one being read.
   const own = (
     <div className="edit-pane">
       {unitSwitch}
-      <div className="edit-source-scroll">
-        <div className="edit-source" aria-label={t('editor.textoPuente', { texto: bridge.abbreviation })}>
-          <span className="edit-source-label">
-            {bridge.abbreviation} · {hint}
-          </span>
-          {shown.map((v) => (
-            <div key={v}>
-              <WordLines lines={bridge.lines[v] ?? []} verse={v} lit={lit(bridge.abbreviation)} onWord={(place) => touch(bridge.abbreviation, v, place)} />
-              {shown.length > 1 && card(bridge.abbreviation, v)}
-            </div>
-          ))}
-        </div>
-        {shown.length === 1 && card(bridge.abbreviation, shown[0])}
-      </div>
+      <p className="edit-where">{t('editor.dondeFuente', { texto: bridge.abbreviation })}</p>
       <div
         className="edit-fields"
         onFocus={() => {
@@ -194,6 +182,7 @@ function Center({ context }: MiniAppCenterProps) {
         <ChapterLines
           text={x}
           shown={shown}
+          at={position.verse}
           lit={lit(x.abbreviation)}
           hint={hint}
           onWord={(verse, place) => touch(x.abbreviation, verse, place)}
@@ -231,6 +220,7 @@ export const editor: MiniApp = {
       nombre: 'Editor',
       descripcion: 'Escribir el versículo en su idioma, con el texto puente al lado',
       textoPuente: 'Texto puente: {texto}',
+      dondeFuente: 'Para leer el {texto}, deslice a la izquierda o toque «{texto}» arriba.',
       suVersiculo: 'Su traducción del versículo {v}',
       cajaVacia: 'Escriba aquí',
       renglon: 'Renglón {n}',
@@ -258,6 +248,7 @@ export const editor: MiniApp = {
       nombre: 'Editor',
       descripcion: 'Escrever o versículo no seu idioma, com o texto ponte ao lado',
       textoPuente: 'Texto ponte: {texto}',
+      dondeFuente: 'Para ler o {texto}, deslize para a esquerda ou toque «{texto}» acima.',
       suVersiculo: 'Sua tradução do versículo {v}',
       cajaVacia: 'Escreva aqui',
       renglon: 'Linha {n}',
@@ -285,6 +276,7 @@ export const editor: MiniApp = {
       nombre: 'Editor',
       descripcion: 'Write the verse in your language, with the bridge text beside it',
       textoPuente: 'Bridge text: {texto}',
+      dondeFuente: 'To read the {texto}, swipe left or touch «{texto}» above.',
       suVersiculo: 'Your translation of verse {v}',
       cajaVacia: 'Write here',
       renglon: 'Line {n}',

@@ -266,16 +266,14 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 
 /* The editor's own pane */
 .edit-pane { height: 100%; display: flex; flex-direction: column; gap: 0.75rem; }
-/* Neither grows: with room, the box sits right under the text; without, both shrink and scroll inside themselves. */
-.edit-source-scroll { flex: 0 1 auto; min-height: 4.5rem; overflow-y: auto; overscroll-behavior: contain; }
-.edit-fields { flex: 0 1 auto; min-height: 3.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; }
+/* The boxes scroll inside the pane, so the one being written stays right above the keyboard. */
+.edit-fields { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 0.5rem; }
+.edit-where { margin: 0; font-size: 0.85rem; color: var(--text-soft); flex: none; }
 .pane:has(> .edit-pane) { overflow-y: hidden; }
 
 /* Writing on a phone: the header and the filled button step aside for the keyboard */
 .screen-fill.is-writing .header, .screen-fill.is-writing .main-fill > .button-primary, .screen-fill.is-writing .edit-hint { display: none; }
 .screen-fill.is-writing .main-fill { padding-block-end: 0; }
-.edit-source { padding: 0.5rem 0.75rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
-.edit-source-label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-soft); }
 .edit-hint { margin: 0; font-size: 0.85rem; color: var(--text-soft); }
 
 /* A verse or a section at a time: two choices side by side, the chosen one filled in quietly */
@@ -283,7 +281,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .edit-unit-option { min-height: 36px; border: 0; border-radius: 0; background: var(--surface); color: var(--text-soft); font-size: 0.9rem; }
 .edit-unit-option + .edit-unit-option { border-inline-start: 1px solid var(--line); }
 .edit-unit-option[aria-checked='true'] { background: var(--accent-soft); color: var(--text); font-weight: 600; }
-.screen-fill.is-writing .edit-unit { display: none; }
+.screen-fill.is-writing .edit-unit, .screen-fill.is-writing .edit-where { display: none; }
 
 /* A section: each verse's fields after its number, as the verse stands in the text */
 .edit-verse.in-section { display: grid; grid-template-columns: 1.5rem minmax(0, 1fr); align-items: start; gap: 0.25rem; }

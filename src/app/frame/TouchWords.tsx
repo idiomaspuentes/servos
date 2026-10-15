@@ -138,12 +138,12 @@ export function WordHelpCard({
   const count = touched.helps.length
   const word = wordAt(text, touched.place)
 
-  // Brought into sight in what scrolls around it (a pane, or the text above the box being written in), never by
-  // scrolling the page: under the keyboard there is little room, and the card would open out of sight.
+  // Brought into sight in the pane that scrolls around it, never by scrolling the page: under the keyboard there is
+  // little room, and the card would open out of sight.
   const self = useRef<HTMLElement>(null)
   useLayoutEffect(() => {
     const card = self.current
-    const around = card?.parentElement?.closest<HTMLElement>('.edit-source-scroll, .pane')
+    const around = card?.parentElement?.closest<HTMLElement>('.pane')
     if (!card || !around) return
     const c = around.getBoundingClientRect()
     const r = card.getBoundingClientRect()

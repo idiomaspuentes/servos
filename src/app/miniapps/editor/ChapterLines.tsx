@@ -11,6 +11,7 @@ import { WordLines } from '../../frame/TouchWords'
 export function ChapterLines({
   text,
   shown,
+  at,
   lit,
   hint,
   onWord,
@@ -19,6 +20,8 @@ export function ChapterLines({
   text: PrototypeText
   /** The verses open: the verse, or those of its section. */
   shown: number[]
+  /** The verse brought into sight: the one being written, within a section too. */
+  at: number
   lit: Set<number>
   hint: string
   onWord(verse: number, place: number): void
@@ -31,7 +34,7 @@ export function ChapterLines({
     const el = current.current
     const pane = el?.closest<HTMLElement>('.pane')
     if (el && pane) pane.scrollTop = Math.max(0, el.offsetTop - 12)
-  }, [shown[0], text.key])
+  }, [at, text.key])
 
   const verses = Object.keys(text.lines).map(Number).sort((a, b) => a - b)
   return (
@@ -40,7 +43,7 @@ export function ChapterLines({
         {text.title} · {hint}
       </p>
       {verses.map((v) => (
-        <div key={v} ref={v === shown[0] ? current : undefined}>
+        <div key={v} ref={v === at ? current : undefined}>
           <div className={shown.includes(v) ? 'chapter-verse is-current' : 'chapter-verse'} dir={text.dir ?? 'ltr'} lang={text.lang}>
             <WordLines lines={text.lines[v]} verse={v} lit={lit} onWord={(place) => onWord(v, place)} />
           </div>
