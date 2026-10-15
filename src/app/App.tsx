@@ -21,6 +21,7 @@ import { Home, type Resume } from './screens/Home'
 import { Language, TestModeBar } from './screens/Language'
 import { AddProjectSheet, NewProject } from './screens/NewProject'
 import { PersonMenu } from './screens/PersonMenu'
+import { Door43AccountSheet } from './screens/Door43Account'
 import { Welcome } from './screens/Welcome'
 import { EXAMPLE_PEOPLE, addPerson, loadPeople, savePeople, type People } from './projects/people'
 import { ProjectSettings } from './screens/ProjectSettings'
@@ -67,6 +68,7 @@ export function App() {
   const person = people?.current ?? EXAMPLE_PEOPLE[0]
   const setPerson = (name: string) => people && setPeople({ ...people, current: name })
   const [personMenu, setPersonMenu] = useState(false)
+  const [door43, setDoor43] = useState(false)
   const [language, setLanguage] = useState(false)
   const [addProject, setAddProject] = useState(false)
   const [addBookFor, setAddBookFor] = useState<string | null>(null)
@@ -442,8 +444,13 @@ export function App() {
             setPersonMenu(false)
             setScreen({ kind: 'translate' })
           }}
+          onDoor43={() => {
+            setPersonMenu(false)
+            setDoor43(true)
+          }}
         />
       )}
+      {door43 && <Door43AccountSheet person={person} onClose={() => setDoor43(false)} />}
       {language && <Language onClose={() => setLanguage(false)} />}
     </>
   )

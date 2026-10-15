@@ -12,7 +12,7 @@ import type { ComponentType, ReactNode } from 'react'
 import type { BaseLanguage, T, Texts } from '../i18n/i18n'
 import type { PrototypeData } from '../../prototype/data'
 import type { GlossaryEntry } from '../projects/glossary'
-import type { Phase } from '../projects/model'
+import type { Phase, Project } from '../projects/model'
 
 /** What a mini app can ask the device for. The catalog says honestly what is missing (philosophy, principle 8). */
 export type ResourceNeed = 'text' | 'notes' | 'questions' | 'words' | 'academy'
@@ -39,7 +39,7 @@ export interface MiniAppContext {
   t: T
   person: { name: string }
   /** The project the book belongs to: what is shared across its books (its glossary). */
-  project: { id: string; name: string; languageCode: string; font?: string }
+  project: Project
   /** The book's name as the team says it (or the bridge text's, until it is named). */
   bookTitle: string
   data: PrototypeData

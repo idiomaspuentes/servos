@@ -292,7 +292,26 @@ Como en `usfm-editor`:
 - **Con internet**, la publicación pendiente se sube a Door43: el libro, su historia y la versión.
 - Quien sube necesita su cuenta de Door43; ahí se vincula su nombre de Servos con esa cuenta.
 
-**Por decidir:** a qué organización y repositorio de Door43 va cada proyecto, y quién lo crea la primera vez.
+**Decidido (15 de octubre de 2026), y hecho en el prototipo** (mini app «Publicar en Door43», paso Publicación):
+
+- **Un repositorio por proyecto**, en una **organización del equipo** en Door43, elegida una vez por quien coordina
+  (se propone `{idioma}_reg`). Es un Resource Container (`rc0.2`, `type: bundle`, `format: text/usfm3`): cada libro
+  como `NN-LIBRO.usfm` (numeración de USFM: Génesis 01 … Malaquías 39, Mateo 41 …) y un `manifest.yaml` que los nombra
+  con el nombre que el equipo dio a cada libro. El repositorio se crea al publicar la primera vez.
+- **Se sube todo lo traducido**, cada vez; Door43 guarda la historia de cada subida. Un archivo igual al que ya está
+  no se vuelve a escribir, y uno que cambió se actualiza con el `sha` que tiene allá: si alguien subió en el medio,
+  se dice, no se pisa. Una **versión con número** (`v1`, `v2`…, un *release*) se marca aparte, cuando el equipo da por
+  bueno lo que está en Door43.
+- **La alineación con el original va en el USFM**, donde la hay: cada palabra como `\w`, los grupos en
+  `\zaln-s`/`\zaln-e` con Strong, lema y morfología, como los escriben las herramientas de unfoldingWord.
+- **La cuenta**: cada persona vincula la suya una vez en el teléfono (menú de la persona › Cuenta de Door43). La
+  contraseña se cambia por una llave (*token*) en una sola petición y no se guarda; también se puede pegar una llave
+  hecha en Door43. Se ofrece Door43 y su copia de prueba (QA); al programar, un Door43 de mentira en la computadora
+  (el de Taller, `npm run mock:door43`).
+- **Sin internet** no se pierde nada: el trabajo está en el teléfono, y la pantalla dice libro por libro si cambió
+  desde la última subida. Falta todavía la cola que sube sola al volver la conexión, y subir el diario («su
+  historia») junto con los libros.
+- El cliente de Door43 es el de Taller (`packages/dcs-client`), copiado en `src/door43/dcs`.
 
 **USFM, de ida y vuelta** (prototipo): un libro empezado en otra app se trae desde su archivo USFM («Agregar un
 libro › Desde un archivo USFM»). Se lee el texto de cada versículo (sin alineación ni notas al pie), un puente como

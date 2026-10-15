@@ -28,9 +28,3 @@ export const comunitaria = soon('comunitaria', 'comunitaria', ['text'], {
   pt: { nombre: 'Leitura com a comunidade', descripcion: 'Ler o livro em voz alta com outras pessoas e anotar o que não se entende' },
   en: { nombre: 'Reading with the community', descripcion: 'Read the book aloud with others and note what is not understood' },
 })
-
-export const publicar = soon('publicar', 'publicacion', ['text'], {
-  es: { nombre: 'Publicar en Door43', descripcion: 'Revisar que el libro esté completo y subirlo' },
-  pt: { nombre: 'Publicar no Door43', descripcion: 'Verificar se o livro está completo e enviá-lo' },
-  en: { nombre: 'Publish on Door43', descripcion: 'Check that the book is complete and upload it' },
-})

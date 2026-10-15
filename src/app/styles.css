@@ -757,3 +757,18 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .sheet-ask-close { color: var(--danger); }
 
 .book-name-ask { align-self: flex-start; padding-inline: 0; text-align: start; }
+
+/* Publishing to Door43: where, what goes (book by book, what changed since), and the one way to upload */
+.publish { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem; max-width: 46rem; margin-inline: auto; width: 100%; }
+.publish p { margin: 0; }
+.publish-heading { margin: 0.25rem 0 0; font-size: 1rem; }
+.publish-where { display: flex; flex-direction: column; gap: 0.2rem; padding: 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.publish-books { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.publish-book { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.6rem 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.publish-book-name { font-weight: 600; font-family: var(--project-font, var(--font)); }
+.publish-book-state { font-size: 0.9rem; color: var(--text-soft); }
+.publish-book.is-igual .publish-book-state { color: var(--done); }
+.publish-book.is-cambio .publish-book-state, .publish-book.is-nunca .publish-book-state { color: var(--accent); font-weight: 600; }
+.publish-version { display: flex; flex-direction: column; gap: 0.4rem; }
+.publish-go { margin-block-start: auto; }
+.door43-hosts { grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr)); }

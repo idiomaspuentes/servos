@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useT } from '../i18n/i18n'
 import { MenuRow, Sheet } from '../frame/Sheet'
+import { accountOf, hostName } from '../projects/door43'
 
 export function PersonMenu({
   person,
@@ -13,6 +14,7 @@ export function PersonMenu({
   onReceive,
   onLanguage,
   onTranslate,
+  onDoor43,
 }: {
   person: string
   /** Who uses this phone. */
@@ -24,6 +26,8 @@ export function PersonMenu({
   onReceive(): void
   onLanguage(): void
   onTranslate(): void
+  /** Links (or shows) the person's Door43 account. */
+  onDoor43(): void
 }) {
   const t = useT()
   const [adding, setAdding] = useState(false)
@@ -33,6 +37,14 @@ export function PersonMenu({
       <MenuRow label={t('persona.recibir')} description={t('persona.recibirAyuda')} onClick={onReceive} />
       <MenuRow label={t('persona.idioma')} description={t('persona.idiomaAyuda')} onClick={onLanguage} />
       <MenuRow label={t('persona.traducir')} description={t('persona.traducirAyuda')} onClick={onTranslate} />
+      <MenuRow
+        label={t('persona.door43')}
+        description={(() => {
+          const a = accountOf(person)
+          return a ? t('door43.vinculada', { usuario: a.username, donde: t(`door43.host.${hostName(a.host)}`) }) : t('persona.door43Ayuda')
+        })()}
+        onClick={onDoor43}
+      />
       <h3 className="menu-heading">{t('persona.cambiar')}</h3>
       <p className="quiet">{t('persona.cambiarAyuda')}</p>
       <div className="people">
