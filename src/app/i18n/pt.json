@@ -449,5 +449,10 @@
   "libro.introCapitulo": "introdução de {libro} {capitulo}",
   "libro.terminadoPasar": "Terminar {paso} e passar para {siguiente}",
   "libro.recibirTrabajoAyuda": "Juntar aqui o que outros traduziram nos seus computadores",
-  "libro.glosarioAyuda": "As palavras do original e como a equipe combinou traduzi-las"
+  "libro.glosarioAyuda": "As palavras do original e como a equipe combinou traduzi-las",
+  "pasos.estudioCorto": "Estudo",
+  "pasos.traduccionCorto": "Tradução",
+  "pasos.revisionCorto": "Revisão",
+  "pasos.comunitariaCorto": "Comunidade",
+  "pasos.publicacionCorto": "Publicar"
 }

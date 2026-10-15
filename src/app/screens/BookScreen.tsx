@@ -158,14 +158,15 @@ export function BookScreen({
                   setByChapter(null)
                 }}
               >
-                <span>{t(`pasos.${phase}`)}</span>
+                {/* A short name, so the five fit in two lines on a phone; the whole one is said under them. */}
+                <span>{t(`pasos.${phase}Corto`)}</span>
                 <span className="book-step-state">{i < at ? '✓' : p !== null && p > 0 ? `${p} %` : ''}</span>
               </button>
             )
           })}
         </div>
         <p className="quiet book-step-about">
-          {t(`pasos.${shown}Ayuda`)}
+          <strong>{t(`pasos.${shown}`)}:</strong> {t(`pasos.${shown}Ayuda`)}
           {shownAt === at && ` · ${t('pasos.enCurso')}`}
         </p>
 

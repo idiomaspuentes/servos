@@ -251,5 +251,10 @@
   "libro.introCapitulo": "introduction to {libro} {capitulo}",
   "libro.terminadoPasar": "Finish {paso} and move on to {siguiente}",
   "libro.recibirTrabajoAyuda": "Gather here what others translated on their computers",
-  "libro.glosarioAyuda": "The words of the original and how the team agreed to translate them"
+  "libro.glosarioAyuda": "The words of the original and how the team agreed to translate them",
+  "pasos.estudioCorto": "Study",
+  "pasos.traduccionCorto": "Translation",
+  "pasos.revisionCorto": "Review",
+  "pasos.comunitariaCorto": "Community",
+  "pasos.publicacionCorto": "Publish"
 }
