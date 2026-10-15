@@ -8,6 +8,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { LanguageSearch } from '../frame/LanguageSearch'
 import { Sheet } from '../frame/Sheet'
 import { BASE_LANGUAGES, allKeys, baseText, marksOf, useI18n, type BaseLanguage } from '../i18n/i18n'
 import { miniApps } from '../miniapps/registry'
@@ -110,14 +111,14 @@ export function TranslateUi({ onBack }: { onBack(): void }) {
             }}
           >
             <h1>{t('interfaz.nuevoIdioma')}</h1>
-            <label className="field">
-              <span className="field-label">{t('interfaz.nombreIdioma')}</span>
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Kichwa" />
-            </label>
-            <label className="field">
-              <span className="field-label">{t('interfaz.codigoIdioma')}</span>
-              <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="qu" />
-            </label>
+            <LanguageSearch
+              label={t('interfaz.nombreIdioma')}
+              value={{ code, name }}
+              onChange={(l) => {
+                setName(l.name)
+                setCode(l.code)
+              }}
+            />
             <label className="field">
               <span className="field-label">{t('interfaz.respaldo')}</span>
               <select value={fb} onChange={(e) => setFb(e.target.value as BaseLanguage)}>

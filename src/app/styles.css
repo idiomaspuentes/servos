@@ -207,6 +207,14 @@ textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
 .translate-group-name { font-weight: 600; }
 .translate-group-count { font-size: 0.85rem; color: var(--text-soft); font-variant-numeric: tabular-nums; }
 .translate-progress { margin: 0; }
+/* Choosing a language by searching it: a few large rows to touch, the one chosen with «Change» */
+.language-search { gap: 0.4rem; }
+.language-results { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.language-result { display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem; width: 100%; min-height: var(--touch); padding: 0.4rem 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--text); text-align: start; }
+.language-result-name { font-weight: 600; }
+.language-result-also { font-size: 0.85rem; overflow-wrap: anywhere; }
+.language-chosen { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-height: var(--touch); padding: 0.25rem 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.language-chosen .button-quiet, .language-by-hand { width: auto; align-self: flex-start; }
 /* Translating the app a phrase at a time: where it is seen, the original, the box, and on */
 .translate-card { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
 .translate-where { align-self: flex-start; width: auto; min-height: var(--touch); padding: 0; border: 0; background: none; text-align: start; }

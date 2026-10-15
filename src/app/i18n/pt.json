@@ -465,5 +465,12 @@
   "interfaz.siguiente": "Próxima",
   "interfaz.todas": "Não falta nenhuma frase.",
   "interfaz.seGuarda": "O que escreve é salvo neste telefone e aparece logo em todo o app.",
-  "interfaz.tambienHechas": "Passar também pelas já traduzidas"
+  "interfaz.tambienHechas": "Passar também pelas já traduzidas",
+  "idiomas.buscarAyuda": "Escreva o nome ou o código: quéchua, quz…",
+  "idiomas.leyendo": "Lendo a lista de idiomas…",
+  "idiomas.ninguno": "Não está na lista do Door43. Pode escrevê-lo à mão.",
+  "idiomas.aMano": "Não está na lista: escrever à mão",
+  "idiomas.cambiar": "Trocar",
+  "idiomas.codigo": "Código",
+  "interfaz.grupo.idiomas": "Escolher um idioma"
 }

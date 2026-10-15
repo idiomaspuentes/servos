@@ -267,5 +267,12 @@
   "interfaz.siguiente": "Next",
   "interfaz.todas": "No phrase is left.",
   "interfaz.seGuarda": "What you write is saved on this phone and shows at once across the app.",
-  "interfaz.tambienHechas": "Also go through those already translated"
+  "interfaz.tambienHechas": "Also go through those already translated",
+  "idiomas.buscarAyuda": "Type its name or its code: quechua, quz…",
+  "idiomas.leyendo": "Reading the list of languages…",
+  "idiomas.ninguno": "It is not in Door43's list. You can write it by hand.",
+  "idiomas.aMano": "Not in the list: write it by hand",
+  "idiomas.cambiar": "Change",
+  "idiomas.codigo": "Code",
+  "interfaz.grupo.idiomas": "Choosing a language"
 }

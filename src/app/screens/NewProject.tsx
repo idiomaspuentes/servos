@@ -1,13 +1,16 @@
 /**
  * «+ Add a project» and «New Bible», as translationCore 4 does them (`src/views/modals/AddProject.jsx`,
- * `NewBible.jsx`): first the three ways to start, then one short form — name, language and its code, direction, the
+ * `NewBible.jsx`): first the three ways to start, then one short form — name, language (searched in Door43's list of
+ * languages, its code coming with it), direction, the
  * bridge texts and helps to work with (the language packs on this phone), the font, and the versification out of the
  * way. Everything can be changed later.
  */
 
 import { useState } from 'react'
+import { LanguageSearch } from '../frame/LanguageSearch'
 import { MenuRow, Sheet } from '../frame/Sheet'
 import { useT } from '../i18n/i18n'
+import { writtenRightToLeft } from '../projects/languages'
 import { DEFAULT_MINI_APPS, slug, type Project } from '../projects/model'
 
 export function AddProjectSheet({ onClose, onBible, onReceive }: { onClose(): void; onBible(): void; onReceive(): void }) {
@@ -80,16 +83,17 @@ export function NewProject({ existing, onCancel, onCreate }: { existing: Project
             <span className="field-label">{t('nuevo.nombre')}</span>
             <input id="np-name" value={name} onChange={(e) => (setName(e.target.value), setMissing(false))} placeholder={t('nuevo.nombreEjemplo')} />
           </label>
-          <div className="field-row">
-            <label className="field">
-              <span className="field-label">{t('nuevo.idioma')}</span>
-              <input id="np-lang" value={languageName} onChange={(e) => (setLanguageName(e.target.value), setMissing(false))} placeholder="Kichwa" />
-            </label>
-            <label className="field field-code">
-              <span className="field-label">{t('nuevo.codigo')}</span>
-              <input id="np-code" value={code} onChange={(e) => (setCode(e.target.value), setMissing(false))} placeholder="qu" autoCapitalize="none" />
-            </label>
-          </div>
+          <LanguageSearch
+            label={t('nuevo.idioma')}
+            value={{ code, name: languageName }}
+            onChange={(l) => {
+              setLanguageName(l.name)
+              setCode(l.code)
+              setMissing(false)
+              // A language written from right to left sets the direction; it can still be changed below.
+              if (l.code) setDirection(writtenRightToLeft(l.code) ? 'rtl' : 'ltr')
+            }}
+          />
 
           <fieldset className="field">
             <legend className="field-label">{t('nuevo.direccion')}</legend>

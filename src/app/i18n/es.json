@@ -465,5 +465,12 @@
   "interfaz.siguiente": "Siguiente",
   "interfaz.todas": "No falta ninguna frase.",
   "interfaz.seGuarda": "Lo que escribe se guarda en este teléfono y se ve enseguida en toda la app.",
-  "interfaz.tambienHechas": "Pasar también por las ya traducidas"
+  "interfaz.tambienHechas": "Pasar también por las ya traducidas",
+  "idiomas.buscarAyuda": "Escriba su nombre o su código: quechua, quz…",
+  "idiomas.leyendo": "Leyendo la lista de idiomas…",
+  "idiomas.ninguno": "No está en la lista de Door43. Puede escribirlo a mano.",
+  "idiomas.aMano": "No está en la lista: escribirlo a mano",
+  "idiomas.cambiar": "Cambiar",
+  "idiomas.codigo": "Código",
+  "interfaz.grupo.idiomas": "Elegir un idioma"
 }
