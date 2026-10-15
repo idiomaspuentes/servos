@@ -33,6 +33,12 @@ const UHB = 'unfoldingWord/hbo/uhb'
 
 type Original = { key: string; abbreviation: string; dir: 'ltr' | 'rtl'; lang: string }
 
+/**
+ * Where each section begins, from the `\ts\*` markers of unfoldingWord's ULT (en_ult, master, read 2026-10-14): the
+ * es-419 texts do not mark sections and the packs do not carry the ULT. Wired, a pack carries this table.
+ */
+const SECTION_STARTS: Record<string, number[]> = { 'tit 1': [1, 4, 6, 8, 10, 12, 15], 'jon 2': [1, 3, 5, 7, 9] }
+
 async function chapterData(stores: ResourceStores, bookId: string, chapter: number, original: Original): Promise<PrototypeData> {
   const raw = async <T,>(key: string, version: number) => unwrapVersioned<T>(await stores.cache.get(key), version)
   const title = async (key: string) => String((await stores.catalog.get(key))?.title ?? key)
@@ -134,6 +140,7 @@ async function chapterData(stores: ResourceStores, bookId: string, chapter: numb
         lang: original.lang,
       },
     ],
+    sections: SECTION_STARTS[`${bookId} ${chapter}`].map((start, i, starts) => verses.filter((v) => v >= start && v < (starts[i + 1] ?? Infinity))),
     verses: byVerse,
     words,
     academy,

@@ -1,6 +1,6 @@
 /**
  * Editor: write the verse in the language of the project, a line to a field as the text translated from sets it
- * (`LineFields`). On a phone the box and the texts to read are panes side by side: a finger slides to the bridge
+ * (`LineFields`), a verse at a time or a section at a time, as the person chooses. On a phone the box and the texts to read are panes side by side: a finger slides to the bridge
  * texts, the original or the helps and back, and the keyboard stays up all the while. A word touched in any of them
  * brings its notes and translation words under its verse (`TouchWords`). In the prototype a draft is
  * kept in this browser only; wired, every change goes to the journal (design, section 6).
@@ -26,31 +26,38 @@ function readDraft(key: string): string {
 /** Lines of a poem (`\q`, `\q1`, `\q2`…), not the poem's headings or notes (`\qa`, `\qd`…). */
 const isPoemLine = (marker: string) => /^q\d?$|^qm\d?$/.test(marker)
 
+/** What is written of each verse open, read when the verse or section opens. */
+function readDrafts(book: string, chapter: number, verses: number[]): Record<number, string> {
+  return Object.fromEntries(verses.map((v) => [v, readDraft(draftKey(book, chapter, v))]))
+}
+
 function Center({ context }: MiniAppCenterProps) {
-  const { position, marked, t, data, textAbbreviation, frame } = context
-  const key = draftKey(position.book, position.chapter, position.verse)
-  const [text, setText] = useState(() => readDraft(key))
-  const [shownKey, setShownKey] = useState(key)
+  const { position, marked, t, data, textAbbreviation, frame, unit, shown, goTo } = context
+  // What is open: the verse, or the verses of its section. Within a section the position follows the verse being
+  // written (so the helps are that verse's), and nothing else changes.
+  const openKey = `${position.book}.${position.chapter}.${shown.join(',')}`
+  const [drafts, setDrafts] = useState(() => readDrafts(position.book, position.chapter, shown))
+  const [shownKey, setShownKey] = useState(openKey)
   const [touched, setTouched] = useState<Touched | null>(null)
-  // Whether the person opened the helps pane in this verse: only then does the note open there light its words.
+  // Whether the person opened the helps pane here: only then does the note open there light its words.
   const [helpsRead, setHelpsRead] = useState(false)
-  if (shownKey !== key) {
-    setShownKey(key)
-    setText(readDraft(key))
+  if (shownKey !== openKey) {
+    setShownKey(openKey)
+    setDrafts(readDrafts(position.book, position.chapter, shown))
     setTouched(null)
     setHelpsRead(false)
   }
 
-  // Going to another verse while writing: the cursor goes to its first line, and the keyboard stays up.
+  // Going on to another verse or section while writing: the cursor goes to its first line, and the keyboard stays up.
   const writing = useRef(false)
   const stopWriting = useRef<number>()
-  const fieldsId = `editor-v${position.verse}`
+  const fieldsId = (verse: number) => `editor-v${verse}`
   useLayoutEffect(() => {
     if (!writing.current) return
-    const box = document.getElementById(lineFieldId(fieldsId, 0)) as HTMLTextAreaElement | null
+    const box = document.getElementById(lineFieldId(fieldsId(shown[0]), 0)) as HTMLTextAreaElement | null
     box?.focus()
     box?.setSelectionRange(box.value.length, box.value.length)
-  }, [fieldsId])
+  }, [openKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // When the keyboard comes up the box area shrinks under the line being written: it is brought back into sight there.
   useEffect(() => {
@@ -79,9 +86,8 @@ function Center({ context }: MiniAppCenterProps) {
   }, [])
 
   const bridge = data.texts.find((x) => x.abbreviation === textAbbreviation) ?? data.texts[0]
-  const source = bridge.lines[position.verse] ?? []
-  const markers = source.map((l) => l.marker)
-  const poem = markers.some(isPoemLine)
+  const markersOf = (verse: number) => (bridge.lines[verse] ?? []).map((l) => l.marker)
+  const anyPoem = shown.some((v) => markersOf(v).some(isPoemLine))
 
   // Without a touched word, the note read in the helps pane lights its words (`marked` is its quote in the bridge text).
   const openNote = marked && helpsRead ? data.verses.find((v) => v.verse === position.verse)?.notes.find((n) => (bridge.abbreviation === 'TPS' ? n.gst : n.glt) === marked) : undefined
@@ -96,28 +102,44 @@ function Center({ context }: MiniAppCenterProps) {
     ) : null
   const hint = t('editor.toquePalabra')
 
-  const write = (value: string) => {
-    setText(value)
+  const write = (verse: number, value: string) => {
+    setDrafts((now) => ({ ...now, [verse]: value }))
     frame.setSaved('guardado')
     try {
-      localStorage.setItem(key, value)
+      localStorage.setItem(draftKey(position.book, position.chapter, verse), value)
     } catch {
       /* the draft stays on screen */
     }
   }
 
+  const unitSwitch = (
+    <div className="edit-unit" role="radiogroup" aria-label={t('editor.trabajarPor')}>
+      {(['verse', 'section'] as const).map((u) => (
+        <button key={u} type="button" role="radio" aria-checked={unit === u} className="edit-unit-option" onClick={() => frame.setUnit(u)}>
+          {t(u === 'verse' ? 'editor.unVersiculo' : 'editor.unaSeccion')}
+        </button>
+      ))}
+    </div>
+  )
+
   // The text and the box share the pane's height: with the keyboard up the box stays right above it, and the text (and
   // the helps of a touched word) scrolls in what is left, so neither is pushed out of sight by the other.
   const own = (
     <div className="edit-pane">
+      {unitSwitch}
       <div className="edit-source-scroll">
         <div className="edit-source" aria-label={t('editor.textoPuente', { texto: bridge.abbreviation })}>
           <span className="edit-source-label">
             {bridge.abbreviation} · {hint}
           </span>
-          <WordLines lines={source} verse={position.verse} lit={lit(bridge.abbreviation)} onWord={(place) => touch(bridge.abbreviation, position.verse, place)} />
+          {shown.map((v) => (
+            <div key={v}>
+              <WordLines lines={bridge.lines[v] ?? []} verse={v} lit={lit(bridge.abbreviation)} onWord={(place) => touch(bridge.abbreviation, v, place)} />
+              {shown.length > 1 && card(bridge.abbreviation, v)}
+            </div>
+          ))}
         </div>
-        {card(bridge.abbreviation, position.verse)}
+        {shown.length === 1 && card(bridge.abbreviation, shown[0])}
       </div>
       <div
         className="edit-fields"
@@ -132,18 +154,33 @@ function Center({ context }: MiniAppCenterProps) {
           }, 0)
         }}
       >
-        <LineFields
-          key={fieldsId}
-          id={fieldsId}
-          text={text}
-          markers={markers}
-          poem={poem}
-          label={t('editor.suVersiculo', { v: position.verse })}
-          placeholder={(line) => (poem ? t('editor.renglon', { n: line }) : t('editor.cajaVacia'))}
-          addLabel={t('editor.otroRenglon')}
-          onChange={write}
-        />
-        {poem && <p className="edit-hint">{t('editor.comoRenglones')}</p>}
+        {shown.map((v) => {
+          const markers = markersOf(v)
+          const poem = markers.some(isPoemLine)
+          return (
+            // In a section each verse keeps its own fields, its number before them: the text is still kept verse by
+            // verse, so a section and a verse at a time read and write the same drafts.
+            <div
+              key={v}
+              className={shown.length > 1 ? 'edit-verse in-section' : 'edit-verse'}
+              onFocus={() => v !== position.verse && goTo({ ...position, verse: v })}
+            >
+              {shown.length > 1 && <span className="edit-verse-number" aria-hidden="true">{v}</span>}
+              <LineFields
+                key={fieldsId(v)}
+                id={fieldsId(v)}
+                text={drafts[v] ?? ''}
+                markers={markers}
+                poem={poem}
+                label={t('editor.suVersiculo', { v })}
+                placeholder={(line) => (poem ? t('editor.renglon', { n: line }) : t('editor.cajaVacia'))}
+                addLabel={t('editor.otroRenglon')}
+                onChange={(value) => write(v, value)}
+              />
+            </div>
+          )
+        })}
+        {anyPoem && <p className="edit-hint">{t('editor.comoRenglones')}</p>}
       </div>
     </div>
   )
@@ -156,7 +193,7 @@ function Center({ context }: MiniAppCenterProps) {
       content: (
         <ChapterLines
           text={x}
-          verse={position.verse}
+          shown={shown}
           lit={lit(x.abbreviation)}
           hint={hint}
           onWord={(verse, place) => touch(x.abbreviation, verse, place)}
@@ -175,13 +212,14 @@ export const editor: MiniApp = {
   needs: ['text', 'notes', 'words'],
   phase: 'traduccion',
   unit: 'verse',
+  sections: true,
   helps: false,
   fills: true,
   writes: true,
   Center,
   primary: {
     label: 'editor.guardarSeguir',
-    run: (c) => c.goTo({ ...c.position, verse: Math.min(c.position.verse + 1, c.data.verses[c.data.verses.length - 1]?.verse ?? c.position.verse) }),
+    run: (c) => c.frame.next(),
   },
   more: [
     { label: 'editor.unir', description: 'editor.unirAyuda', run: () => {} },
@@ -201,6 +239,9 @@ export const editor: MiniApp = {
       paneles: 'Lo que se ve',
       panelSuyo: 'Su traducción',
       panelAyudas: 'Ayudas',
+      trabajarPor: 'Trabajar por',
+      unVersiculo: 'Un versículo',
+      unaSeccion: 'Una sección',
       toquePalabra: 'toque una palabra para ver sus notas',
       'lengua.hbo': 'Hebreo',
       'lengua.grc': 'Griego',
@@ -225,6 +266,9 @@ export const editor: MiniApp = {
       paneles: 'O que se vê',
       panelSuyo: 'Sua tradução',
       panelAyudas: 'Ajudas',
+      trabajarPor: 'Trabalhar por',
+      unVersiculo: 'Um versículo',
+      unaSeccion: 'Uma seção',
       toquePalabra: 'toque uma palavra para ver suas notas',
       'lengua.hbo': 'Hebraico',
       'lengua.grc': 'Grego',
@@ -249,6 +293,9 @@ export const editor: MiniApp = {
       paneles: 'What is shown',
       panelSuyo: 'Your translation',
       panelAyudas: 'Helps',
+      trabajarPor: 'Work by',
+      unVersiculo: 'One verse',
+      unaSeccion: 'One section',
       toquePalabra: 'touch a word to see its notes',
       'lengua.hbo': 'Hebrew',
       'lengua.grc': 'Greek',

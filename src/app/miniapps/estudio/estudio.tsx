@@ -16,9 +16,6 @@ function Center({ context }: MiniAppCenterProps) {
   )
 }
 
-const lastVerse = (c: Parameters<NonNullable<MiniApp['primary']>['run']>[0]) =>
-  c.data.verses[c.data.verses.length - 1]?.verse ?? c.position.verse
-
 export const estudio: MiniApp = {
   id: 'estudio',
   needs: ['text', 'notes', 'questions', 'words', 'academy'],
@@ -29,7 +26,7 @@ export const estudio: MiniApp = {
   Center,
   primary: {
     label: 'estudio.siguiente',
-    run: (c) => c.goTo({ ...c.position, verse: Math.min(c.position.verse + 1, lastVerse(c)) }),
+    run: (c) => c.frame.next(),
   },
   more: [
     { label: 'estudio.cambiarTexto', description: 'estudio.cambiarTextoAyuda', run: (c) => c.frame.switchText() },

@@ -71,7 +71,7 @@ export const revisorNotas: MiniApp = {
   Center,
   primary: {
     label: 'revisorNotas.siguiente',
-    run: (c) => c.goTo({ ...c.position, verse: Math.min(c.position.verse + 1, c.data.verses[c.data.verses.length - 1]?.verse ?? c.position.verse) }),
+    run: (c) => c.frame.next(),
   },
   more: [{ label: 'revisorNotas.leerCapitulo', description: 'revisorNotas.leerCapituloAyuda', run: (c) => c.frame.showChapter() }],
   texts: {

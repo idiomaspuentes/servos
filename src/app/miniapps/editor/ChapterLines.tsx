@@ -1,7 +1,7 @@
 /**
  * A text of the chapter as it is set: each verse in its lines, a poem's lines set in by their marker. The open verse
- * stands out and is brought into sight in its pane; the ones around it say where it is. A touched word shows its
- * helps under its verse.
+ * (or section) stands out and is brought into sight in its pane; the ones around it say where it is. A touched word
+ * shows its helps under its verse.
  */
 
 import { useEffect, useRef, type ReactNode } from 'react'
@@ -10,14 +10,15 @@ import { WordLines } from '../../frame/TouchWords'
 
 export function ChapterLines({
   text,
-  verse,
+  shown,
   lit,
   hint,
   onWord,
   under,
 }: {
   text: PrototypeText
-  verse: number
+  /** The verses open: the verse, or those of its section. */
+  shown: number[]
   lit: Set<number>
   hint: string
   onWord(verse: number, place: number): void
@@ -30,7 +31,7 @@ export function ChapterLines({
     const el = current.current
     const pane = el?.closest<HTMLElement>('.pane')
     if (el && pane) pane.scrollTop = Math.max(0, el.offsetTop - 12)
-  }, [verse, text.key])
+  }, [shown[0], text.key])
 
   const verses = Object.keys(text.lines).map(Number).sort((a, b) => a - b)
   return (
@@ -39,8 +40,8 @@ export function ChapterLines({
         {text.title} · {hint}
       </p>
       {verses.map((v) => (
-        <div key={v} ref={v === verse ? current : undefined}>
-          <div className={v === verse ? 'chapter-verse is-current' : 'chapter-verse'} dir={text.dir ?? 'ltr'} lang={text.lang}>
+        <div key={v} ref={v === shown[0] ? current : undefined}>
+          <div className={shown.includes(v) ? 'chapter-verse is-current' : 'chapter-verse'} dir={text.dir ?? 'ltr'} lang={text.lang}>
             <WordLines lines={text.lines[v]} verse={v} lit={lit} onWord={(place) => onWord(v, place)} />
           </div>
           {under(v)}

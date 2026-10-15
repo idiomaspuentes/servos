@@ -16,6 +16,9 @@ import type { Phase } from '../projects/model'
 /** What a mini app can ask the device for. The catalog says honestly what is missing (philosophy, principle 8). */
 export type ResourceNeed = 'text' | 'notes' | 'questions' | 'words' | 'academy'
 
+/** A verse at a time, or a section (the translators' sections of the chapter) at a time. */
+export type Unit = 'verse' | 'section'
+
 /** Where the person is: a verse of a chapter of a book. */
 export interface Position {
   book: string
@@ -34,6 +37,10 @@ export interface MiniAppContext {
   verseText(verse: number): string
   position: Position
   goTo(position: Position): void
+  /** Whether the person works a verse at a time or a section at a time (`MiniApp.sections`). */
+  unit: Unit
+  /** The verses open: the verse, or every verse of its section. */
+  shown: number[]
   /** Words of the bridge text to mark in the open verse (from the help the person is reading). */
   marked: string | null
   /** What the frame can do for a mini app. */
@@ -46,6 +53,10 @@ export interface MiniAppContext {
     helps(): ReactNode
     /** What the header says about the work (philosophy, principle 8): nothing changed yet, or saved on this phone. */
     setSaved(state: 'sinCambios' | 'guardado'): void
+    /** Work a verse or a section at a time; the position line then moves by that. Kept for the next visit. */
+    setUnit(unit: Unit): void
+    /** On to the next verse or section, as the position line's arrow does. */
+    next(): void
   }
 }
 
@@ -72,6 +83,8 @@ export interface MiniApp {
   needs: ResourceNeed[]
   /** Verse by verse for now; chapter and book come when a mini app needs them. */
   unit: 'verse'
+  /** Whether the person may also work a section at a time: then the frame moves by sections and opens all its verses. */
+  sections?: boolean
   /** Whether the helps panel shows under its center. */
   helps: boolean
   /**

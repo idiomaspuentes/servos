@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import type { PrototypeData } from '../../prototype/data'
 import { useT } from '../i18n/i18n'
-import type { MiniApp, MiniAppContext, Position } from '../miniapps/contract'
+import type { MiniApp, MiniAppContext, Position, Unit } from '../miniapps/contract'
 import { HelpsPanel } from './HelpsPanel'
 import { keepFocus } from './Panes'
 import { MenuRow, Sheet } from './Sheet'
@@ -81,9 +81,31 @@ export function MiniAppScreen({
     for (const piece of text.pieces) if (piece.kind === 'paragraph') for (const v of piece.verses) map.set(v.verse, v.text)
     return map
   }, [text])
+  // A verse or a section at a time, as the person chose for this mini app: the arrows, the list and «n of total» go by it.
+  const unitKey = `servos.prototipo.unidad.${app.id}`
+  const [unit, setUnitState] = useState<Unit>(() => {
+    if (!app.sections) return 'verse'
+    try {
+      return localStorage.getItem(unitKey) === 'section' ? 'section' : 'verse'
+    } catch {
+      return 'verse'
+    }
+  })
+  const setUnit = (next: Unit) => {
+    setUnitState(next)
+    try {
+      localStorage.setItem(unitKey, next)
+    } catch {
+      /* chosen for this visit */
+    }
+  }
   const verses = data.verses.map((v) => v.verse)
-  const at = verses.indexOf(position.verse)
-  const passage = `${data.book.name} ${position.chapter}:${position.verse}`
+  const stops = unit === 'section' && data.sections.length ? data.sections : verses.map((v) => [v])
+  const at = Math.max(0, stops.findIndex((s) => s.includes(position.verse)))
+  const shown = stops[at] ?? [position.verse]
+  const goStop = (index: number) => onPosition({ ...position, verse: stops[index][0] })
+  const range = (s: number[]) => (s.length > 1 ? `${s[0]}–${s[s.length - 1]}` : String(s[0]))
+  const passage = `${data.book.name} ${position.chapter}:${range(shown)}`
 
   const context: MiniAppContext = {
     t,
@@ -93,6 +115,8 @@ export function MiniAppScreen({
     verseText: (v) => verseTexts.get(v) ?? '',
     position,
     goTo: onPosition,
+    unit,
+    shown,
     marked,
     frame: {
       switchText: () => {
@@ -102,6 +126,8 @@ export function MiniAppScreen({
       showChapter: () => setChapter(true),
       helps: () => <HelpsPanel data={data} verse={position.verse} textAbbreviation={text.abbreviation} onMark={onMark} />,
       setSaved,
+      setUnit,
+      next: () => at < stops.length - 1 && goStop(at + 1),
     },
   }
   const Center = app.Center
@@ -127,13 +153,13 @@ export function MiniAppScreen({
       </header>
 
       <nav className="position" aria-label={passage}>
-        <button type="button" className="button-quiet position-arrow" aria-label={t('marco.anterior')} disabled={at <= 0} onPointerDown={keep} onClick={() => onPosition({ ...position, verse: verses[at - 1] })}>
+        <button type="button" className="button-quiet position-arrow" aria-label={t(unit === 'section' ? 'marco.seccionAnterior' : 'marco.anterior')} disabled={at <= 0} onPointerDown={keep} onClick={() => goStop(at - 1)}>
           ‹
         </button>
         <button type="button" className="position-label" onClick={() => setVerseList(true)}>
-          <strong>{passage}</strong> · {t('marco.posicion', { n: at + 1, total: verses.length })}
+          <strong>{passage}</strong> · {t('marco.posicion', { n: at + 1, total: stops.length })}
         </button>
-        <button type="button" className="button-quiet position-arrow" aria-label={t('marco.siguiente')} disabled={at >= verses.length - 1} onPointerDown={keep} onClick={() => onPosition({ ...position, verse: verses[at + 1] })}>
+        <button type="button" className="button-quiet position-arrow" aria-label={t(unit === 'section' ? 'marco.seccionSiguiente' : 'marco.siguiente')} disabled={at >= stops.length - 1} onPointerDown={keep} onClick={() => goStop(at + 1)}>
           ›
         </button>
       </nav>
@@ -149,21 +175,24 @@ export function MiniAppScreen({
       </main>
 
       {verseList && (
-        <Sheet title={t('marco.listaVersiculos', { libro: data.book.name, capitulo: position.chapter })} onClose={() => setVerseList(false)}>
-          <p className="quiet">{t('marco.listaVersiculosAyuda')}</p>
-          <div className="verse-grid">
-            {verses.map((v) => (
+        <Sheet
+          title={t(unit === 'section' ? 'marco.listaSecciones' : 'marco.listaVersiculos', { libro: data.book.name, capitulo: position.chapter })}
+          onClose={() => setVerseList(false)}
+        >
+          <p className="quiet">{t(unit === 'section' ? 'marco.listaSeccionesAyuda' : 'marco.listaVersiculosAyuda')}</p>
+          <div className={unit === 'section' ? 'verse-grid is-sections' : 'verse-grid'}>
+            {stops.map((s, index) => (
               <button
-                key={v}
+                key={s[0]}
                 type="button"
-                className={v === position.verse ? 'verse-cell is-current' : 'verse-cell'}
-                aria-current={v === position.verse}
+                className={index === at ? 'verse-cell is-current' : 'verse-cell'}
+                aria-current={index === at}
                 onClick={() => {
-                  onPosition({ ...position, verse: v })
+                  goStop(index)
                   setVerseList(false)
                 }}
               >
-                {v}
+                {range(s)}
               </button>
             ))}
           </div>
