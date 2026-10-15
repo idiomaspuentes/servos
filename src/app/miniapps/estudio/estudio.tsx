@@ -9,7 +9,7 @@
  * questions, which no word leads to. On a wide screen the text stays on the left and the note on the right.
  */
 
-import { useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { ChapterLines } from '../../frame/ChapterLines'
 import { Markdown } from '../../frame/Markdown'
@@ -37,6 +37,12 @@ function Center({ context }: MiniAppCenterProps) {
     setOpen({ id: data.texts.find((x) => x.abbreviation === textAbbreviation)?.abbreviation ?? data.texts[0].abbreviation })
   }
   const box = useRef<HTMLTextAreaElement>(null)
+  // A new section or introduction is read from its beginning: what was scrolled to the end of the last one (its
+  // text, its note, the introduction before it) goes back to the top. After the texts have placed their verse.
+  const root = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    root.current?.querySelectorAll<HTMLElement>('.study-intro, .pane').forEach((el) => (el.scrollTop = 0))
+  }, [unitKey])
   const write = (text: string) => {
     writeStudyNote(position.book, position.chapter, shown, text, person.name)
     setNote({ text, by: text.trim() ? person.name : null })
@@ -75,7 +81,7 @@ function Center({ context }: MiniAppCenterProps) {
   if (intro !== undefined) {
     // An introduction is read whole, across the screen: it is about the book or the chapter, not about words in it.
     return (
-      <div className="study">
+      <div className="study" ref={root}>
         <article className="study-intro" aria-label={t(position.verse === BOOK_INTRO ? 'marco.introLibro' : 'marco.introCapitulo')}>
           <Markdown text={intro} />
         </article>
@@ -154,7 +160,7 @@ function Center({ context }: MiniAppCenterProps) {
       : { label: 'estudio.escribirNota', run: () => toNote() }
 
   return (
-    <div className="study">
+    <div className="study" ref={root}>
       <Panes panes={panes} label={t('estudio.paneles')} fixed="nota" open={open} onPane={setPane} holdFocus={false} />
       <button type="button" className="button-primary study-next" onClick={button.run}>
         {t(button.label)}
