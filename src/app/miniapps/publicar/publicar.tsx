@@ -125,6 +125,7 @@ function Center({ context }: MiniAppCenterProps) {
     return (
       <div className="publish">
         <p>{t('publicar.sinCuenta')}</p>
+        {inPage && <p className="status">{t('publicar.enLaPagina')}</p>}
         <button type="button" className="button-primary" onClick={() => setLinking(true)}>
           {t('publicar.vincularCuenta')}
         </button>
