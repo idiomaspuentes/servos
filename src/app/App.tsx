@@ -355,6 +355,11 @@ export function App() {
         <AddBookSheet
           project={project(addBookFor)!}
           onClose={() => setAddBookFor(null)}
+          onReceive={() => {
+            const id = addBookFor
+            setAddBookFor(null)
+            setScreen({ kind: 'recibir', back: { kind: 'home' }, projectId: id })
+          }}
           onCreate={(code) => {
             const id = addBookFor
             setProjects(projects.map((p) => (p.id === id ? { ...p, books: [...p.books, { code, phase: 'estudio' }] } : p)))

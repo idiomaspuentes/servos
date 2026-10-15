@@ -487,7 +487,7 @@
   "compartir.copiado": "Copiado: cole-o numa mensagem.",
   "compartir.noCopiado": "Não foi possível copiar neste telefone.",
   "recibir.titulo": "Receber",
-  "recibir.ayuda": "Um projeto ou um livro que alguém compartilhou pelo Servos: o arquivo termina em .servos. Antes de juntá-lo, verá o que traz e o que muda.",
+  "recibir.ayuda": "Um projeto ou um livro que alguém compartilhou pelo Servos: o arquivo termina em .servos (ou .servos.json). Antes de juntá-lo, verá o que traz e o que muda.",
   "recibir.elegir": "Escolher o arquivo",
   "recibir.pegar": "Colar o texto de uma mensagem",
   "recibir.pegarAyuda": "Cole aqui o texto que lhe mandaram",
@@ -563,5 +563,7 @@
   "marco.listoVolver": "Pronto: voltar a {libro}",
   "compartir.noGuardado": "Não foi possível salvar o arquivo aqui. Copie o texto e cole numa mensagem.",
   "nuevo.nombrePropuesto": "Bíblia em {idioma}",
-  "nuevo.masOpciones": "Mais opções"
+  "nuevo.masOpciones": "Mais opções",
+  "libroNuevo.recibir": "Receber um livro que alguém compartilhou",
+  "libroNuevo.recibirAyuda": "Abrir o arquivo .servos que mandaram, com tudo o que foi feito nele"
 }

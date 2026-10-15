@@ -487,7 +487,7 @@
   "compartir.copiado": "Copied: paste it in a message.",
   "compartir.noCopiado": "It could not be copied on this phone.",
   "recibir.titulo": "Receive",
-  "recibir.ayuda": "A project or a book someone shared from Servos: the file ends in .servos. Before it is gathered, you see what it brings and what changes.",
+  "recibir.ayuda": "A project or a book someone shared from Servos: the file ends in .servos (or .servos.json). Before it is gathered, you see what it brings and what changes.",
   "recibir.elegir": "Choose the file",
   "recibir.pegar": "Paste the text of a message",
   "recibir.pegarAyuda": "Paste here the text you were sent",
@@ -563,5 +563,7 @@
   "marco.listoVolver": "Done: back to {libro}",
   "compartir.noGuardado": "The file could not be saved here. Copy the text and paste it in a message.",
   "nuevo.nombrePropuesto": "Bible in {idioma}",
-  "nuevo.masOpciones": "More options"
+  "nuevo.masOpciones": "More options",
+  "libroNuevo.recibir": "Receive a book someone shared",
+  "libroNuevo.recibirAyuda": "Open the .servos file you were sent, with all the work done in it"
 }

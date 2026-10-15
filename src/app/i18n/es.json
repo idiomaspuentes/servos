@@ -487,7 +487,7 @@
   "compartir.copiado": "Se copió: péguelo en un mensaje.",
   "compartir.noCopiado": "No se pudo copiar en este teléfono.",
   "recibir.titulo": "Recibir",
-  "recibir.ayuda": "Un proyecto o un libro que alguien compartió desde Servos: el archivo termina en .servos. Antes de juntarlo, verá qué trae y qué cambia.",
+  "recibir.ayuda": "Un proyecto o un libro que alguien compartió desde Servos: el archivo termina en .servos (o .servos.json). Antes de juntarlo, verá qué trae y qué cambia.",
   "recibir.elegir": "Elegir el archivo",
   "recibir.pegar": "Pegar el texto de un mensaje",
   "recibir.pegarAyuda": "Pegue aquí el texto que le mandaron",
@@ -563,5 +563,7 @@
   "marco.listoVolver": "Listo: volver a {libro}",
   "compartir.noGuardado": "No se pudo guardar el archivo aquí. Copie el texto y péguelo en un mensaje.",
   "nuevo.nombrePropuesto": "Biblia en {idioma}",
-  "nuevo.masOpciones": "Más opciones"
+  "nuevo.masOpciones": "Más opciones",
+  "libroNuevo.recibir": "Recibir un libro que alguien compartió",
+  "libroNuevo.recibirAyuda": "Abrir el archivo .servos que le mandaron, con todo lo hecho en él"
 }

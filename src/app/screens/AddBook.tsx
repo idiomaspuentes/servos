@@ -8,7 +8,18 @@ import { MenuRow, Sheet } from '../frame/Sheet'
 import { useT } from '../i18n/i18n'
 import { BOOKS, bookName, type Project } from '../projects/model'
 
-export function AddBookSheet({ project, onClose, onCreate }: { project: Project; onClose(): void; onCreate(code: string): void }) {
+export function AddBookSheet({
+  project,
+  onClose,
+  onCreate,
+  onReceive,
+}: {
+  project: Project
+  onClose(): void
+  onCreate(code: string): void
+  /** A book someone else shared (a `.servos` file), received into this project. */
+  onReceive(): void
+}) {
   const t = useT()
   const [step, setStep] = useState<'method' | 'pick'>('method')
   const [picked, setPicked] = useState<string | null>(null)
@@ -38,6 +49,7 @@ export function AddBookSheet({ project, onClose, onCreate }: { project: Project;
       {step === 'method' ? (
         <>
           <MenuRow label={t('libroNuevo.enBlanco')} description={t('libroNuevo.enBlancoAyuda')} onClick={() => setStep('pick')} />
+          <MenuRow label={t('libroNuevo.recibir')} description={t('libroNuevo.recibirAyuda')} onClick={onReceive} />
           <MenuRow label={t('libroNuevo.usfm')} description={t('libroNuevo.usfmAyuda')} onClick={() => {}} disabled />
         </>
       ) : (
