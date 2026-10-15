@@ -288,6 +288,12 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .panes-track, .panes-track * { touch-action: pan-y pinch-zoom; }
 .pane { position: relative; flex: 0 0 100%; min-width: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0.75rem 1rem; }
 @media (prefers-reduced-motion: reduce) { .panes-track { transition: none; } }
+/* On a phone the tabs are at the foot, under the thumb; the mark of the one open on their top edge */
+@media (max-width: 899px) {
+  .panes-tabs { order: 2; border-block-end: 0; border-block-start: 1px solid var(--line); }
+  .panes-tab { border-block-end: 0; border-block-start: 3px solid transparent; }
+  .panes-tab[aria-selected='true'] { border-block-start-color: var(--accent); }
+}
 
 /* Wide: what is read on the left, what is written on the right */
 .panes-split { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
@@ -387,24 +393,13 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .study-intro { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0.75rem 1rem 1.5rem; max-width: 46rem; margin-inline: auto; width: 100%; }
 .study-intro h3:first-child { margin-block-start: 0.25rem; }
 
-/* The study: three steps for each verse or section, one button leading on */
+/* The study: the texts and the note as panes, one button leading on */
 .study { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.5rem; }
-.study-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.study-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0.25rem 1rem 0.75rem; display: flex; flex-direction: column; gap: 0.75rem; }
 .study-next { flex: none; margin-inline: 1rem; width: auto; }
-.study-steps { list-style: none; margin: 0; padding: 0.5rem 1rem 0; display: grid; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; gap: 0.25rem; flex: none; }
-.study-step { width: 100%; min-height: 40px; padding: 0.25rem; border: 0; border-block-end: 3px solid var(--line); border-radius: 0; background: none; color: var(--text-soft); font-size: 0.9rem; }
-.study-step[aria-current='step'] { border-block-end-color: var(--accent); color: var(--text); font-weight: 600; }
-.study-step-n { display: inline-grid; place-items: center; width: 1.4em; height: 1.4em; border-radius: 50%; background: var(--surface-soft); font-size: 0.8em; }
-.study-step[aria-current='step'] .study-step-n { background: var(--accent); color: var(--accent-text); }
-.study-step-done { color: var(--accent); }
-.study-helps-text { padding: 0.5rem 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
-.study-helps-text .chapter-lines-title { display: none; }
 .study-prompts { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .chip { min-height: 36px; padding: 0.25rem 0.75rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-size: 0.9rem; }
 .chip:active { background: var(--accent-soft); }
-.screen-fill.is-writing .study-steps { display: none; }
-/* Wide: the text on the left, the helps and the note on the right */
-.study-wide { flex-direction: row; gap: 0; }
-.study-left { flex: 1; min-width: 0; display: flex; flex-direction: column; border-inline-end: 1px solid var(--line); }
-.study-right { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.chip-question { text-align: start; border-style: dashed; }
+.study-answers, .general-notes { font-size: 0.95rem; }
+.study-answers summary, .general-notes summary { min-height: var(--touch); display: flex; align-items: center; color: var(--accent); cursor: pointer; }
+.general-notes { margin-block: 0.25rem 0.5rem; padding-inline: 0.75rem; border-inline-start: 3px solid var(--line); font-family: var(--font); font-size: 1rem; line-height: 1.5; }

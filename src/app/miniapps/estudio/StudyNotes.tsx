@@ -27,9 +27,11 @@ export const StudyNotes = forwardRef<
     text: string
     by: string | null
     others: StudyNote[]
+    /** The translation questions on these verses: no word leads to them, so they are offered here to think on. */
+    questions: Array<{ id: string; question: string; response: string }>
     onChange(text: string): void
   }
->(function StudyNotes({ passage, verses, text, by, others, onChange }, box) {
+>(function StudyNotes({ passage, verses, text, by, others, questions, onChange }, box) {
   const t = useT()
   const field = typeof box === 'object' ? box : null
 
@@ -51,7 +53,22 @@ export const StudyNotes = forwardRef<
             {t(`estudio.${p}`)}
           </button>
         ))}
+        {questions.map((q) => (
+          <button key={q.id} type="button" className="chip chip-question" onClick={() => ask(q.question)}>
+            {q.question}
+          </button>
+        ))}
       </div>
+      {questions.length > 0 && (
+        <details className="study-answers">
+          <summary>{t('estudio.verRespuestas')}</summary>
+          {questions.map((q) => (
+            <p key={q.id}>
+              <strong>{q.question}</strong> {q.response}
+            </p>
+          ))}
+        </details>
+      )}
       <textarea
         ref={box}
         className="study-note-field"

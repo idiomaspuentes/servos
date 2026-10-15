@@ -9,7 +9,8 @@
  * swipe is read here from the pointer.
  *
  * On a wide screen one pane (`fixed`, the boxes) stays in sight on the right and the others share the left, so the
- * text being read and the one being written are side by side.
+ * text being read and the one being written are side by side. On a phone the tabs are at the foot, under the thumb
+ * (and right above the keyboard while writing).
  */
 
 import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react'
@@ -59,7 +60,20 @@ export function useWide(): boolean {
 const SLOP = 10
 const ENOUGH = 0.2
 
-export function Panes({ panes: all, label, onPane, fixed }: { panes: Pane[]; label: string; onPane?(id: string): void; fixed?: string }) {
+export function Panes({
+  panes: all,
+  label,
+  onPane,
+  fixed,
+  open,
+}: {
+  panes: Pane[]
+  label: string
+  onPane?(id: string): void
+  fixed?: string
+  /** A pane to bring into sight, asked by the mini app (its button leads there); a new object asks again. */
+  open?: { id: string }
+}) {
   const wide = useWide()
   const kept = wide ? all.find((p) => p.id === fixed) : undefined
   const panes = kept ? all.filter((p) => p !== kept) : all
@@ -76,6 +90,10 @@ export function Panes({ panes: all, label, onPane, fixed }: { panes: Pane[]; lab
   const swiped = useRef(false)
 
   const go = (index: number) => setCurrent(Math.max(0, Math.min(panes.length - 1, index)))
+  useEffect(() => {
+    const index = open ? panes.findIndex((p) => p.id === open.id) : -1
+    if (index >= 0) setCurrent(index)
+  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     onPane?.(panes[current]?.id ?? '')

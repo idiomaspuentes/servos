@@ -93,9 +93,10 @@ export function MiniAppScreen({
   const [unit, setUnitState] = useState<Unit>(() => {
     if (!app.sections) return 'verse'
     try {
-      return localStorage.getItem(unitKey) === 'section' ? 'section' : 'verse'
+      const chosen = localStorage.getItem(unitKey)
+      return chosen === 'section' || chosen === 'verse' ? chosen : app.unit
     } catch {
-      return 'verse'
+      return app.unit
     }
   })
   const setUnit = (next: Unit) => {
@@ -199,7 +200,8 @@ export function MiniAppScreen({
           ‹
         </button>
         <button type="button" className="position-label" onClick={() => setVerseList(true)}>
-          <strong>{passage}</strong> · {t('marco.posicion', { n: at + 1, total: stops.length })}
+          {/* Which unit it goes by is said, so the person knows there is another (chosen in the sheet this opens). */}
+          <strong>{passage}</strong> · {t(app.sections && unit === 'section' && shown[0] > 0 ? 'marco.posicionSeccion' : 'marco.posicion', { n: at + 1, total: stops.length })}
         </button>
         <button type="button" className="button-quiet position-arrow" aria-label={t(unit === 'section' ? 'marco.seccionSiguiente' : 'marco.siguiente')} disabled={atEnd} onPointerDown={keep} onClick={following}>
           ›

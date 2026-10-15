@@ -194,5 +194,6 @@
   "marco.porSeccion": "Section",
   "ayudas.comentarios": "Comments {n}",
   "ayudas.comentarioDe": "Verses {versiculos} · {nombre}",
-  "ayudas.anotarPalabra": "Note this word"
+  "ayudas.anotarPalabra": "Note this word",
+  "marco.posicionSeccion": "section {n} of {total}"
 }

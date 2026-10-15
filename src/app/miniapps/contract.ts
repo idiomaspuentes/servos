@@ -92,8 +92,11 @@ export interface MiniApp {
   /** Its texts in the three base languages; `nombre` and `descripcion` are required. */
   texts: Record<BaseLanguage, Texts & { nombre: string; descripcion: string }>
   needs: ResourceNeed[]
-  /** Verse by verse for now; chapter and book come when a mini app needs them. */
-  unit: 'verse'
+  /**
+   * What it goes by until the person chooses (with `sections`, in the place sheet): a verse, or a section. Chapter and
+   * book come when a mini app needs them.
+   */
+  unit: Unit
   /** Whether the person may also work a section at a time: then the frame moves by sections and opens all its verses. */
   sections?: boolean
   /**

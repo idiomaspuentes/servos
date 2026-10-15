@@ -194,5 +194,6 @@
   "marco.porSeccion": "Seção",
   "ayudas.comentarios": "Comentários {n}",
   "ayudas.comentarioDe": "Versículos {versiculos} · {nombre}",
-  "ayudas.anotarPalabra": "Anotar esta palavra"
+  "ayudas.anotarPalabra": "Anotar esta palavra",
+  "marco.posicionSeccion": "seção {n} de {total}"
 }

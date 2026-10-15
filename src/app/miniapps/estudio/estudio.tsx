@@ -1,12 +1,12 @@
 /**
  * Estudio: read the book before translating it. It begins with the book's introduction, then each chapter's, then
- * the verses or sections (as the person chooses), the way translationCore 4's Understand step goes.
+ * its sections (or verses, as the person chooses), the way translationCore 4's study goes.
  *
- * Each verse or section is three short steps, one button leading from each to the next: read it alone (the TPS and
- * the original a swipe away; a word touched brings its helps under its verse), read its helps one at a time with
- * their words marked in it, and leave the team's note on it, which the editor shows again while those verses are
- * translated. The steps can be taken in any order from their marks above; a section that already has a note offers to
- * go on. On a wide screen the text stays on the left and the helps and the note share the right.
+ * A section is read alone, its words to touch: a word brings its helps under its verse (the other bridge text's words,
+ * the notes, the translation words), so there is no separate list of helps to go through. The texts and the team's
+ * note on the section are panes side by side, the tabs at the foot on a phone; one button leads from reading to the
+ * note (the keyboard up), and from the note to the next section. The note also offers the text's comprehension
+ * questions, which no word leads to. On a wide screen the text stays on the left and the note on the right.
  */
 
 import { useRef, useState } from 'react'
@@ -20,45 +20,41 @@ import { studyNoteOn, studyNotesAbout, writeStudyNote } from '../../projects/wor
 import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type MiniAppCenterProps } from '../contract'
 import { StudyNotes, withLine } from './StudyNotes'
 
-type Step = 'leer' | 'ayudas' | 'nota'
-
 function Center({ context }: MiniAppCenterProps) {
   const { position, data, t, marked, textAbbreviation, frame, shown, person } = context
   const wide = useWide()
   const unitKey = `${position.book}.${position.chapter}.${shown.join(',')}`
   const read = () => studyNoteOn(position.book, position.chapter, shown)
   const [key, setKey] = useState(unitKey)
-  const [step, setStep] = useState<Step>('leer')
   const [note, setNote] = useState(() => ({ text: read()?.text ?? '', by: read()?.by ?? null }))
+  const [pane, setPane] = useState('')
+  const [open, setOpen] = useState<{ id: string } | undefined>(undefined)
   if (key !== unitKey) {
     setKey(unitKey)
-    setStep('leer')
     setNote({ text: read()?.text ?? '', by: read()?.by ?? null })
+    // Each section starts at its reading.
+    setOpen({ id: data.texts.find((x) => x.abbreviation === textAbbreviation)?.abbreviation ?? data.texts[0].abbreviation })
   }
   const box = useRef<HTMLTextAreaElement>(null)
   const write = (text: string) => {
     writeStudyNote(position.book, position.chapter, shown, text, person.name)
     setNote({ text, by: text.trim() ? person.name : null })
   }
-  // A word that will be hard to translate goes into the note when it is found: the note opens with it on a line.
-  const noteWord = (word: string) => {
-    const next = withLine(note.text, `«${word}»: `)
-    // At once, so the box is there to take the focus while the touch lasts: a phone opens its keyboard only then.
+  // To the note, the keyboard up: at once, so the box takes the focus while the touch lasts (a phone opens its
+  // keyboard only then).
+  const toNote = (text?: string) => {
     flushSync(() => {
-      write(next)
-      setStep('nota')
+      if (text !== undefined) write(text)
+      setOpen({ id: 'nota' })
     })
-    box.current?.focus()
-    box.current?.setSelectionRange(next.length, next.length)
+    const el = box.current
+    if (!el) return
+    el.focus({ preventScroll: true })
+    el.setSelectionRange(el.value.length, el.value.length)
   }
-  const { lit, touch, card, helpsOpened } = useWordHelps({
-    data,
-    resetKey: unitKey,
-    marked,
-    bridge: textAbbreviation,
-    verses: shown,
-    onNote: noteWord,
-  })
+  // A word that will be hard to translate goes into the note when it is found, on a line of its own.
+  const noteWord = (word: string) => toNote(withLine(note.text, `«${word}»: `))
+  const { lit, touch, card } = useWordHelps({ data, resetKey: unitKey, marked, bridge: textAbbreviation, verses: shown, onNote: noteWord })
 
   const intro = position.verse === BOOK_INTRO ? data.bookIntro : position.verse === CHAPTER_INTRO ? data.intro : undefined
   if (intro !== undefined) {
@@ -75,100 +71,78 @@ function Center({ context }: MiniAppCenterProps) {
     )
   }
 
-  const hint = t('estudio.toquePalabra')
-  const textPane = (x: (typeof data.texts)[number]) => (
-    <ChapterLines
-      text={x}
-      shown={shown}
-      at={shown[0]}
-      line={null}
-      only
-      lit={lit(x.abbreviation)}
-      hint={hint}
-      onWord={(verse, place) => touch(x.abbreviation, verse, place)}
-      under={(verse) => card(x.abbreviation, verse)}
-    />
-  )
-  const reading = (
-    <Panes
-      panes={data.texts.map(
-        (x): Pane => ({ id: x.abbreviation, label: x.original ? t(`estudio.lengua.${x.lang ?? 'original'}`) : x.abbreviation, content: textPane(x) })
-      )}
-      label={t('estudio.paneles')}
-    />
-  )
-  const bridge = data.texts.find((x) => x.abbreviation === textAbbreviation) ?? data.texts[0]
-  // The helps with the section above them, so the words of the help being read are seen marked where they stand.
-  const helps = (
-    <div className="study-scroll">
-      {!wide && <div className="study-helps-text">{textPane(bridge)}</div>}
-      {frame.helps(shown, { comments: false })}
-    </div>
-  )
-  const passage = passageOf(data.book.name, position.chapter, shown, t)
-  const others = studyNotesAbout(position.book, position.chapter, shown).filter((n) => n.verses.join(',') !== shown.join(','))
-  const notes = (
-    <div className="study-scroll">
-      <StudyNotes ref={box} passage={passage} verses={shown} text={note.text} by={note.by} others={others} onChange={write} />
-    </div>
-  )
-
-  const go = (next: Step) => {
-    // At once, so the box of the note is there to take the focus while the touch lasts: the keyboard comes up with
-    // the step that is for writing.
-    flushSync(() => setStep(next))
-    if (next === 'ayudas') helpsOpened()
-    if (next === 'nota') box.current?.focus()
-  }
-  const hasNote = Boolean(note.text.trim())
-  // On a wide screen the text is always in sight: the steps are the helps and the note, beside it.
-  const shownStep: Step = wide && step === 'leer' ? 'ayudas' : step
-  const button =
-    shownStep === 'nota'
-      ? { label: 'estudio.guardarSeguir', run: frame.next }
-      : hasNote
-        ? { label: 'estudio.seguir', run: frame.next }
-        : shownStep === 'leer'
-          ? { label: 'estudio.verAyudas', run: () => go('ayudas') }
-          : { label: 'estudio.escribirNota', run: () => go('nota') }
-  const steps: Step[] = wide ? ['ayudas', 'nota'] : ['leer', 'ayudas', 'nota']
-
-  const stepper = (
-    <ol className="study-steps" aria-label={t('estudio.pasos')}>
-      {steps.map((s, i) => (
-        <li key={s}>
-          <button type="button" className="study-step" aria-current={s === shownStep ? 'step' : undefined} onClick={() => go(s)}>
-            <span className="study-step-n">{i + 1}</span> {t(`estudio.paso.${s}`)}
-            {s === 'nota' && hasNote && <span className="study-step-done"> ✓</span>}
-          </button>
-        </li>
-      ))}
-    </ol>
-  )
-  const stepContent = shownStep === 'leer' ? reading : shownStep === 'ayudas' ? helps : notes
-  const next = (
-    <button type="button" className="button-primary study-next" onClick={button.run}>
-      {t(button.label)}
-    </button>
-  )
-
-  if (wide) {
+  // Notes on a whole verse quote no words, so no word leads to them: they wait folded under their verse.
+  const general = (verse: number, abbreviation: string) => {
+    const notes = data.verses.find((v) => v.verse === verse)?.notes.filter((n) => !n.places[abbreviation]?.length) ?? []
+    if (!notes.length) return null
     return (
-      <div className="study study-wide">
-        <div className="study-left">{reading}</div>
-        <div className="study-right">
-          {stepper}
-          <div className="study-body">{stepContent}</div>
-          {next}
-        </div>
-      </div>
+      <details className="general-notes">
+        <summary>{t('estudio.notasGenerales', { n: notes.length })}</summary>
+        {notes.map((n) => (
+          <Markdown key={n.id} text={n.note} />
+        ))}
+      </details>
     )
   }
+  const hint = t('estudio.toquePalabra')
+  const questions = data.verses.filter((v) => shown.includes(v.verse)).flatMap((v) => v.questions)
+  const others = studyNotesAbout(position.book, position.chapter, shown).filter((n) => n.verses.join(',') !== shown.join(','))
+  const panes: Pane[] = [
+    ...data.texts.map(
+      (x): Pane => ({
+        id: x.abbreviation,
+        label: x.original ? t(`estudio.lengua.${x.lang ?? 'original'}`) : x.abbreviation,
+        content: (
+          <ChapterLines
+            text={x}
+            shown={shown}
+            at={shown[0]}
+            line={null}
+            only
+            lit={lit(x.abbreviation)}
+            hint={hint}
+            onWord={(verse, place) => touch(x.abbreviation, verse, place)}
+            under={(verse) => (
+              <>
+                {card(x.abbreviation, verse)}
+                {!x.original && general(verse, x.abbreviation)}
+              </>
+            )}
+          />
+        ),
+      })
+    ),
+    {
+      id: 'nota',
+      label: t('estudio.miNota'),
+      content: (
+        <StudyNotes
+          ref={box}
+          passage={passageOf(data.book.name, position.chapter, shown, t)}
+          verses={shown}
+          text={note.text}
+          by={note.by}
+          others={others}
+          questions={questions}
+          onChange={write}
+        />
+      ),
+    },
+  ]
+
+  // Writing the note (or, wide, beside it): the button goes on; reading: it leads to the note, unless there is one.
+  const atNote = wide || pane === 'nota'
+  const button =
+    atNote || note.text.trim()
+      ? { label: atNote ? 'estudio.guardarSeguir' : 'estudio.seguir', run: frame.next }
+      : { label: 'estudio.escribirNota', run: () => toNote() }
+
   return (
     <div className="study">
-      {stepper}
-      <div className="study-body">{stepContent}</div>
-      {next}
+      <Panes panes={panes} label={t('estudio.paneles')} fixed="nota" open={open} onPane={setPane} />
+      <button type="button" className="button-primary study-next" onClick={button.run}>
+        {t(button.label)}
+      </button>
     </div>
   )
 }
@@ -177,7 +151,8 @@ export const estudio: MiniApp = {
   id: 'estudio',
   needs: ['text', 'notes', 'questions', 'words', 'academy'],
   phase: 'estudio',
-  unit: 'verse',
+  // A passage is understood a section at a time, as translationCore 4's study goes.
+  unit: 'section',
   sections: true,
   intros: true,
   // A verse is studied when the team left a note on it, or on a section holding it.
@@ -191,13 +166,11 @@ export const estudio: MiniApp = {
       nombre: 'Estudio',
       descripcion: 'Leer el libro con sus introducciones, notas, preguntas y palabras clave antes de traducir',
       seguir: 'Seguir leyendo',
-      verAyudas: 'Ver las ayudas →',
       escribirNota: 'Escribir mi nota →',
+      miNota: 'Mi nota',
+      notasGenerales: 'Notas sobre todo el versículo ({n})',
+      verRespuestas: 'Ver las respuestas',
       guardarSeguir: 'Guardar y seguir',
-      pasos: 'Pasos',
-      'paso.leer': 'Leer',
-      'paso.ayudas': 'Ayudas',
-      'paso.nota': 'Mi nota',
       toquePalabra: 'toque una palabra para ver sus notas',
       paneles: 'Lo que se lee',
       notaDe: 'Notas de comprensión · {pasaje}',
@@ -219,13 +192,11 @@ export const estudio: MiniApp = {
       nombre: 'Estudo',
       descripcion: 'Ler o livro com suas introduções, notas, perguntas e palavras-chave antes de traduzir',
       seguir: 'Continuar lendo',
-      verAyudas: 'Ver as ajudas →',
       escribirNota: 'Escrever minha nota →',
+      miNota: 'Minha nota',
+      notasGenerales: 'Notas sobre todo o versículo ({n})',
+      verRespuestas: 'Ver as respostas',
       guardarSeguir: 'Salvar e seguir',
-      pasos: 'Passos',
-      'paso.leer': 'Ler',
-      'paso.ayudas': 'Ajudas',
-      'paso.nota': 'Minha nota',
       toquePalabra: 'toque uma palavra para ver suas notas',
       paneles: 'O que se lê',
       notaDe: 'Notas de compreensão · {pasaje}',
@@ -247,13 +218,11 @@ export const estudio: MiniApp = {
       nombre: 'Study',
       descripcion: 'Read the book with its introductions, notes, questions, and key words before translating',
       seguir: 'Keep reading',
-      verAyudas: 'See the helps →',
       escribirNota: 'Write my note →',
+      miNota: 'My note',
+      notasGenerales: 'Notes on the whole verse ({n})',
+      verRespuestas: 'See the answers',
       guardarSeguir: 'Save and continue',
-      pasos: 'Steps',
-      'paso.leer': 'Read',
-      'paso.ayudas': 'Helps',
-      'paso.nota': 'My note',
       toquePalabra: 'touch a word to see its notes',
       paneles: 'What is read',
       notaDe: 'Comprehension notes · {pasaje}',
