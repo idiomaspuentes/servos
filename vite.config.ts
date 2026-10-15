@@ -3,6 +3,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
+import { viteSingleFile } from 'vite-plugin-singlefile'
 
 /**
  * bt-synergy lives next to this repository (`../bt-synergy`, branch `feat/language-pack` or later), as usfm-ast lives
@@ -11,8 +12,9 @@ import { defineConfig } from 'vite'
  */
 const BT = resolve(dirname(fileURLToPath(import.meta.url)), '../bt-synergy/packages')
 
-export default defineConfig({
-  plugins: [react()],
+// `vite build --mode pagina`: one self-contained HTML file, to share the prototype as a single page.
+export default defineConfig(({ mode }) => ({
+  plugins: mode === 'pagina' ? [react(), viteSingleFile()] : [react()],
   resolve: {
     alias: [
       { find: /^@bt-synergy\/catalog-manager\/core$/, replacement: `${BT}/catalog-manager/src/core.ts` },
@@ -27,4 +29,4 @@ export default defineConfig({
   test: {
     environment: 'node',
   },
-})
+}))
