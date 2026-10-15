@@ -37,6 +37,8 @@ export interface Position {
 export interface MiniAppContext {
   t: T
   person: { name: string }
+  /** The project the book belongs to: what is shared across its books (its glossary). */
+  project: { id: string; name: string; languageCode: string }
   data: PrototypeData
   /** The bridge text shown (`TPL` or `TPS`). */
   textAbbreviation: string

@@ -12,6 +12,7 @@ import { loadProjects, saveProjects, type Phase, type Project } from './projects
 import { keepPlace, placeOf } from './projects/work'
 import { AddBookSheet } from './screens/AddBook'
 import { BookScreen } from './screens/BookScreen'
+import { GlossaryScreen } from './screens/GlossaryScreen'
 import { Home, type Resume } from './screens/Home'
 import { Language } from './screens/Language'
 import { AddProjectSheet, NewProject } from './screens/NewProject'
@@ -26,6 +27,7 @@ type Screen =
   | { kind: 'book'; projectId: string; book: string }
   | { kind: 'app'; projectId: string; book: string; id: string }
   | { kind: 'settings'; projectId: string }
+  | { kind: 'glossary'; projectId: string; back: Screen }
   | { kind: 'receive'; back: Screen }
   | { kind: 'translate' }
 
@@ -143,7 +145,12 @@ export function App() {
           }}
           onPhase={(phase) => setPhase(bookScreen.projectId, bookScreen.book, phase)}
           onReceive={() => setScreen({ kind: 'receive', back: bookScreen })}
+          onGlossary={() => setScreen({ kind: 'glossary', projectId: bookScreen.projectId, back: bookScreen })}
         />
+      )}
+
+      {screen.kind === 'glossary' && project(screen.projectId) && (
+        <GlossaryScreen project={project(screen.projectId)!} onBack={() => setScreen(screen.back)} />
       )}
 
       {appScreen && miniApp(appScreen.id) && position.book === appScreen.book && chapterOf(appScreen.book, position.chapter) && (
@@ -153,6 +160,7 @@ export function App() {
           chapters={chaptersOf(appScreen.book)}
           dataOf={(chapter) => chapterOf(appScreen.book, chapter)}
           person={person}
+          project={project(appScreen.projectId)!}
           position={position}
           onPosition={setPosition}
           textAbbreviation={text}

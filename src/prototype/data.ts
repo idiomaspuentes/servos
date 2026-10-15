@@ -36,6 +36,8 @@ export interface PrototypeText {
    * lets a touched word find the words of the other bridge text that translate the same original words.
    */
   toOriginal?: number[][]
+  /** For the original, each word's lemma and Strong number, by the word's place: what a glossary entry hangs from. */
+  words?: Array<{ lemma: string; strong: string }>
   /** The Greek or Hebrew the bridge texts translate. */
   original?: boolean
   dir?: 'ltr' | 'rtl'

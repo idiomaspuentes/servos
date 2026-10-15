@@ -12,11 +12,13 @@ import { flushSync } from 'react-dom'
 import type { Places, PrototypeData, PrototypeNote, PrototypeText } from '../../prototype/data'
 import type { WordLine } from '../../resources/reading'
 import { useT } from '../i18n/i18n'
+import { entriesAbout, type GlossaryEntry } from '../projects/glossary'
 import { Markdown } from './Markdown'
 import { showInPane } from './Panes'
 import { Sheet } from './Sheet'
 
 export type WordHelp =
+  | { kind: 'glosario'; id: string; places: Places; entry: GlossaryEntry }
   | { kind: 'puente'; id: string; places: Places; abbreviation: string }
   | { kind: 'nota'; id: string; places: Places; note: PrototypeNote }
   | { kind: 'palabra'; id: string; places: Places; original: string; article: string; keyTerm: boolean }
@@ -28,6 +30,34 @@ function wordsTranslating(text: PrototypeText, originals: Set<number>): number[]
   return out
 }
 
+/** The words of the original a touched word stands for: itself, in the original; else those it is aligned to. */
+export function originalsOfWord(data: PrototypeData, abbreviation: string, place: number): number[] {
+  const text = data.texts.find((x) => x.abbreviation === abbreviation)
+  return text?.original ? [place] : text?.toOriginal?.[place] ?? []
+}
+
+/** Where some words of the original stand in every text: themselves, and the bridge words aligned to them. */
+export function placesOfOriginals(data: PrototypeData, originals: number[]): Places {
+  const set = new Set(originals)
+  return Object.fromEntries(data.texts.map((x) => [x.abbreviation, x.original ? [...set].sort((a, b) => a - b) : wordsTranslating(x, set)]))
+}
+
+/**
+ * The glossary's entries about a touched word: the team's decision on how to translate the original word it stands
+ * for, whichever text it was touched in.
+ */
+function glossaryOf(data: PrototypeData, abbreviation: string, place: number, glossary: GlossaryEntry[]): WordHelp[] {
+  const original = data.texts.find((x) => x.original)
+  const originals = originalsOfWord(data, abbreviation, place)
+  if (!original?.words || !originals.length || !glossary.length) return []
+  return entriesAbout(glossary, originals.map((p) => original.words![p]?.strong ?? '')).map((entry) => {
+    // The entry's words, for an expression all of them, near the touched one.
+    const strongs = new Set(entry.strong.split(';').map((s) => s.split(':').pop()))
+    const near = original.words!.map((_, i) => i).filter((i) => strongs.has(original.words![i].strong.split(':').pop()) && Math.abs(i - originals[0]) < 12)
+    return { kind: 'glosario' as const, id: `glosario-${entry.id}`, places: placesOfOriginals(data, near.length ? near : originals), entry }
+  })
+}
+
 /**
  * What the other bridge texts say for a touched word: for each, its words aligned to the same original words. The
  * places light the words in every text, the touched one's too (all its words aligned there, not only the touched).
@@ -36,7 +66,7 @@ function otherBridges(data: PrototypeData, abbreviation: string, place: number):
   const text = data.texts.find((x) => x.abbreviation === abbreviation)
   const original = data.texts.find((x) => x.original)
   if (!text || !original) return []
-  const originals = new Set(text.original ? [place] : text.toOriginal?.[place] ?? [])
+  const originals = new Set(originalsOfWord(data, abbreviation, place))
   if (!originals.size) return []
   const own = text.original ? [...originals] : wordsTranslating(text, originals)
   return data.texts
@@ -51,11 +81,11 @@ function otherBridges(data: PrototypeData, abbreviation: string, place: number):
 }
 
 /**
- * The helps of a touched word: what the other bridge texts say, then the notes and word links whose words in
- * `abbreviation` include it, in the order of the verses.
+ * The helps of a touched word: the team's glossary first, then what the other bridge texts say, then the notes and
+ * word links whose words in `abbreviation` include it, in the order of the verses.
  */
-export function helpsOfWord(data: PrototypeData, abbreviation: string, place: number): WordHelp[] {
-  const out: WordHelp[] = otherBridges(data, abbreviation, place)
+export function helpsOfWord(data: PrototypeData, abbreviation: string, place: number, glossary: GlossaryEntry[] = []): WordHelp[] {
+  const out: WordHelp[] = [...glossaryOf(data, abbreviation, place, glossary), ...otherBridges(data, abbreviation, place)]
   const seen = new Set<string>()
   for (const verse of data.verses) {
     for (const note of verse.notes) {
@@ -165,6 +195,7 @@ export function WordHelpCard({
   onIndex,
   onClose,
   onNote,
+  onGlossary,
 }: {
   data: PrototypeData
   touched: Touched
@@ -172,6 +203,8 @@ export function WordHelpCard({
   onClose(): void
   /** For a mini app where the person writes notes (the study): take the touched word into the note. */
   onNote?(word: string): void
+  /** For a mini app where the person decides how words are translated (the editor): add or change its entry. */
+  onGlossary?(): void
 }) {
   const t = useT()
   const [article, setArticle] = useState<{ title: string; markdown: string } | null>(null)
@@ -212,6 +245,25 @@ export function WordHelpCard({
       </div>
 
       {!help && <p className="quiet">{t('ayudas.nadaEnPalabra')}</p>}
+
+      {help?.kind === 'glosario' && (
+        <>
+          <p className="word-help-kind">
+            {t('ayudas.glosario')}
+            <span className="badge">{t(help.entry.status === 'agreed' ? 'ayudas.acordada' : 'ayudas.propuesta')}</span>
+          </p>
+          <p className="help-quote help-bridge">{help.entry.rendering || t('ayudas.sinTraduccion')}</p>
+          {help.entry.alternatives.length > 0 && <p className="quiet">{t('ayudas.tambien', { formas: help.entry.alternatives.join(', ') })}</p>}
+          {help.entry.avoid.length > 0 && <p className="quiet">{t('ayudas.seEvita', { formas: help.entry.avoid.join(', ') })}</p>}
+          {original && (
+            <p className="help-original" dir={original.dir} lang={original.lang}>
+              {help.entry.lemma}
+            </p>
+          )}
+          {help.entry.note && <p className="study-other-text">{help.entry.note}</p>}
+          {help.entry.by && <p className="quiet">{t('ayudas.glosarioDe', { nombre: help.entry.by })}</p>}
+        </>
+      )}
 
       {help?.kind === 'puente' && (
         <>
@@ -272,6 +324,11 @@ export function WordHelpCard({
           + {t('ayudas.anotarPalabra')}
         </button>
       )}
+      {onGlossary && (
+        <button type="button" className="button-quiet word-help-note" onClick={onGlossary}>
+          {touched.helps.some((h) => h.kind === 'glosario') ? t('ayudas.cambiarGlosario') : `+ ${t('ayudas.agregarGlosario')}`}
+        </button>
+      )}
 
       {count > 1 && (
         <div className="helps-steps">
@@ -293,10 +350,19 @@ export function WordHelpCard({
   )
 }
 
+/** A word to add to the glossary: the original words it stands for, and the word as the person touched it. */
+export interface GlossaryTarget {
+  originals: number[]
+  word: string
+  abbreviation: string
+  verse: number
+}
+
 /**
  * Words to touch in the texts of a mini app (the editor, the study): which word is touched and its help, the words
  * lit in every text, and the card under the touched word's verse. Everything starts again when `resetKey` changes
- * (another verse or section).
+ * (another verse or section). The helps are worked out as the card is drawn, so an entry just added to the glossary
+ * shows at once.
  *
  * Without a touched word, the note being read in the helps pane lights its words, once the person has opened that
  * pane (`helpsOpened`): lit words nobody asked for, in a text read before the helps, only puzzle.
@@ -308,6 +374,8 @@ export function useWordHelps({
   bridge,
   verses,
   onNote,
+  glossary = [],
+  onGlossary,
 }: {
   data: PrototypeData
   resetKey: string
@@ -319,15 +387,20 @@ export function useWordHelps({
   verses: number[]
   /** Offered on each card, for a mini app where the person writes notes. */
   onNote?(word: string): void
+  /** The project's glossary: its entries come first among a word's helps. */
+  glossary?: GlossaryEntry[]
+  /** Offered on each card, for a mini app where the person decides how words are translated (the editor). */
+  onGlossary?(target: GlossaryTarget): void
 }) {
-  const [touched, setTouched] = useState<Touched | null>(null)
+  const [at, setAt] = useState<Omit<Touched, 'helps'> | null>(null)
   const [helpsRead, setHelpsRead] = useState(false)
   const [key, setKey] = useState(resetKey)
   if (key !== resetKey) {
     setKey(resetKey)
-    setTouched(null)
+    setAt(null)
     setHelpsRead(false)
   }
+  const touched: Touched | null = at ? { ...at, helps: helpsOfWord(data, at.abbreviation, at.place, glossary) } : null
   const openNote =
     marked && helpsRead
       ? data.verses
@@ -338,19 +411,25 @@ export function useWordHelps({
   return {
     lit: (abbreviation: string) => (touched ? litPlaces(touched, abbreviation) : new Set(openNote?.places[abbreviation] ?? [])),
     touch: (abbreviation: string, verse: number, place: number) =>
-      setTouched((now) =>
-        now && now.abbreviation === abbreviation && now.place === place
-          ? null
-          : { abbreviation, verse, place, helps: helpsOfWord(data, abbreviation, place), index: 0 }
-      ),
+      setAt((now) => (now && now.abbreviation === abbreviation && now.place === place ? null : { abbreviation, verse, place, index: 0 })),
     card: (abbreviation: string, verse: number) =>
       touched && touched.abbreviation === abbreviation && touched.verse === verse ? (
         <WordHelpCard
           data={data}
           touched={touched}
-          onIndex={(index) => setTouched({ ...touched, index })}
-          onClose={() => setTouched(null)}
+          onIndex={(index) => setAt({ ...touched, index })}
+          onClose={() => setAt(null)}
           onNote={onNote}
+          onGlossary={
+            onGlossary &&
+            (() =>
+              onGlossary({
+                originals: originalsOfWord(data, touched.abbreviation, touched.place),
+                word: wordAt(data.texts.find((x) => x.abbreviation === touched.abbreviation)!, touched.place),
+                abbreviation: touched.abbreviation,
+                verse: touched.verse,
+              }))
+          }
         />
       ) : null,
     helpsOpened: () => setHelpsRead(true),

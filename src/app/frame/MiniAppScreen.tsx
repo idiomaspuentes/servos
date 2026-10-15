@@ -49,6 +49,7 @@ export function MiniAppScreen({
   app,
   data,
   person,
+  project,
   position,
   onPosition,
   textAbbreviation,
@@ -64,6 +65,7 @@ export function MiniAppScreen({
   chapters: number[]
   dataOf(chapter: number): PrototypeData | null
   person: string
+  project: MiniAppContext['project']
   position: Position
   onPosition(p: Position): void
   textAbbreviation: string
@@ -144,6 +146,7 @@ export function MiniAppScreen({
   const context: MiniAppContext = {
     t,
     person: { name: person },
+    project,
     data,
     textAbbreviation: text.abbreviation,
     verseText: (v) => verseTexts.get(v) ?? '',

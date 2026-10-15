@@ -9,7 +9,9 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Panes, type Pane } from '../../frame/Panes'
-import { useWordHelps } from '../../frame/TouchWords'
+import { useWordHelps, type GlossaryTarget } from '../../frame/TouchWords'
+import { keepGlossary, readGlossary, upsertEntry } from '../../projects/glossary'
+import { GlossarySheet } from './GlossarySheet'
 import type { MiniApp, MiniAppCenterProps } from '../contract'
 import { authorOf, chooseVersion, otherVersion, readDraft, writeDraft, type OtherVersion } from '../../projects/work'
 import { ChapterLines } from '../../frame/ChapterLines'
@@ -85,7 +87,18 @@ function Center({ context }: MiniAppCenterProps) {
   const markersOf = (verse: number) => (bridge.lines[verse] ?? []).map((l) => l.marker)
   const anyPoem = shown.some((v) => markersOf(v).some(isPoemLine))
 
-  const { lit, touch, card, helpsOpened } = useWordHelps({ data, resetKey: openKey, marked, bridge: bridge.abbreviation, verses: [position.verse] })
+  // The project's glossary: a touched word shows the team's decision first, and the translator can add one.
+  const [glossary, setGlossary] = useState(() => readGlossary(context.project.id))
+  const [adding, setAdding] = useState<GlossaryTarget | null>(null)
+  const { lit, touch, card, helpsOpened } = useWordHelps({
+    data,
+    resetKey: openKey,
+    marked,
+    bridge: bridge.abbreviation,
+    verses: [position.verse],
+    glossary,
+    onGlossary: setAdding,
+  })
   const hint = t('editor.toquePalabra')
 
   const write = (verse: number, value: string) => {
@@ -192,7 +205,27 @@ function Center({ context }: MiniAppCenterProps) {
     { id: 'ayudas', label: t('editor.panelAyudas'), content: frame.helps() },
   ]
 
-  return <Panes panes={panes} label={t('editor.paneles')} fixed="suyo" onPane={(id) => id === 'ayudas' && helpsOpened()} />
+  return (
+    <>
+      <Panes panes={panes} label={t('editor.paneles')} fixed="suyo" onPane={(id) => id === 'ayudas' && helpsOpened()} />
+      {adding && (
+        <GlossarySheet
+          data={data}
+          target={adding}
+          glossary={glossary}
+          written={drafts[adding.verse] ?? readDraft(position.book, position.chapter, adding.verse)}
+          person={context.person.name}
+          onSave={(entry) => {
+            const next = upsertEntry(glossary, entry)
+            keepGlossary(context.project.id, next)
+            setGlossary(next)
+            setAdding(null)
+          }}
+          onClose={() => setAdding(null)}
+        />
+      )}
+    </>
+  )
 }
 
 export const editor: MiniApp = {
@@ -222,6 +255,15 @@ export const editor: MiniApp = {
       textoPuente: 'Texto puente: {texto}',
       dondeFuente: 'Para leer el {texto}, deslice a la izquierda o toque «{texto}» arriba.',
       otraVersion: '{nombre} escribió este versículo de otra manera:',
+      glosario: 'Glosario',
+      glosarioSinOriginal: '«{palabra}» no está alineada con el original: no se sabe de qué palabra es.',
+      comoSeTraduce: 'Cómo se traduce',
+      comoSeTraduceEjemplo: 'La forma que usa el equipo',
+      deSuTraduccion: 'De lo que escribió en este versículo:',
+      otrasFormas: 'Otras formas (separadas por comas)',
+      otrasFormasAyuda: 'Si según el contexto se dice de otra manera',
+      notaGlosario: 'Nota (opcional)',
+      guardarGlosario: 'Guardar en el glosario',
       usarOtra: 'Usar la de {nombre}',
       dejarEsta: 'Dejar la que está',
       loQueEsta: 'Lo que está, de {nombre}:',
@@ -251,6 +293,15 @@ export const editor: MiniApp = {
       textoPuente: 'Texto ponte: {texto}',
       dondeFuente: 'Para ler o {texto}, deslize para a esquerda ou toque «{texto}» acima.',
       otraVersion: '{nombre} escreveu este versículo de outro jeito:',
+      glosario: 'Glossário',
+      glosarioSinOriginal: '«{palabra}» não está alinhada com o original: não se sabe de que palavra é.',
+      comoSeTraduce: 'Como se traduz',
+      comoSeTraduceEjemplo: 'A forma que a equipe usa',
+      deSuTraduccion: 'Do que você escreveu neste versículo:',
+      otrasFormas: 'Outras formas (separadas por vírgulas)',
+      otrasFormasAyuda: 'Se conforme o contexto se diz de outro jeito',
+      notaGlosario: 'Nota (opcional)',
+      guardarGlosario: 'Salvar no glossário',
       usarOtra: 'Usar a de {nombre}',
       dejarEsta: 'Deixar a que está',
       loQueEsta: 'O que está, de {nombre}:',
@@ -280,6 +331,15 @@ export const editor: MiniApp = {
       textoPuente: 'Bridge text: {texto}',
       dondeFuente: 'To read the {texto}, swipe left or touch «{texto}» above.',
       otraVersion: '{nombre} wrote this verse another way:',
+      glosario: 'Glossary',
+      glosarioSinOriginal: '«{palabra}» is not aligned to the original: which word it stands for is unknown.',
+      comoSeTraduce: 'How it is translated',
+      comoSeTraduceEjemplo: 'The form the team uses',
+      deSuTraduccion: 'From what you wrote in this verse:',
+      otrasFormas: 'Other forms (separated by commas)',
+      otrasFormasAyuda: 'If in some contexts it is said another way',
+      notaGlosario: 'Note (optional)',
+      guardarGlosario: 'Save in the glossary',
       usarOtra: 'Use {nombre}\'s',
       dejarEsta: 'Keep this one',
       loQueEsta: 'What is here, by {nombre}:',

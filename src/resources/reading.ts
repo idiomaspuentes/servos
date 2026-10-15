@@ -407,6 +407,33 @@ export function textQuoteOf(row: { p: number[]; m: number; t?: string[] } | unde
   return words.map((w, i) => (i > 0 && w.position > words[i - 1].position + 1 ? `… ${w.word}` : w.word)).join(' ')
 }
 
+/** What a word of the original is, for a glossary: its dictionary form and its Strong number (`H7121`, `c:H6419`). */
+export interface OriginalWord {
+  lemma: string
+  strong: string
+}
+
+/**
+ * The lemma and Strong number of each word of a chapter of the original, by the word's place (as `readChapterWords`
+ * numbers them). They are on the `\w` markers of the stored USJ, one a word in the same order; null when the
+ * device lacks the chapter or the counts differ (then the places would not match).
+ */
+export async function originalWordsOf(stores: ResourceStores, textKey: string, book: string, chapter: number): Promise<OriginalWord[] | null> {
+  type Node = { marker?: string; content?: Array<Node | string>; lemma?: string; strong?: string }
+  const row = (await stores.cache.get(`scripture-usj:${textKey}:${book.toLowerCase()}:${chapter}`)) as { content?: { usj?: Node } } | null
+  const usj = row?.content?.usj
+  const words = await readChapterWords(stores, textKey, book, chapter)
+  if (!usj || !words) return null
+  const found: OriginalWord[] = []
+  const walk = (node: Node | string) => {
+    if (typeof node === 'string') return
+    if (node.marker === 'w') found.push({ lemma: node.lemma ?? '', strong: node.strong ?? '' })
+    for (const child of node.content ?? []) walk(child)
+  }
+  walk(usj)
+  return found.length === words.words.length ? found : null
+}
+
 /** The introductions a chapter of notes opens with: the book's, then the chapter's. */
 export interface ChapterIntros {
   book: string | null

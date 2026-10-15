@@ -25,6 +25,7 @@ export function BookScreen({
   onOpen,
   onPhase,
   onReceive,
+  onGlossary,
 }: {
   project: Project
   book: BookEntry
@@ -35,6 +36,8 @@ export function BookScreen({
   onOpen(app: MiniApp, chapter?: number): void
   onPhase(phase: Phase): void
   onReceive(): void
+  /** The project's glossary, shared by all its books. */
+  onGlossary(): void
 }) {
   const t = useT()
   const name = bookName(book.code)
@@ -111,6 +114,9 @@ export function BookScreen({
             </ul>
             <button type="button" className="button-quiet" onClick={() => setReceiving(true)}>
               {t('libro.recibirTrabajo')}
+            </button>
+            <button type="button" className="button-quiet" onClick={onGlossary}>
+              {t('libro.glosario')}
             </button>
           </section>
         )}

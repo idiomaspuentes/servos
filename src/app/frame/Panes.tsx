@@ -66,11 +66,17 @@ export function Panes({
   onPane,
   fixed,
   open,
+  holdFocus = true,
 }: {
   panes: Pane[]
   label: string
   onPane?(id: string): void
   fixed?: string
+  /**
+   * Whether moving between panes keeps the focus in the box being written in (the editor: the keyboard stays up while
+   * the person looks at the text). Not where writing is the lesser part (the study's note).
+   */
+  holdFocus?: boolean
   /** A pane to bring into sight, asked by the mini app (its button leads there); a new object asks again. */
   open?: { id: string }
 }) {
@@ -108,7 +114,7 @@ export function Panes({
   }
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    keepFocus(event)
+    if (holdFocus) keepFocus(event)
     if (event.pointerType === 'mouse') return
     swipe.current = { id: event.pointerId, x: event.clientX, y: event.clientY, t: event.timeStamp, dx: 0, horizontal: null }
     swiped.current = false
@@ -144,7 +150,7 @@ export function Panes({
 
   const row = (
     <div className="panes">
-      <div className="panes-tabs" role="tablist" aria-label={label} onPointerDown={keepFocus}>
+      <div className="panes-tabs" role="tablist" aria-label={label} onPointerDown={holdFocus ? keepFocus : undefined}>
         {panes.map((pane, index) => (
           <button
             key={pane.id}

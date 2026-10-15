@@ -16,6 +16,7 @@ import { Markdown } from '../../frame/Markdown'
 import { Panes, useWide, type Pane } from '../../frame/Panes'
 import { passageOf } from '../../frame/PlacePicker'
 import { useWordHelps } from '../../frame/TouchWords'
+import { readGlossary } from '../../projects/glossary'
 import { studyNoteOn, studyNotesAbout, writeStudyNote } from '../../projects/work'
 import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type MiniAppCenterProps } from '../contract'
 import { StudyNotes, withLine } from './StudyNotes'
@@ -54,7 +55,16 @@ function Center({ context }: MiniAppCenterProps) {
   }
   // A word that will be hard to translate goes into the note when it is found, on a line of its own.
   const noteWord = (word: string) => toNote(withLine(note.text, `«${word}»: `))
-  const { lit, touch, card } = useWordHelps({ data, resetKey: unitKey, marked, bridge: textAbbreviation, verses: shown, onNote: noteWord })
+  // The glossary is looked up while studying too: how the team already decided to translate a word.
+  const { lit, touch, card } = useWordHelps({
+    data,
+    resetKey: unitKey,
+    marked,
+    bridge: textAbbreviation,
+    verses: shown,
+    onNote: noteWord,
+    glossary: readGlossary(context.project.id),
+  })
 
   const intro = position.verse === BOOK_INTRO ? data.bookIntro : position.verse === CHAPTER_INTRO ? data.intro : undefined
   if (intro !== undefined) {
@@ -139,7 +149,7 @@ function Center({ context }: MiniAppCenterProps) {
 
   return (
     <div className="study">
-      <Panes panes={panes} label={t('estudio.paneles')} fixed="nota" open={open} onPane={setPane} />
+      <Panes panes={panes} label={t('estudio.paneles')} fixed="nota" open={open} onPane={setPane} holdFocus={false} />
       <button type="button" className="button-primary study-next" onClick={button.run}>
         {t(button.label)}
       </button>
