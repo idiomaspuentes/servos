@@ -33,6 +33,8 @@ export const PACKS = [{ code: 'es-419', name: 'Español latinoamericano', what: 
 export function NewProject({ existing, onCancel, onCreate }: { existing: Project[]; onCancel(): void; onCreate(p: Project): void }) {
   const t = useT()
   const [name, setName] = useState('')
+  // Whether the person wrote the name: until then it follows the language chosen.
+  const [named, setNamed] = useState(false)
   const [languageName, setLanguageName] = useState('')
   const [code, setCode] = useState('')
   const [direction, setDirection] = useState<'ltr' | 'rtl'>('ltr')
@@ -78,11 +80,7 @@ export function NewProject({ existing, onCancel, onCreate }: { existing: Project
             })
           }}
         >
-          <p className="quiet">{t('nuevo.ayuda')}</p>
-          <label className="field">
-            <span className="field-label">{t('nuevo.nombre')}</span>
-            <input id="np-name" value={name} onChange={(e) => (setName(e.target.value), setMissing(false))} placeholder={t('nuevo.nombreEjemplo')} />
-          </label>
+          {/* The language first: the name is proposed from it, and the direction follows it. */}
           <LanguageSearch
             label={t('nuevo.idioma')}
             value={{ code, name: languageName }}
@@ -90,57 +88,81 @@ export function NewProject({ existing, onCancel, onCreate }: { existing: Project
               setLanguageName(l.name)
               setCode(l.code)
               setMissing(false)
+              if (!named && l.name) setName(t('nuevo.nombrePropuesto', { idioma: l.name }))
               // A language written from right to left sets the direction; it can still be changed below.
               if (l.code) setDirection(writtenRightToLeft(l.code) ? 'rtl' : 'ltr')
             }}
           />
-
-          <fieldset className="field">
-            <legend className="field-label">{t('nuevo.direccion')}</legend>
-            <div className="choice-row">
-              <button type="button" className={direction === 'ltr' ? 'choice is-on' : 'choice'} aria-pressed={direction === 'ltr'} onClick={() => setDirection('ltr')}>
-                {t('nuevo.izquierda')}
-              </button>
-              <button type="button" className={direction === 'rtl' ? 'choice is-on' : 'choice'} aria-pressed={direction === 'rtl'} onClick={() => setDirection('rtl')}>
-                {t('nuevo.derecha')}
-              </button>
-            </div>
-          </fieldset>
-
-          <fieldset className="field">
-            <legend className="field-label">{t('nuevo.ayudas')}</legend>
-            <p className="quiet">{t('nuevo.ayudasNota')}</p>
-            {PACKS.map((p) => (
-              <button key={p.code} type="button" className={helps === p.code ? 'option is-on' : 'option'} aria-pressed={helps === p.code} onClick={() => setHelps(p.code)}>
-                <span className="option-title">
-                  {p.name} ({p.code}) <span className="badge">{t('nuevo.recomendado')}</span>
-                </span>
-                <span className="quiet">
-                  {t('nuevo.enEsteTelefono')} · {p.what}
-                </span>
-              </button>
-            ))}
-          </fieldset>
-
           <label className="field">
-            <span className="field-label">{t('nuevo.letra')}</span>
-            <select id="np-font" value={font} onChange={(e) => setFont(e.target.value)}>
-              {FONTS.map((f) => (
-                <option key={f}>{f}</option>
-              ))}
-            </select>
+            <span className="field-label">{t('nuevo.nombre')}</span>
+            <input
+              id="np-name"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value)
+                setNamed(true)
+                setMissing(false)
+              }}
+              placeholder={t('nuevo.nombreEjemplo')}
+            />
           </label>
 
+          {/* What almost always stays as it comes, folded, saying what it is (philosophy, principle 3). */}
           <details className="advanced">
-            <summary>{t('nuevo.versificacion')}</summary>
-            <label className="field">
-              <span className="quiet">{t('nuevo.versificacionAyuda')}</span>
-              <select id="np-vrs" value={versification} onChange={(e) => setVersification(e.target.value)}>
-                {VERSIFICATIONS.map((v) => (
-                  <option key={v}>{v}</option>
+            <summary>
+              {t('nuevo.masOpciones')}
+              <span className="quiet">
+                {[t(direction === 'ltr' ? 'nuevo.izquierda' : 'nuevo.derecha'), helps, font].join(' · ')}
+              </span>
+            </summary>
+            <div className="stack">
+              <p className="quiet">{t('nuevo.ayuda')}</p>
+              <fieldset className="field">
+                <legend className="field-label">{t('nuevo.direccion')}</legend>
+                <div className="choice-row">
+                  <button type="button" className={direction === 'ltr' ? 'choice is-on' : 'choice'} aria-pressed={direction === 'ltr'} onClick={() => setDirection('ltr')}>
+                    {t('nuevo.izquierda')}
+                  </button>
+                  <button type="button" className={direction === 'rtl' ? 'choice is-on' : 'choice'} aria-pressed={direction === 'rtl'} onClick={() => setDirection('rtl')}>
+                    {t('nuevo.derecha')}
+                  </button>
+                </div>
+              </fieldset>
+
+              <fieldset className="field">
+                <legend className="field-label">{t('nuevo.ayudas')}</legend>
+                <p className="quiet">{t('nuevo.ayudasNota')}</p>
+                {PACKS.map((p) => (
+                  <button key={p.code} type="button" className={helps === p.code ? 'option is-on' : 'option'} aria-pressed={helps === p.code} onClick={() => setHelps(p.code)}>
+                    <span className="option-title">
+                      {p.name} ({p.code}) <span className="badge">{t('nuevo.recomendado')}</span>
+                    </span>
+                    <span className="quiet">
+                      {t('nuevo.enEsteTelefono')} · {p.what}
+                    </span>
+                  </button>
                 ))}
-              </select>
-            </label>
+              </fieldset>
+
+              <label className="field">
+                <span className="field-label">{t('nuevo.letra')}</span>
+                <select id="np-font" value={font} onChange={(e) => setFont(e.target.value)}>
+                  {FONTS.map((f) => (
+                    <option key={f}>{f}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="field">
+                <span className="field-label">{t('nuevo.versificacion')}</span>
+                <span className="quiet">{t('nuevo.versificacionAyuda')}</span>
+                <select id="np-vrs" value={versification} onChange={(e) => setVersification(e.target.value)}>
+                  {VERSIFICATIONS.map((v) => (
+                    <option key={v}>{v}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
           </details>
 
           {missing && (

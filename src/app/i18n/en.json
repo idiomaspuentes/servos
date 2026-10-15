@@ -125,7 +125,7 @@
   "nuevo.versificacionAyuda": "How verses are numbered. Almost always left as it is.",
   "nuevo.crear": "Create the Bible",
   "nuevo.cancelar": "Cancel",
-  "nuevo.falta": "Write the name, the language, and its code.",
+  "nuevo.falta": "Choose the language and write the project's name.",
   "libroNuevo.titulo": "Add a book",
   "libroNuevo.a": "to {proyecto}",
   "libroNuevo.enBlanco": "Start a blank book",
@@ -561,5 +561,7 @@
   "persona.nombreNuevo": "Name of who is going to work",
   "persona.agregarYTrabajar": "Add and work with this name",
   "marco.listoVolver": "Done: back to {libro}",
-  "compartir.noGuardado": "The file could not be saved here. Copy the text and paste it in a message."
+  "compartir.noGuardado": "The file could not be saved here. Copy the text and paste it in a message.",
+  "nuevo.nombrePropuesto": "Bible in {idioma}",
+  "nuevo.masOpciones": "More options"
 }

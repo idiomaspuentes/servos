@@ -125,7 +125,7 @@
   "nuevo.versificacionAyuda": "Como os versículos são numerados. Quase sempre fica como está.",
   "nuevo.crear": "Criar a Bíblia",
   "nuevo.cancelar": "Cancelar",
-  "nuevo.falta": "Escreva o nome, o idioma e seu código.",
+  "nuevo.falta": "Escolha a língua e escreva o nome do projeto.",
   "libroNuevo.titulo": "Adicionar um livro",
   "libroNuevo.a": "a {proyecto}",
   "libroNuevo.enBlanco": "Começar um livro em branco",
@@ -561,5 +561,7 @@
   "persona.nombreNuevo": "Nome de quem vai trabalhar",
   "persona.agregarYTrabajar": "Adicionar e trabalhar com este nome",
   "marco.listoVolver": "Pronto: voltar a {libro}",
-  "compartir.noGuardado": "Não foi possível salvar o arquivo aqui. Copie o texto e cole numa mensagem."
+  "compartir.noGuardado": "Não foi possível salvar o arquivo aqui. Copie o texto e cole numa mensagem.",
+  "nuevo.nombrePropuesto": "Bíblia em {idioma}",
+  "nuevo.masOpciones": "Mais opções"
 }
