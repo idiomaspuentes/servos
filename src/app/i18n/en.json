@@ -191,5 +191,7 @@
   "ayudas.versiculo": "Verse {v}",
   "marco.verPor": "Go by",
   "marco.porVersiculo": "Verse",
-  "marco.porSeccion": "Section"
+  "marco.porSeccion": "Section",
+  "ayudas.comentarios": "Comments {n}",
+  "ayudas.comentarioDe": "Verses {versiculos} · {nombre}"
 }

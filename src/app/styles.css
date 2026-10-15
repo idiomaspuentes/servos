@@ -370,6 +370,15 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .word-help-close { min-width: var(--touch); font-size: 1.3rem; padding: 0; }
 .word-help-kind { margin: 0; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-soft); display: flex; gap: 0.5rem; align-items: center; }
 
+/* The team's note on what is studied: a box that grows with what is written */
+.study-notes { display: flex; flex-direction: column; gap: 0.5rem; }
+.study-note-field { min-height: 8rem; field-sizing: content; resize: none; }
+.study-note-by { margin: 0; font-size: 0.85rem; }
+.study-other-notes { display: flex; flex-direction: column; gap: 0.5rem; border-block-start: 1px solid var(--line); padding-block-start: 0.5rem; }
+.study-other-notes h3 { margin: 0; font-size: 0.9rem; }
+.study-other-note { padding: 0.5rem 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.study-other-text { margin: 0; white-space: pre-line; }
+
 /* An introduction in the study, read whole across the screen */
 .study-intro { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0.75rem 1rem 1.5rem; max-width: 46rem; margin-inline: auto; width: 100%; }
 .study-intro h3:first-child { margin-block-start: 0.25rem; }

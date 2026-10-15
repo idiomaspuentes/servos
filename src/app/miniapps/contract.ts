@@ -58,9 +58,10 @@ export interface MiniAppContext {
     showChapter(): void
     /**
      * The helps panel for a mini app that places it itself (`helps: false`), e.g. in a pane: of the open verse, or of
-     * the verses given (a section's, all together).
+     * the verses given (a section's, all together). With the study's notes on them as «Comments», unless
+     * `comments: false` (the study itself, which shows them as its own pane).
      */
-    helps(verses?: number[]): ReactNode
+    helps(verses?: number[], options?: { comments?: boolean }): ReactNode
     /** What the header says about the work (philosophy, principle 8): nothing changed yet, or saved on this phone. */
     setSaved(state: 'sinCambios' | 'guardado'): void
     /** Work a verse or a section at a time; the position line then moves by that. Kept for the next visit. */

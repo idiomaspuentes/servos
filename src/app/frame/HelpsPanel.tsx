@@ -7,11 +7,13 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { PrototypeData } from '../../prototype/data'
 import { useT } from '../i18n/i18n'
+import { studyNotesAbout } from '../projects/work'
 import { Markdown } from './Markdown'
+import { rangeOf } from './PlacePicker'
 import { showInPane } from './Panes'
 import { Sheet } from './Sheet'
 
-type Tab = 'notas' | 'preguntas' | 'palabras'
+type Tab = 'notas' | 'preguntas' | 'palabras' | 'comentarios'
 
 /** Each help once, though it covers several of the verses shown (a note on 3–4 is in both), with its first verse. */
 function once<T extends { id: string }>(lists: Array<{ verse: number; items: T[] }>): Array<T & { verse: number }> {
@@ -24,6 +26,7 @@ export function HelpsPanel({
   data,
   verse,
   verses,
+  comments = false,
   textAbbreviation,
   onMark,
 }: {
@@ -31,6 +34,8 @@ export function HelpsPanel({
   verse: number
   /** The verses whose helps to show together (a section's); else the verse's. */
   verses?: number[]
+  /** Whether the study's notes on these verses are a tab («Comments»), when there are any. */
+  comments?: boolean
   textAbbreviation: string
   onMark(words: string | null): void
 }) {
@@ -42,6 +47,7 @@ export function HelpsPanel({
   const questions = once(of.map((v) => ({ verse: v.verse, items: v.questions })))
   const words = once(of.map((v) => ({ verse: v.verse, items: v.words })))
   const several = shown.length > 1
+  const studyNotes = comments ? studyNotesAbout(data.book.id, data.chapter, shown) : []
   const [tab, setTab] = useState<Tab>('notas')
   const [index, setIndex] = useState(0)
   const [answer, setAnswer] = useState(false)
@@ -52,10 +58,11 @@ export function HelpsPanel({
     setAnswer(false)
   }, [shown.join(','), tab]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const count = tab === 'notas' ? notes.length : tab === 'preguntas' ? questions.length : words.length
+  const count =
+    tab === 'notas' ? notes.length : tab === 'preguntas' ? questions.length : tab === 'palabras' ? words.length : studyNotes.length
   const note = tab === 'notas' ? notes[index] : undefined
   // In a section, which verse the help shown is on.
-  const current = tab === 'notas' ? notes[index] : tab === 'preguntas' ? questions[index] : words[index]
+  const current = tab === 'notas' ? notes[index] : tab === 'preguntas' ? questions[index] : tab === 'palabras' ? words[index] : undefined
   const marked = note ? (textAbbreviation === 'TPS' ? note.gst : note.glt) : null
   useEffect(() => onMark(marked), [marked, onMark])
   // In a pane, the next help starts at its first line, wherever the last one left the scroll.
@@ -66,6 +73,8 @@ export function HelpsPanel({
     { id: 'notas', label: t('ayudas.notas', { n: notes.length }) },
     { id: 'preguntas', label: t('ayudas.preguntas', { n: questions.length }) },
     { id: 'palabras', label: t('ayudas.palabras', { n: words.length }) },
+    // What the team noted while studying these verses: there only when someone did.
+    ...(studyNotes.length ? [{ id: 'comentarios' as const, label: t('ayudas.comentarios', { n: studyNotes.length }) }] : []),
   ]
 
   return (
@@ -98,6 +107,13 @@ export function HelpsPanel({
                 {t('ayudas.leerArticulo', { titulo: data.academy[note.academy].title })}
               </button>
             )}
+          </>
+        )}
+
+        {tab === 'comentarios' && studyNotes[index] && (
+          <>
+            <p className="help-verse">{t('ayudas.comentarioDe', { versiculos: rangeOf(studyNotes[index].verses), nombre: studyNotes[index].by })}</p>
+            <p className="study-other-text">{studyNotes[index].text}</p>
           </>
         )}
 

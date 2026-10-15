@@ -157,7 +157,16 @@ export function MiniAppScreen({
         if (other) onTextAbbreviation(other.abbreviation)
       },
       showChapter: () => setChapter(true),
-      helps: (verses) => <HelpsPanel data={data} verse={position.verse} verses={verses} textAbbreviation={text.abbreviation} onMark={onMark} />,
+      helps: (verses, options) => (
+        <HelpsPanel
+          data={data}
+          verse={position.verse}
+          verses={verses}
+          comments={options?.comments ?? true}
+          textAbbreviation={text.abbreviation}
+          onMark={onMark}
+        />
+      ),
       setSaved,
       setUnit,
       next: following,

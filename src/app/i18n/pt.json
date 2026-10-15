@@ -191,5 +191,7 @@
   "ayudas.versiculo": "Versículo {v}",
   "marco.verPor": "Ver por",
   "marco.porVersiculo": "Versículo",
-  "marco.porSeccion": "Seção"
+  "marco.porSeccion": "Seção",
+  "ayudas.comentarios": "Comentários {n}",
+  "ayudas.comentarioDe": "Versículos {versiculos} · {nombre}"
 }

@@ -1,5 +1,16 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { authorOf, chooseVersion, otherVersion, readDraft, receiveWork, workOf, writeDraft } from './work'
+import {
+  authorOf,
+  chooseVersion,
+  otherVersion,
+  readDraft,
+  receiveWork,
+  studyNoteOn,
+  studyNotesAbout,
+  workOf,
+  writeDraft,
+  writeStudyNote,
+} from './work'
 
 // The prototype keeps the work in localStorage; the tests run without a browser.
 beforeEach(() => {
@@ -55,5 +66,18 @@ describe('juntar el trabajo de varias computadoras', () => {
     expect([readDraft('jon', 4, 1), authorOf('jon', 4, 1)]).toEqual(['de Carlos', 'Carlos'])
     expect([readDraft('jon', 4, 2), authorOf('jon', 4, 2)]).toEqual(['de Ana', 'Ana'])
     expect([otherVersion('jon', 4, 1), otherVersion('jon', 4, 2)]).toEqual([null, null])
+  })
+})
+
+describe('notas de comprensión', () => {
+  it('una nota por versículo o por sección, que se corrige y se quita al vaciarla', () => {
+    writeStudyNote('jon', 1, [4, 5], 'Jehová manda la tormenta', 'Ana')
+    writeStudyNote('jon', 1, [5], 'Los marineros tienen miedo', 'Bea')
+    writeStudyNote('jon', 1, [4, 5], 'Jehová manda una gran tormenta', 'Carlos')
+    expect(studyNoteOn('jon', 1, [4, 5])).toEqual({ verses: [4, 5], text: 'Jehová manda una gran tormenta', by: 'Carlos' })
+    // Reading verse 5 alone finds both the section's note and the verse's.
+    expect(studyNotesAbout('jon', 1, [5]).map((n) => n.by)).toEqual(['Carlos', 'Bea'])
+    writeStudyNote('jon', 1, [5], '  ', 'Bea')
+    expect(studyNotesAbout('jon', 1, [5]).map((n) => n.by)).toEqual(['Carlos'])
   })
 })
