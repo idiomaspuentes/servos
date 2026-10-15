@@ -560,5 +560,6 @@
   "persona.agregar": "Adicionar uma pessoa",
   "persona.nombreNuevo": "Nome de quem vai trabalhar",
   "persona.agregarYTrabajar": "Adicionar e trabalhar com este nome",
-  "marco.listoVolver": "Pronto: voltar a {libro}"
+  "marco.listoVolver": "Pronto: voltar a {libro}",
+  "compartir.noGuardado": "Não foi possível salvar o arquivo aqui. Copie o texto e cole numa mensagem."
 }

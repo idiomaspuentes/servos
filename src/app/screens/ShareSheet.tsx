@@ -5,6 +5,7 @@
  */
 
 import { useState } from 'react'
+import { saveFile } from '../frame/saveFile'
 import { Sheet } from '../frame/Sheet'
 import { useT } from '../i18n/i18n'
 import { bookName, type Project } from '../projects/model'
@@ -15,16 +16,12 @@ export function ShareSheet({ project, books, person, onClose }: { project: Proje
   const [chosen, setChosen] = useState<string[]>(books)
   const [said, setSaid] = useState<string | null>(null)
   const file = () => shareProject(project, chosen, person)
-  const save = () => {
+  const save = async () => {
     const shared = file()
     const name = shareFileName(shared, chosen.map(bookName))
-    const blob = new Blob([JSON.stringify(shared)], { type: 'application/json' })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = name
-    link.click()
-    URL.revokeObjectURL(link.href)
-    setSaid(t('compartir.guardado', { archivo: name }))
+    const saved = await saveFile(name, JSON.stringify(shared))
+    // Said only when it was saved: a file refused or not possible here is not reported as done.
+    setSaid(saved.state === 'saved' ? t('compartir.guardado', { archivo: saved.name }) : saved.state === 'declined' ? null : t('compartir.noGuardado'))
   }
   const copy = async () => {
     try {

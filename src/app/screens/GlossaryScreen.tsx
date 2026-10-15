@@ -11,6 +11,7 @@
 import { useRef, useState } from 'react'
 import type { PrototypeData } from '../../prototype/data'
 import { useProjectFont } from '../frame/fonts'
+import { saveFile } from '../frame/saveFile'
 import { Sheet } from '../frame/Sheet'
 import { useT } from '../i18n/i18n'
 import type { Project } from '../projects/model'
@@ -84,16 +85,12 @@ export function GlossaryScreen({
     markShared(project.id)
     setSince(lastShared(project.id))
   }
-  const save = () => {
-    // A file to pass on (a memory stick, a message).
-    const blob = new Blob([toShare()], { type: 'application/json' })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = fileName
-    link.click()
-    URL.revokeObjectURL(link.href)
+  const save = async () => {
+    // A file to pass on (a memory stick, a message). Only a file saved counts as shared.
+    const saved = await saveFile(fileName, toShare())
+    if (saved.state !== 'saved') return setSaid(saved.state === 'declined' ? null : t('compartir.noGuardado'))
     shared()
-    setSaid(t('glosario.guardado', { archivo: fileName }))
+    setSaid(t('glosario.guardado', { archivo: saved.name }))
   }
   const copy = async () => {
     try {
