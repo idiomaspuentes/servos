@@ -93,12 +93,12 @@
   "pasos.enCurso": "Neste passo",
   "pasos.hecho": "Feito",
   "pasos.pendiente": "Mais adiante",
-  "inicio.agregarProyecto": "+ Adicionar um projeto",
+  "inicio.agregarProyecto": "Adicionar um projeto",
   "inicio.tusProyectos": "Seus projetos",
   "inicio.sinProyectos": "Ainda não há projetos. Adicione um para começar.",
   "inicio.libros": "{n} livros",
   "inicio.unLibro": "1 livro",
-  "inicio.agregarLibro": "+ Adicionar um livro",
+  "inicio.agregarLibro": "Adicionar um livro",
   "inicio.ajustes": "Ajustes",
   "agregar.titulo": "Adicionar um projeto",
   "agregar.biblia": "Nova Bíblia",
@@ -477,5 +477,6 @@
   "marco.inicio": "Início",
   "marco.inicialDe": "{inicial}: {nombre}",
   "ajustes.elProyecto": "O projeto",
-  "ajustes.falta": "Escreva o nome e escolha o idioma."
+  "ajustes.falta": "Escreva o nome e escolha o idioma.",
+  "inicio.agregarProyectoAyuda": "Uma Bíblia nova, ou um que chegou por cartão, USB ou Bluetooth"
 }

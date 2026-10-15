@@ -1,8 +1,10 @@
 /**
  * Home, as translationCore 4's (`src/views/Home.jsx`): where the person left off, said exactly (the mini app and the
  * verse) with the one filled button, «Continue →», which opens that mini app there; then a card per project with its
- * books, each with the step it is in and how far that step has gone. What is done now and then (adding a book, the
- * project's settings) is on the project's card, quiet; adding a project, after them all.
+ * books, each with the step it is in and how far that step has gone. Each action has the shape of what it adds or
+ * changes: adding a book is one more tile among the books, dashed; the project's settings, a small bordered button
+ * by its name, as on tC4's project cards; adding a project, one more card after them all, dashed, saying what it
+ * can be. Dashed is kept for adding, so two things that mean something different do not look alike.
  */
 
 import { useT } from '../i18n/i18n'
@@ -66,10 +68,17 @@ export function Home({
         {projects.length === 0 && <p className="quiet">{t('inicio.sinProyectos')}</p>}
         {projects.map((p) => (
           <article key={p.id} className="project-card">
-            <h2>{p.name}</h2>
-            <p className="quiet">
-              {p.languageName} ({p.languageCode}) · {p.books.length === 1 ? t('inicio.unLibro') : t('inicio.libros', { n: p.books.length })}
-            </p>
+            <div className="project-card-head">
+              <div>
+                <h2>{p.name}</h2>
+                <p className="quiet">
+                  {p.languageName} ({p.languageCode}) · {p.books.length === 1 ? t('inicio.unLibro') : t('inicio.libros', { n: p.books.length })}
+                </p>
+              </div>
+              <button type="button" className="project-settings" onClick={() => onSettings(p.id)}>
+                {t('inicio.ajustes')}
+              </button>
+            </div>
             <div className="book-tiles">
               {p.books.map((b) => {
                 const pct = progressOf(p, b.code)
@@ -88,19 +97,21 @@ export function Home({
                   </button>
                 )
               })}
-            </div>
-            <div className="card-actions">
-              <button type="button" className="button-quiet" onClick={() => onAddBook(p.id)}>
-                {t('inicio.agregarLibro')}
-              </button>
-              <button type="button" className="button-quiet" onClick={() => onSettings(p.id)}>
-                {t('inicio.ajustes')}
+              <button type="button" className="book-tile add-tile" onClick={() => onAddBook(p.id)}>
+                <span className="add-tile-plus" aria-hidden="true">
+                  +
+                </span>
+                <span>{t('inicio.agregarLibro')}</span>
               </button>
             </div>
           </article>
         ))}
-        <button type="button" className="button-quiet home-add" onClick={onAddProject}>
-          {t('inicio.agregarProyecto')}
+        <button type="button" className="add-card" onClick={onAddProject}>
+          <span className="add-tile-plus" aria-hidden="true">
+            +
+          </span>
+          <span className="add-card-title">{t('inicio.agregarProyecto')}</span>
+          <span className="quiet">{t('inicio.agregarProyectoAyuda')}</span>
         </button>
       </main>
     </div>
