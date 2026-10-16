@@ -136,24 +136,7 @@ function Center({ context }: MiniAppCenterProps) {
     onGlossary: setAdding,
   })
   const hint = t('editor.toquePalabra')
-  // How to reach the text to translate from is said until the person has gone there once: then it is known.
   const wide = useWide()
-  const [sawSource, setSawSource] = useState(() => {
-    try {
-      return localStorage.getItem(SAW_SOURCE) === '1'
-    } catch {
-      return false
-    }
-  })
-  const sawIt = () => {
-    if (sawSource) return
-    setSawSource(true)
-    try {
-      localStorage.setItem(SAW_SOURCE, '1')
-    } catch {
-      /* said again next time */
-    }
-  }
 
   const write = (verse: number, value: string) => {
     setDrafts((now) => ({ ...now, [verse]: value }))
@@ -171,7 +154,11 @@ function Center({ context }: MiniAppCenterProps) {
   // sliver once the keyboard was up, and the person could not tell the text being written from the one being read.
   const own = (
     <div className="edit-pane">
-      {!wide && !sawSource && <p className="edit-where">{t('editor.dondeFuente', { texto: bridge.abbreviation })}</p>}
+      {/* While the section has nothing written, what to write and where the text to translate is (on a phone it is
+          another pane, a swipe away). It goes as soon as something is written. */}
+      {!wide && units.every((u) => !(drafts[u[0]] ?? '').trim()) && (
+        <p className="edit-where">{t('editor.comoEmpezar', { idioma: context.project.languageName, texto: bridge.abbreviation })}</p>
+      )}
       <div
         className="edit-fields"
         onFocus={(event) => {
@@ -229,7 +216,7 @@ function Center({ context }: MiniAppCenterProps) {
                     markers={markers}
                     poem={poem}
                     label={t('editor.suVersiculo', { v: unitLabel(unit) })}
-                    placeholder={(line) => (poem ? t('editor.renglon', { n: line }) : t('editor.cajaVacia'))}
+                    placeholder={(line) => (poem ? t('editor.renglon', { n: line }) : t('editor.cajaVersiculo', { v: unitLabel(unit), idioma: context.project.languageName }))}
                     addLabel={t('editor.otroRenglon')}
                     onChange={(value) => write(v, value)}
                   />
@@ -275,7 +262,6 @@ function Center({ context }: MiniAppCenterProps) {
         fixed="suyo"
         onPane={(id) => {
           if (id === 'ayudas') helpsOpened()
-          if (id !== 'suyo') sawIt()
         }}
       />
       {adding && (
@@ -296,8 +282,6 @@ function Center({ context }: MiniAppCenterProps) {
     </>
   )
 }
-
-const SAW_SOURCE = 'servos.prototipo.vioLaFuente'
 
 export const editor: MiniApp = {
   id: 'editor',
@@ -345,7 +329,8 @@ export const editor: MiniApp = {
       nombre: 'Editor',
       descripcion: 'Escribir el versículo en su idioma, con el texto puente al lado',
       textoPuente: 'Texto puente: {texto}',
-      dondeFuente: 'Para leer el {texto}, deslice a la izquierda o toque «{texto}» abajo.',
+      comoEmpezar: 'Escriba cada versículo en {idioma}. Lo que va a traducir está en el {texto}: deslice a la izquierda o toque «{texto}» arriba.',
+      cajaVersiculo: 'Versículo {v} en {idioma}',
       glosario: 'Glosario',
       glosarioSinOriginal: '«{palabra}» no está alineada con el original: no se sabe de qué palabra es.',
       comoSeTraduce: 'Cómo se traduce',
@@ -356,7 +341,6 @@ export const editor: MiniApp = {
       notaGlosario: 'Nota (opcional)',
       guardarGlosario: 'Guardar en el glosario',
       suVersiculo: 'Su traducción del versículo {v}',
-      cajaVacia: 'Escriba aquí',
       renglon: 'Renglón {n}',
       otroRenglon: 'Otro renglón',
       comoRenglones: 'Cada renglón como en el texto puente. Enter empieza otro; borrar al comienzo lo une con el de arriba.',
@@ -379,7 +363,8 @@ export const editor: MiniApp = {
       nombre: 'Editor',
       descripcion: 'Escrever o versículo no seu idioma, com o texto ponte ao lado',
       textoPuente: 'Texto ponte: {texto}',
-      dondeFuente: 'Para ler o {texto}, deslize para a esquerda ou toque «{texto}» abaixo.',
+      comoEmpezar: 'Escreva cada versículo em {idioma}. O que vai traduzir está no {texto}: deslize para a esquerda ou toque «{texto}» acima.',
+      cajaVersiculo: 'Versículo {v} em {idioma}',
       glosario: 'Glossário',
       glosarioSinOriginal: '«{palabra}» não está alinhada com o original: não se sabe de que palavra é.',
       comoSeTraduce: 'Como se traduz',
@@ -390,7 +375,6 @@ export const editor: MiniApp = {
       notaGlosario: 'Nota (opcional)',
       guardarGlosario: 'Salvar no glossário',
       suVersiculo: 'Sua tradução do versículo {v}',
-      cajaVacia: 'Escreva aqui',
       renglon: 'Linha {n}',
       otroRenglon: 'Outra linha',
       comoRenglones: 'Cada linha como no texto ponte. Enter começa outra; apagar no começo a junta com a de cima.',
@@ -413,7 +397,8 @@ export const editor: MiniApp = {
       nombre: 'Editor',
       descripcion: 'Write the verse in your language, with the bridge text beside it',
       textoPuente: 'Bridge text: {texto}',
-      dondeFuente: 'To read the {texto}, swipe left or touch «{texto}» below.',
+      comoEmpezar: 'Write each verse in {idioma}. What you will translate is in the {texto}: swipe left or touch «{texto}» above.',
+      cajaVersiculo: 'Verse {v} in {idioma}',
       glosario: 'Glossary',
       glosarioSinOriginal: '«{palabra}» is not aligned to the original: which word it stands for is unknown.',
       comoSeTraduce: 'How it is translated',
@@ -424,7 +409,6 @@ export const editor: MiniApp = {
       notaGlosario: 'Note (optional)',
       guardarGlosario: 'Save in the glossary',
       suVersiculo: 'Your translation of verse {v}',
-      cajaVacia: 'Write here',
       renglon: 'Line {n}',
       otroRenglon: 'Another line',
       comoRenglones: 'Each line as in the bridge text. Enter starts another; deleting at the start joins it to the one above.',

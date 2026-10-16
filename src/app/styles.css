@@ -443,7 +443,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .screen-fill.is-writing .edit-where { display: none; }
 
 /* A section: each verse's fields after its number, as the verse stands in the text */
-.edit-verse.in-section { display: grid; grid-template-columns: 1.5rem minmax(0, 1fr); align-items: start; gap: 0.25rem; }
+.edit-verse.in-section { display: grid; grid-template-columns: 1.75rem minmax(0, 1fr); align-items: start; gap: 0.35rem; }
 .edit-verse-body { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
 /* Another person's version of the verse, received while this computer had its own: both stay until someone chooses */
 /* Two versions of a verse: two cards to touch, what tells them apart lit, the one kept outlined */
@@ -462,9 +462,12 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .book-choose { display: flex; flex-direction: column; gap: 0.2rem; padding: 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
 .book-choose strong { font-size: 0.95rem; }
 .book-choose .button-secondary { margin-block-start: 0.4rem; }
-.edit-verse-number { padding-block-start: 0.6rem; font-size: 0.8rem; color: var(--text-soft); text-align: end; }
+/* The verse's number, as the bridge texts show theirs, on the line of the box's first line of text */
+.edit-verse-number { padding-block-start: 0.85rem; font-size: 0.95rem; font-weight: 600; line-height: 1.5; color: var(--text-soft); text-align: end; font-variant-numeric: tabular-nums; }
 .line-fields { display: grid; gap: 0.375rem; }
 .line-field { resize: none; field-sizing: content; min-height: var(--touch); }
+/* The box being written in: one accent edge, not the page's thick focus ring around its own border */
+.line-field:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 /* What the team writes, in the project's font */
 .line-field, .version-text, .review-mine-verse, .picker-word, .al-word, .al-chip__word { font-family: var(--project-font, var(--font)); }
 .line-add { justify-self: start; min-height: var(--touch); border: 0; background: none; color: var(--text-soft); padding-inline: 0.25rem; }
