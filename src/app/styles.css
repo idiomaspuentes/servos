@@ -18,6 +18,13 @@
   --done-soft: #e4f1df;
   --radius: 10px;
   --touch: 44px;
+  /* Three tones, as tC4: the ground; a card on it, lifted by tone and a soft shadow, not drawn round; inside a card,
+     nothing in its own box, only hairlines. A pill switch runs on a sunken track, the chosen one raised. */
+  --hair: rgba(34, 32, 28, 0.09);
+  --shadow-card: 0 1px 2px rgba(31, 95, 139, 0.07), 0 2px 8px rgba(31, 95, 139, 0.06);
+  --shadow-raised: 0 1px 2px rgba(31, 95, 139, 0.2);
+  --track: #ebe7dd;
+  --pill: #ffffff;
   --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color-scheme: light;
 }
@@ -40,6 +47,11 @@
     --danger: #f09595;
     --done: #8fcf86;
     --done-soft: #1f3320;
+    --hair: rgba(239, 236, 228, 0.09);
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.2);
+    --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.6);
+    --track: #100f0e;
+    --pill: #34322d;
     color-scheme: dark;
   }
 }
@@ -60,6 +72,11 @@
   --danger: #f09595;
   --done: #8fcf86;
   --done-soft: #1f3320;
+  --hair: rgba(239, 236, 228, 0.09);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.6);
+  --track: #100f0e;
+  --pill: #34322d;
   color-scheme: dark;
 }
 
@@ -109,7 +126,7 @@ button:disabled { opacity: 0.45; cursor: default; }
   background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600;
   width: 100%; text-align: center; display: block;
 }
-.button-secondary { width: 100%; }
+.button-secondary { width: 100%; background: none; border-color: color-mix(in srgb, var(--text-soft) 35%, transparent); }
 .button-quiet { border-color: transparent; background: none; color: var(--accent); }
 .button-link { border: 0; background: none; color: var(--accent); padding-inline: 0; text-align: start; text-decoration: underline; }
 .file-button { position: relative; overflow: hidden; }
@@ -144,14 +161,15 @@ textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
 .check input { width: auto; min-height: 0; }
 
 /* Helps: under the verse, one at a time */
-.helps { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.helps { border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-card); }
 /* Every tab stays in sight, however long the phrase in the person's language: they share the width and wrap. */
-/* The helps' kinds: one row of chips, as the panes are, smaller; never on two lines (it scrolls if it must) */
-.helps-tabs { display: flex; gap: 0.25rem; overflow-x: auto; scrollbar-width: none; padding-block-end: 0.5rem; }
-.helps-tab { flex: 0 0 auto; white-space: nowrap; min-height: var(--touch); padding-inline: 0.6rem; border: 1px solid color-mix(in srgb, var(--text-soft) 45%, transparent); border-radius: 999px; background: none; color: var(--text-soft); font-size: 0.85rem; line-height: 1.25; }
+/* The helps' kinds: a pill switch on a track, as tC4's mode switch (not a second strip of tabs inside the panes'); one
+   row, never two (it scrolls if it must) */
+.helps-tabs { display: flex; gap: 3px; padding: 3px; margin-block-end: 0.5rem; max-width: 100%; width: max-content; overflow-x: auto; scrollbar-width: none; border-radius: 999px; background: var(--track); }
+.helps-tab { flex: 0 0 auto; white-space: nowrap; min-height: var(--touch); padding-inline: 0.55rem; border: 0; border-radius: 999px; background: none; color: var(--text-soft); font-size: 0.85rem; font-weight: 600; line-height: 1.25; }
 /* A tab with nothing in it for these verses: still there (it says 0), but quieter */
 .helps-tab[data-empty]:not([aria-selected='true']) { opacity: 0.55; }
-.helps-tab[aria-selected='true'] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.helps-tab[aria-selected='true'] { background: var(--pill); color: var(--text); font-weight: 700; box-shadow: var(--shadow-raised); }
 .helps-card { padding: 0.75rem 1rem; }
 .help-verse { margin: 0 0 0.25rem; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-soft); }
 .help-quote { font-weight: 600; font-size: 1.05rem; margin-block-end: 0.25rem; }
@@ -327,26 +345,28 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .book-resume-kicker { font-size: 0.8rem; font-weight: 600; color: var(--accent); }
 .book-resume-what { font-weight: 600; margin-block-end: 0.4rem; }
 .book-resume-project { margin: -0.4rem 0 0.4rem; font-size: 0.85rem; }
-/* The steps in one row that slides, edge to edge, the one shown brought into sight: two rows of chips crowded the book */
-.book-steps { display: flex; gap: 0.35rem; overflow-x: auto; scrollbar-width: none; margin-inline: -1rem; padding-inline: 1rem; }
+/* The steps: a pill switch on a track, in one row that slides, the one shown brought into sight */
+.book-steps { display: flex; gap: 3px; padding: 3px; overflow-x: auto; scrollbar-width: none; border-radius: 999px; background: var(--track); }
 .book-steps::-webkit-scrollbar { display: none; }
 /* An end with steps out of sight fades: the row is seen to go on */
 .book-steps[data-more-end] { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent); }
 .book-steps[data-more-start] { -webkit-mask-image: linear-gradient(to right, transparent, #000 3rem); mask-image: linear-gradient(to right, transparent, #000 3rem); }
 .book-steps[data-more-start][data-more-end] { -webkit-mask-image: linear-gradient(to right, transparent, #000 3rem, #000 calc(100% - 3rem), transparent); mask-image: linear-gradient(to right, transparent, #000 3rem, #000 calc(100% - 3rem), transparent); }
-.book-step { flex: none; display: inline-flex; align-items: center; gap: 0.35rem; width: auto; min-height: var(--touch); padding: 0.25rem 0.85rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--text-soft); font-size: 0.9rem; }
+.book-step { flex: none; display: inline-flex; align-items: center; gap: 0.35rem; width: auto; min-height: var(--touch); padding: 0.25rem 0.85rem; border: 0; border-radius: 999px; background: none; color: var(--text-soft); font-size: 0.9rem; font-weight: 600; }
 .book-step.is-current { color: var(--text); }
 .book-step.is-current::before { content: ''; width: 0.45rem; height: 0.45rem; border-radius: 999px; background: var(--accent); }
-.book-step[aria-selected='true'] { border: 2px solid var(--accent); color: var(--text); font-weight: 600; }
+.book-step[aria-selected='true'] { background: var(--pill); color: var(--text); font-weight: 700; box-shadow: var(--shadow-raised); }
 .book-step-state { font-size: 0.8rem; font-variant-numeric: tabular-nums; color: var(--accent); }
 .book-step-state.is-done { color: var(--done); font-weight: 700; }
 .tool-cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
-.tool-card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.tool-card { border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-card); }
 .tool-card-main { display: flex; flex-direction: column; align-items: stretch; gap: 0.25rem; padding: 0.75rem 0.8rem; color: var(--text); }
 .tool-card-name { font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; }
 .tool-card-go { margin-block-start: 0.5rem; }
 /* The step's other mini apps: one row each, quiet, under the card */
-.tool-cards > li > .row-button { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding-inline: 0.8rem; }
+.tool-card > .row-button { padding-inline: 0.8rem; }
+.tool-cards > li:not(.tool-card) > .row-button { padding-inline: 0.8rem; }
+.tool-cards > li:not(.tool-card):last-child > .row-button { border-block-end: 1px solid var(--hair); }
 .tool-soon { display: flex; align-items: center; justify-content: space-between; min-height: var(--touch); padding-inline: 0.8rem; color: var(--text-soft); }
 .tool-progress { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.75rem; margin-block-start: 0.25rem; font-size: 0.85rem; font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; }
 .progress-bar { height: 6px; border-radius: 3px; background: var(--surface-soft); overflow: hidden; }
@@ -395,11 +415,11 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .panes-track, .panes-track * { touch-action: pan-y pinch-zoom; }
 .pane { position: relative; flex: 0 0 100%; min-width: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0.75rem 1rem; }
 @media (prefers-reduced-motion: reduce) { .panes-track { transition: none; } }
-/* The panes are a strip of chips at the top, next to what they change, at every width (as the helps' kinds are); on a
-   phone a swipe moves between them as well. The foot keeps one band: the position line, the one way on. */
-.panes-tabs { gap: 0.25rem; padding: 0.5rem; border-block-end: 0; }
-.panes-tab { min-height: var(--touch); padding-inline: 0.6rem; border: 1px solid color-mix(in srgb, var(--text-soft) 45%, transparent); border-radius: 999px; font-size: 0.9rem; }
-.panes-tab[aria-selected='true'] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+/* The panes divide what is seen: tabs with a line under the one open, at every width, as tC4's helps panel (chips are
+   for filters); on a phone a swipe moves between them as well. The foot keeps one band: the position line. */
+.panes-tabs { gap: 0.15rem; padding-inline: 0.35rem; border-block-end: 1px solid var(--hair); }
+.panes-tab { min-height: var(--touch); padding-inline: 0.5rem; font-weight: 700; font-size: 0.95rem; }
+.panes-tab[aria-selected='true'] { color: var(--text); border-block-end-color: var(--accent); }
 
 /* Wide: what is read on the left, what is written on the right */
 .panes-split { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
@@ -482,15 +502,15 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .version-dot { width: 1rem; height: 1rem; flex: none; border-radius: 50%; border: 2px solid var(--text-soft); }
 .version.is-on .version-dot { border-color: var(--accent); background: radial-gradient(var(--accent) 0 40%, transparent 45%); }
 .version-text { white-space: pre-line; line-height: 1.5; font-size: 1.05rem; }
-.book-choose { display: flex; flex-direction: column; gap: 0.2rem; padding: 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.book-choose { display: flex; flex-direction: column; gap: 0.2rem; padding: 0.75rem; border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-card); }
 .book-choose strong { font-size: 0.95rem; }
 .book-choose .button-secondary { margin-block-start: 0.4rem; }
 /* The verse's number, as the bridge texts show theirs, on the line of the box's first line of text */
 .edit-verse-number { padding-block-start: 0.85rem; font-size: 0.95rem; font-weight: 600; line-height: 1.5; color: var(--text-soft); text-align: end; font-variant-numeric: tabular-nums; }
 .line-fields { display: grid; gap: 0.375rem; }
-.line-field { resize: none; field-sizing: content; min-height: var(--touch); }
+.line-field { resize: none; field-sizing: content; min-height: var(--touch); border-color: transparent; background: color-mix(in srgb, var(--surface) 60%, transparent); }
 /* The box being written in: one accent edge, not the page's thick focus ring around its own border */
-.line-field:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.line-field:focus-visible, .line-field:focus { outline: none; border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 1px var(--accent); }
 /* What the team writes, in the project's font */
 .line-field, .version-text, .review-mine-verse, .picker-word, .al-word, .al-chip__word { font-family: var(--project-font, var(--font)); }
 .line-add { justify-self: start; min-height: var(--touch); border: 0; background: none; color: var(--text-soft); padding-inline: 0.25rem; }
@@ -862,22 +882,21 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 
 /* Principle 12: a row opens more (› a sheet, ▾ here); a suggestion is a neutral card; the arrows of a list are
    tinted circles; a destructive action is outlined in red */
-.row-button { display: flex; align-items: center; gap: 0.5rem; width: 100%; min-height: var(--touch); padding: 0.55rem 0.25rem; border: 0; border-block-start: 1px solid var(--line); border-radius: 0; background: none; color: var(--text); font-weight: 600; text-align: start; }
+.row-button { display: flex; align-items: center; gap: 0.5rem; width: 100%; min-height: var(--touch); padding: 0.55rem 0.25rem; border: 0; border-block-start: 1px solid var(--hair); border-radius: 0; background: none; color: var(--text); font-weight: 600; text-align: start; }
 .row-button-label { flex: 1; min-width: 0; }
 .row-button-meta { color: var(--text-soft); font-weight: 400; font-size: 0.9rem; }
 .row-button::after { content: '›'; color: var(--text-soft); font-size: 1.25rem; line-height: 1; }
 .row-button.is-fold::after { content: '▾'; font-size: 1rem; transition: transform 0.15s; }
 .row-button.is-fold[aria-expanded='true']::after { transform: rotate(180deg); }
-.suggestion { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.suggestion { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-card); }
 .suggestion p { margin: 0; font-weight: 600; }
-.pager-arrow { width: var(--touch); height: var(--touch); min-height: var(--touch); padding: 0; display: inline-grid; place-items: center; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: 1.5rem; font-weight: 600; line-height: 1; }
+.pager-arrow { width: var(--touch); height: var(--touch); min-height: var(--touch); padding: 0; display: inline-grid; place-items: center; border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); border-radius: var(--radius); background: var(--accent-soft); color: var(--accent); font-size: 1.5rem; font-weight: 600; line-height: 1; }
 .button-danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 55%, transparent); }
 .step-note { margin: 0; text-align: center; font-size: 0.85rem; }
 .publish-where-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .helps-steps { display: flex; align-items: center; justify-content: center; gap: 0.9rem; }
 .word-help-actions { margin-block-start: 0.25rem; }
 .review-more-places { min-height: var(--touch); }
-.tool-card > .row-button { padding-inline: 0.8rem; }
 .study-write { margin-block-start: 1rem; }
 /* Scroll bars thin where text scrolls, not to compete with the text */
 .pane, .edit-fields, .review-scroll, .publish, .sheet-body, .study-intro { scrollbar-width: thin; }
