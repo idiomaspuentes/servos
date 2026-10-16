@@ -634,5 +634,9 @@
   "libro.sigaEn": "Go on at {lugar}",
   "marco.volverAEtiqueta": "Back to {destino}",
   "recibir.grabaciones": "recordings: {n}",
-  "recibir.grabacionesEntraron": "Recordings gathered in: {n}."
+  "recibir.grabacionesEntraron": "Recordings gathered in: {n}.",
+  "persona.apariencia": "Appearance",
+  "persona.tema.sistema": "Like the phone",
+  "persona.tema.claro": "Light",
+  "persona.tema.oscuro": "Dark"
 }

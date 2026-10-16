@@ -915,3 +915,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .review-stepper [aria-current='step'] { border-block-end: 0; }
 .review-stepper [aria-current='step'] .review-stepper-n { background: none; color: var(--accent); }
 .review-stepper .has-notes .review-stepper-n { background: none; color: var(--warn-text); }
+
+/* A choice made in place in a menu (light or dark): its name, and the pills under it */
+.menu-choice { display: flex; flex-direction: column; gap: 0.4rem; padding: 0.6rem 0.9rem 0.75rem; border-block-end: 1px solid var(--line); }
+.choice-row.is-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }

@@ -634,5 +634,9 @@
   "libro.sigaEn": "Continue em {lugar}",
   "marco.volverAEtiqueta": "Voltar para {destino}",
   "recibir.grabaciones": "gravações: {n}",
-  "recibir.grabacionesEntraron": "Gravações que entraram: {n}."
+  "recibir.grabacionesEntraron": "Gravações que entraram: {n}.",
+  "persona.apariencia": "Aparência",
+  "persona.tema.sistema": "Como o telefone",
+  "persona.tema.claro": "Clara",
+  "persona.tema.oscuro": "Escura"
 }

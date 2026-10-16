@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useT } from '../i18n/i18n'
 import { MenuRow, Sheet } from '../frame/Sheet'
+import { setTheme, themeOf, type Theme } from '../frame/theme'
 import { accountOf, hostName } from '../projects/door43'
 
 export function PersonMenu({
@@ -32,10 +33,34 @@ export function PersonMenu({
   const t = useT()
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
+  const [theme, setThemeState] = useState<Theme>(themeOf)
   return (
     <Sheet title={t('persona.menu', { nombre: person })} onClose={onClose} dirty={adding && name.trim() !== ''}>
       <MenuRow label={t('persona.recibir')} description={t('persona.recibirAyuda')} onClick={onReceive} />
       <MenuRow label={t('persona.idioma')} description={t('persona.idiomaAyuda')} onClick={onLanguage} />
+      {/* Light or dark, on this phone: three at once, chosen in place (principle 12, pills on a track). */}
+      <div className="menu-choice">
+        <span className="menu-row-label" id="apariencia">
+          {t('persona.apariencia')}
+        </span>
+        <div className="choice-row is-three" role="radiogroup" aria-labelledby="apariencia">
+          {(['sistema', 'claro', 'oscuro'] as const).map((x) => (
+            <button
+              key={x}
+              type="button"
+              role="radio"
+              aria-checked={theme === x}
+              className={theme === x ? 'choice is-on' : 'choice'}
+              onClick={() => {
+                setTheme(x)
+                setThemeState(x)
+              }}
+            >
+              {t(`persona.tema.${x}`)}
+            </button>
+          ))}
+        </div>
+      </div>
       <MenuRow label={t('persona.traducir')} description={t('persona.traducirAyuda')} onClick={onTranslate} />
       <MenuRow
         label={t('persona.door43')}
