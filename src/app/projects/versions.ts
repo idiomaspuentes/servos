@@ -3,7 +3,7 @@
  * apart, word by word, so the person sees at a glance the few words to weigh instead of reading two verses whole.
  */
 
-import { otherVersion } from './work'
+import { otherVersion, structureConflictsOf } from './work'
 
 /** A piece of a version: a word with the spaces after it, or spaces, marked when the other version lacks it. */
 export interface VersionPiece {
@@ -49,7 +49,18 @@ export function compareVersions(a: string, b: string): { a: VersionPiece[]; b: V
   return { a: mark(pa, sharedA), b: mark(pb, sharedB) }
 }
 
-/** The verses of a book's chapters that have two versions waiting for a choice, in order. */
-export function versesToChoose(book: string, chapters: Array<{ chapter: number; verses: number[] }>) {
-  return chapters.flatMap(({ chapter, verses }) => verses.filter((verse) => otherVersion(book, chapter, verse)).map((verse) => ({ chapter, verse })))
+/** What waits for a choice: a verse with two versions, or a stretch joined one way here and another there. */
+export type ToChoose = { chapter: number; verse: number; kind: 'texto' | 'estructura' }
+
+/** What waits for a choice in a book's chapters, in order. */
+export function versesToChoose(book: string, chapters: Array<{ chapter: number; verses: number[] }>): ToChoose[] {
+  const inBook = new Set(chapters.map((c) => c.chapter))
+  const stretches = structureConflictsOf(book).filter((c) => inBook.has(c.chapter))
+  const inStretch = (chapter: number, verse: number) => stretches.some((c) => c.chapter === chapter && c.from <= verse && verse <= c.to)
+  return [
+    ...chapters.flatMap(({ chapter, verses }) =>
+      verses.filter((verse) => otherVersion(book, chapter, verse) && !inStretch(chapter, verse)).map((verse) => ({ chapter, verse, kind: 'texto' as const }))
+    ),
+    ...stretches.map((c) => ({ chapter: c.chapter, verse: c.from, kind: 'estructura' as const })),
+  ].sort((a, b) => a.chapter - b.chapter || a.verse - b.verse)
 }

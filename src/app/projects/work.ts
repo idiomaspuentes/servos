@@ -243,3 +243,76 @@ export function writeStudyNote(book: string, chapter: number, verses: number[], 
   const notes = text.trim() ? [...others, { verses, text, by }].sort((a, b) => a.verses[0] - b.verses[0]) : others
   write(studyKey(book, chapter), notes.length ? JSON.stringify(notes) : null)
 }
+
+/**
+ * Verses joined on one side and not on the other (design 6.2, «choque de estructura»): this phone says 1 and 2 apart
+ * and the other said them as one (1–2), or the other way round, with text on both sides. Not to be decided verse by
+ * verse: the person chooses which way stays for the whole stretch. Kept by its first verse, with what was received.
+ */
+export interface StructureConflict {
+  chapter: number
+  /** The stretch the two ways cover together. */
+  from: number
+  to: number
+  /** The way received: its verses, each one or a join, with its text. */
+  received: Array<{ from: number; to: number; text: string; by: string }>
+}
+
+const structureKey = (book: string, chapter: number, from: number) => `${KEY}.estructura.${book}.${chapter}.${from}`
+
+export function structureConflictsOf(book: string, chapter?: number): StructureConflict[] {
+  const prefix = `${KEY}.estructura.${book}.${chapter === undefined ? '' : `${chapter}.`}`
+  const out: StructureConflict[] = []
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (!k?.startsWith(prefix)) continue
+      const c = JSON.parse(localStorage.getItem(k) ?? 'null') as StructureConflict | null
+      if (c) out.push(c)
+    }
+  } catch {
+    /* nothing to read */
+  }
+  return out.sort((a, b) => a.chapter - b.chapter || a.from - b.from)
+}
+
+export const structureConflictAt = (book: string, chapter: number, verse: number) =>
+  structureConflictsOf(book, chapter).find((c) => c.from <= verse && verse <= c.to) ?? null
+
+/** Keeps a way received that does not fit this phone's: with one already waiting there, the two are one stretch. */
+export function keepStructureConflict(book: string, c: StructureConflict) {
+  const there = structureConflictsOf(book, c.chapter).find((x) => x.from <= c.to && c.from <= x.to)
+  const merged: StructureConflict = there
+    ? {
+        chapter: c.chapter,
+        from: Math.min(there.from, c.from),
+        to: Math.max(there.to, c.to),
+        received: [...there.received, ...c.received.filter((r) => !there.received.some((x) => x.from === r.from))].sort((a, b) => a.from - b.from),
+      }
+    : c
+  if (there && there.from !== merged.from) write(structureKey(book, c.chapter, there.from), null)
+  write(structureKey(book, c.chapter, merged.from), JSON.stringify(merged))
+}
+
+/**
+ * Chooses the way a stretch stays: this phone's (nothing changes), or the one received: the stretch's verses take its
+ * joins and its texts, each with who wrote it.
+ */
+export function chooseStructure(book: string, chapter: number, from: number, keepReceived: boolean) {
+  const c = structureConflictsOf(book, chapter).find((x) => x.from === from)
+  if (!c) return
+  if (keepReceived) {
+    for (let v = c.from; v <= c.to; v++) {
+      write(draftKey(book, chapter, v), null)
+      write(authorKey(book, chapter, v), null)
+      write(joinKey(book, chapter, v), null)
+      write(otherKey(book, chapter, v), null)
+    }
+    for (const r of c.received) {
+      write(draftKey(book, chapter, r.from), r.text)
+      write(authorKey(book, chapter, r.from), r.by || null)
+      if (r.to > r.from) write(joinKey(book, chapter, r.from), String(r.to))
+    }
+  }
+  write(structureKey(book, chapter, from), null)
+}

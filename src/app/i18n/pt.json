@@ -623,5 +623,10 @@
   "door43.problema.signin": "O Door43 não reconhece esse usuário, senha ou chave. Vincule a conta de novo.",
   "door43.problema.permission": "O Door43 não dá permissão para isto com esta conta. Peça a quem coordena que a adicione à organização.",
   "door43.problema.conflict": "Alguém enviou mudanças ao Door43 enquanto isso. Tente enviar de novo.",
-  "door43.problema.other": "O Door43 respondeu com um erro. Tente de novo mais tarde."
+  "door43.problema.other": "O Door43 respondeu com um erro. Tente de novo mais tarde.",
+  "versiones.formaTitulo": "Versículos unidos de outro jeito",
+  "versiones.formaPregunta": "Aqui estes versículos estão {aqui}. {nombre} os mandou {alla}. Qual fica para toda a passagem?",
+  "versiones.formaDespues": "A que ficar pode ser corrigida depois no editor, e ali os versículos podem ser unidos ou separados.",
+  "versiones.unidos": "unidos ({v})",
+  "versiones.separados": "separados ({v})"
 }

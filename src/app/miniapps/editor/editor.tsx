@@ -24,9 +24,11 @@ import {
   textOf,
   writeDraft,
   type OtherVersion,
+  chooseStructure,
+  structureConflictAt,
 } from '../../projects/work'
 import { ChapterLines } from '../../frame/ChapterLines'
-import { TwoVersions } from '../../frame/TwoVersions'
+import { TwoShapes, TwoVersions } from '../../frame/TwoVersions'
 import { VerseObservations } from '../revisor/revisor'
 import { LineFields, lineFieldId } from './LineFields'
 
@@ -200,7 +202,18 @@ function Center({ context }: MiniAppCenterProps) {
               {units.length > 1 && <span className="edit-verse-number" aria-hidden="true">{unitLabel(unit)}</span>}
               {units.length === 1 && unit.length > 1 && <p className="edit-joined">{t('editor.unidos', { versiculos: unitLabel(unit) })}</p>}
               <div className="edit-verse-body">
-                {others[v] ? (
+                {structureConflictAt(position.book, position.chapter, v) ? (
+                  <TwoShapes
+                    book={position.book}
+                    conflict={structureConflictAt(position.book, position.chapter, v)!}
+                    onChoose={(keepReceived) => {
+                      chooseStructure(position.book, position.chapter, structureConflictAt(position.book, position.chapter, v)!.from, keepReceived)
+                      setDrafts(readDrafts(position.book, position.chapter, context.shown))
+                      setOthers(readOthers(position.book, position.chapter, context.shown))
+                      frame.setSaved('guardado')
+                    }}
+                  />
+                ) : others[v] ? (
                   // Received from another computer while this one had its own text: both stay until someone chooses,
                   // and the choice comes before writing (the one kept can be corrected then).
                   <TwoVersions

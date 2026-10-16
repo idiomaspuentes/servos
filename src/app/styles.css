@@ -792,3 +792,6 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .observation p { margin: 0; }
 .observation-words { font-family: var(--project-font, var(--font)); }
 .verse-observations { display: flex; flex-direction: column; gap: 0.4rem; margin-block-start: 0.5rem; }
+
+.version-unit { display: flex; gap: 0.4rem; align-items: baseline; }
+.version-unit .verse-number { flex: none; font-size: 0.75rem; color: var(--text-soft); }

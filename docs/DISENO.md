@@ -119,6 +119,12 @@ Lo tomamos de Taller (`src/domain/usfmVerseMerge.ts`, `usfmTrunkPatch.ts`, docum
 | Los dos cambiaron el mismo versículo, distinto | **Choque real**: decide una persona |
 | Un puente contra versículos sueltos, con texto en los dos | **Choque de estructura**: decide una persona |
 
+**Unidos de otra manera** (en el prototipo): si aquí los versículos están separados (1, 2) y la otra copia los trae
+unidos (1–2), o al revés, con texto en los dos lados, no se compara versículo por versículo (un texto dicho para 1–2
+no es una versión del 1): se guarda un choque de estructura para el tramo entero, y la persona elige cuál forma
+queda, con su texto, en «Dos versiones» o en el editor, donde la elección ocupa el lugar de las cajas. Si aquí no hay
+nada escrito en el tramo, entra la forma recibida sin preguntar.
+
 **Cómo decide la persona** (en el prototipo): las dos versiones, enteras, una debajo de la otra, cada una con lo
 que la otra no tiene resaltado (palabra por palabra; una coma también cuenta); se toca la que se queda y el único
 botón lleno la guarda. La que queda se corrige después como cualquier otra, en el editor. Se llega por tres lados:

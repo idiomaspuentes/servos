@@ -7,12 +7,12 @@
 import { useState } from 'react'
 import type { PrototypeData } from '../../prototype/data'
 import { useProjectFont } from '../frame/fonts'
-import { TwoVersions } from '../frame/TwoVersions'
+import { TwoShapes, TwoVersions } from '../frame/TwoVersions'
 import { WordLines } from '../frame/TouchWords'
 import { useT } from '../i18n/i18n'
 import type { Project } from '../projects/model'
 import { versesToChoose } from '../projects/versions'
-import { authorOf, chooseVersion, otherVersion, readDraft } from '../projects/work'
+import { authorOf, chooseStructure, chooseVersion, otherVersion, readDraft, structureConflictsOf } from '../projects/work'
 
 export function ChooseScreen({
   project,
@@ -43,7 +43,12 @@ export function ChooseScreen({
   const place = queue[at]
   const data = place && chapters.find((c) => c.chapter === place.chapter)
   const bridge = data && (data.texts.find((x) => x.abbreviation === textAbbreviation) ?? data.texts.find((x) => !x.original))
-  const received = place && otherVersion(book, place.chapter, place.verse)
+  const received = place?.kind === 'texto' ? otherVersion(book, place.chapter, place.verse) : null
+  const stretch = place?.kind === 'estructura' ? structureConflictsOf(book, place.chapter).find((c) => c.from === place.verse) ?? null : null
+  const next = () => {
+    setChosen((n) => n + 1)
+    setAt((n) => n + 1)
+  }
 
   return (
     <div className="screen">
@@ -58,7 +63,7 @@ export function ChooseScreen({
         <span />
       </header>
       <main className="main">
-        {!place || !received ? (
+        {!place || (!received && !stretch) ? (
           <>
             <p className="review-done">✓ {queue.length ? t('versiones.listo', { n: chosen }) : t('versiones.ninguno')}</p>
             {queue.length - chosen > 0 && <p className="quiet">{t('versiones.quedan', { n: queue.length - chosen })}</p>}
@@ -69,7 +74,7 @@ export function ChooseScreen({
         ) : (
           <>
             <h2 className="versions-place">
-              {name} {place.chapter}:{place.verse}
+              {name} {place.chapter}:{stretch ? `${stretch.from}–${stretch.to}` : place.verse}
             </h2>
             {/* What it translates, a layer away: the choice is between the two, and the bridge text helps weigh it. */}
             <button type="button" className="button-quiet versions-source-toggle" aria-expanded={source} onClick={() => setSource((s) => !s)}>
@@ -77,20 +82,34 @@ export function ChooseScreen({
             </button>
             {source && bridge && (
               <div className="versions-source" dir={bridge.dir}>
-                <WordLines lines={bridge.lines[place.verse] ?? []} verse={place.verse} lit={new Set()} onWord={() => {}} />
+                {(stretch ? Array.from({ length: stretch.to - stretch.from + 1 }, (_, i) => stretch.from + i) : [place.verse]).map((v) => (
+                  <WordLines key={v} lines={bridge.lines[v] ?? []} verse={v} lit={new Set()} onWord={() => {}} />
+                ))}
               </div>
             )}
-            <TwoVersions
-              key={`${place.chapter}.${place.verse}`}
-              here={{ text: readDraft(book, place.chapter, place.verse), by: authorOf(book, place.chapter, place.verse) ?? '' }}
-              received={received}
-              inScreen
-              onChoose={(keepReceived) => {
-                chooseVersion(book, place.chapter, place.verse, keepReceived)
-                setChosen((n) => n + 1)
-                setAt((n) => n + 1)
-              }}
-            />
+            {stretch ? (
+              <TwoShapes
+                key={`${place.chapter}.${stretch.from}`}
+                book={book}
+                conflict={stretch}
+                inScreen
+                onChoose={(keepReceived) => {
+                  chooseStructure(book, place.chapter, stretch.from, keepReceived)
+                  next()
+                }}
+              />
+            ) : (
+              <TwoVersions
+                key={`${place.chapter}.${place.verse}`}
+                here={{ text: readDraft(book, place.chapter, place.verse), by: authorOf(book, place.chapter, place.verse) ?? '' }}
+                received={received!}
+                inScreen
+                onChoose={(keepReceived) => {
+                  chooseVersion(book, place.chapter, place.verse, keepReceived)
+                  next()
+                }}
+              />
+            )}
             <button type="button" className="button-quiet" onClick={() => setAt((n) => n + 1)}>
               {t('versiones.despuesEste')}
             </button>

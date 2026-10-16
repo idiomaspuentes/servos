@@ -18,7 +18,7 @@ import type { AlignmentGroup } from '@usfm-tools/types'
 import { gatherGlossary, readGlossary, saveGlossaryEntry, type GlossaryEntry } from './glossary'
 import type { BookEntry, Phase, Project } from './model'
 import type { NoteCheck } from './noteChecks'
-import { textOf, type StudyNote } from './work'
+import { joinStartOf, joinedVerses, keepStructureConflict, textOf, type StudyNote } from './work'
 
 export const SHARE_FORMAT = 'servos-compartir'
 
@@ -185,6 +185,19 @@ export interface BookPreview {
 }
 
 const draftHere = (code: string, chapter: number, verse: number) => get(`${P}.borrador.${code}.${chapter}.${verse}`) ?? ''
+/**
+ * How a verse received (alone, or a join up to `to`) fits this phone's verses: the same way (the same verse, or the
+ * same join), or another; and, when another, the stretch both ways cover and whether this phone has text in it.
+ */
+function shapeOf(code: string, chapter: number, verse: number, to: number) {
+  const received = Array.from({ length: to - verse + 1 }, (_, i) => verse + i)
+  const starts = [...new Set(received.map((x) => joinStartOf(code, chapter, x)))]
+  const cover = [...new Set([...received, ...starts.flatMap((s) => joinedVerses(code, chapter, s))])].sort((a, b) => a - b)
+  const same = starts.length === 1 && starts[0] === verse && cover.length === received.length
+  const written = starts.some((s) => draftHere(code, chapter, s).trim() !== '')
+  return { same, written, from: cover[0], to: cover[cover.length - 1] }
+}
+
 /** The text of another version already waiting for a choice at a verse, if one is. */
 const waitingOf = (code: string, chapter: number, verse: number): string | null =>
   json<{ text: string }>(`${P}.otra.${code}.${chapter}.${verse}`)?.text.trim() ?? null
@@ -193,6 +206,13 @@ export function previewBook(book: SharedBook, isNew: boolean): BookPreview {
   const p: BookPreview = { code: book.code, isNew, taken: 0, same: 0, choices: 0, waiting: 0, alignments: book.alignments.length, checks: 0, studyNotes: 0 }
   for (const v of book.verses) {
     if (!v.text.trim()) continue
+    const shape = shapeOf(book.code, v.chapter, v.verse, v.joinedTo ?? v.verse)
+    // Joined on one side and not on the other: taken as it comes where nothing is written here, else a choice.
+    if (!shape.same) {
+      if (shape.written) p.choices++
+      else p.taken++
+      continue
+    }
     const here = draftHere(book.code, v.chapter, v.verse)
     const pending = waitingOf(book.code, v.chapter, v.verse)
     if (!here.trim()) p.taken++
@@ -217,6 +237,23 @@ export function receiveBook(book: SharedBook, isNew: boolean): BookReceived {
   const result: BookReceived = { ...previewBook(book, isNew), alignmentsTaken: 0, checksTaken: 0 }
   const { code } = book
   for (const v of book.verses) {
+    const to = v.joinedTo ?? v.verse
+    const shape = shapeOf(code, v.chapter, v.verse, to)
+    if (!shape.same) {
+      // Joined on one side and not on the other. With nothing written here in the stretch, the way received comes in
+      // (its join, its text); with text on both sides it waits for a person to choose the way, never verse by verse:
+      // a text said for 1–2 is not a version of verse 1.
+      if (!v.text.trim()) continue
+      if (!shape.written) {
+        for (let x = shape.from; x <= shape.to; x++) set(`${P}.union.${code}.${v.chapter}.${x}`, null)
+        set(`${P}.borrador.${code}.${v.chapter}.${v.verse}`, v.text)
+        set(`${P}.autor.${code}.${v.chapter}.${v.verse}`, v.by)
+        if (to > v.verse) set(`${P}.union.${code}.${v.chapter}.${v.verse}`, String(to))
+      } else {
+        keepStructureConflict(code, { chapter: v.chapter, from: shape.from, to: shape.to, received: [{ from: v.verse, to, text: v.text, by: v.by ?? '' }] })
+      }
+      continue
+    }
     const here = draftHere(code, v.chapter, v.verse)
     if (v.text.trim() && !here.trim()) {
       set(`${P}.borrador.${code}.${v.chapter}.${v.verse}`, v.text)
@@ -224,11 +261,6 @@ export function receiveBook(book: SharedBook, isNew: boolean): BookReceived {
     } else if (v.text.trim() && here.trim() !== v.text.trim() && waitingOf(code, v.chapter, v.verse) === null) {
       // Only where no other version waits: one waiting for a choice is not replaced without it.
       set(`${P}.otra.${code}.${v.chapter}.${v.verse}`, JSON.stringify({ text: v.text, by: v.by ?? '' }))
-    }
-    // A join comes in where this phone has none there and the verses it takes in are not written here.
-    if (v.joinedTo && !get(`${P}.union.${code}.${v.chapter}.${v.verse}`)) {
-      const free = Array.from({ length: v.joinedTo - v.verse }, (_, i) => v.verse + 1 + i).every((x) => !draftHere(code, v.chapter, x).trim())
-      if (free) set(`${P}.union.${code}.${v.chapter}.${v.verse}`, String(v.joinedTo))
     }
   }
   for (const o of book.others) {
