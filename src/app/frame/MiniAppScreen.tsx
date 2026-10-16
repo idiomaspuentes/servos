@@ -199,15 +199,23 @@ export function MiniAppScreen({
   // The actions of «More» offered where the person is.
   const offered = (app.more ?? []).filter((action) => !action.when || action.when(context))
   useProjectFont(project.font)
+  // Going back to the mini app this one was opened from is the filled button («Done: back»); the header's ‹ then only
+  // says it to a screen reader, so the title keeps its room. To the book, its short name is said.
+  const returning = Boolean(backLabel && app.primary?.returning)
 
   return (
     // While writing on a phone the header and the filled button step aside: the keyboard leaves room for little more
     // than the box and the text it translates, and the arrows of the position line still move on.
     <div className={`screen screen-app${app.fills ? ' screen-fill' : ''}${app.fills && keyboard ? ' is-writing' : ''}`} style={box}>
       <header className="header">
-        <button type="button" className="button-quiet header-back" onClick={onBack}>
+        <button
+          type="button"
+          className={returning ? 'button-quiet header-back is-icon' : 'button-quiet header-back'}
+          aria-label={t('marco.volverAEtiqueta', { destino: backLabel ?? title })}
+          onClick={onBack}
+        >
           {/* Where it goes back to: the mini app it was opened from, or the book. */}
-          ‹ {backLabel ?? title}
+          {returning ? '‹' : `‹ ${backLabel ?? title}`}
         </button>
         <div className="header-title">
           <span className="header-app">{t(`${app.id}.nombre`)}</span>
@@ -219,7 +227,7 @@ export function MiniAppScreen({
         </div>
         {/* «More» only when the mini app has something there: an empty or make-believe menu is not offered. */}
         {offered.length ? (
-          <button type="button" className="button-quiet" onClick={() => setMore(true)}>
+          <button type="button" className="button-quiet header-more" onClick={() => setMore(true)}>
             {t('marco.mas')}
           </button>
         ) : (

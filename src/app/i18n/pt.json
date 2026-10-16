@@ -631,5 +631,6 @@
   "versiones.loQueDice": "O que diz o {texto}",
   "marco.listo": "Pronto",
   "ayudas.enElOriginalSolo": "No original:",
-  "libro.sigaEn": "Continue em {lugar}"
+  "libro.sigaEn": "Continue em {lugar}",
+  "marco.volverAEtiqueta": "Voltar para {destino}"
 }

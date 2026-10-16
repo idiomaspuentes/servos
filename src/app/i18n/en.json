@@ -631,5 +631,6 @@
   "versiones.loQueDice": "What the {texto} says",
   "marco.listo": "Done",
   "ayudas.enElOriginalSolo": "In the original:",
-  "libro.sigaEn": "Go on at {lugar}"
+  "libro.sigaEn": "Go on at {lugar}",
+  "marco.volverAEtiqueta": "Back to {destino}"
 }

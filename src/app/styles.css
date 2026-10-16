@@ -78,12 +78,18 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .quiet { color: var(--text-soft); font-size: 0.9rem; }
 .stack { display: flex; flex-direction: column; gap: 1rem; }
 
-/* Header: «‹», what this is, who is working and whether it is saved, «Más». */
+/* Header: «‹», what this is, who is working and whether it is saved, «Más». The sides are as wide as each other, so the
+   title stays in the middle whatever going back is called; going back and «More» are quiet, in the text's colour: blue
+   is for going on. */
 .header {
-  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.5rem;
+  display: grid; grid-template-columns: minmax(var(--touch), 1fr) auto minmax(var(--touch), 1fr); align-items: center; gap: 0.5rem;
   padding: 0.25rem 0.75rem; border-block-end: 1px solid var(--line); background: var(--surface);
   position: sticky; inset-block-start: env(safe-area-inset-top, 0px); z-index: 2;
 }
+.header > :first-child { justify-self: start; }
+.header > :last-child { justify-self: end; }
+.header .header-back, .header .header-more { width: auto; max-width: 100%; min-width: var(--touch); padding-inline: 0.25rem; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.header .header-back.is-icon { padding: 0; font-size: 1.7rem; line-height: 1; }
 .header-title { display: flex; flex-direction: column; min-width: 0; text-align: center; }
 .header-app { font-weight: 600; overflow-wrap: anywhere; }
 .header-person {
