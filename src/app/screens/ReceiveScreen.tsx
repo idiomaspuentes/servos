@@ -10,10 +10,11 @@ import { useMemo, useRef, useState } from 'react'
 import { MenuRow } from '../frame/Sheet'
 import { useT } from '../i18n/i18n'
 import { bookName, type Project } from '../projects/model'
-import { previewBook, readShared, receiveShared, type BookReceived, type Destination, type SharedFile } from '../projects/share'
+import { previewBook, readShared, receiveShared, versesIn, type BookReceived, type Destination, type SharedFile } from '../projects/share'
 
 export function ReceiveScreen({
   projects,
+  person,
   preset,
   examples = [],
   onBack,
@@ -22,6 +23,8 @@ export function ReceiveScreen({
   onChoose,
 }: {
   projects: Project[]
+  /** Who gathers the file here. */
+  person: string
   /** The project it was opened from, to gather into by default. */
   preset?: string
   /** Files to try it with, in the prototype. */
@@ -61,7 +64,7 @@ export function ReceiveScreen({
   const sameLanguage = file ? projects.filter((p) => p.id !== file.project.id && p.languageCode === file.project.languageCode) : []
   const target = destination?.kind === 'join' ? projects.find((p) => p.id === destination.projectId) : undefined
   const previews = useMemo(
-    () => (file ? file.books.map((b) => previewBook(b, !target?.books.some((x) => x.code === b.code))) : []),
+    () => (file ? file.books.map((b) => previewBook(b, !target?.books.some((x) => x.code === b.code), { from: file.from, at: file.at, person })) : []),
     [file, target]
   )
 
@@ -156,7 +159,7 @@ export function ReceiveScreen({
                 <MenuRow
                   key={`${ex.from}.${ex.books.map((b) => b.code).join()}`}
                   label={t('recibir.ejemploDe', { nombre: ex.from, que: ex.books.map((b) => b.name || bookName(b.code)).join(', ') })}
-                  description={t('recibir.versiculosN', { n: ex.books.reduce((n, b) => n + b.verses.length, 0) })}
+                  description={t('recibir.versiculosN', { n: ex.books.reduce((n, b) => n + versesIn(b), 0) })}
                   onClick={() => open(JSON.stringify(ex))}
                 />
               ))}
@@ -231,7 +234,7 @@ export function ReceiveScreen({
           className="button-primary"
           disabled={!chosen.length || !destination}
           onClick={() => {
-            const result = receiveShared(file, chosen, destination!, projects)
+            const result = receiveShared(file, chosen, destination!, projects, person)
             onReceived(result.projects)
             setDone({ projectId: result.projectId, books: result.books, glossary: result.glossary })
           }}

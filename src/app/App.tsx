@@ -362,6 +362,7 @@ export function App() {
       {screen.kind === 'recibir' && (
         <ReceiveScreen
           projects={projects}
+          person={person}
           preset={screen.projectId}
           examples={screen.projectId && screen.book && project(screen.projectId) ? exampleShared(project(screen.projectId)!, chaptersFor(screen.book)) : []}
           onBack={() => setScreen(screen.back)}
@@ -381,6 +382,7 @@ export function App() {
           title={titleOf(project(screen.projectId), screen.book)}
           chapters={chaptersFor(screen.book)}
           textAbbreviation={text}
+          person={person}
           onBack={() => setScreen(screen.back)}
         />
       )}

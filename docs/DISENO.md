@@ -272,7 +272,12 @@ sabe hasta dónde incorporó a cada persona, y las decisiones viajan dentro de l
   - **Qué lleva:** un índice (qué proyecto, de quién, cuándo, qué libros) y, por cada libro, el texto (con los
     versículos unidos, como `\v 1-2`), su diario, y lo que va pegado a cada versículo con la huella del texto sobre
     el que se hizo: la alineación con cada fuente, las revisiones con notas y con palabras, las notas de estudio y las
-    versiones que esperan una elección. Del proyecto: el glosario, los ajustes y las mini apps de cada paso.
+    grabaciones. Del proyecto: el glosario, los ajustes y las mini apps de cada paso.
+  - **El formato** (decidido el 16 de octubre, versión 2): un JSON con `format: "servos-compartir"`, `version: 2`,
+    quién y cuándo, el proyecto, el glosario y, por libro, `state`: el USFM y el diario del corazón (`src/core`). Los
+    choques sin decidir no viajan: quedan en el aparato donde se encontraron (las decisiones sí viajan, en el diario).
+    Un archivo de la versión 1 (versículos sueltos) se sigue leyendo: se vuelve una copia del libro, cada versículo
+    como cambio de quien lo escribió, y se junta igual; lo mismo un archivo USFM que se agrega.
   - **Va todo, sin preguntar** capa por capa. El diario hace que traer lo mismo dos veces no duplique nada.
   - **Compartir:** desde un libro («Más › Compartir este libro») o desde los ajustes del proyecto («Compartir el
     proyecto», con los libros marcados; todos de entrada). Se puede mandar parte de un libro («Jonás 1:1–10»).
@@ -281,8 +286,10 @@ sabe hasta dónde incorporó a cada persona, y las decisiones viajan dentro de l
     con él; si no, se elige: **agregarlo como proyecto nuevo o juntarlo con uno propio del mismo idioma**, el caso de
     6.5); y qué libros, cada uno con lo que cambia aquí («12 versículos nuevos · 40 iguales · 3 escritos distinto,
     para elegir»; «libro nuevo para usted»).
-  - **Al juntar, cada capa sigue a su texto** (6.2 y 6.8): lo que solo tiene un lado entra; lo distinto queda como
-    dos versiones para elegir; la alineación y las revisiones de un versículo entran si se hicieron sobre el texto
+  - **Al juntar, cada capa sigue a su texto** (6.2 y 6.8). El texto, con la mezcla del corazón: lo que solo tiene
+    un lado entra; un cambio que este aparato ya había incorporado (o más viejo) no vuelve; una elección ya hecha se
+    aplica sin preguntar; lo que dos personas cambiaron por separado desde el mismo texto queda como dos versiones
+    para elegir (o, si unieron versículos de otra manera, como un tramo para elegir entero); la alineación y las revisiones de un versículo entran si se hicieron sobre el texto
     que queda, y si no quedan por revisar, nunca borradas; el glosario se junta palabra por palabra (una traducción
     distinta queda como otra forma); dos notas de estudio distintas sobre los mismos versículos quedan las dos, cada
     una con su autor.
@@ -401,8 +408,6 @@ Propuesta de etapas, para conversar:
 
 - El orden de las fases, y si cada equipo arma el suyo (sección 3).
 - PIN opcional por persona (sección 5).
-- El formato del paquete de trabajo (sección 7): se define al cablear el compartir con la mezcla real (paso 4 del
-  cableado), cuando el paquete tenga que llevar el USFM del libro y su diario.
 - A dónde va cada proyecto en Door43 (sección 8).
 - Paquete compartido con Taller o copia adaptada (sección 11).
 - El nombre de dominio `servos.bible` todavía no está apartado.

@@ -8,7 +8,7 @@
  * is the person's own: where they were, and the notes written while studying.
  */
 
-import { authorOf, keepOtherVersion, otherVersion, readDraft, textOf, writeDraft, type OtherVersion } from './bookText'
+import { authorOf, bookFrom, mergeBook, otherVersion, textOf } from './bookText'
 
 // The book's text is the door's (bookText.ts); it is offered from here too, where the screens have always asked for it.
 export * from './bookText'
@@ -74,22 +74,19 @@ export interface Received {
   choices: number
 }
 
-/** Gathers a file of work into this computer: nothing written here is overwritten without a choice. */
-export function receiveWork(file: WorkFile): Received {
-  const result: Received = { taken: 0, same: 0, choices: 0 }
-  for (const { chapter, verse, text } of file.verses) {
-    const here = readDraft(file.book, chapter, verse)
-    if (!here.trim()) {
-      writeDraft(file.book, chapter, verse, text, file.from)
-      result.taken++
-    } else if (here.trim() === text.trim()) {
-      result.same++
-    } else {
-      keepOtherVersion(file.book, chapter, verse, { text, by: file.from } satisfies OtherVersion)
-      result.choices++
-    }
-  }
-  return result
+/**
+ * Gathers a file of work into this computer, as another copy of the book (the merge of `src/core`): nothing written
+ * here is overwritten without a choice. `by` is who gathers it.
+ */
+export function receiveWork(file: WorkFile, by: string): Received {
+  const theirs = bookFrom(
+    file.book,
+    file.verses.map((v) => ({ ...v, by: file.from })),
+    `obra:${file.from}:${file.label}`
+  )
+  const same = file.verses.filter((v) => v.text.trim() && textOf(file.book, v.chapter, v.verse).trim() === v.text.trim()).length
+  const report = mergeBook(file.book, theirs, by)
+  return { taken: report.taken.length, same, choices: report.conflicts.length }
 }
 
 /** Where a person was in a book with a mini app, to open it there again. */

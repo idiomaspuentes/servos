@@ -21,6 +21,7 @@ export function ChooseScreen({
   title,
   chapters,
   textAbbreviation,
+  person,
   onBack,
 }: {
   project: Project
@@ -30,6 +31,8 @@ export function ChooseScreen({
   chapters: PrototypeData[]
   /** The bridge text the person reads by (TPL by default). */
   textAbbreviation: string
+  /** Who chooses: the choice goes into the book's journal with their name. */
+  person: string
   onBack(): void
 }) {
   const t = useT()
@@ -93,7 +96,7 @@ export function ChooseScreen({
                 conflict={stretch}
                 inScreen
                 onChoose={(keepReceived) => {
-                  chooseStructure(book, place.chapter, stretch.from, keepReceived)
+                  chooseStructure(book, place.chapter, stretch.from, keepReceived, person)
                   next()
                 }}
               />
@@ -104,7 +107,7 @@ export function ChooseScreen({
                 received={received!}
                 inScreen
                 onChoose={(keepReceived) => {
-                  chooseVersion(book, place.chapter, place.verse, keepReceived)
+                  chooseVersion(book, place.chapter, place.verse, keepReceived, person)
                   next()
                 }}
               />

@@ -48,7 +48,7 @@ describe('juntar el trabajo de varias computadoras', () => {
         { chapter: 3, verse: 2, text: 'lo mismo' },
         { chapter: 3, verse: 3, text: 'lo de Bea' },
       ],
-    })
+    }, 'Ana')
     expect(result).toEqual({ taken: 1, same: 1, choices: 1 })
     expect([readDraft('jon', 3, 1), authorOf('jon', 3, 1)]).toEqual(['nuevo de Bea', 'Bea'])
     // Nothing written here is overwritten without a choice.
@@ -60,9 +60,9 @@ describe('juntar el trabajo de varias computadoras', () => {
   it('elegir la otra versión la deja como el versículo, con su autor; elegir la propia la descarta', () => {
     writeDraft('jon', 4, 1, 'de Ana', 'Ana')
     writeDraft('jon', 4, 2, 'de Ana', 'Ana')
-    receiveWork({ from: 'Carlos', book: 'jon', label: 'Jonás 4:1–2', verses: [1, 2].map((verse) => ({ chapter: 4, verse, text: 'de Carlos' })) })
-    chooseVersion('jon', 4, 1, true)
-    chooseVersion('jon', 4, 2, false)
+    receiveWork({ from: 'Carlos', book: 'jon', label: 'Jonás 4:1–2', verses: [1, 2].map((verse) => ({ chapter: 4, verse, text: 'de Carlos' })) }, 'Ana')
+    chooseVersion('jon', 4, 1, true, 'Ana')
+    chooseVersion('jon', 4, 2, false, 'Ana')
     expect([readDraft('jon', 4, 1), authorOf('jon', 4, 1)]).toEqual(['de Carlos', 'Carlos'])
     expect([readDraft('jon', 4, 2), authorOf('jon', 4, 2)]).toEqual(['de Ana', 'Ana'])
     expect([otherVersion('jon', 4, 1), otherVersion('jon', 4, 2)]).toEqual([null, null])

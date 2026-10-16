@@ -30,6 +30,6 @@ describe('a verse written with its alignment to the original', () => {
   it('reads back as the plain verse', () => {
     const groups: AlignmentGroup[] = [{ sources: [jonah], targets: [{ word: 'Jonasca', occurrence: 1, occurrences: 1 }] }]
     const usfm = `\\id JON\n\\c 1\n\\p\n\\v 1 ${alignedLines(['Jonasca, rircami.'], groups)[0]}\n`
-    expect(readUsfmBook(usfm, 'Ana').book.verses[0].text).toBe('Jonasca, rircami.')
+    expect(readUsfmBook(usfm, 'Ana').book.verses![0].text).toBe('Jonasca, rircami.')
   })
 })

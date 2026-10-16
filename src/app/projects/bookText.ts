@@ -12,18 +12,33 @@
  * per letter. Books are kept in IndexedDB (a phone's localStorage fills up), or in localStorage where IndexedDB
  * cannot be had.
  *
- * Still kept verse by verse here, until gathering work uses the merge of `src/core` (wiring, step 4): the versions
- * waiting for a choice and the structure conflicts.
+ * Gathering another copy of a book is the merge of `src/core` (`mergeBook`): what two people changed apart from the
+ * same text waits as a conflict (a version to choose, or a stretch joined otherwise), and the choice is a decision in
+ * the journal, not asked again wherever the book goes.
  */
 
-import { placesOf, producerOf, recordEdits, startBook, textKey, type BookState, type Person } from '../../core'
+import {
+  decide,
+  mergeInto,
+  personKey,
+  placesOf,
+  producerOf,
+  recordEdits,
+  startBook,
+  textKey,
+  usfmOfRange,
+  type BookState,
+  type Conflict,
+  type MergeReport,
+  type Person,
+  type Place,
+} from '../../core'
 import { chapterOf, chaptersOf, type PrototypeData } from '../../prototype/data'
+import { samePlace } from '../../core/book'
 import { applyVerseEdits, listVerseSpans, normalizeVerseText, verseLinesText, type VerseSlotEdit } from '../../usfm/usfmEdit'
 import { bookUsfm } from './usfmExport'
 
 const KEY = 'servos.prototipo'
-const otherKey = (book: string, chapter: number, verse: number) => `${KEY}.otra.${book}.${chapter}.${verse}`
-const structureKey = (book: string, chapter: number, from: number) => `${KEY}.estructura.${book}.${chapter}.${from}`
 /** Where the prototype kept the text verse by verse before the book was one USFM: read once, to move it in. */
 const legacy = {
   draft: (book: string, chapter: number, verse: number) => `${KEY}.borrador.${book}.${chapter}.${verse}`,
@@ -62,7 +77,7 @@ function keysUnder(prefix: string): string[] {
   return out
 }
 
-/** `….otra.jon.1.2` → [1, 2]. */
+/** `….borrador.jon.1.2` → [1, 2]. */
 const placeIn = (key: string) => key.split('.').slice(-2).map(Number) as [number, number]
 
 // ——— The book on this device ———————————————————————————————————————————————————————————————————————————————————
@@ -189,6 +204,7 @@ export async function openBooks(): Promise<void> {
     /* stays in localStorage */
   }
   moveLegacyText()
+  moveLegacyWaiting()
 }
 
 // ——— Who writes ———————————————————————————————————————————————————————————————————————————————————————————————————
@@ -277,7 +293,10 @@ export function authorOf(book: string, chapter: number, verse: number): string |
   const rec = shelf.get(book)
   if (!slot || !rec || !slot.lines.trim()) return null
   if (rec.pendingBy !== null && rec.pendingAt.includes(`${chapter}:${at}`)) return rec.pendingBy || null
-  const made = producerOf(rec.state, { chapter, from: at, to: slot.to }, slot.key)
+  // The last who wrote this text here: a choice between two versions is the chooser's entry, not a writing.
+  const place = { chapter, from: at, to: slot.to }
+  const wrote = [...rec.state.journal].reverse().find((e) => e.kind === 'edit' && e.key === slot.key && samePlace(e.place, place))
+  const made = wrote ?? producerOf(rec.state, place, slot.key)
   return made ? nameOf(made.by) || null : null
 }
 
@@ -417,27 +436,6 @@ export function separateJoined(book: string, chapter: number, verse: number, by?
   change(book, by ?? authorOf(book, chapter, start) ?? '', chapter, edits, true)
 }
 
-/**
- * A stretch of a chapter takes these verses, each alone or a join, with their texts and writers: what the stretch held
- * goes (its texts and joins; and, with `others`, the versions waiting in it).
- */
-export function replaceStretch(
-  book: string,
-  chapter: number,
-  from: number,
-  to: number,
-  units: Array<{ from: number; to: number; text: string; by: string | null }>,
-  { others = false }: { others?: boolean } = {}
-) {
-  if (others) for (let v = from; v <= to; v++) write(otherKey(book, chapter, v), null)
-  // The stretch emptied, verse by verse (taken as the first writer's change), then each verse written by its writer.
-  const empty: VerseSlotEdit[] = []
-  for (let v = from; v <= to; v++) empty.push({ from: v, to: v, text: '', leads: leadsOf(book, chapter, v) })
-  change(book, units[0]?.by ?? '', chapter, empty, true)
-  for (const u of units)
-    change(book, u.by ?? '', chapter, [{ from: u.from, to: u.to, text: u.text, leads: u.to === u.from ? leadsOf(book, chapter, u.from) : [] }], true)
-}
-
 /** The text the prototype kept verse by verse, moved into the book once: each verse as its writer's change. */
 function moveLegacyText() {
   const codes = new Set(keysUnder(`${KEY}.borrador.`).map((k) => k.split('.')[3]))
@@ -463,7 +461,78 @@ export function forgetBooks() {
   slotsMemo.clear()
 }
 
-// ——— Versions waiting for a choice, and stretches whose joins disagree (until step 4) ————————————————————————————
+// ——— Gathering another copy: the merge of `src/core` ————————————————————————————————————————————————————————————
+
+/**
+ * Brings another copy of a book in (`mergeInto`): what does not clash comes in by itself, a change already seen here
+ * or older stays out, a decision already taken is applied, and what two people changed apart from the same text
+ * waits as a conflict for a person. `by` is who gathers it.
+ */
+export function mergeBook(book: string, other: BookState, by: string): MergeReport {
+  const rec = commit(shelf.get(book) ?? emptyBook(book))
+  const { state, report } = mergeInto(rec.state, { ...other, book, pending: [] }, personOf(by), new Date().toISOString())
+  shelf.put({ state, working: state.usfm, pendingBy: null, pendingAt: [] })
+  return withDecidedTaken(rec.state.usfm, state.usfm, report)
+}
+
+/**
+ * A choice already made, applied again, brings the other copy's text only where that was the choice: those places
+ * are counted as taken; where this copy's text was kept, nothing came in.
+ */
+function withDecidedTaken(before: string, after: string, report: MergeReport): MergeReport {
+  const was = new Map(placesOf(before).map((p) => [`${p.chapter}:${p.from}-${p.to}`, p.key]))
+  const now = new Map(placesOf(after).map((p) => [`${p.chapter}:${p.from}-${p.to}`, p.key]))
+  const id = (p: Place) => `${p.chapter}:${p.from}-${p.to}`
+  const changed = report.decided.filter((p) => was.get(id(p)) !== now.get(id(p)))
+  return { ...report, taken: [...report.taken, ...changed] }
+}
+
+/** What gathering another copy would do, before anything is done. */
+export function mergePreview(book: string, other: BookState, by: string): MergeReport & { same: number } {
+  const rec = commit(shelf.get(book) ?? emptyBook(book))
+  const merged = mergeInto(rec.state, { ...other, book, pending: [] }, personOf(by), new Date().toISOString())
+  const report = withDecidedTaken(rec.state.usfm, merged.state.usfm, merged.report)
+  // Verses the other copy brings that this one already says: the same text, or one it took in and went past (a place
+  // the other copy leaves empty is not counted: it brings nothing there).
+  const mine = new Map(placesOf(rec.state.usfm).map((p) => [`${p.chapter}:${p.from}-${p.to}`, p.key]))
+  const theirs = placesOf(other.usfm).filter((p) => p.text)
+  const same = theirs.filter((p) => mine.get(`${p.chapter}:${p.from}-${p.to}`) === p.key).length
+  const past = report.kept.filter((k) => theirs.some((p) => p.chapter === k.chapter && p.from === k.from && p.to === k.to)).length
+  return { ...report, same: same + past }
+}
+
+/**
+ * A copy of a book from loose verses (a work file of the first kind, a USFM file read in, work from another
+ * computer): laid out as this book is, each verse a change of its writer. `origin` tells these writers apart from the
+ * same names on this device (`Bea@origin`), and is the same each time the same file is read, so reading it again
+ * brings nothing new.
+ */
+export function bookFrom(
+  book: string,
+  verses: Array<{ chapter: number; verse: number; to?: number; text: string; by: string | null }>,
+  origin: string,
+  at = new Date().toISOString()
+): BookState {
+  let { state } = emptyBook(book)
+  state = { ...state, journal: [] }
+  for (const v of [...verses].sort((a, b) => a.chapter - b.chapter || a.verse - b.verse)) {
+    if (!v.text.trim()) continue
+    const to = v.to ?? v.verse
+    const usfm = applyVerseEdits(state.usfm, v.chapter, [{ from: v.verse, to, text: v.text, leads: to === v.verse ? leadsOf(book, v.chapter, v.verse) : [] }])
+    state = recordEdits(state, { name: v.by ?? '', device: origin }, usfm, at)
+  }
+  return state
+}
+
+// ——— What waits for a person: the merge's pending conflicts ——————————————————————————————————————————————————————
+
+const pendingOf = (book: string): Conflict[] => shelf.get(book)?.state.pending ?? []
+
+/** A verse's lines in a piece of USFM (a conflict's other version keeps them, as a poem's). */
+function linesIn(usfm: string, chapter: number, verse: number): string {
+  const span = listVerseSpans(usfm).find((s) => s.chapter === chapter && s.verse === verse)
+  return span ? verseLinesText(usfm, span) : ''
+}
 
 /** Another version of a verse, received from someone while this computer had its own: kept until someone chooses. */
 export interface OtherVersion {
@@ -471,45 +540,37 @@ export interface OtherVersion {
   by: string
 }
 
+/** The other version waiting at a verse: the merge's conflict over its text, as received. */
 export function otherVersion(book: string, chapter: number, verse: number): OtherVersion | null {
-  const raw = read(otherKey(book, chapter, verse))
-  if (!raw) return null
-  try {
-    return JSON.parse(raw) as OtherVersion
-  } catch {
-    return null
-  }
+  const c = pendingOf(book).find((x) => x.kind === 'texto' && x.place.chapter === chapter && x.place.from === verse)
+  return c ? { text: linesIn(c.theirs.usfm, chapter, verse) || c.theirs.text, by: c.theirs.by ? nameOf(c.theirs.by) : '' } : null
 }
-
-/** Keeps a version received as waiting for a choice at a verse (replacing one that waited there). */
-export const keepOtherVersion = (book: string, chapter: number, verse: number, other: OtherVersion) =>
-  write(otherKey(book, chapter, verse), JSON.stringify(other))
 
 /** Every version of a book waiting for a choice, in order. */
 export function otherVersionsOf(book: string): Array<{ chapter: number; verse: number } & OtherVersion> {
-  return keysUnder(`${KEY}.otra.${book}.`)
-    .flatMap((k) => {
-      const [chapter, verse] = placeIn(k)
-      const o = otherVersion(book, chapter, verse)
-      return o ? [{ chapter, verse, ...o }] : []
-    })
+  return pendingOf(book)
+    .filter((x) => x.kind === 'texto')
+    .map((x) => ({ chapter: x.place.chapter, verse: x.place.from, ...otherVersion(book, x.place.chapter, x.place.from)! }))
     .sort((a, b) => a.chapter - b.chapter || a.verse - b.verse)
 }
 
-/** Keeps the other version (it replaces the verse) or this one; either way the choice is made. */
-export function chooseVersion(book: string, chapter: number, verse: number, keepOther: boolean) {
-  const other = otherVersion(book, chapter, verse)
-  if (other && keepOther) {
-    const to = joinedTo(book, chapter, verse) ?? verse
-    change(book, other.by, chapter, [{ from: verse, to, text: other.text, leads: to === verse ? leadsOf(book, chapter, verse) : [] }], true)
-  }
-  write(otherKey(book, chapter, verse), null)
+/** A person decides a conflict (`decide`): the choice goes into the journal and is not asked again anywhere. */
+function settle(book: string, conflict: Conflict, keepTheirs: boolean, by: string) {
+  const rec = commit(shelf.get(book) ?? emptyBook(book))
+  const state = decide(rec.state, conflict.id, { keep: keepTheirs ? 'theirs' : 'mine' }, personOf(by), new Date().toISOString())
+  shelf.put({ state, working: state.usfm, pendingBy: null, pendingAt: [] })
+}
+
+/** Keeps the other version (it replaces the verse) or this one; either way the choice is made, by `by`. */
+export function chooseVersion(book: string, chapter: number, verse: number, keepOther: boolean, by: string) {
+  const c = pendingOf(book).find((x) => x.kind === 'texto' && x.place.chapter === chapter && x.place.from === verse)
+  if (c) settle(book, c, keepOther, by)
 }
 
 /**
  * Verses joined on one side and not on the other (design 6.2, «choque de estructura»): this phone says 1 and 2 apart
  * and the other said them as one (1–2), or the other way round, with text on both sides. Not to be decided verse by
- * verse: the person chooses which way stays for the whole stretch. Kept by its first verse, with what was received.
+ * verse: the person chooses which way stays for the whole stretch.
  */
 export interface StructureConflict {
   chapter: number
@@ -520,44 +581,83 @@ export interface StructureConflict {
   received: Array<{ from: number; to: number; text: string; by: string }>
 }
 
+const asStretch = (c: Conflict): StructureConflict => ({
+  chapter: c.place.chapter,
+  from: c.place.from,
+  to: c.place.to,
+  received: listVerseSpans(c.theirs.usfm)
+    .filter((s) => s.chapter === c.place.chapter)
+    .map((s) => ({ from: s.verse, to: Math.max(s.verse, s.verseTo), text: verseLinesText(c.theirs.usfm, s), by: c.theirs.by ? nameOf(c.theirs.by) : '' })),
+})
+
 export function structureConflictsOf(book: string, chapter?: number): StructureConflict[] {
-  const out: StructureConflict[] = []
-  for (const k of keysUnder(`${KEY}.estructura.${book}.${chapter === undefined ? '' : `${chapter}.`}`)) {
-    try {
-      const c = JSON.parse(read(k) ?? 'null') as StructureConflict | null
-      if (c) out.push(c)
-    } catch {
-      /* a broken one is skipped */
-    }
-  }
-  return out.sort((a, b) => a.chapter - b.chapter || a.from - b.from)
+  return pendingOf(book)
+    .filter((x) => x.kind === 'estructura' && (chapter === undefined || x.place.chapter === chapter))
+    .map(asStretch)
+    .sort((a, b) => a.chapter - b.chapter || a.from - b.from)
 }
 
 export const structureConflictAt = (book: string, chapter: number, verse: number) =>
   structureConflictsOf(book, chapter).find((c) => c.from <= verse && verse <= c.to) ?? null
 
-/** Keeps a way received that does not fit this phone's: with one already waiting there, the two are one stretch. */
-export function keepStructureConflict(book: string, c: StructureConflict) {
-  const there = structureConflictsOf(book, c.chapter).find((x) => x.from <= c.to && c.from <= x.to)
-  const merged: StructureConflict = there
-    ? {
-        chapter: c.chapter,
-        from: Math.min(there.from, c.from),
-        to: Math.max(there.to, c.to),
-        received: [...there.received, ...c.received.filter((r) => !there.received.some((x) => x.from === r.from))].sort((a, b) => a.from - b.from),
-      }
-    : c
-  if (there && there.from !== merged.from) write(structureKey(book, c.chapter, there.from), null)
-  write(structureKey(book, c.chapter, merged.from), JSON.stringify(merged))
+/** Chooses the way a stretch stays: this phone's, or the one received (its joins and its texts), by `by`. */
+export function chooseStructure(book: string, chapter: number, from: number, keepReceived: boolean, by: string) {
+  const c = pendingOf(book).find((x) => x.kind === 'estructura' && x.place.chapter === chapter && x.place.from === from)
+  if (c) settle(book, c, keepReceived, by)
 }
 
 /**
- * Chooses the way a stretch stays: this phone's (nothing changes), or the one received: the stretch's verses take its
- * joins and its texts, each with who wrote it.
+ * Versions the prototype kept waiting verse by verse, before the merge: each becomes the merge's conflict, the version
+ * received set where it goes in a copy of the book, so choosing it puts it in as it was received.
  */
-export function chooseStructure(book: string, chapter: number, from: number, keepReceived: boolean) {
-  const c = structureConflictsOf(book, chapter).find((x) => x.from === from)
-  if (!c) return
-  if (keepReceived) replaceStretch(book, chapter, c.from, c.to, c.received, { others: true })
-  write(structureKey(book, chapter, from), null)
+function moveLegacyWaiting() {
+  for (const k of keysUnder(`${KEY}.otra.`)) {
+    const [, , , code] = k.split('.')
+    const [chapter, verse] = placeIn(k)
+    let other: { text: string; by: string } | null = null
+    try {
+      other = JSON.parse(read(k) ?? 'null')
+    } catch {
+      /* a broken one is dropped */
+    }
+    if (code && other?.text) {
+      const to = joinedTo(code, chapter, verse) ?? verse
+      waitAt(code, { chapter, from: verse, to }, 'texto', [{ from: verse, to, text: other.text }], other.by)
+    }
+    write(k, null)
+  }
+  for (const k of keysUnder(`${KEY}.estructura.`)) {
+    const code = k.split('.')[3]
+    let c: StructureConflict | null = null
+    try {
+      c = JSON.parse(read(k) ?? 'null')
+    } catch {
+      /* a broken one is dropped */
+    }
+    if (code && c?.received.length) waitAt(code, { chapter: c.chapter, from: c.from, to: c.to }, 'estructura', c.received, c.received[0].by)
+    write(k, null)
+  }
+}
+
+/** Leaves a conflict waiting in a book: what is here against these verses, received from `by`. */
+function waitAt(book: string, place: Place, kind: Conflict['kind'], verses: Array<{ from: number; to: number; text: string }>, by: string) {
+  const rec = commit(shelf.get(book) ?? emptyBook(book))
+  const empty: VerseSlotEdit[] = []
+  for (let v = place.from; v <= place.to; v++) empty.push({ from: v, to: v, text: '' })
+  const theirsBook = applyVerseEdits(applyVerseEdits(rec.state.usfm, place.chapter, empty), place.chapter, verses)
+  const usfm = usfmOfRange(theirsBook, place)
+  const inRange = (u: string) => placesOf(u).filter((p) => p.chapter === place.chapter && p.from <= place.to && p.to >= place.from && p.text)
+  const said = (ps: ReturnType<typeof placesOf>) => ps.map((p) => p.text).join(' ')
+  const mine = inRange(rec.state.usfm)
+  const theirs = inRange(theirsBook)
+  const conflict: Conflict = {
+    id: `${place.chapter}:${place.from}-${place.to}:${kind}:${theirs.map((p) => p.key).join('+')}`,
+    place,
+    kind,
+    mine: { text: said(mine), key: mine.map((p) => p.key).join('+') },
+    theirs: { text: said(theirs), key: theirs.map((p) => p.key).join('+'), by: `${by}@prototipo`, usfm },
+    foundAt: new Date().toISOString(),
+    foundBy: personKey(personOf('')),
+  }
+  if (!rec.state.pending.some((x) => x.id === conflict.id)) shelf.put({ ...rec, state: { ...rec.state, pending: [...rec.state.pending, conflict] } })
 }

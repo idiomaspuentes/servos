@@ -144,7 +144,7 @@ function Center({ context }: MiniAppCenterProps) {
     writeDraft(position.book, position.chapter, verse, value, context.person.name)
   }
   const choose = (verse: number, keepOther: boolean) => {
-    chooseVersion(position.book, position.chapter, verse, keepOther)
+    chooseVersion(position.book, position.chapter, verse, keepOther, context.person.name)
     setDrafts((now) => ({ ...now, [verse]: readDraft(position.book, position.chapter, verse) }))
     setOthers((now) => ({ ...now, [verse]: null }))
     frame.setSaved('guardado')
@@ -194,7 +194,7 @@ function Center({ context }: MiniAppCenterProps) {
                     book={position.book}
                     conflict={structureConflictAt(position.book, position.chapter, v)!}
                     onChoose={(keepReceived) => {
-                      chooseStructure(position.book, position.chapter, structureConflictAt(position.book, position.chapter, v)!.from, keepReceived)
+                      chooseStructure(position.book, position.chapter, structureConflictAt(position.book, position.chapter, v)!.from, keepReceived, context.person.name)
                       setDrafts(readDrafts(position.book, position.chapter, context.shown))
                       setOthers(readOthers(position.book, position.chapter, context.shown))
                       frame.setSaved('guardado')

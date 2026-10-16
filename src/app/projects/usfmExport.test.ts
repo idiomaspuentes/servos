@@ -54,7 +54,7 @@ describe('a book written as USFM', () => {
     writeDraft('jon', 1, 3, 'Kimsa.', 'Ana')
     const { code, book } = readUsfmBook(bookUsfm('jon', 'Kichwa', [chapter]), 'Bea')
     expect(code).toBe('jon')
-    expect(book.verses.map((v) => [v.verse, v.text])).toEqual([
+    expect(book.verses!.map((v) => [v.verse, v.text])).toEqual([
       [1, 'Shuk punchami.'],
       [3, 'Kimsa.'],
     ])

@@ -62,10 +62,11 @@ export function AddBookSheet({
           {found ? (
             <UsfmFound
               found={found}
+              person={person}
               isNew={!has.has(found.code ?? '')}
               onAgain={() => file.current?.click()}
               onBring={() => {
-                receiveBook(found.book, !has.has(found.code!))
+                receiveBook(found.book, !has.has(found.code!), { from: person, at: `usfm:${found.id}`, person })
                 onCreate(found.code!, 'traduccion')
               }}
             />
@@ -107,7 +108,7 @@ export function AddBookSheet({
 }
 
 /** What a USFM file brings, said before anything is written; one button to bring it in. */
-function UsfmFound({ found, isNew, onAgain, onBring }: { found: UsfmBook; isNew: boolean; onAgain(): void; onBring(): void }) {
+function UsfmFound({ found, isNew, person, onAgain, onBring }: { found: UsfmBook; isNew: boolean; person: string; onAgain(): void; onBring(): void }) {
   const t = useT()
   if (!found.code || !found.verses) {
     return (
@@ -121,7 +122,7 @@ function UsfmFound({ found, isNew, onAgain, onBring }: { found: UsfmBook; isNew:
       </div>
     )
   }
-  const p = previewBook(found.book, isNew)
+  const p = previewBook(found.book, isNew, { from: person, at: `usfm:${found.id}`, person })
   return (
     <div className="usfm-found">
       <strong>{bookName(found.code)}</strong>

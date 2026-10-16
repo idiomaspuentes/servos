@@ -1,19 +1,20 @@
 /**
  * Sharing work between computers without internet (design, section 7, «the work package»): «Share» puts books of a
  * project in one file, `.servos`, and «Receive» gathers such a file in, saying first what it brings and what it would
- * change, book by book. Everything goes, without asking layer by layer: the text (with joined verses), and what hangs
- * on each verse with the text it was made on (the alignment with each source, the checks with notes and with words,
- * the study notes, the versions waiting for a choice), the recordings with their sound; and the project's glossary,
- * settings and mini apps.
+ * change, book by book. Everything goes, without asking layer by layer: each book itself (its USFM and its journal,
+ * `src/core`), and what hangs on each verse with the text it was made on (the alignment with each source, the checks
+ * with notes and with words, the study notes), the recordings with their sound; and the project's glossary, settings
+ * and mini apps.
  *
- * Gathering never overwrites without a choice: each layer follows its text (design, 6.2 and 6.8). A verse only one
- * side wrote comes in; one both wrote differently waits as the other version, for the editor; an alignment or a check
- * comes in only if it was made on the text that stays, and otherwise is left to be checked again; the glossary is
- * gathered word by word; two study notes on the same verses stay both, each with its writer; recordings are gathered
- * take by take, none lost, the one that counts here staying so.
+ * A book is gathered by the merge of `src/core` (the book's door, `mergeBook`): what does not clash comes in by
+ * itself, a change already taken here (or older) stays out, a choice someone already made is applied, and what two
+ * people changed apart from the same text waits for a person; the choice goes into the journal and is not asked again
+ * wherever the book goes. The conflicts waiting on a phone stay there (they are not shared). Each other layer follows
+ * its text (design, 6.8): an alignment or a check comes in only if it was made on the text that stays; the glossary is
+ * gathered word by word; two study notes on the same verses stay both; recordings take by take, none lost.
  *
- * In the prototype the file is JSON and there is no journal yet (design, 6.3): a verse already here with the same text
- * is recognised by its text. Wired, the journal says what was already gathered from whom.
+ * A file of the first kind (version 1) carried loose verses instead of the book; so does a USFM file read in. They
+ * are made a copy of the book, each verse its writer's change, and gathered the same way.
  */
 
 import type { AlignmentGroup } from '@usfm-tools/types'
@@ -21,20 +22,8 @@ import { gatherGlossary, readGlossary, saveGlossaryEntry, type GlossaryEntry } f
 import type { BookEntry, Phase, Project } from './model'
 import type { NoteCheck } from './noteChecks'
 import { blobOf, gatherTakes, keepSound, recordedPlaces, soundBase64, takesOf, type Take } from './recordings'
-import {
-  joinStartOf,
-  joinedVerses,
-  keepOtherVersion,
-  keepStructureConflict,
-  otherVersion,
-  otherVersionsOf,
-  readDraft,
-  replaceStretch,
-  textOf,
-  writeDraft,
-  writtenVerses,
-  type StudyNote,
-} from './work'
+import { placesOf, textKey, type BookState } from '../../core'
+import { bookFrom, bookStateOf, mergeBook, mergePreview, textOf, type StudyNote } from './work'
 
 export const SHARE_FORMAT = 'servos-compartir'
 
@@ -63,8 +52,10 @@ export interface SharedBook {
   phase: Phase
   /** Its name in the team's language, if the team gave it one. */
   name?: string
-  verses: SharedVerse[]
-  others: Array<{ chapter: number; verse: number; text: string; by: string }>
+  /** The book: its USFM and its journal (the conflicts waiting on the phone that shares it stay there). */
+  state?: BookState
+  /** Instead of the book, loose verses: a file of the first kind, or a USFM file read in. */
+  verses?: SharedVerse[]
   alignments: SharedAlignment[]
   /** By store (`revisionNota`, `revisionPalabra`), then by what was checked. */
   checks: Record<string, Record<string, NoteCheck>>
@@ -75,7 +66,8 @@ export interface SharedBook {
 
 export interface SharedFile {
   format: typeof SHARE_FORMAT
-  version: 1
+  /** 2: books as USFM and journal; 1: loose verses (still read). */
+  version: 1 | 2
   from: string
   at: string
   project: Omit<Project, 'books'>
@@ -121,9 +113,8 @@ const json = <T,>(k: string): T | null => {
 
 /** A book of this phone, as it is shared. */
 export function shareBook(code: string, phase: Phase): SharedBook {
-  // The text through the book's door: each verse with its writer and joins; the versions waiting for a choice.
-  const verses: SharedVerse[] = writtenVerses(code)
-  const others = otherVersionsOf(code)
+  // The book itself, its journal brought up to what is written now; what waits for a choice here is not shared.
+  const state = bookStateOf(code)
   const alignments = keys(`${P}.alineacion.${code}.`).flatMap((k) => {
     const [source, chapter, verse] = k.slice(`${P}.alineacion.${code}.`.length).split('.')
     const kept = json<{ groups: AlignmentGroup[]; text: string; by?: string; at?: string }>(k)
@@ -140,7 +131,7 @@ export function shareBook(code: string, phase: Phase): SharedBook {
     const notes = json<StudyNote[]>(k)
     return notes?.length ? [{ chapter: Number(k.split('.').pop()), notes }] : []
   })
-  return { code, phase, verses, others, alignments, checks, studyNotes, recordings: recordedPlaces(code) }
+  return { code, phase, ...(state ? { state: { ...state, pending: [] } } : { verses: [] }), alignments, checks, studyNotes, recordings: recordedPlaces(code) }
 }
 
 /** The file with the sound of every take on this phone in it (kept apart from the rest, where sound is kept). */
@@ -164,7 +155,7 @@ export function shareProject(project: Project, codes: string[], from: string, no
   const { books, ...rest } = project
   return {
     format: SHARE_FORMAT,
-    version: 1,
+    version: 2,
     from,
     at: now.toISOString(),
     project: rest,
@@ -207,40 +198,41 @@ export interface BookPreview {
   recordings: number
 }
 
-const draftHere = readDraft
-/**
- * How a verse received (alone, or a join up to `to`) fits this phone's verses: the same way (the same verse, or the
- * same join), or another; and, when another, the stretch both ways cover and whether this phone has text in it.
- */
-function shapeOf(code: string, chapter: number, verse: number, to: number) {
-  const received = Array.from({ length: to - verse + 1 }, (_, i) => verse + i)
-  const starts = [...new Set(received.map((x) => joinStartOf(code, chapter, x)))]
-  const cover = [...new Set([...received, ...starts.flatMap((s) => joinedVerses(code, chapter, s))])].sort((a, b) => a - b)
-  const same = starts.length === 1 && starts[0] === verse && cover.length === received.length
-  const written = starts.some((s) => draftHere(code, chapter, s).trim() !== '')
-  return { same, written, from: cover[0], to: cover[cover.length - 1] }
+/** Who sent a file and when, and who gathers it here: what a book received is a copy of, and who merges it. */
+export interface Gathering {
+  from: string
+  at: string
+  person: string
 }
 
-/** The text of another version already waiting for a choice at a verse, if one is. */
-const waitingOf = (code: string, chapter: number, verse: number): string | null => otherVersion(code, chapter, verse)?.text.trim() ?? null
+/**
+ * The copy of the book a shared book is: the book itself, or one made of its loose verses, each its writer's change.
+ * Their writers are told apart from the same names here by where they came from; the same file gives the same copy.
+ */
+export function copyOf(book: SharedBook, from: Gathering): BookState {
+  if (book.state) return book.state
+  const verses = (book.verses ?? []).map((v) => ({ chapter: v.chapter, verse: v.verse, to: v.joinedTo, text: v.text, by: v.by }))
+  return bookFrom(book.code, verses, `${from.from}~${from.at}~${textKey(JSON.stringify(verses))}`.replace(/@/g, ''))
+}
 
-export function previewBook(book: SharedBook, isNew: boolean): BookPreview {
-  const p: BookPreview = { code: book.code, isNew, taken: 0, same: 0, choices: 0, waiting: 0, alignments: book.alignments.length, checks: 0, studyNotes: 0, recordings: 0 }
-  for (const v of book.verses) {
-    if (!v.text.trim()) continue
-    const shape = shapeOf(book.code, v.chapter, v.verse, v.joinedTo ?? v.verse)
-    // Joined on one side and not on the other: taken as it comes where nothing is written here, else a choice.
-    if (!shape.same) {
-      if (shape.written) p.choices++
-      else p.taken++
-      continue
-    }
-    const here = draftHere(book.code, v.chapter, v.verse)
-    const pending = waitingOf(book.code, v.chapter, v.verse)
-    if (!here.trim()) p.taken++
-    else if (here.trim() === v.text.trim() || pending === v.text.trim()) p.same++
-    else if (pending !== null) p.waiting++
-    else p.choices++
+/** How many verses with text a shared book brings. */
+export const versesIn = (book: SharedBook): number =>
+  book.state ? placesOf(book.state.usfm).filter((p) => p.text).length : (book.verses ?? []).filter((v) => v.text.trim()).length
+
+export function previewBook(book: SharedBook, isNew: boolean, from: Gathering): BookPreview {
+  const r = mergePreview(book.code, copyOf(book, from), from.person)
+  const p: BookPreview = {
+    code: book.code,
+    isNew,
+    taken: r.taken.length,
+    // The same text, or one this phone has already taken in and gone past.
+    same: r.same,
+    choices: r.conflicts.length,
+    waiting: 0,
+    alignments: book.alignments.length,
+    checks: 0,
+    studyNotes: 0,
+    recordings: 0,
   }
   p.checks = Object.values(book.checks).reduce((n, byId) => n + Object.keys(byId).length, 0)
   p.studyNotes = book.studyNotes.reduce((n, c) => n + c.notes.length, 0)
@@ -261,35 +253,10 @@ export interface BookReceived extends BookPreview {
 }
 
 /** Gathers a received book in: nothing written here is overwritten without a choice; each layer follows its text. */
-export function receiveBook(book: SharedBook, isNew: boolean): BookReceived {
-  const result: BookReceived = { ...previewBook(book, isNew), alignmentsTaken: 0, checksTaken: 0, recordingsTaken: 0 }
+export function receiveBook(book: SharedBook, isNew: boolean, from: Gathering): BookReceived {
+  const result: BookReceived = { ...previewBook(book, isNew, from), alignmentsTaken: 0, checksTaken: 0, recordingsTaken: 0 }
   const { code } = book
-  for (const v of book.verses) {
-    const to = v.joinedTo ?? v.verse
-    const shape = shapeOf(code, v.chapter, v.verse, to)
-    if (!shape.same) {
-      // Joined on one side and not on the other. With nothing written here in the stretch, the way received comes in
-      // (its join, its text); with text on both sides it waits for a person to choose the way, never verse by verse:
-      // a text said for 1–2 is not a version of verse 1.
-      if (!v.text.trim()) continue
-      if (!shape.written) {
-        replaceStretch(code, v.chapter, shape.from, shape.to, [{ from: v.verse, to, text: v.text, by: v.by }])
-      } else {
-        keepStructureConflict(code, { chapter: v.chapter, from: shape.from, to: shape.to, received: [{ from: v.verse, to, text: v.text, by: v.by ?? '' }] })
-      }
-      continue
-    }
-    const here = draftHere(code, v.chapter, v.verse)
-    if (v.text.trim() && !here.trim()) {
-      writeDraft(code, v.chapter, v.verse, v.text, v.by ?? '')
-    } else if (v.text.trim() && here.trim() !== v.text.trim() && waitingOf(code, v.chapter, v.verse) === null) {
-      // Only where no other version waits: one waiting for a choice is not replaced without it.
-      keepOtherVersion(code, v.chapter, v.verse, { text: v.text, by: v.by ?? '' })
-    }
-  }
-  for (const o of book.others) {
-    if (!otherVersion(code, o.chapter, o.verse) && draftHere(code, o.chapter, o.verse).trim() !== o.text.trim()) keepOtherVersion(code, o.chapter, o.verse, { text: o.text, by: o.by })
-  }
+  mergeBook(code, copyOf(book, from), from.person)
   for (const a of book.alignments) {
     const k = `${P}.alineacion.${code}.${a.source}.${a.chapter}.${a.verse}`
     // The text that says the verse now, after the verses were gathered (joined ones by their first).
@@ -347,14 +314,16 @@ export function receiveShared(
   file: SharedFile,
   codes: string[],
   destination: Destination,
-  projects: Project[]
+  projects: Project[],
+  /** Who gathers it here: the merge's choices already made are applied in their name. */
+  person: string
 ): { projects: Project[]; projectId: string; books: BookReceived[]; glossary: { added: number; same: number; joined: number } } {
   const target =
     destination.kind === 'join'
       ? projects.find((p) => p.id === destination.projectId)!
       : { ...file.project, id: freeId(file.project.id, projects), books: [] as BookEntry[] }
   const books = file.books.filter((b) => codes.includes(b.code))
-  const received = books.map((b) => receiveBook(b, !target.books.some((x) => x.code === b.code)))
+  const received = books.map((b) => receiveBook(b, !target.books.some((x) => x.code === b.code), { from: file.from, at: file.at, person }))
   const added = books
     .filter((b) => !target.books.some((x) => x.code === b.code))
     .map((b) => ({ code: b.code, phase: b.phase, ...(b.name ? { name: b.name } : {}) }))

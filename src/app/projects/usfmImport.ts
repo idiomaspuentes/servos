@@ -29,6 +29,6 @@ export function readUsfmBook(usfm: string, by: string, phase: Phase = 'traduccio
     code: known,
     id,
     verses: verses.length,
-    book: { code: known ?? id.toLowerCase(), phase, verses, others: [], alignments: [], checks: {}, studyNotes: [] },
+    book: { code: known ?? id.toLowerCase(), phase, verses, alignments: [], checks: {}, studyNotes: [] },
   }
 }

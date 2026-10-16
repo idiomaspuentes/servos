@@ -58,19 +58,25 @@ Desde el 16 de octubre de 2026 la app guarda cada libro así (cableado, pasos 1 
 3. **Lo que ya estaba**, escrito versículo por versículo por el prototipo, entra al libro una sola vez, cada
    versículo como cambio de quien lo escribió.
 
-Falta el paso 4: compartir y recibir con `mergeInto` y `decide`. Hasta entonces, las versiones que esperan una
-elección y los choques de estructura se guardan aparte, dentro de la puerta.
+4. **Compartir y recibir con la mezcla** (`mergeBook`, sobre `mergeInto`). El paquete (versión 2) lleva el USFM y
+   el diario de cada libro. Las «dos versiones» de un versículo y los tramos unidos de otra manera son los choques
+   pendientes del corazón (`state.pending`), y elegir es `decide`: la decisión queda en el diario y no se vuelve a
+   preguntar. Quién escribió un versículo es quien escribió ese texto, no quien eligió entre dos versiones. Un archivo
+   de la versión 1, un USFM que se agrega o el trabajo de otra computadora traen versículos sueltos: se vuelven una
+   copia del libro (`bookFrom`), cada versículo cambio de su autor, con un origen propio para no confundirlos con los
+   mismos nombres de este aparato; el mismo archivo da la misma copia, así que traerlo dos veces no trae nada nuevo.
 
 ## Lo que falta
 
 - **Los choques pendientes no viajan.** Las decisiones sí; un choque sin decidir queda en el aparato donde se
-  encontró. Por decidir si debe viajar en el paquete.
+  encontró. Por ahora es lo que hace el paquete (versión 2); habrá que ver si a un equipo le hace falta otra cosa.
+- **Dos choques sobre el mismo versículo** pueden quedar pendientes a la vez si llegan dos versiones distintas antes
+  de elegir; la pantalla de elegir muestra una y, al decidirla, la otra.
 - **Borrar un versículo a propósito no se propaga**, por la regla 2. Habrá que ver si hace falta una forma explícita
   de borrar.
 - **La alineación como capa aparte** (diseño, 6.8) todavía no está. Hoy, cuando entra un versículo, entra escrito con
   su alineación, como en Taller.
 - **Las pruebas de Taller para `src/usfm`** (`scripts/verify-usfm-merge.mts`, con sus casos P1–P9) no están
   copiadas todavía.
-- **El formato del paquete** que lleva el libro y el diario (diseño, sección 7).
 - La huella del texto es FNV-1a de 64 bits: basta para distinguir los versículos de un libro, pero no es una huella
   criptográfica.
