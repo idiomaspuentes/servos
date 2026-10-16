@@ -84,3 +84,20 @@ describe("dos alineaciones del mismo texto", () => {
     expect(recordAlignment(two, ana, v1, texto, links("Pablo", "Dios"), at())).toBe(two);
   });
 });
+
+describe("un choque de alineación sin decidir viaja", () => {
+  it("llega a quien tiene una de las dos, desde su lado; decidido en otro aparato, deja de esperar", () => {
+    const mine = recordAlignment(emptyAlignmentLayer(), ana, v1, texto, links("Pablo"), at());
+    const theirs = recordAlignment(emptyAlignmentLayer(), beto, v1, texto, links("Dios"), at());
+    const open = mergeAlignments(mine, theirs, now(texto), ana, at()).layer;
+    expect(open.pending).toHaveLength(1);
+    // Beto receives Ana's copy: the same choice, his own alignment as «mine».
+    const atBeto = mergeAlignments(theirs, open, now(texto), beto, at()).layer;
+    expect(atBeto.pending.map((c) => [c.mine.groups, c.theirs.groups])).toEqual([[links("Dios"), links("Pablo")]]);
+    // Beto chooses Ana's; Ana receives his copy, and nothing waits any more.
+    const decided = decideAlignment(atBeto, atBeto.pending[0]!.id, "theirs", beto, at());
+    const back = mergeAlignments(open, decided, now(texto), ana, at()).layer;
+    expect(back.pending).toEqual([]);
+    expect(aligned(back)).toEqual(links("Pablo"));
+  });
+});

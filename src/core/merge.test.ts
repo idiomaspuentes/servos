@@ -228,3 +228,60 @@ describe("borrar un versículo a propósito también viaja", () => {
     expect([textOf(state, 1), report.conflicts.length]).toEqual(["Pablo, esclavo de Dios.", 0]);
   });
 });
+
+describe("un choque sin decidir viaja con el libro", () => {
+  /** Ana and Beto each wrote verse 1 apart; Ana's copy found it and has not chosen. */
+  function anaWithOpenChoice() {
+    const a = startBook({ book: "TIT", usfm: tit({ 1: { 1: "Pablo, siervo de Dios." } }), person: ana, at: at() });
+    const b = startBook({ book: "TIT", usfm: tit({ 1: { 1: "Pablo, esclavo de Dios." } }), person: beto, at: at() });
+    return { a: mergeInto(a, b, ana, at()).state, b };
+  }
+
+  it("quien recibe el libro ve las dos versiones para elegir, aunque no tuviera ninguna", () => {
+    const { a } = anaWithOpenChoice();
+    const c = startBook({ book: "TIT", usfm: tit({ 1: { 1: "" } }), person: carla, at: at() });
+    const { state, report } = mergeInto(c, a, carla, at());
+    expect(textOf(state, 1)).toBe("Pablo, siervo de Dios.");
+    expect(report.conflicts.map((x) => [x.mine.text, x.theirs.text])).toEqual([["Pablo, siervo de Dios.", "Pablo, esclavo de Dios."]]);
+    // Chosen there, the other version goes in as it was written.
+    const chosen = decide(state, state.pending[0]!.id, { keep: "theirs" }, carla, at());
+    expect(textOf(chosen, 1)).toBe("Pablo, esclavo de Dios.");
+  });
+
+  it("si quien lo recibe tiene la otra versión, se le muestra desde su lado", () => {
+    const { a, b } = anaWithOpenChoice();
+    const { state } = mergeInto(b, a, beto, at());
+    expect(state.pending).toHaveLength(1);
+    expect([state.pending[0]!.mine.text, state.pending[0]!.theirs.text]).toEqual(["Pablo, esclavo de Dios.", "Pablo, siervo de Dios."]);
+    expect(textOf(decide(state, state.pending[0]!.id, { keep: "theirs" }, beto, at()), 1)).toBe("Pablo, siervo de Dios.");
+  });
+
+  it("decidido en un aparato, deja de esperar en el otro al traer su libro", () => {
+    const { a } = anaWithOpenChoice();
+    const c = mergeInto(startBook({ book: "TIT", usfm: tit({ 1: { 1: "" } }), person: carla, at: at() }), a, carla, at()).state;
+    const decided = decide(c, c.pending[0]!.id, { keep: "theirs" }, carla, at());
+    const { state, report } = mergeInto(a, decided, ana, at());
+    expect(state.pending).toEqual([]);
+    expect(report.conflicts).toEqual([]);
+    expect(textOf(state, 1)).toBe("Pablo, esclavo de Dios.");
+  });
+
+  it("decidido escribiendo otra versión, esa entra en el otro aparato sin preguntar", () => {
+    const { a, b } = anaWithOpenChoice();
+    const written = tit({ 1: { 1: "Pablo, servidor de Dios." } });
+    const decided = decide(a, a.pending[0]!.id, { usfm: written }, ana, at());
+    const { state, report } = mergeInto(b, decided, beto, at());
+    expect([report.conflicts, state.pending]).toEqual([[], []]);
+    expect(textOf(state, 1)).toBe("Pablo, servidor de Dios.");
+  });
+
+  it("donde quien lo recibe ya escribió otra cosa, no se le pregunta por dos versiones que ya dejó atrás", () => {
+    const { a } = anaWithOpenChoice();
+    let c = mergeInto(startBook({ book: "TIT", usfm: tit({ 1: { 1: "" } }), person: carla, at: at() }), a, carla, at()).state;
+    c = decide(c, c.pending[0]!.id, { keep: "mine" }, carla, at());
+    c = recordEdits(c, carla, tit({ 1: { 1: "Pablo, siervo de Dios y apóstol." } }), at());
+    const { state } = mergeInto(c, a, carla, at());
+    expect(state.pending).toEqual([]);
+    expect(textOf(state, 1)).toBe("Pablo, siervo de Dios y apóstol.");
+  });
+});

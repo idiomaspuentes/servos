@@ -277,7 +277,8 @@ sabe hasta dónde incorporó a cada persona, y las decisiones viajan dentro de l
     grabaciones. Del proyecto: el glosario, los ajustes y las mini apps de cada paso.
   - **El formato** (decidido el 16 de octubre, versión 2): un JSON con `format: "servos-compartir"`, `version: 2`,
     quién y cuándo, el proyecto, el glosario y, por libro, `state`: el USFM y el diario del corazón (`src/core`). Los
-    choques sin decidir no viajan: quedan en el aparato donde se encontraron (las decisiones sí viajan, en el diario).
+    choques sin decidir viajan también (desde el 16 de octubre): quien recibe el libro los ve donde tiene una de las
+    dos versiones, desde su lado, y una decisión tomada en cualquier aparato los cierra en todos.
     Un archivo de la versión 1 (versículos sueltos) se sigue leyendo: se vuelve una copia del libro, cada versículo
     como cambio de quien lo escribió, y se junta igual; lo mismo un archivo USFM que se agrega.
   - **Va todo, sin preguntar** capa por capa. El diario hace que traer lo mismo dos veces no duplique nada.

@@ -148,9 +148,8 @@ export function shareBook(code: string, phase: Phase): SharedBook {
     const notes = json<StudyNote[]>(k)
     return notes?.length ? [{ chapter: Number(k.split('.').pop()), notes }] : []
   })
-  // The alignment goes in the book, with its diary; what waits for a choice here stays here.
-  const shared = state && { ...state, pending: [], ...(state.alignment ? { alignment: { ...state.alignment, pending: [] } } : {}) }
-  return { code, phase, ...(shared ? { state: shared } : { verses: [] }), checks, passages, observations, studyNotes, recordings: recordedPlaces(code) }
+  // The alignment goes in the book, with its diary; so do the choices still open, for whoever has one of their two versions.
+  return { code, phase, ...(state ? { state } : { verses: [] }), checks, passages, observations, studyNotes, recordings: recordedPlaces(code) }
 }
 
 /** The file with the sound of every take on this phone in it (kept apart from the rest, where sound is kept). */

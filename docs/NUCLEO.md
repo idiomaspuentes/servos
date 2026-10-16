@@ -97,11 +97,14 @@ Desde el 16 de octubre de 2026 la app guarda cada libro así (cableado, pasos 1 
     de dos sobre el mismo texto, la más reciente. Lo visto para mejorar en un pasaje se junta, nada se pierde, y lo
     marcado mejorado en un aparato llega mejorado (un archivo viejo no lo vuelve a abrir). Estas capas guardan aún
     solo lo último de cada una, sin diario propio como la alineación: es el paso siguiente si hace falta.
+11. **Las dos versiones sin elegir viajan con el libro** (`state.pending`, también los de la alineación). Quien recibe
+    el libro las ve donde tiene una de las dos, desde su lado (la suya contra la otra); donde ya escribió otra cosa no
+    se le pregunta. Una decisión tomada en cualquier aparato las cierra en los demás al traer su libro, también si al
+    decidir se escribió una versión nueva. Y un aparato que tiene la elección abierta ya no cuenta como si hubiera
+    elegido: antes, quien recibía su libro tomaba su versión sin preguntar, porque su diario ya traía la otra.
 
 ## Lo que falta
 
-- **Los choques pendientes no viajan.** Las decisiones sí; un choque sin decidir queda en el aparato donde se
-  encontró. Por ahora es lo que hace el paquete (versión 2); habrá que ver si a un equipo le hace falta otra cosa.
 - **Dos choques sobre el mismo versículo** pueden quedar pendientes a la vez si llegan dos versiones distintas antes
   de elegir; la pantalla de elegir muestra una y, al decidirla, la otra.
 - La huella del texto es FNV-1a de 64 bits: basta para distinguir los versículos de un libro, pero no es una huella

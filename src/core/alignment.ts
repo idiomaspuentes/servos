@@ -146,20 +146,26 @@ export function mergeAlignments(
       take(id, theirs, report.decided);
       continue;
     }
-    if (seenUpTo(me, theirs.by) >= theirs.seq) continue;
-    if (seenUpTo(other, mine.by) >= mine.seq) {
-      take(id, theirs);
-      continue;
-    }
-    if (theirs.base === mine.key) {
-      take(id, theirs);
-      continue;
-    }
-    if (mine.base === theirs.key) continue;
-    // Made apart: the latest, if one person made both; else a person chooses.
-    if (nameOf(mine.by) === nameOf(theirs.by)) {
-      if (theirs.at > mine.at) take(id, theirs);
-      continue;
+    // Either copy still waits for a person to choose between these two: having them in its diary is not choosing.
+    const open = [...me.pending, ...other.pending].some(
+      (c) => alignmentPlaceId(c.place) === id && [c.mine.key, c.theirs.key].sort().join("|") === [mine.key, theirs.key].sort().join("|"),
+    );
+    if (!open) {
+      if (seenUpTo(me, theirs.by) >= theirs.seq) continue;
+      if (seenUpTo(other, mine.by) >= mine.seq) {
+        take(id, theirs);
+        continue;
+      }
+      if (theirs.base === mine.key) {
+        take(id, theirs);
+        continue;
+      }
+      if (mine.base === theirs.key) continue;
+      // Made apart: the latest, if one person made both; else a person chooses.
+      if (nameOf(mine.by) === nameOf(theirs.by)) {
+        if (theirs.at > mine.at) take(id, theirs);
+        continue;
+      }
     }
     const conflictId = `${id}:${[mine.key, theirs.key].sort().join("|")}`;
     if (pendingIds.has(conflictId)) continue;
@@ -167,9 +173,23 @@ export function mergeAlignments(
     report.conflicts.push({ id: conflictId, place: { ...mine.place }, mine, theirs, foundAt: at, foundBy: personKey(by) });
   }
 
+  // The other copy's choices still open come where this copy has one of their two alignments; one decided anywhere
+  // is settled here too.
+  const settled = (c: AlignmentConflict) =>
+    decisions.some((d) => alignmentPlaceId(d.place) === alignmentPlaceId(c.place) && d.over?.includes(c.mine.key) && d.over.includes(c.theirs.key));
+  const same = (a: AlignmentEntry | undefined, b: AlignmentEntry) => Boolean(a) && a!.key === b.key && a!.on === b.on;
+  for (const open of other.pending) {
+    if (pendingIds.has(open.id) || settled(open)) continue;
+    const now = current[alignmentPlaceId(open.place)];
+    if (same(now, open.mine)) report.conflicts.push({ ...open });
+    else if (same(now, open.theirs) && same(other.current[alignmentPlaceId(open.place)], open.mine)) report.conflicts.push({ ...open, mine: open.theirs, theirs: open.mine });
+    else continue;
+    pendingIds.add(open.id);
+  }
+
   const known = new Set(me.journal.map((e) => e.id));
   const journal = [...me.journal, ...other.journal.filter((e) => !known.has(e.id))];
-  return { layer: { current, journal, pending: [...me.pending, ...report.conflicts] }, report };
+  return { layer: { current, journal, pending: [...me.pending.filter((c) => !settled(c)), ...report.conflicts] }, report };
 }
 
 /** A person chooses between two alignments of a verse: the choice is a line of the diary, not asked again anywhere. */

@@ -616,10 +616,10 @@ export function forgetBooks() {
 export function mergeBook(book: string, other: BookState, by: string): MergeReport & { alignment: AlignmentReport } {
   const rec = commit(shelf.get(scoped(book)) ?? emptyBook(book))
   const at = new Date().toISOString()
-  const { state, report } = mergeInto(rec.state, { ...other, book, pending: [] }, personOf(by), at)
+  const { state, report } = mergeInto(rec.state, { ...other, book }, personOf(by), at)
   shelf.put(scoped(book), { state, working: state.usfm, pendingBy: null, pendingAt: [] })
   // The alignment follows its text: what each was made on is weighed against the verse as it now stands here.
-  const theirs = other.alignment ? { ...other.alignment, pending: [] } : emptyAlignmentLayer()
+  const theirs = other.alignment ?? emptyAlignmentLayer()
   const merged = mergeAlignments(state.alignment ?? emptyAlignmentLayer(), theirs, (p) => alignedText(book, p.chapter, p.verse), personOf(by), at)
   shelf.put(scoped(book), { state: { ...state, alignment: merged.layer }, working: state.usfm, pendingBy: null, pendingAt: [] })
   return { ...withDecidedTaken(rec.state.usfm, state.usfm, report), alignment: merged.report }
@@ -640,7 +640,7 @@ function withDecidedTaken(before: string, after: string, report: MergeReport): M
 /** What gathering another copy would do, before anything is done. */
 export function mergePreview(book: string, other: BookState, by: string): MergeReport & { same: number } {
   const rec = commit(shelf.get(scoped(book)) ?? emptyBook(book))
-  const merged = mergeInto(rec.state, { ...other, book, pending: [] }, personOf(by), new Date().toISOString())
+  const merged = mergeInto(rec.state, { ...other, book }, personOf(by), new Date().toISOString())
   const report = withDecidedTaken(rec.state.usfm, merged.state.usfm, merged.report)
   // Verses the other copy brings that this one already says: the same text, or one it took in and went past (a place
   // the other copy leaves empty is not counted: it brings nothing there).

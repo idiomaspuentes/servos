@@ -296,3 +296,35 @@ describe('la revisión del pasaje y las revisiones viajan y siguen a su texto', 
     expect(readCheck('jon', 'n1')?.by).toBe('Bea')
   })
 })
+
+describe('dos versiones sin elegir viajan con el libro', () => {
+  it('llegan a un tercer teléfono; elegidas allí, dejan de esperar en el primero', () => {
+    const bea = new Map<string, string>()
+    const ana = new Map<string, string>()
+    const carla = new Map<string, string>()
+    const share = (by: string) => readShared(JSON.stringify(shareProject(project, ['jon'], by)))!
+    const receive = (file: ReturnType<typeof share>, by: string) => receiveShared(file, ['jon'], { kind: 'join', projectId: 'kichwa' }, [project], by)
+    store = bea
+    writeDraft('jon', 1, 2, 'Ninive llaktaman riy', 'Bea')
+    const fromBea = share('Bea')
+    store = ana
+    writeDraft('jon', 1, 2, 'Ninive llaktaman rimay', 'Ana')
+    receive(fromBea, 'Ana')
+    expect(otherVersion('jon', 1, 2)).toEqual({ text: 'Ninive llaktaman riy', by: 'Bea' })
+    // Ana passes her book on without choosing: Carla sees both, from where she stands.
+    const fromAna = share('Ana')
+    store = carla
+    const [received] = receive(fromAna, 'Carla').books
+    expect(received.choices).toBe(1)
+    expect([readDraft('jon', 1, 2), otherVersion('jon', 1, 2)]).toEqual(['Ninive llaktaman rimay', { text: 'Ninive llaktaman riy', by: 'Bea' }])
+    chooseVersion('jon', 1, 2, true, 'Carla')
+    const fromCarla = share('Carla')
+    store = ana
+    receive(fromCarla, 'Ana')
+    expect([readDraft('jon', 1, 2), otherVersion('jon', 1, 2)]).toEqual(['Ninive llaktaman riy', null])
+    // Bea, who never had Ana's version before, gets Carla's choice and is asked nothing.
+    store = bea
+    expect(receive(fromCarla, 'Bea').books[0].choices).toBe(0)
+    expect([readDraft('jon', 1, 2), otherVersion('jon', 1, 2)]).toEqual(['Ninive llaktaman riy', null])
+  })
+})
