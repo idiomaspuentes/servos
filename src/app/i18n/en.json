@@ -23,7 +23,6 @@
   "ayudas.sinNotas": "This verse has no notes.",
   "ayudas.sinPreguntas": "This verse has no questions.",
   "ayudas.sinPalabras": "This verse has no key words.",
-  "ayudas.enElOriginal": "In the original: {texto}",
   "ayudas.noAlineada": "It is not known which words of the {texto} these are.",
   "ayudas.leerArticulo": "Read “{titulo}”",
   "ayudas.verRespuesta": "Show the answer",
@@ -630,5 +629,6 @@
   "libro.nombrarAccion": "Write the name",
   "libro.pasoNota": "The book moves to {paso} for the whole team. It can go back.",
   "versiones.loQueDice": "What the {texto} says",
-  "marco.listo": "Done"
+  "marco.listo": "Done",
+  "ayudas.enElOriginalSolo": "In the original:"
 }

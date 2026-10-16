@@ -114,6 +114,8 @@ export interface MiniAppAction {
    * except where it goes back to the mini app this one was opened from (`returning`), which the line does not do.
    */
   nextOnly?: boolean
+  /** What its label and description name, where the person is («Join 3 with 4»). */
+  values?(context: MiniAppContext): Record<string, string | number>
   description?: string
   run(context: MiniAppContext): void
 }

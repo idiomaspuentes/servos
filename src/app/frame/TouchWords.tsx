@@ -321,7 +321,6 @@ export function WordHelpCard({
         <span className="word-help-word" dir={text.dir} lang={text.lang}>
           {word}
         </span>
-        {count > 1 && <span className="quiet">{t('ayudas.cuenta', { i: touched.index + 1, n: count })}</span>}
         <button type="button" className="button-quiet word-help-close" onClick={close}>
           {t('ayudas.cerrar')}
         </button>
@@ -442,6 +441,7 @@ export function WordHelpCard({
           <button type="button" className="pager-arrow" aria-label={t('ayudas.anterior')} disabled={touched.index === 0} onClick={() => onIndex(touched.index - 1)}>
             ‹
           </button>
+          <span className="quiet">{t('ayudas.cuenta', { i: touched.index + 1, n: count })}</span>
           <button type="button" className="pager-arrow" aria-label={t('ayudas.siguiente')} disabled={touched.index === count - 1} onClick={() => onIndex(touched.index + 1)}>
             ›
           </button>

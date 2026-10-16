@@ -299,6 +299,12 @@ export const editor: MiniApp = {
     {
       label: 'editor.unir',
       description: 'editor.unirAyuda',
+      // Which verses: in a section there are several on screen.
+      values: (c) => {
+        const unit = joinedVerses(c.position.book, c.position.chapter, c.position.verse)
+        const last = unit[unit.length - 1]
+        return { v: unit.length > 1 ? `${unit[0]}–${last}` : unit[0], siguiente: last + 1 }
+      },
       // Not past the chapter's last verse.
       when: (c) => {
         const unit = joinedVerses(c.position.book, c.position.chapter, c.position.verse)
@@ -309,6 +315,10 @@ export const editor: MiniApp = {
     {
       label: 'editor.separar',
       description: 'editor.separarAyuda',
+      values: (c) => {
+        const unit = joinedVerses(c.position.book, c.position.chapter, c.position.verse)
+        return { v: `${unit[0]}–${unit[unit.length - 1]}` }
+      },
       when: (c) => joinedVerses(c.position.book, c.position.chapter, c.position.verse).length > 1,
       run: (c) => separateJoined(c.position.book, c.position.chapter, c.position.verse),
     },
@@ -321,9 +331,9 @@ export const editor: MiniApp = {
   },
   texts: {
     es: {
-      unir: 'Unir con el siguiente versículo',
+      unir: 'Unir el {v} con el {siguiente}',
       unirAyuda: 'Cuando su idioma dice este versículo y el siguiente en una sola frase: se escriben juntos, como 1–2',
-      separar: 'Separar los versículos unidos',
+      separar: 'Separar los versículos {v}',
       separarAyuda: 'El texto queda en el primero; luego reparta lo que dice cada uno',
       unidos: 'Versículos {versiculos}, unidos: se escriben juntos.',
       nombre: 'Editor',
@@ -355,9 +365,9 @@ export const editor: MiniApp = {
       guardarVolver: 'Listo: volver',
     },
     pt: {
-      unir: 'Juntar com o próximo versículo',
+      unir: 'Juntar o {v} com o {siguiente}',
       unirAyuda: 'Quando sua língua diz este versículo e o próximo numa só frase: escrevem-se juntos, como 1–2',
-      separar: 'Separar os versículos juntados',
+      separar: 'Separar os versículos {v}',
       separarAyuda: 'O texto fica no primeiro; depois reparta o que diz cada um',
       unidos: 'Versículos {versiculos}, juntados: escrevem-se juntos.',
       nombre: 'Editor',
@@ -389,9 +399,9 @@ export const editor: MiniApp = {
       guardarVolver: 'Pronto: voltar',
     },
     en: {
-      unir: 'Join with the next verse',
+      unir: 'Join {v} with {siguiente}',
       unirAyuda: 'When your language says this verse and the next in one sentence: they are written together, as 1–2',
-      separar: 'Separate the joined verses',
+      separar: 'Separate verses {v}',
       separarAyuda: 'The text stays in the first; then share out what each says',
       unidos: 'Verses {versiculos}, joined: they are written together.',
       nombre: 'Editor',

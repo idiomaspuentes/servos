@@ -23,7 +23,6 @@
   "ayudas.sinNotas": "Este versículo no tiene notas.",
   "ayudas.sinPreguntas": "Este versículo no tiene preguntas.",
   "ayudas.sinPalabras": "Este versículo no tiene palabras clave.",
-  "ayudas.enElOriginal": "En el original: {texto}",
   "ayudas.noAlineada": "No se sabe qué palabras del {texto} son.",
   "ayudas.leerArticulo": "Leer «{titulo}»",
   "ayudas.verRespuesta": "Ver la respuesta",
@@ -630,5 +629,6 @@
   "libro.nombrarAccion": "Escribir el nombre",
   "libro.pasoNota": "El libro pasa a {paso} para todo el equipo. Se puede volver.",
   "versiones.loQueDice": "Lo que dice el {texto}",
-  "marco.listo": "Listo"
+  "marco.listo": "Listo",
+  "ayudas.enElOriginalSolo": "En el original:"
 }

@@ -213,7 +213,8 @@ export function MiniAppScreen({
           <span className="header-app">{t(`${app.id}.nombre`)}</span>
           <span className="header-person">
             {person}
-            {app.writes && ` · ${t(saved === 'guardado' ? 'marco.guardadoAqui' : 'marco.sinCambios')}`}
+            {/* Nothing changed is not announced (principle 6); once something is kept, where it is (principle 8). */}
+            {app.writes && saved === 'guardado' && ` · ${t('marco.guardadoAqui')}`}
           </span>
         </div>
         {/* «More» only when the mini app has something there: an empty or make-believe menu is not offered. */}
@@ -291,8 +292,8 @@ export function MiniAppScreen({
           {offered.map((action) => (
             <MenuRow
               key={action.label}
-              label={t(action.label)}
-              description={action.description ? t(action.description) : undefined}
+              label={t(action.label, action.values?.(context))}
+              description={action.description ? t(action.description, action.values?.(context)) : undefined}
               onClick={() => {
                 setMore(false)
                 action.run(context)

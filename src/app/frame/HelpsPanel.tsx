@@ -130,8 +130,11 @@ export function HelpsPanel({
         {note && (
           <>
             {marked ? <p className="help-quote">{marked}</p> : <p className="quiet">{t('ayudas.noAlineada', { texto: textAbbreviation })}</p>}
-            <p className="help-original" lang={original?.lang} dir={original?.dir}>
-              {t('ayudas.enElOriginal', { texto: note.quote })}
+            <p className="help-original">
+              {t('ayudas.enElOriginalSolo')}{' '}
+              <span lang={original?.lang} dir={original?.dir}>
+                {note.quote}
+              </span>
             </p>
             <Markdown text={note.note} />
             {note.academy && data.academy[note.academy] && (
@@ -176,8 +179,11 @@ export function HelpsPanel({
         {tab === 'palabras' && words[index] && (
           <>
             <p className="help-quote">{data.words[words[index].article]?.title ?? words[index].article}</p>
-            <p className="help-original" lang={original?.lang} dir={original?.dir}>
-              {t('ayudas.enElOriginal', { texto: words[index].original })}
+            <p className="help-original">
+              {t('ayudas.enElOriginalSolo')}{' '}
+              <span lang={original?.lang} dir={original?.dir}>
+                {words[index].original}
+              </span>
               {words[index].keyTerm && <span className="badge">{t('ayudas.palabraClave')}</span>}
             </p>
             {data.words[words[index].article] && (
