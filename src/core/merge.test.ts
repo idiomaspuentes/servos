@@ -187,3 +187,44 @@ describe("la reunión: Ana, Beto y Carla juntan su trabajo; Carla manda su tarje
     expect(() => mergeInto(a, b, ana, at())).toThrow(/libros distintos/);
   });
 });
+
+describe("borrar un versículo a propósito también viaja", () => {
+  /** Ana's Titus 1:1, and a copy of it that Beto took in. */
+  function both() {
+    const a = startBook({ book: "TIT", usfm: tit({ 1: { 1: "Pablo, siervo de Dios.", 2: "En la esperanza." } }), person: ana, at: at() });
+    let b = startBook({ book: "TIT", usfm: tit({ 1: { 1: "", 2: "" } }), person: beto, at: at() });
+    b = mergeInto(b, a, beto, at()).state;
+    return { a, b };
+  }
+
+  it("si Beto borró el versículo que Ana tiene, al traerlo queda borrado", () => {
+    const { a, b } = both();
+    const borrado = recordEdits(b, beto, tit({ 1: { 1: "", 2: "En la esperanza." } }), at());
+    const { state, report } = mergeInto(a, borrado, ana, at());
+    expect([textOf(state, 1), textOf(state, 2), report.conflicts.length]).toEqual(["", "En la esperanza.", 0]);
+  });
+
+  it("si Ana ya tenía el borrado, una copia vieja no lo devuelve", () => {
+    const { a, b } = both();
+    const sinEl = recordEdits(a, ana, tit({ 1: { 1: "", 2: "En la esperanza." } }), at());
+    const { state, report } = mergeInto(sinEl, b, ana, at());
+    expect([textOf(state, 1), report.conflicts.length]).toEqual(["", 0]);
+  });
+
+  it("si uno lo borró y el otro lo cambió por separado, se pregunta", () => {
+    const { a, b } = both();
+    const borrado = recordEdits(b, beto, tit({ 1: { 1: "", 2: "En la esperanza." } }), at());
+    const cambiado = recordEdits(a, ana, tit({ 1: { 1: "Pablo, siervo de Dios y apóstol.", 2: "En la esperanza." } }), at());
+    const { state, report } = mergeInto(cambiado, borrado, ana, at());
+    expect(textOf(state, 1)).toBe("Pablo, siervo de Dios y apóstol.");
+    expect(report.conflicts.map((c) => [c.kind, c.mine.text, c.theirs.text])).toEqual([["texto", "Pablo, siervo de Dios y apóstol.", ""]]);
+  });
+
+  it("si después de borrarlo alguien lo volvió a escribir, entra lo nuevo", () => {
+    const { a, b } = both();
+    const borrado = recordEdits(b, beto, tit({ 1: { 1: "", 2: "En la esperanza." } }), at());
+    const otraVez = recordEdits(mergeInto(a, borrado, ana, at()).state, ana, tit({ 1: { 1: "Pablo, esclavo de Dios.", 2: "En la esperanza." } }), at());
+    const { state, report } = mergeInto(borrado, otraVez, beto, at());
+    expect([textOf(state, 1), report.conflicts.length]).toEqual(["Pablo, esclavo de Dios.", 0]);
+  });
+});

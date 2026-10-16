@@ -183,3 +183,27 @@ describe('la alineación viaja con el libro y sigue a su texto', () => {
     expect([...store.keys()].some((k) => k.includes('.alineacion.'))).toBe(false)
   })
 })
+
+describe('un versículo borrado a propósito', () => {
+  it('llega borrado al teléfono que lo tenía de quien lo borró', () => {
+    const bea = new Map<string, string>()
+    const ana = new Map<string, string>()
+    const share = () => readShared(JSON.stringify(shareProject(project, ['jon'], 'Bea')))!
+    const receive = (file: ReturnType<typeof share>) => receiveShared(file, ['jon'], { kind: 'join', projectId: 'kichwa' }, [project], 'Ana')
+    store = bea
+    writeDraft('jon', 1, 1, 'Taytaku rimarqa', 'Bea')
+    const first = share()
+    store = ana
+    receive(first)
+    expect(readDraft('jon', 1, 1)).toBe('Taytaku rimarqa')
+    store = bea
+    writeDraft('jon', 1, 1, '', 'Bea')
+    const second = share()
+    store = ana
+    receive(second)
+    expect([readDraft('jon', 1, 1), otherVersion('jon', 1, 1)]).toEqual(['', null])
+    // And the first file, coming again, does not bring it back.
+    receive(first)
+    expect(readDraft('jon', 1, 1)).toBe('')
+  })
+})

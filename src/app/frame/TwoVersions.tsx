@@ -40,7 +40,12 @@ export function TwoVersions({
         <span className="version-dot" aria-hidden="true" />
         {label}
       </span>
-      <span className="version-text">{runsOf(pieces).map((p, i) => (p.changed ? <mark key={i}>{p.text}</mark> : p.text))}</span>
+      {/* A version that is no text is a verse someone emptied on purpose: said, not shown as an empty box. */}
+      {(which === 'here' ? here.text : received.text).trim() ? (
+        <span className="version-text">{runsOf(pieces).map((p, i) => (p.changed ? <mark key={i}>{p.text}</mark> : p.text))}</span>
+      ) : (
+        <span className="version-text quiet">{t('versiones.borrado')}</span>
+      )}
     </button>
   )
 

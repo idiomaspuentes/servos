@@ -19,7 +19,8 @@ Primera etapa del plan (diseño, sección 12). Sin pantallas: el código está e
 Para un lugar que las dos copias tienen con el mismo rango:
 
 1. Mismo texto: nada.
-2. La otra copia lo tiene vacío: queda el mío. Mi copia lo tiene vacío: entra el suyo.
+2. La otra copia lo tiene vacío sin haberlo vaciado: queda el mío. Mi copia lo tiene así: entra el suyo. (Uno
+   vaciado a propósito se pesa como cualquier cambio: punto 9 abajo.)
 3. Ya hay una decisión entre exactamente estas dos versiones: se aplica.
 4. Su texto salió de un cambio que mi copia ya había incorporado: el mío es posterior, queda el mío.
 5. Mi texto salió de un cambio que la otra copia ya había incorporado: el suyo es posterior, entra el suyo.
@@ -86,6 +87,11 @@ Desde el 16 de octubre de 2026 la app guarda cada libro así (cableado, pasos 1 
 8. **Las pruebas de Taller para la mezcla por versículo** (`src/usfm/verseMerge.test.ts`): sus casos, P1–P9 entre
    ellos, tal como Taller los escribió, sobre la copia de Servos; quedan fuera los de lo que Servos no tiene (git como
    transporte, las ramas de tareas, el comentario de choques, su caché de borradores).
+9. **Borrar un versículo a propósito viaja.** Un versículo vacío es uno sin escribir, o uno que alguien vació: entonces
+   el diario tiene el cambio que lo vació, con el texto que quitó, y se pesa como cualquier cambio. Si lo vació sobre
+   el texto que tengo, entra vacío; si ya tenía el borrado, una copia vieja no lo devuelve; si uno lo borró y otro lo
+   cambió por separado, se pregunta («Lo borró: el versículo queda vacío»). Un versículo que nunca se escribió sigue
+   sin borrar nada (la regla 2).
 
 ## Lo que falta
 
@@ -93,7 +99,5 @@ Desde el 16 de octubre de 2026 la app guarda cada libro así (cableado, pasos 1 
   encontró. Por ahora es lo que hace el paquete (versión 2); habrá que ver si a un equipo le hace falta otra cosa.
 - **Dos choques sobre el mismo versículo** pueden quedar pendientes a la vez si llegan dos versiones distintas antes
   de elegir; la pantalla de elegir muestra una y, al decidirla, la otra.
-- **Borrar un versículo a propósito no se propaga**, por la regla 2. Habrá que ver si hace falta una forma explícita
-  de borrar.
 - La huella del texto es FNV-1a de 64 bits: basta para distinguir los versículos de un libro, pero no es una huella
   criptográfica.

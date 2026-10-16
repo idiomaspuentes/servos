@@ -640,5 +640,6 @@
   "persona.tema.claro": "Claro",
   "persona.tema.oscuro": "Oscuro",
   "libro.estaEn": "El libro está en {paso}.",
-  "recibir.alineacionesElegir": "Versículos alineados de dos maneras, para elegir al alinear: {n}."
+  "recibir.alineacionesElegir": "Versículos alineados de dos maneras, para elegir al alinear: {n}.",
+  "versiones.borrado": "Lo borró: el versículo queda vacío."
 }

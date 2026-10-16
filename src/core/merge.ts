@@ -3,7 +3,7 @@
  * by itself; only two changes of the same place from the same text, made apart, reach a person. Their decision goes
  * into the diary, travels with the book, and is not asked again.
  */
-import { intersects, placeId, placesOf, putRange, usfmOfRange, type BookPlace } from "./book";
+import { intersects, placeId, placesOf, putRangeAsIs, usfmOfRange, type BookPlace } from "./book";
 import { entry, producerOf, seenUpTo } from "./journal";
 import { personKey, type BookState, type Conflict, type Entry, type Person, type Place } from "./types";
 
@@ -30,8 +30,18 @@ type Verdict = "keep" | "take" | "decided-keep" | "decided-take" | "conflict";
 function verdictFor(params: { place: Place; mine: BookPlace; theirs: BookPlace; me: BookState; other: BookState; decisions: Entry[] }): Verdict {
   const { place, mine, theirs, me, other } = params;
   if (mine.key === theirs.key) return "keep";
-  if (!theirs.text) return "keep";
-  if (!mine.text) return "take";
+  // An empty verse is one never written, or one emptied on purpose: then the diary has the change that emptied it,
+  // with the text it took away, and it is weighed as any other change (it does not bring back what was taken away,
+  // and what was changed after it is not lost to it).
+  if (!theirs.text) {
+    const emptied = producerOf(other, place, theirs.key);
+    if (!emptied || seenUpTo(me, emptied.by) >= emptied.seq) return "keep";
+    if (emptied.base === mine.key) return "take";
+  } else if (!mine.text) {
+    const emptied = producerOf(me, place, mine.key);
+    if (!emptied || seenUpTo(other, emptied.by) >= emptied.seq) return "take";
+    if (emptied.base === theirs.key) return "keep";
+  }
   // Somebody already chose between exactly these two versions.
   const decision = [...params.decisions].reverse().find((row) => row.over?.includes(mine.key) && row.over.includes(theirs.key) && intersects(row.place, place));
   if (decision?.key === mine.key) return "decided-keep";
@@ -81,7 +91,7 @@ export function mergeInto(me: BookState, other: BookState, by: Person, at: strin
   let usfm = me.usfm;
 
   const take = (range: Place) => {
-    usfm = putRange(usfm, other.usfm, range);
+    usfm = putRangeAsIs(usfm, other.usfm, range);
     report.taken.push(range);
   };
   const conflict = (place: Place, kind: Conflict["kind"], mineText: string, mineKey: string, theirsText: string, theirsKey: string) => {
@@ -107,7 +117,7 @@ export function mergeInto(me: BookState, other: BookState, by: Person, at: strin
       const verdict = verdictFor({ place, mine: mine!, theirs: theirs!, me, other, decisions });
       if (verdict === "take") take(place);
       else if (verdict === "decided-take") {
-        usfm = putRange(usfm, other.usfm, place);
+        usfm = putRangeAsIs(usfm, other.usfm, place);
         report.decided.push(place);
       } else if (verdict === "decided-keep") report.decided.push(place);
       else if (verdict === "conflict") conflict(place, "texto", mine!.text, mine!.key, theirs!.text, theirs!.key);
@@ -160,7 +170,7 @@ export function decide(state: BookState, conflictId: string, choice: { keep: "mi
   if (!conflict) throw new Error("Ese choque ya no está pendiente.");
   let usfm = state.usfm;
   if ("usfm" in choice) usfm = choice.usfm;
-  else if (choice.keep === "theirs") usfm = putRange(usfm, conflict.theirs.usfm, conflict.place);
+  else if (choice.keep === "theirs") usfm = putRangeAsIs(usfm, conflict.theirs.usfm, conflict.place);
   const now = placesOf(usfm).filter((place) => intersects(place, conflict.place));
   const text = now.map((place) => place.text).filter(Boolean).join(" ");
   const before = placesOf(state.usfm).filter((place) => intersects(place, conflict.place));

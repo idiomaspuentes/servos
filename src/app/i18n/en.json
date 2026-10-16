@@ -640,5 +640,6 @@
   "persona.tema.claro": "Light",
   "persona.tema.oscuro": "Dark",
   "libro.estaEn": "The book is in {paso}.",
-  "recibir.alineacionesElegir": "Verses aligned two ways, to choose while aligning: {n}."
+  "recibir.alineacionesElegir": "Verses aligned two ways, to choose while aligning: {n}.",
+  "versiones.borrado": "Deleted it: the verse is left empty."
 }
