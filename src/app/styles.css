@@ -324,6 +324,10 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 /* The steps in one row that slides, edge to edge, the one shown brought into sight: two rows of chips crowded the book */
 .book-steps { display: flex; gap: 0.35rem; overflow-x: auto; scrollbar-width: none; margin-inline: -1rem; padding-inline: 1rem; }
 .book-steps::-webkit-scrollbar { display: none; }
+/* An end with steps out of sight fades: the row is seen to go on */
+.book-steps[data-more-end] { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent); }
+.book-steps[data-more-start] { -webkit-mask-image: linear-gradient(to right, transparent, #000 3rem); mask-image: linear-gradient(to right, transparent, #000 3rem); }
+.book-steps[data-more-start][data-more-end] { -webkit-mask-image: linear-gradient(to right, transparent, #000 3rem, #000 calc(100% - 3rem), transparent); mask-image: linear-gradient(to right, transparent, #000 3rem, #000 calc(100% - 3rem), transparent); }
 .book-step { flex: none; display: inline-flex; align-items: center; gap: 0.35rem; width: auto; min-height: var(--touch); padding: 0.25rem 0.85rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--text-soft); font-size: 0.9rem; }
 .book-step.is-current { color: var(--text); }
 .book-step.is-current::before { content: ''; width: 0.45rem; height: 0.45rem; border-radius: 999px; background: var(--accent); }

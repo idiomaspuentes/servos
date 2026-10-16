@@ -124,11 +124,25 @@ export function BookScreen({
 
   // The steps slide in one row: the one shown is brought into sight.
   const stepsRef = useRef<HTMLDivElement>(null)
+  // Which ends of the row have steps out of sight: those ends fade, so it is seen that the row goes on.
+  const [hidden, setHidden] = useState<{ start: boolean; end: boolean }>({ start: false, end: false })
+  const measureSteps = () => {
+    const row = stepsRef.current
+    if (!row) return
+    const start = row.scrollLeft > 2
+    const end = row.scrollLeft + row.clientWidth < row.scrollWidth - 2
+    setHidden((h) => (h.start === start && h.end === end ? h : { start, end }))
+  }
   useEffect(() => {
     const row = stepsRef.current
     const on = row?.querySelector<HTMLElement>('[aria-selected="true"]')
     if (row && on) row.scrollLeft = Math.max(0, on.offsetLeft - row.offsetLeft - (row.clientWidth - on.offsetWidth) / 2)
+    measureSteps()
   }, [shown])
+  useEffect(() => {
+    window.addEventListener('resize', measureSteps)
+    return () => window.removeEventListener('resize', measureSteps)
+  }, [])
 
   const leadCard = (app: MiniApp) => {
     const done = app.done ? doneOf(app) : null
@@ -218,7 +232,12 @@ export function BookScreen({
         )}
 
         {/* The steps in one row that slides, each with how far it has gone; the one the book is in, marked. */}
-        <div className="book-steps" role="tablist" aria-label={t('libro.pasos')} ref={stepsRef}>
+        <div className="book-steps" role="tablist" aria-label={t('libro.pasos')}
+          ref={stepsRef}
+          onScroll={measureSteps}
+          data-more-start={hidden.start || undefined}
+          data-more-end={hidden.end || undefined}
+        >
           {PHASES.map((phase, i) => {
             const p = stepPct(phase)
             return (
