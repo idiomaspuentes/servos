@@ -772,3 +772,23 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .publish-version { display: flex; flex-direction: column; gap: 0.4rem; }
 .publish-go { margin-block-start: auto; }
 .door43-hosts { grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr)); }
+
+/* Reviewing a passage: four questions, the translation in the centre, the source a touch away */
+.passage-steps { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.review-stepper .has-notes .review-stepper-n { background: var(--warn-bg); border-color: var(--warn-text); color: var(--warn-text); }
+.passage-question h2 { margin: 0; font-size: 1.15rem; text-wrap: balance; }
+.passage-question p { margin: 0.25rem 0 0; }
+.passage-text { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.passage-verse { display: flex; gap: 0.4rem; align-items: baseline; font-size: 1.1rem; line-height: 1.6; }
+.passage-verse .verse-number { flex: none; font-size: 0.75rem; color: var(--text-soft); }
+.passage-verse-text { font-family: var(--project-font, var(--font)); white-space: pre-line; }
+.passage-source { display: flex; flex-direction: column; gap: 0.4rem; }
+.passage-source-hint { margin: 0; font-size: 0.85rem; }
+.passage-improve { display: flex; flex-direction: column; gap: 0.5rem; }
+.passage-notes { display: flex; flex-direction: column; gap: 0.5rem; }
+.passage-notes h3 { margin: 0.25rem 0 0; font-size: 1rem; }
+.observation { display: flex; flex-direction: column; gap: 0.3rem; padding: 0.6rem 0.75rem; border: 1px solid var(--line); border-inline-start: 3px solid var(--warn-text); border-radius: var(--radius); background: var(--surface); }
+.observation.is-resuelta { border-inline-start-color: var(--done); opacity: 0.8; }
+.observation p { margin: 0; }
+.observation-words { font-family: var(--project-font, var(--font)); }
+.verse-observations { display: flex; flex-direction: column; gap: 0.4rem; margin-block-start: 0.5rem; }

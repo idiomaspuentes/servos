@@ -38,7 +38,7 @@ export interface Project {
 export const DEFAULT_MINI_APPS: Record<Phase, string[]> = {
   estudio: ['estudio'],
   traduccion: ['editor'],
-  revision: ['revisorNotas', 'revisorPalabras', 'alineador'],
+  revision: ['revisorNotas', 'revisorPalabras', 'revisor', 'alineador'],
   comunitaria: ['comunitaria'],
   publicacion: ['publicar'],
 }

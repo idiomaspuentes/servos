@@ -27,6 +27,7 @@ import {
 } from '../../projects/work'
 import { ChapterLines } from '../../frame/ChapterLines'
 import { TwoVersions } from '../../frame/TwoVersions'
+import { VerseObservations } from '../revisor/revisor'
 import { LineFields, lineFieldId } from './LineFields'
 
 /** Lines of a poem (`\q`, `\q1`, `\q2`…), not the poem's headings or notes (`\qa`, `\qd`…). */
@@ -220,6 +221,8 @@ function Center({ context }: MiniAppCenterProps) {
                     onChange={(value) => write(v, value)}
                   />
                 )}
+                {/* What a passage review saw to improve here, until someone marks it improved. */}
+                <VerseObservations book={position.book} chapter={position.chapter} verse={v} person={context.person.name} />
               </div>
             </div>
           )
