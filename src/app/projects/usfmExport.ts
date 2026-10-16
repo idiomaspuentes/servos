@@ -10,7 +10,7 @@ import { normalizeWordForAlignmentMatch } from '@usfm-tools/editor-core'
 import type { PrototypeData } from '../../prototype/data'
 import { alignmentFor, readAlignment } from './alignment'
 import { bookName } from './model'
-import { joinedTo, readDraft } from './work'
+import { joinedTo, readDraft } from './bookText'
 
 const isPoem = (marker: string) => /^q\d?$|^qm\d?$/.test(marker)
 
@@ -82,10 +82,24 @@ export function alignedLines(lines: string[], groups: AlignmentGroup[]): string[
   })
 }
 
-export function bookUsfm(code: string, projectName: string, chapters: PrototypeData[], bridge = 'TPL', title?: string, aligned = false): string {
+/** Where a book's text is read from: the book's door, or (to lay out an empty book, or one being moved) another. */
+export interface TextSource {
+  readDraft(book: string, chapter: number, verse: number): string
+  joinedTo(book: string, chapter: number, verse: number): number | null
+}
+
+export function bookUsfm(
+  code: string,
+  projectName: string,
+  chapters: PrototypeData[],
+  bridge = 'TPL',
+  title?: string,
+  aligned = false,
+  from: TextSource = { readDraft, joinedTo }
+): string {
   // The name the team gave the book, else the bridge text's.
   const name = title?.trim() || bookName(code)
-  const out = [`\\id ${code.toUpperCase()} ${projectName}`, '\\usfm 3.0', '\\ide UTF-8', `\\h ${name}`, `\\toc1 ${name}`, `\\toc2 ${name}`, `\\mt ${name}`]
+  const out = [`\\id ${code.toUpperCase()}${projectName ? ` ${projectName}` : ''}`, '\\usfm 3.0', '\\ide UTF-8', `\\h ${name}`, `\\toc1 ${name}`, `\\toc2 ${name}`, `\\mt ${name}`]
   for (const data of chapters) {
     const text = data.texts.find((x) => x.abbreviation === bridge) ?? data.texts.find((x) => !x.original)
     // The verses that begin a paragraph in the bridge text.
@@ -98,10 +112,10 @@ export function bookUsfm(code: string, projectName: string, chapters: PrototypeD
     const verses = data.verses.map((v) => v.verse)
     for (let i = 0; i < verses.length; i++) {
       const v = verses[i]
-      const end = joinedTo(code, data.chapter, v) ?? v
+      const end = from.joinedTo(code, data.chapter, v) ?? v
       const number = end > v ? `${v}-${end}` : `${v}`
       const markers = (text?.lines[v] ?? []).map((l) => l.marker)
-      const draft = readDraft(code, data.chapter, v)
+      const draft = from.readDraft(code, data.chapter, v)
       const plain = draft.split('\n').map((l) => l.replace(/\s+/g, ' ').trim())
       const groups = aligned && original ? alignmentFor(readAlignment(code, data.chapter, v, original.abbreviation), draft) : []
       const lines = groups.length ? alignedLines(plain, groups) : plain

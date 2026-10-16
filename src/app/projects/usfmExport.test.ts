@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import type { PrototypeData } from '../../prototype/data'
+import { chapterOf, type PrototypeData } from '../../prototype/data'
 import { bookUsfm } from './usfmExport'
 import { readUsfmBook } from './usfmImport'
 import { joinWithNext, writeDraft } from './work'
@@ -36,14 +36,17 @@ const chapter = {
 } as unknown as PrototypeData
 
 describe('a book written as USFM', () => {
+  // Jonah as the prototype has it: chapter 1 in paragraphs (1–3, 4–5, …), chapter 2 the prayer, a poem (2:3 `\q`, `\q2`).
+  // The book is kept laid out as its bridge text is, so the shape a verse is written in is the real one.
   it('follows the bridge text: its paragraphs, a poem line by line, a join as one verse', () => {
     writeDraft('jon', 1, 1, 'Shuk punchami.', 'Ana')
     writeDraft('jon', 1, 2, 'Ri.', 'Ana')
-    writeDraft('jon', 1, 4, 'Kayarkani\nuyarkanki', 'Ana')
+    writeDraft('jon', 2, 3, 'Kayarkani\nuyarkanki', 'Ana')
     joinWithNext('jon', 1, 1, 'Ana')
-    const usfm = bookUsfm('jon', 'Biblia en kichwa', [chapter])
+    const usfm = bookUsfm('jon', 'Biblia en kichwa', [chapterOf('jon', 1)!, chapterOf('jon', 2)!])
     expect(usfm).toContain('\\id JON Biblia en kichwa')
-    expect(usfm).toContain('\\c 1\n\\p\n\\v 1-2 Shuk punchami. Ri.\n\\p\n\\v 3\n\\q1 \\v 4 Kayarkani\n\\q2 uyarkanki\n')
+    expect(usfm).toContain('\\c 1\n\\p\n\\v 1-2 Shuk punchami. Ri.\n\\v 3\n\\p\n\\v 4\n')
+    expect(usfm).toContain('\\q \\v 3 Kayarkani\n\\q2 uyarkanki\n')
   })
 
   it('reads back as the same verses', () => {

@@ -43,6 +43,24 @@ estructura**, aunque las palabras sean las mismas.
   vez no vuelve a preguntar nada.
 - Un puente contra versículos sueltos es un choque de estructura, salvo que uno haya partido el puente del otro.
 
+## Conectado a las pantallas
+
+Desde el 16 de octubre de 2026 la app guarda cada libro así (cableado, pasos 1 a 3):
+
+1. **Una sola puerta al texto** (`src/app/projects/bookText.ts`). Nada más lee ni escribe los versículos, sus
+   autores, las uniones, las versiones que esperan ni los choques de estructura; una prueba lo vigila.
+2. **Detrás de la puerta, el libro:** un USFM con la forma del texto puente (sus párrafos, los renglones de un poema,
+   todos los versículos, los unidos como ` 1-2`) y su diario. Quién escribió un versículo se lee del diario. El
+   diario toma un cambio cuando la persona deja de escribir un momento, cuando escribe otra persona o al salir de la
+   app: un versículo escrito letra por letra es un solo cambio. Cada aparato tiene su id, así que dos personas del
+   mismo nombre en dos aparatos son dos personas. Los libros se guardan en IndexedDB (o en localStorage donde no se
+   puede).
+3. **Lo que ya estaba**, escrito versículo por versículo por el prototipo, entra al libro una sola vez, cada
+   versículo como cambio de quien lo escribió.
+
+Falta el paso 4: compartir y recibir con `mergeInto` y `decide`. Hasta entonces, las versiones que esperan una
+elección y los choques de estructura se guardan aparte, dentro de la puerta.
+
 ## Lo que falta
 
 - **Los choques pendientes no viajan.** Las decisiones sí; un choque sin decidir queda en el aparato donde se

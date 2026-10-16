@@ -321,7 +321,7 @@ export const editor: MiniApp = {
         return { v: `${unit[0]}–${unit[unit.length - 1]}` }
       },
       when: (c) => joinedVerses(c.position.book, c.position.chapter, c.position.verse).length > 1,
-      run: (c) => separateJoined(c.position.book, c.position.chapter, c.position.verse),
+      run: (c) => separateJoined(c.position.book, c.position.chapter, c.position.verse, c.person.name),
     },
   ],
   primary: {
