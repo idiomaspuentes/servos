@@ -34,12 +34,12 @@ function Read({ item, quote, lookup }: StepProps<NoteItem>) {
   const [article, setArticle] = useState(false)
   return (
     <>
+      {/* What kind of note, its name and where, said once and small: the article's row names it again for reading it. */}
       <p className="word-help-kind">
-        {t(`revisorNotas.cat.${item.category}`)} · {item.chapter}:{item.verse}
+        {t(`revisorNotas.cat.${item.category}`)} · {academy?.title ?? item.subgroup} · {item.chapter}:{item.verse}
       </p>
-      <p className="review-instruction">{t('revisorNotas.hablaDe')}</p>
+      <p className="review-lead">{t('revisorNotas.hablaDe')}</p>
       {quote}
-      <h2 className="review-figure">{academy?.title ?? item.subgroup}</h2>
       <div className="review-note">
         <Markdown text={item.note.note} />
       </div>

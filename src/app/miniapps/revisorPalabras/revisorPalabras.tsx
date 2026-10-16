@@ -83,12 +83,12 @@ function Read({ item, data, quote, lookup, context }: StepProps<Use>) {
   }, [item.article])
   return (
     <>
+      {/* What kind of word, its name and where, said once and small: the phrase it is in leads. */}
       <p className="word-help-kind">
-        {t(`revisorPalabras.cat.${item.kind}`)} · {item.chapter}:{item.verse}
+        {t(`revisorPalabras.cat.${item.kind}`)} · {article?.title ?? wordName(item, lookup)} · {item.chapter}:{item.verse}
       </p>
-      <p className="review-instruction">{t('revisorPalabras.esta')}</p>
+      <p className="review-lead">{t('revisorPalabras.esta')}</p>
       {quote}
-      <h2 className="review-figure">{article?.title ?? wordName(item, lookup)}</h2>
       <Glossary entries={glossaryOf(item, data, context.project.id)} />
       {article && (
         <>

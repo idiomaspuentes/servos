@@ -610,7 +610,6 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .review-steps { flex: none; display: flex; align-items: center; gap: 0.6rem; font-variant-numeric: tabular-nums; }
 .review-steps .button-quiet { min-width: var(--touch); padding: 0; font-size: 1.4rem; }
 .review-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0.75rem 1rem 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; max-width: 46rem; margin-inline: auto; width: 100%; }
-.review-figure { margin: 0; font-size: 1.25rem; text-wrap: balance; }
 /* The phrase a note is about, before the note: in one text at a time, chosen by the small tabs above it */
 .review-quote { overflow: hidden; overflow: clip; touch-action: pan-y; user-select: none; -webkit-user-select: none; display: flex; flex-direction: column; gap: 0.4rem; padding: 0.5rem 0.75rem 0.75rem; border-inline-start: 3px solid var(--accent); border-radius: var(--radius); background: var(--surface); }
 .review-quote-switch { display: flex; gap: 3px; padding: 3px; width: max-content; max-width: 100%; overflow-x: auto; scrollbar-width: none; border-radius: 999px; background: var(--track); }
@@ -901,3 +900,18 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
   border: 0; border-radius: 14px; box-shadow: var(--shadow-card);
 }
 .observation, .word-help { border-block: 0; border-inline-end: 0; box-shadow: var(--shadow-card); }
+
+/* A reviewer's first step reads in one order: the phrase (the biggest), what the note says, the way on. The rest is
+   said small and quiet: the kind and name of the note, the lead-in, which text the phrase is shown in (under it), and
+   the steps, which say where one is without looking like tabs. */
+.word-help-kind { flex-wrap: wrap; row-gap: 0; text-wrap: balance; }
+.review-lead { margin: 0; font-size: 0.9rem; color: var(--text-soft); }
+.review-quote .review-quote-switch { order: 2; }
+.review-quote .review-quote-text { font-size: 1.3rem; }
+.review-quote .review-quote-text.is-verse { font-size: 1.1rem; }
+.review-stepper button { flex-direction: row; justify-content: center; gap: 0.3rem; border-block-end: 0; }
+.review-stepper-n { width: auto; height: auto; border: 0; border-radius: 0; background: none; }
+.review-stepper .is-done .review-stepper-n { background: none; color: var(--done); }
+.review-stepper [aria-current='step'] { border-block-end: 0; }
+.review-stepper [aria-current='step'] .review-stepper-n { background: none; color: var(--accent); }
+.review-stepper .has-notes .review-stepper-n { background: none; color: var(--warn-text); }
