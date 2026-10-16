@@ -18,8 +18,10 @@
  */
 
 import {
+  changesBetween,
   decide,
   mergeInto,
+  seenUpTo,
   personKey,
   placesOf,
   producerOf,
@@ -29,6 +31,7 @@ import {
   usfmOfRange,
   type BookState,
   type Conflict,
+  type Entry,
   type MergeReport,
   type Person,
   type Place,
@@ -235,35 +238,82 @@ interface Slot {
   key: string
 }
 
-const slotsMemo = new Map<string, { usfm: string; slots: Map<string, Slot> }>()
+/**
+ * A book's USFM parted at its chapters: what comes before the first, and each chapter's text from its `\c`. A letter
+ * typed changes one chapter: only that one is written again and read again (a book the size of Psalms read whole at
+ * each letter took a fifth of a second on a computer, a second on a phone).
+ */
+interface Parts {
+  head: string
+  chapters: Map<number, string>
+}
 
-/** The verses of a book by `chapter:verse` of their first verse, read once for each USFM. */
-function slotsOf(code: string): Map<string, Slot> {
+function splitBook(usfm: string): Parts {
+  const marks = [...usfm.matchAll(/\\c\s+(\d+)/g)]
+  const chapters = new Map<number, string>()
+  marks.forEach((m, i) => {
+    const text = usfm.slice(m.index, i + 1 < marks.length ? marks[i + 1].index : usfm.length)
+    const n = Number(m[1])
+    chapters.set(n, (chapters.get(n) ?? '') + text)
+  })
+  return { head: marks.length ? usfm.slice(0, marks[0].index) : usfm, chapters }
+}
+
+/** The book again from its parts, its chapters in order. */
+const joinBook = (parts: Parts) =>
+  parts.head +
+  [...parts.chapters]
+    .sort((a, b) => a[0] - b[0])
+    .map(([, text]) => text)
+    .join('')
+
+const partsMemo = new Map<string, Array<{ usfm: string; parts: Parts }>>()
+
+/** A book's USFM in its parts, parted once (the last few kept: the text as it is now, as the journal took it). */
+function partsOf(code: string, usfm: string): Parts {
+  const hit = partsMemo.get(code)?.find((x) => x.usfm === usfm)
+  if (hit) return hit.parts
+  const parts = splitBook(usfm)
+  remember(code, usfm, parts)
+  return parts
+}
+
+function remember(code: string, usfm: string, parts: Parts) {
+  const list = (partsMemo.get(code) ?? []).filter((x) => x.usfm !== usfm)
+  partsMemo.set(code, [{ usfm, parts }, ...list].slice(0, 3))
+}
+
+const slotsMemo = new Map<string, Map<number, { text: string; slots: Map<number, Slot> }>>()
+
+/** The verses of a chapter by the number of their first verse, read once for each text of the chapter. */
+function chapterSlots(code: string, chapter: number): Map<number, Slot> {
   const rec = shelf.get(code)
-  if (!rec) return new Map()
-  const memo = slotsMemo.get(code)
-  if (memo && memo.usfm === rec.working) return memo.slots
-  const keys = new Map(placesOf(rec.working).map((p) => [`${p.chapter}:${p.from}`, p.key]))
-  const slots = new Map<string, Slot>()
-  for (const span of listVerseSpans(rec.working)) {
-    const id = `${span.chapter}:${span.verse}`
-    if (slots.has(id)) continue
-    const lines = verseLinesText(rec.working, span)
-    slots.set(id, { chapter: span.chapter, from: span.verse, to: Math.max(span.verse, span.verseTo), lines, key: keys.get(id) ?? textKey(normalizeVerseText(lines)) })
+  const text = rec ? partsOf(code, rec.working).chapters.get(chapter) : undefined
+  if (text === undefined) return new Map()
+  let byChapter = slotsMemo.get(code)
+  if (!byChapter) slotsMemo.set(code, (byChapter = new Map()))
+  const memo = byChapter.get(chapter)
+  if (memo && memo.text === text) return memo.slots
+  const keys = new Map(placesOf(text).map((p) => [p.from, p.key]))
+  const slots = new Map<number, Slot>()
+  for (const span of listVerseSpans(text)) {
+    if (span.chapter !== chapter || slots.has(span.verse)) continue
+    const lines = verseLinesText(text, span)
+    slots.set(span.verse, { chapter, from: span.verse, to: Math.max(span.verse, span.verseTo), lines, key: keys.get(span.verse) ?? textKey(normalizeVerseText(lines)) })
   }
-  slotsMemo.set(code, { usfm: rec.working, slots })
+  byChapter.set(chapter, { text, slots })
   return slots
 }
 
 /** The verse as written: its lines parted by `\n`, or empty. */
-export const readDraft = (book: string, chapter: number, verse: number): string => slotsOf(book).get(`${chapter}:${verse}`)?.lines ?? ''
+export const readDraft = (book: string, chapter: number, verse: number): string => chapterSlots(book, chapter).get(verse)?.lines ?? ''
 
 /**
  * Verses joined: when a language says two verses (or more) in one sentence, as USFM's `\v 1-2`. The text of them all
  * is said by the first; the others are part of it.
  */
 export function joinedTo(book: string, chapter: number, verse: number): number | null {
-  const slot = slotsOf(book).get(`${chapter}:${verse}`)
+  const slot = chapterSlots(book, chapter).get(verse)
   return slot && slot.to > verse ? slot.to : null
 }
 
@@ -289,7 +339,7 @@ export const textOf = (book: string, chapter: number, verse: number): string => 
 /** Who wrote the verse last, or null when nobody has; of a verse joined to the one before, who wrote them together. */
 export function authorOf(book: string, chapter: number, verse: number): string | null {
   const at = joinStartOf(book, chapter, verse)
-  const slot = slotsOf(book).get(`${chapter}:${at}`)
+  const slot = chapterSlots(book, chapter).get(at)
   const rec = shelf.get(book)
   if (!slot || !rec || !slot.lines.trim()) return null
   if (rec.pendingBy !== null && rec.pendingAt.includes(`${chapter}:${at}`)) return rec.pendingBy || null
@@ -312,9 +362,12 @@ export interface WrittenVerse {
 /** Every verse of a book that has text or starts a join, in order. */
 export function writtenVerses(book: string): WrittenVerse[] {
   const out: WrittenVerse[] = []
-  for (const slot of slotsOf(book).values()) {
-    if (!slot.lines.trim() && slot.to === slot.from) continue
-    out.push({ chapter: slot.chapter, verse: slot.from, text: slot.lines, by: authorOf(book, slot.chapter, slot.from), ...(slot.to > slot.from ? { joinedTo: slot.to } : {}) })
+  const rec = shelf.get(book)
+  for (const chapter of rec ? partsOf(book, rec.working).chapters.keys() : []) {
+    for (const slot of chapterSlots(book, chapter).values()) {
+      if (!slot.lines.trim() && slot.to === slot.from) continue
+      out.push({ chapter: slot.chapter, verse: slot.from, text: slot.lines, by: authorOf(book, slot.chapter, slot.from), ...(slot.to > slot.from ? { joinedTo: slot.to } : {}) })
+    }
   }
   return out.sort((a, b) => a.chapter - b.chapter || a.verse - b.verse)
 }
@@ -356,11 +409,35 @@ function emptyBook(code: string): Shelved {
   return { state, working: usfm, pendingBy: null, pendingAt: [] }
 }
 
-/** The journal takes the change being written, if there is one. */
+/**
+ * The journal takes the change being written, if there is one. Only the chapters written in are compared, when the
+ * rest of the book is as the journal last took it; else the whole book.
+ */
 function commit(rec: Shelved): Shelved {
   if (rec.pendingBy === null && rec.working === rec.state.usfm) return rec
-  const state = recordEdits(rec.state, personOf(rec.pendingBy ?? ''), rec.working, new Date().toISOString())
-  return { state, working: state.usfm, pendingBy: null, pendingAt: [] }
+  const person = personOf(rec.pendingBy ?? '')
+  const at = new Date().toISOString()
+  const code = rec.state.book
+  const written = [...new Set(rec.pendingAt.map((x) => Number(x.split(':')[0])))]
+  const was = partsOf(code, rec.state.usfm)
+  const now = partsOf(code, rec.working)
+  const onlyThose =
+    written.length > 0 &&
+    was.head === now.head &&
+    was.chapters.size === now.chapters.size &&
+    [...now.chapters].every(([c, text]) => written.includes(c) || was.chapters.get(c) === text)
+  if (!onlyThose) {
+    const state = recordEdits(rec.state, person, rec.working, at)
+    return { state, working: state.usfm, pendingBy: null, pendingAt: [] }
+  }
+  let seq = seenUpTo(rec.state, personKey(person)) + 1
+  const entries: Entry[] = []
+  for (const c of written.sort((a, b) => a - b)) {
+    const made = changesBetween(was.chapters.get(c) ?? '', now.chapters.get(c) ?? '', person, seq, at)
+    seq += made.length
+    entries.push(...made)
+  }
+  return { state: { ...rec.state, usfm: rec.working, journal: [...rec.state.journal, ...entries] }, working: rec.working, pendingBy: null, pendingAt: [] }
 }
 
 const timers = new Map<string, number>()
@@ -394,7 +471,18 @@ export function flushBooks() {
 function change(book: string, by: string, chapter: number, edits: VerseSlotEdit[], now = false) {
   let rec = shelf.get(book) ?? emptyBook(book)
   if (rec.pendingBy !== null && rec.pendingBy !== by) rec = commit(rec)
-  const working = applyVerseEdits(rec.working, chapter, edits)
+  // The chapter alone is written again, when the book has it; the book, when the chapter is to be made.
+  const parts = partsOf(book, rec.working)
+  const before = parts.chapters.get(chapter)
+  let working = rec.working
+  if (before !== undefined) {
+    const after = applyVerseEdits(before, chapter, edits)
+    if (after !== before) {
+      const next: Parts = { head: parts.head, chapters: new Map(parts.chapters).set(chapter, after) }
+      working = joinBook(next)
+      remember(book, working, next)
+    }
+  } else working = applyVerseEdits(rec.working, chapter, edits)
   if (working === rec.working) {
     if (!shelf.get(book)) shelf.put(rec)
     return
@@ -459,6 +547,7 @@ function moveLegacyText() {
 export function forgetBooks() {
   localMemo.clear()
   slotsMemo.clear()
+  partsMemo.clear()
 }
 
 // ——— Gathering another copy: the merge of `src/core` ————————————————————————————————————————————————————————————
@@ -513,15 +602,31 @@ export function bookFrom(
   origin: string,
   at = new Date().toISOString()
 ): BookState {
-  let { state } = emptyBook(book)
-  state = { ...state, journal: [] }
-  for (const v of [...verses].sort((a, b) => a.chapter - b.chapter || a.verse - b.verse)) {
-    if (!v.text.trim()) continue
-    const to = v.to ?? v.verse
-    const usfm = applyVerseEdits(state.usfm, v.chapter, [{ from: v.verse, to, text: v.text, leads: to === v.verse ? leadsOf(book, v.chapter, v.verse) : [] }])
-    state = recordEdits(state, { name: v.by ?? '', device: origin }, usfm, at)
+  const parts = splitBook(emptyBook(book).state.usfm)
+  const journal: Entry[] = []
+  const seqs = new Map<string, number>()
+  const byChapter = new Map<number, typeof verses>()
+  for (const v of verses) if (v.text.trim()) byChapter.set(v.chapter, [...(byChapter.get(v.chapter) ?? []), v])
+  for (const [chapter, list] of [...byChapter].sort((x, y) => x[0] - y[0])) {
+    let text = parts.chapters.get(chapter) ?? `\\c ${chapter}\n\\p\n`
+    const writers = new Map<string, typeof verses>()
+    for (const v of list) writers.set(v.by ?? '', [...(writers.get(v.by ?? '') ?? []), v])
+    for (const [name, mine] of writers) {
+      const edits = mine.map((v) => {
+        const to = v.to ?? v.verse
+        return { from: v.verse, to, text: v.text, leads: to === v.verse ? leadsOf(book, chapter, v.verse) : [] }
+      })
+      const after = applyVerseEdits(text, chapter, edits)
+      const person = { name, device: origin }
+      const key = personKey(person)
+      const made = changesBetween(text, after, person, (seqs.get(key) ?? 0) + 1, at)
+      seqs.set(key, (seqs.get(key) ?? 0) + made.length)
+      journal.push(...made)
+      text = after
+    }
+    parts.chapters.set(chapter, text)
   }
-  return state
+  return { book, usfm: joinBook(parts), journal, pending: [] }
 }
 
 // ——— What waits for a person: the merge's pending conflicts ——————————————————————————————————————————————————————
