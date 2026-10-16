@@ -95,9 +95,7 @@ function Read({ item, data, quote, lookup, context }: StepProps<Use>) {
           <div className="review-note">
             <Markdown text={articleCore(article.markdown)} skipFirstHeading />
           </div>
-          <button type="button" className="button-secondary review-article" onClick={() => setWhole(true)}>
-            {t('revisorPalabras.articuloEntero')}
-          </button>
+          <RowButton label={t('revisorPalabras.articuloEntero')} onClick={() => setWhole(true)} />
           {whole && (
             <Sheet title={article.title} onClose={() => setWhole(false)}>
               <Markdown text={article.markdown} skipFirstHeading />

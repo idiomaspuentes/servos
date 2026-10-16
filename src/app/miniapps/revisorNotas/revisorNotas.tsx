@@ -44,9 +44,7 @@ function Read({ item, quote, lookup }: StepProps<NoteItem>) {
         <Markdown text={item.note.note} />
       </div>
       {academy && (
-        <button type="button" className="button-secondary review-article" onClick={() => setArticle(true)}>
-          {t('revisorNotas.leerArticulo', { titulo: academy.title })}
-        </button>
+        <RowButton label={t('revisorNotas.leerArticulo', { titulo: academy.title })} onClick={() => setArticle(true)} />
       )}
       {article && academy && (
         <Sheet title={academy.title} onClose={() => setArticle(false)}>

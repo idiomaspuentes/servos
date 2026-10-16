@@ -424,7 +424,11 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 /* The boxes scroll inside the pane, so the one being written stays right above the keyboard. */
 .edit-fields { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 0.5rem; }
 .edit-where { margin: 0; font-size: 0.85rem; color: var(--text-soft); flex: none; }
-.pane:has(> .edit-pane) { overflow-y: hidden; }
+/* The boxes are what scrolls: the pane gives them its padding, so their scroll bar is at the screen's edge, as the
+   other panes' is, not inside the margin */
+.pane:has(> .edit-pane) { overflow-y: hidden; padding: 0; }
+.edit-fields { padding: 0.75rem 1rem; }
+.edit-pane > :not(.edit-fields) { padding-inline: 1rem; }
 
 /* Writing on a phone: the header and the filled button step aside for the keyboard */
 .screen-fill.is-writing .header, .screen-fill.is-writing .main-fill > .button-primary, .screen-fill.is-writing .edit-hint { display: none; }
@@ -559,7 +563,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .review { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .review-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.5rem max(1rem, calc((100% - 46rem) / 2 + 1rem)); border-block-end: 1px solid var(--line); }
 .review-filter { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.review-steps { flex: none; display: flex; align-items: center; font-variant-numeric: tabular-nums; }
+.review-steps { flex: none; display: flex; align-items: center; gap: 0.6rem; font-variant-numeric: tabular-nums; }
 .review-steps .button-quiet { min-width: var(--touch); padding: 0; font-size: 1.4rem; }
 .review-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0.75rem 1rem 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; max-width: 46rem; margin-inline: auto; width: 100%; }
 .review-figure { margin: 0; font-size: 1.25rem; text-wrap: balance; }
@@ -705,7 +709,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
   .screen-app > .position-crossed { order: 2; }
   .screen-app > .position {
     order: 3; position: sticky; inset-block-end: 0; z-index: 2;
-    border-block-start: 1px solid var(--line); padding-block-end: env(safe-area-inset-bottom, 0px);
+    border-block-start: 1px solid var(--line); padding-block-end: calc(0.35rem + env(safe-area-inset-bottom, 0px));
   }
   .screen-app > .position-crossed > span { inset-block-start: auto; inset-block-end: 0.4rem; }
 }
@@ -838,3 +842,5 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .review-more-places { min-height: var(--touch); }
 .tool-card > .row-button { padding-inline: 0.8rem; }
 .study-write { margin-block-start: 1rem; }
+/* Scroll bars thin where text scrolls, not to compete with the text */
+.pane, .edit-fields, .review-scroll, .publish, .sheet-body, .study-intro { scrollbar-width: thin; }
