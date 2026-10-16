@@ -1,30 +1,34 @@
 /* Phone first (375 px), 44 px touch targets, logical properties so a right-to-left language needs no other sheet. */
 
 :root {
-  --bg: #f6f4ef;
+  /* Light: cool neutrals with a little of the accent's blue in them, as tC4's paper, frost and mist (a warm beige
+     fought the blue); ink for text. Each text colour reads at 4.5:1 or more on the ground and on a card. */
+  --bg: #f2f5f7;
   --surface: #ffffff;
-  --surface-soft: #efece4;
-  --text: #22201c;
-  --text-soft: #5d5950;
-  --line: #d9d4c8;
+  --surface-soft: #e8edf1;
+  --text: #1e2c36;
+  --text-soft: #4f5e6a;
+  --line: #d3dce2;
   --accent: #1f5f8b;
   --accent-text: #ffffff;
-  --accent-soft: #e3eef6;
-  --mark: #ffe08a;
-  --warn-bg: #fdf1dc;
-  --warn-text: #6b4204;
-  --danger: #a32d2d;
-  --done: #3b7d3a;
-  --done-soft: #e4f1df;
+  --accent-soft: #e3f0f8;
+  --mark: #fff1b8;
+  --warn-bg: #fcf6ea;
+  --warn-text: #8a5b12;
+  --danger: #a21309;
+  --done: #327547;
+  --done-soft: #e8f7ed;
   --radius: 10px;
   --touch: 44px;
   /* Three tones, as tC4: the ground; a card on it, lifted by tone and a soft shadow, not drawn round; inside a card,
      nothing in its own box, only hairlines. A pill switch runs on a sunken track, the chosen one raised. */
-  --hair: rgba(34, 32, 28, 0.09);
-  --shadow-card: 0 1px 2px rgba(31, 95, 139, 0.07), 0 2px 8px rgba(31, 95, 139, 0.06);
-  --shadow-raised: 0 1px 2px rgba(31, 95, 139, 0.2);
-  --track: #ebe7dd;
+  --hair: rgba(1, 66, 99, 0.1);
+  --shadow-card: 0 1px 2px rgba(1, 66, 99, 0.08), 0 2px 8px rgba(1, 66, 99, 0.07);
+  --shadow-raised: 0 1px 2px rgba(1, 66, 99, 0.18);
+  --track: #e2e8ed;
   --pill: #ffffff;
+  /* A box to write in, when it is not the one being written: white on the light ground; a faint field on the dark */
+  --field: #ffffff;
   --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color-scheme: light;
 }
@@ -52,6 +56,7 @@
     --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.6);
     --track: #100f0e;
     --pill: #34322d;
+    --field: rgba(34, 33, 30, 0.6);
     color-scheme: dark;
   }
 }
@@ -77,6 +82,7 @@
   --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.6);
   --track: #100f0e;
   --pill: #34322d;
+  --field: rgba(34, 33, 30, 0.6);
   color-scheme: dark;
 }
 
@@ -499,7 +505,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 /* The verse's number, as the bridge texts show theirs, on the line of the box's first line of text */
 .edit-verse-number { padding-block-start: 0.85rem; font-size: 0.95rem; font-weight: 600; line-height: 1.5; color: var(--text-soft); text-align: end; font-variant-numeric: tabular-nums; }
 .line-fields { display: grid; gap: 0.375rem; }
-.line-field { resize: none; field-sizing: content; min-height: var(--touch); border-color: transparent; background: color-mix(in srgb, var(--surface) 60%, transparent); }
+.line-field { resize: none; field-sizing: content; min-height: var(--touch); border-color: transparent; background: var(--field); box-shadow: 0 0 0 1px var(--hair); }
 /* The box being written in: one accent edge, not the page's thick focus ring around its own border */
 .line-field:focus-visible, .line-field:focus { outline: none; border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 1px var(--accent); }
 /* What the team writes, in the project's font */
