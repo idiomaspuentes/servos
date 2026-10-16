@@ -83,6 +83,9 @@ Desde el 16 de octubre de 2026 la app guarda cada libro así (cableado, pasos 1 
    mismo texto hechas por separado son la más reciente si las hizo una persona, un choque si las hicieron dos (se
    elige en el alineador, y la elección queda en el diario); una que entra hecha sobre otro texto queda, para
    revisar. El diario toma las alineaciones como el texto: cuando la persona se detiene.
+8. **Las pruebas de Taller para la mezcla por versículo** (`src/usfm/verseMerge.test.ts`): sus casos, P1–P9 entre
+   ellos, tal como Taller los escribió, sobre la copia de Servos; quedan fuera los de lo que Servos no tiene (git como
+   transporte, las ramas de tareas, el comentario de choques, su caché de borradores).
 
 ## Lo que falta
 
@@ -92,7 +95,5 @@ Desde el 16 de octubre de 2026 la app guarda cada libro así (cableado, pasos 1 
   de elegir; la pantalla de elegir muestra una y, al decidirla, la otra.
 - **Borrar un versículo a propósito no se propaga**, por la regla 2. Habrá que ver si hace falta una forma explícita
   de borrar.
-- **Las pruebas de Taller para `src/usfm`** (`scripts/verify-usfm-merge.mts`, con sus casos P1–P9) no están
-  copiadas todavía.
 - La huella del texto es FNV-1a de 64 bits: basta para distinguir los versículos de un libro, pero no es una huella
   criptográfica.
