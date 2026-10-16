@@ -9,15 +9,16 @@ import { saveFile } from '../frame/saveFile'
 import { Sheet } from '../frame/Sheet'
 import { useT } from '../i18n/i18n'
 import { titleOf, type Project } from '../projects/model'
-import { shareFileName, shareProject } from '../projects/share'
+import { shareFileName, shareProject, withSounds } from '../projects/share'
 
 export function ShareSheet({ project, books, person, onClose }: { project: Project; books: string[]; person: string; onClose(): void }) {
   const t = useT()
   const [chosen, setChosen] = useState<string[]>(books)
   const [said, setSaid] = useState<string | null>(null)
-  const file = () => shareProject(project, chosen, person)
+  // With the recordings' sound, read from where it is kept.
+  const file = () => withSounds(shareProject(project, chosen, person))
   const save = async () => {
-    const shared = file()
+    const shared = await file()
     const name = shareFileName(shared, chosen.map((c) => titleOf(project, c)))
     const saved = await saveFile(name, JSON.stringify(shared))
     // Said only when it was saved: a file refused or not possible here is not reported as done.
@@ -25,7 +26,7 @@ export function ShareSheet({ project, books, person, onClose }: { project: Proje
   }
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(JSON.stringify(file()))
+      await navigator.clipboard.writeText(JSON.stringify(await file()))
       setSaid(t('compartir.copiado'))
     } catch {
       setSaid(t('compartir.noCopiado'))

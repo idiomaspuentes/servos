@@ -357,7 +357,10 @@ grande para grabar y, ya grabado, la grabación para oírla, «Grabar otra vez»
 sección cuenta para cada uno de sus versículos. Ninguna toma se pierde: cuenta la última, o la que se elija entre las
 anteriores, y cada una lleva quién la grabó, cuándo, cuánto dura y qué versículos dice. El sonido se guarda en
 IndexedDB; lo demás, por el primer versículo de lo grabado. Si está escrito se ve debajo, con el camino al editor. El
-editor también abre por sección mientras la persona no elija. Falta que los paquetes («Compartir») y la publicación lleven el audio.
+editor también abre por sección mientras la persona no elija. «Compartir» lleva todas las tomas con su sonido, y al
+recibir se juntan toma por toma, sin perder ninguna, quedando la que contaba aquí. «Publicar en Door43» sube, de cada
+lugar, la toma que cuenta, como `audio/JON/001/001-003.webm` (libro, capítulo, versículo o pasaje), en el formato que
+grabó el teléfono.
 
 ## 11. Arquitectura
 

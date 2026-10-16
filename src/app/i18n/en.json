@@ -477,7 +477,7 @@
   "compartir.libroTitulo": "Share {libro}",
   "compartir.proyectoTitulo": "Share {proyecto}",
   "compartir.queLibros": "Which books",
-  "compartir.vaTodo": "Everything goes: the text, the alignment, the checks, the study notes and the glossary. Whoever receives it sees what changes before gathering it.",
+  "compartir.vaTodo": "Everything goes: the text, the alignment, the checks, the study notes, the recordings and the glossary. Whoever receives it sees what changes before gathering it.",
   "compartir.guardar": "Save the file",
   "compartir.copiar": "Copy the text",
   "compartir.como": "Pass it on a card, USB or Bluetooth; or paste the copied text in a message.",
@@ -632,5 +632,7 @@
   "marco.listo": "Done",
   "ayudas.enElOriginalSolo": "In the original:",
   "libro.sigaEn": "Go on at {lugar}",
-  "marco.volverAEtiqueta": "Back to {destino}"
+  "marco.volverAEtiqueta": "Back to {destino}",
+  "recibir.grabaciones": "recordings: {n}",
+  "recibir.grabacionesEntraron": "Recordings gathered in: {n}."
 }

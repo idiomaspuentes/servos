@@ -93,6 +93,7 @@ export function ReceiveScreen({
                 <span className="quiet">{t('recibir.entraron', { n: b.taken, iguales: b.same })}</span>
                 {b.choices > 0 && <span className="quiet">{t('recibir.paraElegirDespues', { n: b.choices })}</span>}
                 {b.alignmentsTaken + b.checksTaken > 0 && <span className="quiet">{t('recibir.capas', { n: b.alignmentsTaken + b.checksTaken })}</span>}
+                {b.recordingsTaken > 0 && <span className="quiet">{t('recibir.grabacionesEntraron', { n: b.recordingsTaken })}</span>}
               </li>
             ))}
           </ul>
@@ -217,6 +218,7 @@ export function ReceiveScreen({
                     ? t('recibir.libroNuevo', { n: p.taken })
                     : t('recibir.cambia', { nuevos: p.taken, iguales: p.same, elegir: p.choices })}
                   {p.alignments + p.checks + p.studyNotes > 0 && ` · ${t('recibir.traeMas', { n: p.alignments + p.checks + p.studyNotes })}`}
+                  {p.recordings > 0 && ` · ${t('recibir.grabaciones', { n: p.recordings })}`}
                   {p.waiting > 0 && ` · ${t('recibir.esperando', { n: p.waiting })}`}
                 </span>
               </span>

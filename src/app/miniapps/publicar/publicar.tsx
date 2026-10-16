@@ -2,7 +2,8 @@
  * Publicar en Door43 (design, section 8): the project's books, translated and aligned as they are, uploaded to the
  * team's repository on Door43, each upload kept in its history there; and, when the team holds what is there good, a
  * numbered version. One thing to do at a time: link the account, choose where (once), upload. What changed since the
- * last upload from this phone is said book by book (philosophy, principle 8: on the phone is not on Door43).
+ * last upload from this phone is said book by book (philosophy, principle 8: on the phone is not on Door43). The
+ * recordings said aloud go too: for each place, the take that counts.
  */
 
 import { useEffect, useMemo, useState } from 'react'
@@ -31,11 +32,23 @@ import {
   type FileResult,
 } from '../../projects/door43'
 import { titleOf } from '../../projects/model'
+import { audioFileOf, chosenTake, recordedPlaces, soundBase64 } from '../../projects/recordings'
 import { bookUsfm } from '../../projects/usfmExport'
 import { textOf } from '../../projects/work'
 import type { MiniApp, MiniAppCenterProps } from '../contract'
 
-type BookState = { code: string; title: string; usfm: string; written: number; total: number; aligned: number }
+type BookState = {
+  code: string
+  title: string
+  usfm: string
+  written: number
+  total: number
+  aligned: number
+  /** The take that counts for each recorded place, and where it goes. */
+  takes: Array<{ id: string; path: string }>
+  /** What is uploaded of the book, as a fingerprint: its text and which takes count. */
+  key: string
+}
 
 function Center({ context }: MiniAppCenterProps) {
   const { t, project, person } = context
@@ -79,12 +92,19 @@ function Center({ context }: MiniAppCenterProps) {
             if (textOf(b.code, d.chapter, verse).trim()) written++
             if (original && readAlignment(b.code, d.chapter, verse, original)?.groups.length) aligned++
           }
-        return [{ code: b.code, title, usfm: bookUsfm(b.code, project.name, chapters, 'TPL', b.name, true), written, total, aligned }]
+        const usfm = bookUsfm(b.code, project.name, chapters, 'TPL', b.name, true)
+        const takes = recordedPlaces(b.code).flatMap((p) => {
+          const take = chosenTake(b.code, p.chapter, p.verse)
+          return take ? [{ id: take.id, path: audioFileOf(b.code, p.chapter, p.verse, take) }] : []
+        })
+        return [{ code: b.code, title, usfm, written, total, aligned, takes, key: fingerprint(usfm + takes.map((x) => x.id).join()) }]
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [project, results]
   )
   const withText = books.filter((b) => b.written > 0)
+  // A book only said aloud is uploaded too: its recordings.
+  const withWork = books.filter((b) => b.written > 0 || b.takes.length > 0)
   // Books of the project whose texts are not on this phone: said, not left out unseen (principle 8).
   const missing = project.books.filter((b) => !books.some((x) => x.code === b.code))
   // The prototype shared as a page inside Claude may not reach other sites: said before trying, not as a failure.
@@ -99,15 +119,20 @@ function Center({ context }: MiniAppCenterProps) {
     setResults(null)
     setVersioned(null)
     try {
+      // The sounds, read from where they are kept; one not on this phone is not uploaded from here.
+      const sounds = (
+        await Promise.all(withWork.flatMap((b) => b.takes).map(async (x) => ({ path: x.path, base64: await soundBase64(x.id) })))
+      ).filter((x): x is { path: string; base64: string } => x.base64 !== null)
       const files = [
         ...withText.map((b) => ({ path: fileOf(b.code), content: b.usfm })),
+        ...sounds,
         { path: 'manifest.yaml', content: manifestOf(project, to.owner, to.repo, withText.map((b) => ({ code: b.code, title: b.title }))) },
       ]
-      const done = await publish(account, to, files, t('publicar.mensaje', { nombre: person.name, libros: withText.map((b) => b.title).join(', ') }))
+      const done = await publish(account, to, files, t('publicar.mensaje', { nombre: person.name, libros: withWork.map((b) => b.title).join(', ') }))
       const now = new Date().toISOString()
-      for (const b of withText) {
-        const r = done.find((x) => x.path === fileOf(b.code))
-        if (r && r.state !== 'failed') keepUploaded(project.id, b.code, { at: now, by: person.name, key: fingerprint(b.usfm) })
+      for (const b of withWork) {
+        const mine = done.filter((x) => x.path === fileOf(b.code) || b.takes.some((y) => y.path === x.path))
+        if (mine.length && mine.every((r) => r.state !== 'failed')) keepUploaded(project.id, b.code, { at: now, by: person.name, key: b.key })
       }
       setResults(done)
       const failed = done.find((r) => r.state === 'failed')
@@ -164,8 +189,9 @@ function Center({ context }: MiniAppCenterProps) {
   }
 
   // 3. Upload.
-  const written = results?.filter((r) => r.state === 'written' && r.path !== 'manifest.yaml').length ?? 0
-  const same = results?.filter((r) => r.state === 'same' && r.path !== 'manifest.yaml').length ?? 0
+  const written = results?.filter((r) => r.state === 'written' && r.path.endsWith('.usfm')).length ?? 0
+  const same = results?.filter((r) => r.state === 'same' && r.path.endsWith('.usfm')).length ?? 0
+  const soundsWritten = results?.filter((r) => r.state === 'written' && r.path.startsWith('audio/')).length ?? 0
   return (
     <div className="publish">
       <section className="publish-where">
@@ -189,11 +215,14 @@ function Center({ context }: MiniAppCenterProps) {
       <ul className="publish-books">
         {books.map((b) => {
           const up = uploadedOf(project.id, b.code)
-          const state = !b.written ? 'vacio' : !up ? 'nunca' : up.key === fingerprint(b.usfm) ? 'igual' : 'cambio'
+          const state = !b.written && !b.takes.length ? 'vacio' : !up ? 'nunca' : up.key === b.key ? 'igual' : 'cambio'
           return (
             <li key={b.code} className={`publish-book is-${state}`}>
               <span className="publish-book-name">{b.title}</span>
-              <span className="quiet">{t('publicar.traducidos', { n: b.written, total: b.total, a: b.aligned })}</span>
+              <span className="quiet">
+                {t('publicar.traducidos', { n: b.written, total: b.total, a: b.aligned })}
+                {b.takes.length > 0 && ` · ${t('publicar.grabaciones', { n: b.takes.length })}`}
+              </span>
               <span className="publish-book-state">{t(`publicar.estado.${state}`, { fecha: up ? date(up.at) : '', nombre: up?.by ?? '' })}</span>
             </li>
           )
@@ -208,7 +237,8 @@ function Center({ context }: MiniAppCenterProps) {
 
       {results && !problem && (
         <p className="review-done" role="status">
-          ✓ {t('publicar.subido', { escritos: written, iguales: same })}{' '}
+          ✓ {t('publicar.subido', { escritos: written, iguales: same })}
+          {soundsWritten > 0 && ` ${t('publicar.grabacionesSubidas', { n: soundsWritten })}`}{' '}
           <a href={repoUrl(to)} target="_blank" rel="noreferrer">
             {t('publicar.verEnDoor43')}
           </a>
@@ -242,7 +272,7 @@ function Center({ context }: MiniAppCenterProps) {
       ) : null}
       {versioned !== null && <p className="review-done">✓ {t('publicar.versionHecha', { n: versioned })}</p>}
 
-      <button type="button" className="button-primary publish-go" disabled={busy || !online || withText.length === 0} onClick={() => void upload().then(() => redraw((n) => n + 1))}>
+      <button type="button" className="button-primary publish-go" disabled={busy || !online || withWork.length === 0} onClick={() => void upload().then(() => redraw((n) => n + 1))}>
         {busy ? t('publicar.subiendo') : t('publicar.subir')}
       </button>
     </div>
@@ -332,7 +362,9 @@ export const publicar: MiniApp = {
   texts: {
     es: {
       nombre: 'Publicar en Door43',
-      descripcion: 'Subir el proyecto a Door43, cada libro con su alineación, y marcar versiones',
+      descripcion: 'Subir el proyecto a Door43, cada libro con su alineación y sus grabaciones, y marcar versiones',
+      grabaciones: 'grabaciones: {n}',
+      grabacionesSubidas: 'Grabaciones subidas: {n}.',
       sinCuenta: 'Para publicar, vincule su cuenta de Door43. Se hace una vez en este teléfono.',
       vincularCuenta: 'Vincular mi cuenta de Door43',
       destinoPregunta: '¿Dónde se publica «{proyecto}»?',
@@ -368,7 +400,9 @@ export const publicar: MiniApp = {
     },
     pt: {
       nombre: 'Publicar no Door43',
-      descripcion: 'Enviar o projeto ao Door43, cada livro com seu alinhamento, e marcar versões',
+      descripcion: 'Enviar o projeto ao Door43, cada livro com seu alinhamento e suas gravações, e marcar versões',
+      grabaciones: 'gravações: {n}',
+      grabacionesSubidas: 'Gravações enviadas: {n}.',
       sinCuenta: 'Para publicar, vincule sua conta do Door43. Faz-se uma vez neste telefone.',
       vincularCuenta: 'Vincular minha conta do Door43',
       destinoPregunta: 'Onde se publica «{proyecto}»?',
@@ -404,7 +438,9 @@ export const publicar: MiniApp = {
     },
     en: {
       nombre: 'Publish on Door43',
-      descripcion: 'Upload the project to Door43, each book with its alignment, and mark versions',
+      descripcion: 'Upload the project to Door43, each book with its alignment and its recordings, and mark versions',
+      grabaciones: 'recordings: {n}',
+      grabacionesSubidas: 'Recordings uploaded: {n}.',
       sinCuenta: 'To publish, link your Door43 account. It is done once on this phone.',
       vincularCuenta: 'Link my Door43 account',
       destinoPregunta: 'Where is «{proyecto}» published?',

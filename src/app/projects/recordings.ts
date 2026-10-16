@@ -4,8 +4,9 @@
  * not lost), and the last one is the one that counts unless the person chooses another.
  *
  * The sound itself is kept in IndexedDB (a phone's browser does not keep sound in localStorage); what is said about
- * each take, by verse, in localStorage, as the rest of the prototype's work. Wired, a take is a file of the place in
- * the book's journal, and a package carries it.
+ * each take, by verse, in localStorage, as the rest of the prototype's work. A work package («Share») carries every
+ * take with its sound; publishing to Door43 uploads the take that counts for each place, as `audio/JON/001/001-003.webm`.
+ * Wired, a take is a file of the place in the book's journal.
  */
 
 export interface Take {
@@ -64,6 +65,55 @@ export function takeCovering(book: string, chapter: number, verse: number): Take
   return null
 }
 
+/** A place of a book with recordings: all its takes, and which counts (null: the last). */
+export interface PlaceTakes {
+  chapter: number
+  verse: number
+  takes: Take[]
+  chosen: string | null
+}
+
+/** Every place of a book that has recordings, in order. */
+export function recordedPlaces(book: string): PlaceTakes[] {
+  const prefix = `${KEY}.${book}.`
+  const out: PlaceTakes[] = []
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (!k?.startsWith(prefix)) continue
+      const [chapter, verse] = k.slice(prefix.length).split('.').map(Number)
+      const m = readMeta(book, chapter, verse)
+      if (m.takes.length) out.push({ chapter, verse, ...m })
+    }
+  } catch {
+    /* nothing to read */
+  }
+  return out.sort((a, b) => a.chapter - b.chapter || a.verse - b.verse)
+}
+
+/**
+ * Gathers takes received for a place (another phone's): those not here come in, none is lost; the one that counts
+ * here stays so, and where there was none, the one that counted there does. Gives back the takes that came in.
+ */
+export function gatherTakes(book: string, chapter: number, verse: number, received: { takes: Take[]; chosen: string | null }): Take[] {
+  const m = readMeta(book, chapter, verse)
+  const fresh = received.takes.filter((x) => !m.takes.some((y) => y.id === x.id))
+  if (!fresh.length) return []
+  const here = m.chosen ?? m.takes[m.takes.length - 1]?.id ?? null
+  const there = received.chosen ?? received.takes[received.takes.length - 1]?.id ?? null
+  writeMeta(book, chapter, verse, { takes: [...m.takes, ...fresh], chosen: here ?? there })
+  return fresh
+}
+
+/** Where a take goes in the repository: by book, chapter and verse (or the passage it says), with its sound's ending. */
+export function audioFileOf(book: string, chapter: number, verse: number, take: Take): string {
+  const n = (x: number) => String(x).padStart(3, '0')
+  const m = take.mime.toLowerCase()
+  const ending = m.includes('webm') ? 'webm' : m.includes('ogg') ? 'ogg' : /mp4|aac|m4a/.test(m) ? 'm4a' : m.includes('mpeg') ? 'mp3' : m.includes('wav') ? 'wav' : 'audio'
+  const to = take.to && take.to !== verse ? `-${n(take.to)}` : ''
+  return `audio/${book.toUpperCase()}/${n(chapter)}/${n(verse)}${to}.${ending}`
+}
+
 export function chooseTake(book: string, chapter: number, verse: number, id: string) {
   const m = readMeta(book, chapter, verse)
   if (m.takes.some((x) => x.id === id)) writeMeta(book, chapter, verse, { ...m, chosen: id })
@@ -106,6 +156,24 @@ export async function soundOf(id: string): Promise<Blob | null> {
     req.onsuccess = () => resolve((req.result as Blob | undefined) ?? null)
     req.onerror = () => resolve(null)
   })
+}
+
+/** A take's sound as base64, to travel in a package or to Door43; null if it is not on this phone. */
+export async function soundBase64(id: string): Promise<string | null> {
+  const blob = await soundOf(id).catch(() => null)
+  if (!blob) return null
+  const bytes = new Uint8Array(await blob.arrayBuffer())
+  let binary = ''
+  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+  return btoa(binary)
+}
+
+/** A sound received as base64, as the blob kept. */
+export function blobOf(base64: string, mime: string): Blob {
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return new Blob([bytes], { type: mime })
 }
 
 /** «0:07»: how long a take is, as a clock says it. */

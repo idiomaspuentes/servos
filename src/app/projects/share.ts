@@ -3,12 +3,14 @@
  * project in one file, `.servos`, and «Receive» gathers such a file in, saying first what it brings and what it would
  * change, book by book. Everything goes, without asking layer by layer: the text (with joined verses), and what hangs
  * on each verse with the text it was made on (the alignment with each source, the checks with notes and with words,
- * the study notes, the versions waiting for a choice); and the project's glossary, settings and mini apps.
+ * the study notes, the versions waiting for a choice), the recordings with their sound; and the project's glossary,
+ * settings and mini apps.
  *
  * Gathering never overwrites without a choice: each layer follows its text (design, 6.2 and 6.8). A verse only one
  * side wrote comes in; one both wrote differently waits as the other version, for the editor; an alignment or a check
  * comes in only if it was made on the text that stays, and otherwise is left to be checked again; the glossary is
- * gathered word by word; two study notes on the same verses stay both, each with its writer.
+ * gathered word by word; two study notes on the same verses stay both, each with its writer; recordings are gathered
+ * take by take, none lost, the one that counts here staying so.
  *
  * In the prototype the file is JSON and there is no journal yet (design, 6.3): a verse already here with the same text
  * is recognised by its text. Wired, the journal says what was already gathered from whom.
@@ -18,6 +20,7 @@ import type { AlignmentGroup } from '@usfm-tools/types'
 import { gatherGlossary, readGlossary, saveGlossaryEntry, type GlossaryEntry } from './glossary'
 import type { BookEntry, Phase, Project } from './model'
 import type { NoteCheck } from './noteChecks'
+import { blobOf, gatherTakes, keepSound, recordedPlaces, soundBase64, takesOf, type Take } from './recordings'
 import { joinStartOf, joinedVerses, keepStructureConflict, textOf, type StudyNote } from './work'
 
 export const SHARE_FORMAT = 'servos-compartir'
@@ -53,6 +56,8 @@ export interface SharedBook {
   /** By store (`revisionNota`, `revisionPalabra`), then by what was checked. */
   checks: Record<string, Record<string, NoteCheck>>
   studyNotes: Array<{ chapter: number; notes: StudyNote[] }>
+  /** The recordings of each place, every take with its sound (base64; `withSounds` adds it). */
+  recordings?: Array<{ chapter: number; verse: number; chosen: string | null; takes: Array<Take & { sound?: string }> }>
 }
 
 export interface SharedFile {
@@ -135,7 +140,23 @@ export function shareBook(code: string, phase: Phase): SharedBook {
     const notes = json<StudyNote[]>(k)
     return notes?.length ? [{ chapter: Number(k.split('.').pop()), notes }] : []
   })
-  return { code, phase, verses, others, alignments, checks, studyNotes }
+  return { code, phase, verses, others, alignments, checks, studyNotes, recordings: recordedPlaces(code) }
+}
+
+/** The file with the sound of every take on this phone in it (kept apart from the rest, where sound is kept). */
+export async function withSounds(file: SharedFile): Promise<SharedFile> {
+  const books = await Promise.all(
+    file.books.map(async (b) => ({
+      ...b,
+      recordings: await Promise.all(
+        (b.recordings ?? []).map(async (r) => ({
+          ...r,
+          takes: (await Promise.all(r.takes.map(async (x) => ({ ...x, sound: (await soundBase64(x.id)) ?? undefined })))).filter((x) => x.sound),
+        }))
+      ),
+    }))
+  )
+  return { ...file, books }
 }
 
 /** These books of a project, with its glossary and settings, as one file. */
@@ -182,6 +203,8 @@ export interface BookPreview {
   alignments: number
   checks: number
   studyNotes: number
+  /** Recordings it brings that are not here. */
+  recordings: number
 }
 
 const draftHere = (code: string, chapter: number, verse: number) => get(`${P}.borrador.${code}.${chapter}.${verse}`) ?? ''
@@ -203,7 +226,7 @@ const waitingOf = (code: string, chapter: number, verse: number): string | null 
   json<{ text: string }>(`${P}.otra.${code}.${chapter}.${verse}`)?.text.trim() ?? null
 
 export function previewBook(book: SharedBook, isNew: boolean): BookPreview {
-  const p: BookPreview = { code: book.code, isNew, taken: 0, same: 0, choices: 0, waiting: 0, alignments: book.alignments.length, checks: 0, studyNotes: 0 }
+  const p: BookPreview = { code: book.code, isNew, taken: 0, same: 0, choices: 0, waiting: 0, alignments: book.alignments.length, checks: 0, studyNotes: 0, recordings: 0 }
   for (const v of book.verses) {
     if (!v.text.trim()) continue
     const shape = shapeOf(book.code, v.chapter, v.verse, v.joinedTo ?? v.verse)
@@ -222,6 +245,10 @@ export function previewBook(book: SharedBook, isNew: boolean): BookPreview {
   }
   p.checks = Object.values(book.checks).reduce((n, byId) => n + Object.keys(byId).length, 0)
   p.studyNotes = book.studyNotes.reduce((n, c) => n + c.notes.length, 0)
+  for (const r of book.recordings ?? []) {
+    const here = takesOf(book.code, r.chapter, r.verse)
+    p.recordings += r.takes.filter((x) => x.sound && !here.some((y) => y.id === x.id)).length
+  }
   return p
 }
 
@@ -230,11 +257,13 @@ export interface BookReceived extends BookPreview {
   /** Alignments and checks taken in (made on the text that stays). */
   alignmentsTaken: number
   checksTaken: number
+  /** Recordings taken in. */
+  recordingsTaken: number
 }
 
 /** Gathers a received book in: nothing written here is overwritten without a choice; each layer follows its text. */
 export function receiveBook(book: SharedBook, isNew: boolean): BookReceived {
-  const result: BookReceived = { ...previewBook(book, isNew), alignmentsTaken: 0, checksTaken: 0 }
+  const result: BookReceived = { ...previewBook(book, isNew), alignmentsTaken: 0, checksTaken: 0, recordingsTaken: 0 }
   const { code } = book
   for (const v of book.verses) {
     const to = v.joinedTo ?? v.verse
@@ -300,6 +329,15 @@ export function receiveBook(book: SharedBook, isNew: boolean): BookReceived {
       }
     }
     set(k, JSON.stringify(mine.sort((a, b) => a.verses[0] - b.verses[0])))
+  }
+  // Recordings, take by take: only those that came with their sound; what is said of each in its place, the sound apart.
+  for (const r of book.recordings ?? []) {
+    const sounds = new Map(r.takes.filter((x) => x.sound).map((x) => [x.id, x.sound!]))
+    const takes = r.takes.filter((x) => sounds.has(x.id)).map(({ sound: _, ...take }) => take)
+    for (const take of gatherTakes(code, r.chapter, r.verse, { takes, chosen: r.chosen })) {
+      void keepSound(take.id, blobOf(sounds.get(take.id)!, take.mime)).catch(() => {})
+      result.recordingsTaken++
+    }
   }
   return result
 }

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { readCheck, writeCheck } from './noteChecks'
+import { addTake, takesOf } from './recordings'
 import { readShared, receiveShared, shareProject, previewBook } from './share'
 import { joinWithNext, otherVersion, readDraft, writeDraft, studyNotesOf, writeStudyNote } from './work'
 import type { Project } from './model'
@@ -90,5 +91,22 @@ describe('compartir y recibir', () => {
     expect(projects).toHaveLength(2)
     expect(projectId).toBe('kichwa-2')
     expect(projects[1].books.map((b) => b.code)).toEqual(['jon'])
+  })
+})
+
+describe('recordings in a work package', () => {
+  it('carries each take of a place, and gathers in only those that came with their sound, without it in what is kept', () => {
+    addTake('jon', 1, 1, { by: 'Bea', at: '', ms: 900, mime: 'audio/webm', to: 3 }, 'bea1')
+    const file = shareProject(project, ['jon'], 'Bea')
+    expect(file.books[0].recordings?.[0]).toMatchObject({ chapter: 1, verse: 1, takes: [{ id: 'bea1', to: 3 }] })
+    store.clear()
+    // Sound is added by withSounds (IndexedDB); here, as if it had been read.
+    const takes = file.books[0].recordings![0].takes
+    file.books[0].recordings![0].takes = [{ ...takes[0], sound: btoa('ok') }, { ...takes[0], id: 'mute' }]
+    expect(previewBook(file.books[0], true).recordings).toBe(1)
+    const { books } = receiveShared(file, ['jon'], { kind: 'new' }, [])
+    expect(books[0].recordingsTaken).toBe(1)
+    expect(takesOf('jon', 1, 1).map((x) => x.id)).toEqual(['bea1'])
+    expect(JSON.stringify(takesOf('jon', 1, 1))).not.toContain('sound')
   })
 })

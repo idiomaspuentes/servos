@@ -477,7 +477,7 @@
   "compartir.libroTitulo": "Compartir {libro}",
   "compartir.proyectoTitulo": "Compartir {proyecto}",
   "compartir.queLibros": "Qué libros",
-  "compartir.vaTodo": "Va todo: el texto, la alineación, las revisiones, las notas de estudio y el glosario. Quien lo recibe ve qué cambia antes de juntarlo.",
+  "compartir.vaTodo": "Va todo: el texto, la alineación, las revisiones, las notas de estudio, las grabaciones y el glosario. Quien lo recibe ve qué cambia antes de juntarlo.",
   "compartir.guardar": "Guardar el archivo",
   "compartir.copiar": "Copiar el texto",
   "compartir.como": "Páselo por tarjeta, USB o Bluetooth; o pegue el texto copiado en un mensaje.",
@@ -632,5 +632,7 @@
   "marco.listo": "Listo",
   "ayudas.enElOriginalSolo": "En el original:",
   "libro.sigaEn": "Siga en {lugar}",
-  "marco.volverAEtiqueta": "Volver a {destino}"
+  "marco.volverAEtiqueta": "Volver a {destino}",
+  "recibir.grabaciones": "grabaciones: {n}",
+  "recibir.grabacionesEntraron": "Grabaciones que entraron: {n}."
 }

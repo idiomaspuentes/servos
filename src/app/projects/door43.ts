@@ -1,7 +1,7 @@
 /**
  * Publishing a project to Door43 (design, section 8). A project goes to one repository of its team's organization
  * (`{owner}/{repo}`, chosen once), a Resource Container bundle: each book as `NN-BOOK.usfm`, and a `manifest.yaml`
- * that names them. Publishing uploads everything translated, each time; Door43 keeps the history of every upload. A
+ * that names them; the recordings said aloud, the take that counts for each place, under `audio/`. Publishing uploads everything translated, each time; Door43 keeps the history of every upload. A
  * numbered version is marked apart (a release), when the team holds a state good.
  *
  * Who publishes signs in to Door43 once on this phone: the password is exchanged for a token (Taller's way), and
@@ -13,6 +13,7 @@ import {
   DcsApiError,
   PRODUCTION_HOST,
   QA_HOST,
+  createOrUpdateBinaryContents,
   createOrUpdateContents,
   createOrgRepo,
   createRelease,
@@ -193,7 +194,8 @@ export function problemOf(e: unknown): Problem {
 export async function publish(
   account: Door43Account,
   to: Destination,
-  files: Array<{ path: string; content: string }>,
+  /** Text as `content`; a sound (or anything not text) as `base64`. */
+  files: Array<{ path: string; content: string } | { path: string; base64: string }>,
   message: string
 ): Promise<FileResult[]> {
   const config = configOf(to.host)
@@ -213,11 +215,13 @@ export async function publish(
       } catch (e) {
         if (!(e instanceof DcsApiError && e.status === 404)) throw e
       }
-      if (there?.content && decodeBase64(there.content) === file.content) {
+      const same = 'base64' in file ? there?.content?.replace(/\s/g, '') === file.base64 : there?.content != null && decodeBase64(there.content) === file.content
+      if (same) {
         results.push({ path: file.path, state: 'same' })
         continue
       }
-      await createOrUpdateContents(config, to.owner, to.repo, file.path, { content: file.content, message, sha: there?.sha, token: account.token })
+      if ('base64' in file) await createOrUpdateBinaryContents(config, to.owner, to.repo, file.path, { contentBase64: file.base64, message, sha: there?.sha, token: account.token })
+      else await createOrUpdateContents(config, to.owner, to.repo, file.path, { content: file.content, message, sha: there?.sha, token: account.token })
       results.push({ path: file.path, state: 'written' })
     } catch (e) {
       results.push({ path: file.path, state: 'failed', problem: problemOf(e) })
