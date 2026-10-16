@@ -101,7 +101,8 @@ export function MiniAppScreen({
     return map
   }, [text])
   // A verse or a section at a time, as the person chose for this mini app: the arrows, the list and «n of total» go by it.
-  const unitKey = `servos.prototipo.unidad.${app.id}`
+  // (`.v2`: the translators went to a section at a time by default; a choice kept before that is not taken as theirs.)
+  const unitKey = `servos.prototipo.unidad.v2.${app.id}`
   const [unit, setUnitState] = useState<Unit>(() => {
     if (!app.sections) return 'verse'
     try {

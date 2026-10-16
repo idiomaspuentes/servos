@@ -287,7 +287,8 @@ export const editor: MiniApp = {
   id: 'editor',
   needs: ['text', 'notes', 'words'],
   phase: 'traduccion',
-  unit: 'verse',
+  // A section at a time until the person chooses: a verse reads best written with those around it.
+  unit: 'section',
   sections: true,
   // A verse joined to the one before is translated with it.
   done: (at) => Boolean(textOf(at.book, at.chapter, at.verse).trim()),

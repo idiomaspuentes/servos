@@ -15,6 +15,8 @@ export interface Take {
   /** How long it is, in milliseconds. */
   ms: number
   mime: string
+  /** The last verse it says, when it says a passage (a section) begun at its verse; without it, its verse alone. */
+  to?: number
 }
 
 interface VerseTakes {
@@ -46,6 +48,20 @@ export const takesOf = (book: string, chapter: number, verse: number): Take[] =>
 export function chosenTake(book: string, chapter: number, verse: number): Take | null {
   const m = readMeta(book, chapter, verse)
   return m.takes.find((x) => x.id === m.chosen) ?? m.takes[m.takes.length - 1] ?? null
+}
+
+/**
+ * The take that says a verse: its own, or one of a passage begun at an earlier verse of the chapter that reaches it.
+ * (A section is seldom longer than 40 verses: no further back is looked.)
+ */
+export function takeCovering(book: string, chapter: number, verse: number): Take | null {
+  const own = chosenTake(book, chapter, verse)
+  if (own) return own
+  for (let v = verse - 1; v >= Math.max(1, verse - 40); v--) {
+    const take = chosenTake(book, chapter, v)
+    if (take && (take.to ?? v) >= verse) return take
+  }
+  return null
 }
 
 export function chooseTake(book: string, chapter: number, verse: number, id: string) {

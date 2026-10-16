@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { addTake, chooseTake, chosenTake, clock, takesOf } from './recordings'
+import { addTake, chooseTake, chosenTake, clock, takeCovering, takesOf } from './recordings'
 
 beforeEach(() => {
   const store = new Map<string, string>()
@@ -29,6 +29,19 @@ describe('recordings of a verse said aloud', () => {
     chooseTake('jon', 1, 1, 'a')
     expect(chosenTake('jon', 1, 1)?.by).toBe('Ana')
     expect(takesOf('jon', 1, 1)).toHaveLength(2)
+  })
+
+  it('counts a passage said in one take for each of its verses, and no further', () => {
+    addTake('jon', 1, 1, { by: 'Ana', at: '', ms: 1, mime: '', to: 3 }, 's')
+    expect([1, 2, 3].map((v) => takeCovering('jon', 1, v)?.id)).toEqual(['s', 's', 's'])
+    expect(takeCovering('jon', 1, 4)).toBeNull()
+  })
+
+  it('still counts the passage for its later verses when one verse of it was said again alone', () => {
+    addTake('jon', 1, 1, { by: 'Ana', at: '', ms: 1, mime: '', to: 5 }, 's')
+    addTake('jon', 1, 2, { by: 'Bea', at: '', ms: 1, mime: '' }, 'v2')
+    expect(takeCovering('jon', 1, 2)?.id).toBe('v2')
+    expect(takeCovering('jon', 1, 4)?.id).toBe('s')
   })
 
   it('has none for a verse not said yet', () => {

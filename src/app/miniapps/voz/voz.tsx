@@ -1,6 +1,6 @@
 /**
- * Traducir de viva voz (design, section 10): each verse said aloud in the team's language and recorded, instead of
- * written. What is to be said is at the top (the bridge text, the other a touch away); under it, one big button to
+ * Traducir de viva voz (design, section 10): a section (by default) or a verse said aloud in the team's language and
+ * recorded, instead of written: a passage is said best in one breath, and its take counts for each of its verses. What is to be said is at the top (the bridge text, the other a touch away); under it, one big button to
  * record, and once recorded, the recording to hear, «record again», and the way on. No take is thrown away: the last
  * one counts, and an earlier one can be chosen. Whatever was written of the verse is shown too, with the way to the
  * editor, since a team may say it first and write it after.
@@ -8,7 +8,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { WordLines } from '../../frame/TouchWords'
-import { addTake, chooseTake, chosenTake, clock, keepSound, soundOf, takesOf, type Take } from '../../projects/recordings'
+import { addTake, chooseTake, chosenTake, clock, keepSound, soundOf, takeCovering, takesOf, type Take } from '../../projects/recordings'
 import { joinStartOf, joinedVerses, textOf } from '../../projects/work'
 import type { MiniApp, MiniAppCenterProps } from '../contract'
 
@@ -32,11 +32,12 @@ function TakePlayer({ take }: { take: Take }) {
 }
 
 function Center({ context }: MiniAppCenterProps) {
-  const { t, position, data, person, frame, textAbbreviation } = context
+  const { t, position, data, person, frame, textAbbreviation, shown } = context
   const { book, chapter } = position
-  // A join is said once, by its first verse.
-  const place = joinStartOf(book, chapter, position.verse)
-  const verses = joinedVerses(book, chapter, place)
+  // What is said in one take: the section open, or the verse (a join is said once, by its first verse).
+  const place = joinStartOf(book, chapter, shown[0] ?? position.verse)
+  const verses = shown.length > 1 ? shown : joinedVerses(book, chapter, place)
+  const last = verses[verses.length - 1]
   const [source, setSource] = useState(textAbbreviation)
   const bridge = data.texts.find((x) => x.abbreviation === source) ?? data.texts.find((x) => !x.original)
   const [, redraw] = useState(0)
@@ -47,7 +48,13 @@ function Center({ context }: MiniAppCenterProps) {
   const rec = useRef<{ recorder: MediaRecorder; stream: MediaStream; chunks: Blob[]; started: number; timer: number } | null>(null)
   const take = chosenTake(book, chapter, place)
   const takes = takesOf(book, chapter, place)
-  const written = textOf(book, chapter, place)
+  const written = [...new Set(verses.map((v) => joinStartOf(book, chapter, v)))]
+    .map((v) => textOf(book, chapter, v).trim())
+    .filter(Boolean)
+    .join(' ')
+  // Who said a take, how long, and, when it is not just what is open, which verses it says.
+  const said = (x: Take) =>
+    t('editorVoz.grabadoPor', { nombre: x.by, duracion: clock(x.ms) }) + ((x.to ?? place) !== last ? ` · ${t('editorVoz.versiculos', { de: place, a: x.to ?? place })}` : '')
   // The prototype shared as a page inside Claude may not use the microphone: said before trying.
   const canRecord = typeof MediaRecorder !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia) && !('claude' in window)
 
@@ -61,14 +68,14 @@ function Center({ context }: MiniAppCenterProps) {
       const recorder = new MediaRecorder(stream)
       const chunks: Blob[] = []
       const started = Date.now()
-      const at = { book, chapter, verse: place }
+      const at = { book, chapter, verse: place, to: last }
       recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data)
       recorder.onstop = async () => {
         stream.getTracks().forEach((track) => track.stop())
         const ms = Date.now() - started
         const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' })
         if (!blob.size) return
-        const made = addTake(at.book, at.chapter, at.verse, { by: person.name, at: new Date().toISOString(), ms, mime: blob.type })
+        const made = addTake(at.book, at.chapter, at.verse, { by: person.name, at: new Date().toISOString(), ms, mime: blob.type, ...(at.to !== at.verse ? { to: at.to } : {}) })
         await keepSound(made.id, blob)
         frame.setSaved('guardado')
         redraw((n) => n + 1)
@@ -120,7 +127,7 @@ function Center({ context }: MiniAppCenterProps) {
           ) : take ? (
             <>
               <TakePlayer key={take.id} take={take} />
-              <p className="quiet">{t('editorVoz.grabadoPor', { nombre: take.by, duracion: clock(take.ms) })}</p>
+              <p className="quiet">{said(take)}</p>
               <button type="button" className="button-secondary" onClick={() => void start()}>
                 ● {t('editorVoz.otraVez')}
               </button>
@@ -146,7 +153,7 @@ function Center({ context }: MiniAppCenterProps) {
                   .map((x) => (
                     <li key={x.id}>
                       <TakePlayer take={x} />
-                      <span className="quiet">{t('editorVoz.grabadoPor', { nombre: x.by, duracion: clock(x.ms) })}</span>
+                      <span className="quiet">{said(x)}</span>
                       <button
                         type="button"
                         className="chip"
@@ -164,11 +171,11 @@ function Center({ context }: MiniAppCenterProps) {
           )}
         </section>
 
-        {/* Said and written may go together: what is written of the verse, and the way to write it. */}
+        {/* Said and written may go together: what is written of what is open, and the way to write it. */}
         <section className="voice-written">
-          {written.trim() ? <p className="voice-written-text">{written}</p> : <p className="quiet">{t('editorVoz.sinEscribir')}</p>}
+          {written ? <p className="voice-written-text">{written}</p> : <p className="quiet">{t('editorVoz.sinEscribir')}</p>}
           <button type="button" className="chip" onClick={() => frame.open('editor', { book, chapter, verse: place })}>
-            ✎ {t(written.trim() ? 'editorVoz.corregirEscrito' : 'editorVoz.escribirlo')}
+            ✎ {t(written ? 'editorVoz.corregirEscrito' : 'editorVoz.escribirlo')}
           </button>
         </section>
       </div>
@@ -180,25 +187,27 @@ export const editorVoz: MiniApp = {
   id: 'editorVoz',
   phase: 'traduccion',
   needs: ['text'],
-  unit: 'verse',
+  unit: 'section',
+  sections: true,
   helps: false,
   fills: true,
   writes: true,
-  done: (at) => chosenTake(at.book, at.chapter, joinStartOf(at.book, at.chapter, at.verse)) !== null,
+  done: (at) => takeCovering(at.book, at.chapter, joinStartOf(at.book, at.chapter, at.verse)) !== null,
   Center,
   texts: {
     es: {
       nombre: 'Traducir de viva voz',
-      descripcion: 'Decir cada versículo en su idioma y grabarlo, en lugar de escribirlo',
+      descripcion: 'Decir cada pasaje en su idioma y grabarlo, en lugar de escribirlo',
       queDecir: 'Lo que va a decir',
       suVoz: 'Su voz',
       grabar: 'Grabar',
       detener: 'Detener',
       otraVez: 'Grabar otra vez',
       grabadoPor: 'Lo grabó {nombre} · {duracion}',
+      versiculos: 'versículos {de}–{a}',
       otras: 'Grabaciones anteriores ({n})',
       usarEsta: 'Usar esta',
-      sinEscribir: 'Este versículo todavía no está escrito.',
+      sinEscribir: 'Todavía no está escrito.',
       escribirlo: 'Escribirlo en el editor',
       corregirEscrito: 'Corregir lo escrito en el editor',
       siguiente: 'Siguiente',
@@ -207,16 +216,17 @@ export const editorVoz: MiniApp = {
     },
     pt: {
       nombre: 'Traduzir em voz alta',
-      descripcion: 'Dizer cada versículo no seu idioma e gravá-lo, em vez de escrevê-lo',
+      descripcion: 'Dizer cada passagem no seu idioma e gravá-la, em vez de escrevê-la',
       queDecir: 'O que vai dizer',
       suVoz: 'Sua voz',
       grabar: 'Gravar',
       detener: 'Parar',
       otraVez: 'Gravar de novo',
       grabadoPor: 'Gravado por {nombre} · {duracion}',
+      versiculos: 'versículos {de}–{a}',
       otras: 'Gravações anteriores ({n})',
       usarEsta: 'Usar esta',
-      sinEscribir: 'Este versículo ainda não está escrito.',
+      sinEscribir: 'Ainda não está escrito.',
       escribirlo: 'Escrevê-lo no editor',
       corregirEscrito: 'Corrigir o escrito no editor',
       siguiente: 'Próximo',
@@ -225,16 +235,17 @@ export const editorVoz: MiniApp = {
     },
     en: {
       nombre: 'Translate by voice',
-      descripcion: 'Say each verse in your language and record it, instead of writing it',
+      descripcion: 'Say each passage in your language and record it, instead of writing it',
       queDecir: 'What you will say',
       suVoz: 'Your voice',
       grabar: 'Record',
       detener: 'Stop',
       otraVez: 'Record again',
       grabadoPor: 'Recorded by {nombre} · {duracion}',
+      versiculos: 'verses {de}–{a}',
       otras: 'Earlier recordings ({n})',
       usarEsta: 'Use this one',
-      sinEscribir: 'This verse is not written yet.',
+      sinEscribir: 'Not written yet.',
       escribirlo: 'Write it in the editor',
       corregirEscrito: 'Correct what is written in the editor',
       siguiente: 'Next',
