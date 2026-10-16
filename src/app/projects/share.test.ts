@@ -4,6 +4,7 @@ import { addTake, takesOf } from './recordings'
 import { alignmentConflictAt, chooseAlignment, readAlignment, writeAlignment } from './alignment'
 import { moveAlignmentsIn } from './bookText'
 import { readShared, receiveShared, shareProject, previewBook } from './share'
+import { addObservation, answer, answersOf, observationsOf, resolveObservation } from './passageReview'
 import { authorOf, chooseVersion, joinWithNext, otherVersion, readDraft, writeDraft, studyNotesOf, writeStudyNote } from './work'
 import type { Project } from './model'
 import { setProject } from './scope'
@@ -205,5 +206,93 @@ describe('un versículo borrado a propósito', () => {
     // And the first file, coming again, does not bring it back.
     receive(first)
     expect(readDraft('jon', 1, 1)).toBe('')
+  })
+})
+
+describe('la revisión del pasaje y las revisiones viajan y siguen a su texto', () => {
+  const bea = new Map<string, string>()
+  const ana = new Map<string, string>()
+  const share = (by: string) => readShared(JSON.stringify(shareProject(project, ['jon'], by)))!
+  const receive = (file: ReturnType<typeof share>, by: string) => receiveShared(file, ['jon'], { kind: 'join', projectId: 'kichwa' }, [project], by)
+  const texts = () => [readDraft('jon', 1, 1), readDraft('jon', 1, 2)]
+  /** Both phones with the same two verses, Bea's passed to Ana. */
+  function bothWithText() {
+    bea.clear()
+    ana.clear()
+    store = bea
+    writeDraft('jon', 1, 1, 'Taytaku rimarqa', 'Bea')
+    writeDraft('jon', 1, 2, 'Ninive llaktaman riy', 'Bea')
+    const first = share('Bea')
+    store = ana
+    receive(first, 'Ana')
+  }
+
+  it('las preguntas respondidas «sí» y lo visto para mejorar llegan con el libro', () => {
+    bothWithText()
+    store = bea
+    answer('jon', 1, [1, 2], texts(), 'fiel', 'Bea', new Date('2026-10-15T10:00:00Z'))
+    addObservation('jon', 1, { verse: 2, criterion: 'claro', words: 'riy', comment: '¿Quién va?', by: 'Bea' }, new Date('2026-10-15T10:01:00Z'))
+    const file = share('Bea')
+    store = ana
+    const [received] = receive(file, 'Ana').books
+    expect(answersOf('jon', 1, [1, 2], texts()).fiel?.by).toBe('Bea')
+    expect(observationsOf('jon', 1, 2).map((o) => [o.comment, o.state])).toEqual([['¿Quién va?', 'abierta']])
+    expect(received.checksTaken).toBe(2)
+    // The same file again brings nothing new.
+    expect(receive(file, 'Ana').books[0].checksTaken).toBe(0)
+  })
+
+  it('lo marcado mejorado en un teléfono llega mejorado; lo visto en los dos se junta, nada se pierde', () => {
+    bothWithText()
+    store = bea
+    const seen = addObservation('jon', 1, { verse: 2, criterion: 'claro', words: 'riy', comment: '¿Quién va?', by: 'Bea' }, new Date('2026-10-15T10:01:00Z'))
+    const stillOpen = share('Bea')
+    store = ana
+    receive(stillOpen, 'Ana')
+    addObservation('jon', 1, { verse: 2, criterion: 'natural', words: 'Ninive', comment: 'Nínive', by: 'Ana' }, new Date('2026-10-15T11:00:00Z'))
+    store = bea
+    resolveObservation('jon', 1, 2, seen.id, 'Bea')
+    const file = share('Bea')
+    store = ana
+    receive(file, 'Ana')
+    expect(observationsOf('jon', 1, 2).map((o) => [o.by, o.state])).toEqual([
+      ['Bea', 'resuelta'],
+      ['Ana', 'abierta'],
+    ])
+    // The older file, with it still open, does not open it again.
+    receive(stillOpen, 'Ana')
+    expect(observationsOf('jon', 1, 2)[0].state).toBe('resuelta')
+  })
+
+  it('un «sí» dado sobre otro texto no pisa el dado sobre el texto que queda', () => {
+    bothWithText()
+    // Bea answers on a text she changed afterwards; Ana answers later on the text both have.
+    store = bea
+    writeDraft('jon', 1, 2, 'Ninive llaktaman rinki', 'Bea')
+    answer('jon', 1, [1, 2], texts(), 'fiel', 'Bea', new Date('2026-10-15T12:00:00Z'))
+    writeDraft('jon', 1, 2, 'Ninive llaktaman riy', 'Bea')
+    const file = share('Bea')
+    store = ana
+    answer('jon', 1, [1, 2], texts(), 'fiel', 'Ana', new Date('2026-10-15T11:00:00Z'))
+    receive(file, 'Ana')
+    expect(answersOf('jon', 1, [1, 2], texts()).fiel?.by).toBe('Ana')
+  })
+
+  it('de dos revisiones de una nota, queda la hecha sobre el texto que queda, aunque la otra sea más nueva', () => {
+    bothWithText()
+    store = bea
+    writeCheck('jon', 'n1', { status: 'despues', words: [0], verseText: 'Taytaku rimarqa ña', by: 'Bea', at: '2026-10-15T12:00:00Z' })
+    const file = share('Bea')
+    store = ana
+    writeCheck('jon', 'n1', { status: 'bien', words: [0], verseText: 'Taytaku rimarqa', by: 'Ana', at: '2026-10-15T11:00:00Z' })
+    receive(file, 'Ana')
+    expect(readCheck('jon', 'n1')?.by).toBe('Ana')
+    // On the same text, the latest.
+    store = bea
+    writeCheck('jon', 'n1', { status: 'despues', words: [0], verseText: 'Taytaku rimarqa', by: 'Bea', at: '2026-10-15T13:00:00Z' })
+    const later = share('Bea')
+    store = ana
+    receive(later, 'Ana')
+    expect(readCheck('jon', 'n1')?.by).toBe('Bea')
   })
 })

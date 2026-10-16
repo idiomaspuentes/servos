@@ -291,8 +291,10 @@ sabe hasta dónde incorporó a cada persona, y las decisiones viajan dentro de l
   - **Al juntar, cada capa sigue a su texto** (6.2 y 6.8). El texto, con la mezcla del corazón: lo que solo tiene
     un lado entra; un cambio que este aparato ya había incorporado (o más viejo) no vuelve; una elección ya hecha se
     aplica sin preguntar; lo que dos personas cambiaron por separado desde el mismo texto queda como dos versiones
-    para elegir (o, si unieron versículos de otra manera, como un tramo para elegir entero); la alineación y las revisiones de un versículo entran si se hicieron sobre el texto
-    que queda, y si no quedan por revisar, nunca borradas; el glosario se junta palabra por palabra (una traducción
+    para elegir (o, si unieron versículos de otra manera, como un tramo para elegir entero); la alineación entra si se hizo sobre el texto que queda, y si no
+    queda por revisar, nunca borrada; de dos revisiones de una nota, de una palabra o de una pregunta de un pasaje
+    queda la dada sobre el texto que queda (de dos sobre el mismo, la más reciente); lo visto para mejorar se junta, y
+    lo marcado mejorado sigue mejorado; el glosario se junta palabra por palabra (una traducción
     distinta queda como otra forma); dos notas de estudio distintas sobre los mismos versículos quedan las dos, cada
     una con su autor.
 - Al importar, la app dice qué trae y qué cambia antes de aplicarlo.

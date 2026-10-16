@@ -11,9 +11,11 @@
  * people changed apart from the same text waits for a person; the choice goes into the journal and is not asked again
  * wherever the book goes. The conflicts waiting on a phone stay there (they are not shared). The alignment follows its
  * text (design, 6.8, `mergeAlignments`): the one made on the text that stays wins; two of the same text made apart are
- * the latest when one person made both, a choice when two did. Each other layer follows its text too: a check comes in
- * only if it was made on the text that stays; the glossary is gathered word by word; two study notes on the same
- * verses stay both; recordings take by take, none lost.
+ * the latest when one person made both, a choice when two did. Each other layer follows its text too: of a check, or a
+ * passage's «yes», the one given on the text that stays here wins over one given on another, and of two on the same
+ * text the latest; what was seen to improve in a passage is gathered, none lost, and one marked improved anywhere
+ * comes in improved; the glossary is gathered word by word; two study notes on the same verses stay both; recordings
+ * take by take, none lost.
  *
  * A file of the first kind (version 1) carried loose verses instead of the book; so does a USFM file read in. They
  * are made a copy of the book, each verse its writer's change, and gathered the same way.
@@ -26,7 +28,8 @@ import type { NoteCheck } from './noteChecks'
 import { blobOf, gatherTakes, keepSound, recordedPlaces, soundBase64, takesOf, type Take } from './recordings'
 import { placesOf, textKey, type BookState } from '../../core'
 import { inProject, scoped } from './scope'
-import { alignmentFrom, bookFrom, bookStateOf, mergeBook, mergePreview, type StudyNote } from './work'
+import { textKey as passageTextKey, type Criterion, type Observation, type PassageAnswer } from './passageReview'
+import { alignmentFrom, bookFrom, bookStateOf, joinStartOf, mergeBook, mergePreview, textOf, writtenVerses, type StudyNote } from './work'
 
 export const SHARE_FORMAT = 'servos-compartir'
 
@@ -63,6 +66,10 @@ export interface SharedBook {
   alignments?: SharedAlignment[]
   /** By store (`revisionNota`, `revisionPalabra`), then by what was checked. */
   checks: Record<string, Record<string, NoteCheck>>
+  /** The passage review: the questions answered «yes» for each section (by `chapter.first`), on the text they had. */
+  passages?: Record<string, Partial<Record<Criterion, PassageAnswer>>>
+  /** What was seen to improve, by `chapter.verse`. */
+  observations?: Record<string, Observation[]>
   studyNotes: Array<{ chapter: number; notes: StudyNote[] }>
   /** The recordings of each place, every take with its sound (base64; `withSounds` adds it). */
   recordings?: Array<{ chapter: number; verse: number; chosen: string | null; takes: Array<Take & { sound?: string }> }>
@@ -127,13 +134,23 @@ export function shareBook(code: string, phase: Phase): SharedBook {
       if (check) (checks[store] ??= {})[k.slice(`${P}.${store}.${book}.`.length)] = check
     }
   }
+  const passages: NonNullable<SharedBook['passages']> = {}
+  for (const k of keys(`${P}.pasaje.${book}.`)) {
+    const kept = json<Partial<Record<Criterion, PassageAnswer>>>(k)
+    if (kept) passages[k.slice(`${P}.pasaje.${book}.`.length)] = kept
+  }
+  const observations: NonNullable<SharedBook['observations']> = {}
+  for (const k of keys(`${P}.observacion.${book}.`)) {
+    const list = json<Observation[]>(k)
+    if (list?.length) observations[k.slice(`${P}.observacion.${book}.`.length)] = list
+  }
   const studyNotes = keys(`${P}.comprension.${book}.`).flatMap((k) => {
     const notes = json<StudyNote[]>(k)
     return notes?.length ? [{ chapter: Number(k.split('.').pop()), notes }] : []
   })
   // The alignment goes in the book, with its diary; what waits for a choice here stays here.
   const shared = state && { ...state, pending: [], ...(state.alignment ? { alignment: { ...state.alignment, pending: [] } } : {}) }
-  return { code, phase, ...(shared ? { state: shared } : { verses: [] }), checks, studyNotes, recordings: recordedPlaces(code) }
+  return { code, phase, ...(shared ? { state: shared } : { verses: [] }), checks, passages, observations, studyNotes, recordings: recordedPlaces(code) }
 }
 
 /** The file with the sound of every take on this phone in it (kept apart from the rest, where sound is kept). */
@@ -238,7 +255,10 @@ export function previewBook(book: SharedBook, isNew: boolean, from: Gathering): 
     studyNotes: 0,
     recordings: 0,
   }
-  p.checks = Object.values(book.checks).reduce((n, byId) => n + Object.keys(byId).length, 0)
+  p.checks =
+    Object.values(book.checks).reduce((n, byId) => n + Object.keys(byId).length, 0) +
+    Object.values(book.passages ?? {}).reduce((n, byCriterion) => n + Object.keys(byCriterion).length, 0) +
+    Object.values(book.observations ?? {}).reduce((n, list) => n + list.length, 0)
   p.studyNotes = book.studyNotes.reduce((n, c) => n + c.notes.length, 0)
   for (const r of book.recordings ?? []) {
     const here = takesOf(book.code, r.chapter, r.verse)
@@ -266,15 +286,63 @@ export function receiveBook(book: SharedBook, isNew: boolean, from: Gathering): 
   const merged = mergeBook(code, copyOf(book, from), from.person)
   result.alignmentsTaken = merged.alignment.taken.length + merged.alignment.decided.length
   result.alignmentChoices = merged.alignment.conflicts.length
+  // The verses as they say now, after the text was gathered: what an answer was given on is weighed against them.
+  const now = new Set(writtenVerses(code).map((v) => v.text.replace(/\s+/g, ' ').trim()))
+  const onText = (verseText: string) => now.has(verseText.replace(/\s+/g, ' ').trim())
+  /** Of two answers, the one to keep: given on the text that stays, else the latest. */
+  const wins = <T extends { at?: string }>(mine: T | null | undefined, theirs: T, mineOn: boolean, theirsOn: boolean) =>
+    !mine || (theirsOn && !mineOn) || (theirsOn === mineOn && (mine.at ?? '') < (theirs.at ?? ''))
   for (const [store, byId] of Object.entries(book.checks)) {
     for (const [id, check] of Object.entries(byId)) {
       const k = `${P}.${store}.${scoped(code)}.${id}`
       const mine = json<NoteCheck>(k)
-      if (!mine || (mine.at ?? '') < (check.at ?? '')) {
+      if (wins(mine, check, mine ? onText(mine.verseText) : false, onText(check.verseText))) {
         set(k, JSON.stringify(check))
         result.checksTaken++
       }
     }
+  }
+  // A passage's «yes»: given on the section's text as it stands here. Only its first verse is kept with it, so the
+  // section is tried from there, a verse longer each time (a join counts once, as the reviewer reads it).
+  const sectionOn = (chapter: number, first: number, key: string) => {
+    const texts: string[] = []
+    for (let v = first; v < first + 60; v++) {
+      if (joinStartOf(code, chapter, v) !== v) continue
+      texts.push(textOf(code, chapter, v))
+      if (passageTextKey(texts) === key) return true
+    }
+    return false
+  }
+  for (const [place, byCriterion] of Object.entries(book.passages ?? {})) {
+    const [chapter, first] = place.split('.').map(Number)
+    const k = `${P}.pasaje.${scoped(code)}.${place}`
+    const mine = json<Partial<Record<Criterion, PassageAnswer>>>(k) ?? {}
+    let changed = false
+    for (const [criterion, theirs] of Object.entries(byCriterion) as Array<[Criterion, PassageAnswer]>) {
+      const here = mine[criterion]
+      if (here?.key === theirs.key && here.at === theirs.at) continue
+      if (wins(here, theirs, here ? sectionOn(chapter, first, here.key) : false, sectionOn(chapter, first, theirs.key))) {
+        mine[criterion] = theirs
+        changed = true
+        result.checksTaken++
+      }
+    }
+    if (changed) set(k, JSON.stringify(mine))
+  }
+  // What was seen to improve: gathered, none lost; one marked improved on either side stays improved.
+  for (const [place, list] of Object.entries(book.observations ?? {})) {
+    const k = `${P}.observacion.${scoped(code)}.${place}`
+    const mine = json<Observation[]>(k) ?? []
+    let changed = false
+    for (const o of list) {
+      const i = mine.findIndex((x) => x.id === o.id)
+      if (i < 0) mine.push(o)
+      else if (o.state === 'resuelta' && mine[i].state === 'abierta') mine[i] = o
+      else continue
+      changed = true
+      result.checksTaken++
+    }
+    if (changed) set(k, JSON.stringify(mine.sort((x, y) => x.at.localeCompare(y.at))))
   }
   for (const { chapter, notes } of book.studyNotes) {
     const k = `${P}.comprension.${scoped(code)}.${chapter}`

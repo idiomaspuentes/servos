@@ -92,6 +92,11 @@ Desde el 16 de octubre de 2026 la app guarda cada libro así (cableado, pasos 1 
    el texto que tengo, entra vacío; si ya tenía el borrado, una copia vieja no lo devuelve; si uno lo borró y otro lo
    cambió por separado, se pregunta («Lo borró: el versículo queda vacío»). Un versículo que nunca se escribió sigue
    sin borrar nada (la regla 2).
+10. **Las revisiones siguen a su texto, y la del pasaje viaja.** De dos revisiones de una nota o de una palabra, o de
+    dos «sí» a una pregunta de un pasaje, queda la dada sobre el texto que queda aquí, aunque la otra sea más nueva;
+    de dos sobre el mismo texto, la más reciente. Lo visto para mejorar en un pasaje se junta, nada se pierde, y lo
+    marcado mejorado en un aparato llega mejorado (un archivo viejo no lo vuelve a abrir). Estas capas guardan aún
+    solo lo último de cada una, sin diario propio como la alineación: es el paso siguiente si hace falta.
 
 ## Lo que falta
 
