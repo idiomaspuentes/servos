@@ -48,7 +48,8 @@ function Center({ context }: MiniAppCenterProps) {
   const take = chosenTake(book, chapter, place)
   const takes = takesOf(book, chapter, place)
   const written = textOf(book, chapter, place)
-  const canRecord = typeof MediaRecorder !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia)
+  // The prototype shared as a page inside Claude may not use the microphone: said before trying.
+  const canRecord = typeof MediaRecorder !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia) && !('claude' in window)
 
   // Going to another verse while recording keeps what was said, as a take of the verse it was said for.
   useEffect(() => () => stop(), [place]) // eslint-disable-line react-hooks/exhaustive-deps
