@@ -321,29 +321,28 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .book-resume-kicker { font-size: 0.8rem; font-weight: 600; color: var(--accent); }
 .book-resume-what { font-weight: 600; margin-block-end: 0.4rem; }
 .book-resume-project { margin: -0.4rem 0 0.4rem; font-size: 0.85rem; }
-/* The steps go on to a second line rather than out of the screen: a step one has to scroll to find is a step not seen */
-.book-steps { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+/* The steps in one row that slides, edge to edge, the one shown brought into sight: two rows of chips crowded the book */
+.book-steps { display: flex; gap: 0.35rem; overflow-x: auto; scrollbar-width: none; margin-inline: -1rem; padding-inline: 1rem; }
+.book-steps::-webkit-scrollbar { display: none; }
 .book-step { flex: none; display: inline-flex; align-items: center; gap: 0.35rem; width: auto; min-height: var(--touch); padding: 0.25rem 0.85rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--text-soft); font-size: 0.9rem; }
 .book-step.is-current { color: var(--text); }
 .book-step.is-current::before { content: ''; width: 0.45rem; height: 0.45rem; border-radius: 999px; background: var(--accent); }
 .book-step[aria-selected='true'] { border: 2px solid var(--accent); color: var(--text); font-weight: 600; }
 .book-step-state { font-size: 0.8rem; font-variant-numeric: tabular-nums; color: var(--accent); }
 .book-step-state.is-done { color: var(--done); font-weight: 700; }
-.book-step-about { margin: -0.25rem 0 0; font-size: 0.9rem; }
 .tool-cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
 .tool-card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
-.tool-card.is-current { border: 2px solid var(--accent); }
-.tool-card-main { display: flex; flex-direction: column; align-items: stretch; gap: 0.25rem; width: 100%; padding: 0.7rem 0.8rem 0.4rem; border: 0; background: none; color: var(--text); text-align: start; }
-.tool-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; }
+.tool-card-main { display: flex; flex-direction: column; align-items: stretch; gap: 0.25rem; padding: 0.75rem 0.8rem; color: var(--text); }
 .tool-card-name { font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; }
-.tool-card-go { flex: none; color: var(--accent); font-weight: 600; font-size: 0.95rem; }
+.tool-card-go { margin-block-start: 0.5rem; }
+/* The step's other mini apps: one row each, quiet, under the card */
+.tool-cards > li > .row-button { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding-inline: 0.8rem; }
+.tool-soon { display: flex; align-items: center; justify-content: space-between; min-height: var(--touch); padding-inline: 0.8rem; color: var(--text-soft); }
 .tool-progress { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.75rem; margin-block-start: 0.25rem; font-size: 0.85rem; font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; }
 .progress-bar { height: 6px; border-radius: 3px; background: var(--surface-soft); overflow: hidden; }
 .progress-bar > span { display: block; height: 100%; background: var(--accent); }
 /* Done is green: the whole bar, a step with its ✓, a check answered right, a verse aligned */
 .progress-bar[data-full] > span { background: var(--done); }
-.tool-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0 0.8rem 0.25rem; font-size: 0.85rem; }
-.tool-card-foot .button-quiet { width: auto; min-height: var(--touch); padding-inline: 0; font-size: 0.9rem; }
 .tool-chapters { list-style: none; margin: 0; padding: 0 0.5rem 0.5rem; display: flex; flex-direction: column; gap: 0.15rem; border-block-start: 1px solid var(--line); padding-block-start: 0.35rem; }
 .tool-chapter { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr) auto; align-items: center; gap: 0.15rem 0.75rem; width: 100%; min-height: var(--touch); padding: 0.25rem 0.35rem; border: 0; border-radius: var(--radius); background: none; color: var(--text); text-align: start; font-size: 0.9rem; }
 .tool-chapter:active { background: var(--accent-soft); }

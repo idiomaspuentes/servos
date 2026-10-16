@@ -1,17 +1,17 @@
 /**
  * A book, as translationCore 4 lays out where to go on (its home's «Continue →» and its screen for choosing a review
- * tool): first, where the person left off and one filled button to go on there; then the book's steps, from studying
- * to publishing, as tabs always in sight, each with how far it has gone; under the step chosen, a card for each of its
- * mini apps, with what it does, its progress in the whole book, the next verse to do and, folded, its progress chapter
- * by chapter (and, for the translation, who wrote each chapter, since a team may split a book and gather it on one
- * computer). What is used now and then (sharing the book, receiving work from another computer, the project's
- * glossary) is in «More».
- * Moving the book on to the next step is said plainly, at the foot of the step it is in; no step is closed to the
+ * tool), with one thing to do in sight: the book's steps, from studying to publishing, in one row that slides, each with
+ * how far it has gone; under the step chosen, the mini app to go on with as the one card, with where the person left it,
+ * its progress in the whole book, the one filled button and, folded, its progress chapter by chapter (and, for the
+ * translation, who wrote each chapter, since a team may split a book and gather it on one computer); the step's other
+ * mini apps, one row each. What is used now and then (sharing the book, receiving work from another computer, the
+ * project's glossary, naming the book, moving it on before its step is done) is in «More».
+ * Moving the book on is said plainly at the foot of its step once the step is nearly done; no step is closed to the
  * person (philosophy, principle 5). A book whose texts and helps are not on the phone says so, and how to get them
  * (principle 8).
  */
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { PrototypeData } from '../../prototype/data'
 import { RowButton, Suggestion } from '../frame/Actions'
 import { MenuRow, Sheet } from '../frame/Sheet'
@@ -111,10 +111,76 @@ export function BookScreen({
   }
   const stepPct = (phase: Phase) => stepPercent(project, book.code, phase, chapters)
 
-  const resumeAt = current ? placeFor(current.id) : null
   const toChoose = versesToChoose(book.code, chapters.map((c) => ({ chapter: c.chapter, verses: versesOf(c) }))).length
   const shownAt = PHASES.indexOf(shown)
   const shownApps = appsOf(shown)
+  // The one card of the step shown: the mini app last worked in, or else the step's first that can be opened.
+  const lead = shownApps.find((a) => a === current) ?? shownApps.find((a) => !a.comingSoon)
+  // Moving the book on is offered at the foot once its step is nearly done (or cannot be measured); before, in «More».
+  const atPct = stepPct(book.phase)
+  const moveOnInSight = atPct === null || atPct >= 90
+  const nextPhase = at < PHASES.length - 1 ? PHASES[at + 1] : null
+  const moveOnLabel = nextPhase ? `${t('libro.terminadoPasar', { paso: t(`pasos.${book.phase}`), siguiente: t(`pasos.${nextPhase}`) })} →` : ''
+
+  // The steps slide in one row: the one shown is brought into sight.
+  const stepsRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const row = stepsRef.current
+    const on = row?.querySelector<HTMLElement>('[aria-selected="true"]')
+    if (row && on) row.scrollLeft = Math.max(0, on.offsetLeft - row.offsetLeft - (row.clientWidth - on.offsetWidth) / 2)
+  }, [shown])
+
+  const leadCard = (app: MiniApp) => {
+    const done = app.done ? doneOf(app) : null
+    const next = app.done ? nextOf(app) : null
+    const place = placeFor(app.id)
+    const allDone = done !== null && !next
+    const go = allDone ? 'libro.ver' : place ? 'libro.continuar' : 'libro.empezar'
+    const open = byChapter === app.id
+    return (
+      <li key={app.id} className="tool-card">
+        <div className="tool-card-main">
+          <span className="tool-card-name">{t(`${app.id}.nombre`)}</span>
+          {/* One place, the one «Continue» goes to: where the person left it; never opened, what it is for. */}
+          <span className="quiet">{allDone ? t('libro.todoHecho') : place ? t('libro.sigaEn', { lugar: placeName(place) }) : t(`${app.id}.descripcion`)}</span>
+          {done !== null && totalVerses > 0 && (
+            <span className="tool-progress">
+              {bar(done, totalVerses)}
+              <span>{t('libro.avance', { hechos: done, total: totalVerses, pct: pct(done, totalVerses) })}</span>
+            </span>
+          )}
+          <button type="button" className="button-primary tool-card-go" disabled={!chapters.length} onClick={() => onOpen(app)}>
+            {t(go)} →
+          </button>
+        </div>
+        {done !== null && chapters.length > 0 && (
+          <RowButton kind="fold" label={t('libro.porCapitulo')} expanded={open} onClick={() => setByChapter(open ? null : app.id)} />
+        )}
+        {open && (
+          <ul className="tool-chapters">
+            {chapters.map((c) => {
+              const n = doneIn(app, c)
+              // Who wrote each chapter, for the translation: a team may split a book and gather it here.
+              const work = app.phase === 'traduccion' ? workOf(book.code, c.chapter, versesOf(c)) : null
+              return (
+                <li key={c.chapter}>
+                  <button type="button" className="tool-chapter" onClick={() => onOpen(app, c.chapter)}>
+                    <span className="tool-chapter-name">{t('libro.capitulo', { n: c.chapter })}</span>
+                    {bar(n, c.verses.length)}
+                    <span className="tool-chapter-count">{t('libro.hechosDe', { hechos: n, total: c.verses.length, pct: pct(n, c.verses.length) })}</span>
+                    {work && work.people.length > 0 && (
+                      <span className="tool-chapter-people">{work.people.map(([who, k]) => t('libro.quien', { nombre: who, n: k })).join(' · ')}</span>
+                    )}
+                    {work && work.choices > 0 && <span className="tool-chapter-choices">{t('libro.paraElegir', { n: work.choices })}</span>}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </li>
+    )
+  }
 
   return (
     <div className="screen">
@@ -131,27 +197,13 @@ export function BookScreen({
         </button>
       </header>
       <main className="main">
-        {!chapters.length ? (
+        {!chapters.length && (
           <>
             <p className="notice">{t('libro.faltaPaquete', { libro: name })}</p>
             <button type="button" className="button-primary" onClick={onReceive}>
               {t('libro.recibirPaquete')}
             </button>
           </>
-        ) : (
-          current && (
-            // Where the person left off, and the one filled button of the screen to go on there.
-            <section className="book-resume" aria-label={t(resumeAt ? 'libro.sigaDonde' : 'libro.empieceAqui')}>
-              <span className="book-resume-kicker">{t(resumeAt ? 'libro.sigaDonde' : 'libro.empieceAqui')}</span>
-              <span className="book-resume-what">
-                {t(`${current.id}.nombre`)}
-                {resumeAt && ` · ${placeName(resumeAt)}`}
-              </span>
-              <button type="button" className="button-primary" onClick={() => onOpen(current)}>
-                {t(resumeAt ? 'libro.continuar' : 'libro.empezar')} →
-              </button>
-            </section>
-          )
         )}
 
         {toChoose > 0 && (
@@ -165,25 +217,8 @@ export function BookScreen({
           </section>
         )}
 
-        {!book.name && !declined && chapters.length > 0 && (
-          // Once, under what continues the work, until the team names the book or says not now (principle 12).
-          <Suggestion
-            text={t('libro.nombrarPregunta', { libro: source, idioma: project.languageName })}
-            action={t('libro.nombrarAccion')}
-            onAction={() => setNaming(true)}
-            onDismiss={() => {
-              setDeclined(true)
-              try {
-                localStorage.setItem(declinedKey, '1')
-              } catch {
-                /* for this visit */
-              }
-            }}
-          />
-        )}
-
-        {/* The steps, always in sight as tabs, each with how far it has gone; the one the book is in, marked. */}
-        <div className="book-steps" role="tablist" aria-label={t('libro.pasos')}>
+        {/* The steps in one row that slides, each with how far it has gone; the one the book is in, marked. */}
+        <div className="book-steps" role="tablist" aria-label={t('libro.pasos')} ref={stepsRef}>
           {PHASES.map((phase, i) => {
             const p = stepPct(phase)
             return (
@@ -198,86 +233,44 @@ export function BookScreen({
                   setByChapter(null)
                 }}
               >
-                {/* A short name, so the five fit in two lines on a phone; the whole one is said under them. */}
                 <span>{t(`pasos.${phase}Corto`)}</span>
                 <span className={i < at || p === 100 ? 'book-step-state is-done' : 'book-step-state'}>{i < at || p === 100 ? '✓' : p !== null && p > 0 ? `${p} %` : ''}</span>
               </button>
             )
           })}
         </div>
-        <p className="quiet book-step-about">
-          <strong>{t(`pasos.${shown}`)}:</strong> {t(`pasos.${shown}Ayuda`)}
-          {shownAt === at && ` · ${t('pasos.enCurso')}`}
-        </p>
 
         {shownApps.length === 0 && <p className="quiet">{t('libro.ningunaApp')}</p>}
         <ul className="tool-cards">
-          {shownApps.map((app) => {
-            const done = app.done ? doneOf(app) : null
-            const next = app.done ? nextOf(app) : null
-            const place = placeFor(app.id)
-            const go = app.comingSoon ? null : done !== null && !next ? 'libro.ver' : place ? 'libro.continuar' : 'libro.empezar'
-            const open = byChapter === app.id
-            return (
-              <li key={app.id} className={app === current ? 'tool-card is-current' : 'tool-card'}>
-                <button type="button" className="tool-card-main" disabled={app.comingSoon || !chapters.length} onClick={() => onOpen(app)}>
-                  <span className="tool-card-head">
-                    <span className="tool-card-name">
-                      {t(`${app.id}.nombre`)}
-                      {app.comingSoon && <span className="badge">{t('catalogo.pronto')}</span>}
-                    </span>
-                    {go && <span className="tool-card-go">{t(go)} →</span>}
-                  </span>
-                  <span className="quiet">{t(`${app.id}.descripcion`)}</span>
-                  {done !== null && totalVerses > 0 && (
-                    <span className="tool-progress">
-                      {bar(done, totalVerses)}
-                      <span>{t('libro.avance', { hechos: done, total: totalVerses, pct: pct(done, totalVerses) })}</span>
-                    </span>
-                  )}
-                </button>
-                {done !== null && chapters.length > 0 && (
-                  <div className="tool-card-foot">
-                    <span className="quiet">{next ? t('libro.siguiente', { lugar: placeName(next) }) : t('libro.todoHecho')}</span>
-                  </div>
-                )}
-                {done !== null && chapters.length > 0 && (
-                  <RowButton kind="fold" label={t('libro.porCapitulo')} expanded={open} onClick={() => setByChapter(open ? null : app.id)} />
-                )}
-                {open && (
-                  <ul className="tool-chapters">
-                    {chapters.map((c) => {
-                      const n = doneIn(app, c)
-                      // Who wrote each chapter, for the translation: a team may split a book and gather it here.
-                      const work = app.phase === 'traduccion' ? workOf(book.code, c.chapter, versesOf(c)) : null
-                      return (
-                        <li key={c.chapter}>
-                          <button type="button" className="tool-chapter" onClick={() => onOpen(app, c.chapter)}>
-                            <span className="tool-chapter-name">{t('libro.capitulo', { n: c.chapter })}</span>
-                            {bar(n, c.verses.length)}
-                            <span className="tool-chapter-count">{t('libro.hechosDe', { hechos: n, total: c.verses.length, pct: pct(n, c.verses.length) })}</span>
-                            {work && work.people.length > 0 && (
-                              <span className="tool-chapter-people">{work.people.map(([who, k]) => t('libro.quien', { nombre: who, n: k })).join(' · ')}</span>
-                            )}
-                            {work && work.choices > 0 && <span className="tool-chapter-choices">{t('libro.paraElegir', { n: work.choices })}</span>}
-                          </button>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                )}
-              </li>
-            )
-          })}
+          {lead && leadCard(lead)}
+          {/* The step's other mini apps: a row each, with how far it has gone; opened, the row becomes the card. */}
+          {shownApps
+            .filter((app) => app !== lead)
+            .map((app) =>
+              app.comingSoon ? (
+                <li key={app.id} className="tool-soon">
+                  <span>{t(`${app.id}.nombre`)}</span>
+                  <span className="badge">{t('catalogo.pronto')}</span>
+                </li>
+              ) : (
+                <li key={app.id}>
+                  <RowButton
+                    label={t(`${app.id}.nombre`)}
+                    meta={app.done && totalVerses > 0 ? `${pct(doneOf(app), totalVerses)} %` : undefined}
+                    onClick={() => chapters.length && onOpen(app)}
+                  />
+                </li>
+              )
+            )}
         </ul>
 
-        {/* Moving the book on, said plainly, at the foot of the step it is in; or back, or ahead, from another. */}
-        {shownAt === at && at < PHASES.length - 1 && (
+        {/* Moving the book on, said plainly at the foot of its step once it is nearly done; or back, or ahead, from another. */}
+        {shownAt === at && nextPhase && moveOnInSight && (
           <>
-            <button type="button" className="button-secondary" onClick={() => onPhase(PHASES[at + 1])}>
-              {t('libro.terminadoPasar', { paso: t(`pasos.${shown}`), siguiente: t(`pasos.${PHASES[at + 1]}`) })} →
+            <button type="button" className="button-secondary" onClick={() => onPhase(nextPhase)}>
+              {moveOnLabel}
             </button>
-            <p className="quiet step-note">{t('libro.pasoNota', { paso: t(`pasos.${PHASES[at + 1]}`) })}</p>
+            <p className="quiet step-note">{t('libro.pasoNota', { paso: t(`pasos.${nextPhase}`) })}</p>
           </>
         )}
         {shownAt !== at && (
@@ -287,6 +280,23 @@ export function BookScreen({
             </button>
             <p className="quiet step-note">{t('libro.pasoNota', { paso: t(`pasos.${shown}`) })}</p>
           </>
+        )}
+
+        {!book.name && !declined && chapters.length > 0 && (
+          // Once, after the work, until the team names the book or says not now (principle 12).
+          <Suggestion
+            text={t('libro.nombrarPregunta', { libro: source, idioma: project.languageName })}
+            action={t('libro.nombrarAccion')}
+            onAction={() => setNaming(true)}
+            onDismiss={() => {
+              setDeclined(true)
+              try {
+                localStorage.setItem(declinedKey, '1')
+              } catch {
+                /* for this visit */
+              }
+            }}
+          />
         )}
       </main>
 
@@ -337,6 +347,16 @@ export function BookScreen({
               onReceiveWork()
             }}
           />
+          {nextPhase && !moveOnInSight && (
+            <MenuRow
+              label={moveOnLabel}
+              description={t('libro.pasoNota', { paso: t(`pasos.${nextPhase}`) })}
+              onClick={() => {
+                setMore(false)
+                onPhase(nextPhase)
+              }}
+            />
+          )}
           <MenuRow
             label={t('libro.glosario')}
             description={t('libro.glosarioAyuda')}

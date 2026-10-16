@@ -630,5 +630,6 @@
   "libro.pasoNota": "The book moves to {paso} for the whole team. It can go back.",
   "versiones.loQueDice": "What the {texto} says",
   "marco.listo": "Done",
-  "ayudas.enElOriginalSolo": "In the original:"
+  "ayudas.enElOriginalSolo": "In the original:",
+  "libro.sigaEn": "Go on at {lugar}"
 }
