@@ -4,9 +4,12 @@ import { addTake, takesOf } from './recordings'
 import { readShared, receiveShared, shareProject, previewBook } from './share'
 import { authorOf, chooseVersion, joinWithNext, otherVersion, readDraft, writeDraft, studyNotesOf, writeStudyNote } from './work'
 import type { Project } from './model'
+import { setProject } from './scope'
 
 let store = new Map<string, string>()
 beforeEach(() => {
+  // As in the app, the work is read and written in the project shown (here, Kichwa's Bible).
+  setProject('kichwa')
   store = new Map()
   globalThis.localStorage = {
     getItem: (k: string) => store.get(k) ?? null,

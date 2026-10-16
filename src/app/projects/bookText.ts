@@ -38,6 +38,7 @@ import {
 } from '../../core'
 import { chapterOf, chaptersOf, type PrototypeData } from '../../prototype/data'
 import { samePlace } from '../../core/book'
+import { scoped } from './scope'
 import { applyVerseEdits, listVerseSpans, normalizeVerseText, verseLinesText, type VerseSlotEdit } from '../../usfm/usfmEdit'
 import { bookUsfm } from './usfmExport'
 
@@ -97,9 +98,11 @@ interface Shelved {
   pendingAt: string[]
 }
 
+/** The books kept, each by its key: the book's code with its project (`jon~biblia-kichwa`, `scope.ts`). */
 interface Shelf {
-  get(code: string): Shelved | null
-  put(rec: Shelved): void
+  get(key: string): Shelved | null
+  put(key: string, rec: Shelved): void
+  remove(key: string): void
   codes(): string[]
 }
 
@@ -123,10 +126,14 @@ const localShelf: Shelf = {
       return null
     }
   },
-  put(rec) {
+  put(key, rec) {
     const raw = JSON.stringify(rec)
-    write(BOOK + rec.state.book, raw)
-    localMemo.set(rec.state.book, { raw, rec })
+    write(BOOK + key, raw)
+    localMemo.set(key, { raw, rec })
+  },
+  remove(key) {
+    write(BOOK + key, null)
+    localMemo.delete(key)
   },
   codes: () => keysUnder(BOOK).map((k) => k.slice(BOOK.length)),
 }
@@ -160,11 +167,20 @@ function dbShelf(db: IDBDatabase, books: Map<string, Shelved>): Shelf & { flush(
   }
   return {
     get: (code) => books.get(code) ?? null,
-    put(rec) {
-      const code = rec.state.book
+    put(code, rec) {
       books.set(code, rec)
       if (waiting.has(code)) clearTimeout(waiting.get(code))
       waiting.set(code, window.setTimeout(() => save(code), 300))
+    },
+    remove(code) {
+      books.delete(code)
+      if (waiting.has(code)) clearTimeout(waiting.get(code))
+      waiting.delete(code)
+      try {
+        db.transaction(STORE, 'readwrite').objectStore(STORE).delete(code)
+      } catch {
+        /* gone from memory; the database keeps it until next time */
+      }
     },
     codes: () => [...books.keys()],
     flush() {
@@ -287,7 +303,7 @@ const slotsMemo = new Map<string, Map<number, { text: string; slots: Map<number,
 
 /** The verses of a chapter by the number of their first verse, read once for each text of the chapter. */
 function chapterSlots(code: string, chapter: number): Map<number, Slot> {
-  const rec = shelf.get(code)
+  const rec = shelf.get(scoped(code))
   const text = rec ? partsOf(code, rec.working).chapters.get(chapter) : undefined
   if (text === undefined) return new Map()
   let byChapter = slotsMemo.get(code)
@@ -340,7 +356,7 @@ export const textOf = (book: string, chapter: number, verse: number): string => 
 export function authorOf(book: string, chapter: number, verse: number): string | null {
   const at = joinStartOf(book, chapter, verse)
   const slot = chapterSlots(book, chapter).get(at)
-  const rec = shelf.get(book)
+  const rec = shelf.get(scoped(book))
   if (!slot || !rec || !slot.lines.trim()) return null
   if (rec.pendingBy !== null && rec.pendingAt.includes(`${chapter}:${at}`)) return rec.pendingBy || null
   // The last who wrote this text here: a choice between two versions is the chooser's entry, not a writing.
@@ -362,7 +378,7 @@ export interface WrittenVerse {
 /** Every verse of a book that has text or starts a join, in order. */
 export function writtenVerses(book: string): WrittenVerse[] {
   const out: WrittenVerse[] = []
-  const rec = shelf.get(book)
+  const rec = shelf.get(scoped(book))
   for (const chapter of rec ? partsOf(book, rec.working).chapters.keys() : []) {
     for (const slot of chapterSlots(book, chapter).values()) {
       if (!slot.lines.trim() && slot.to === slot.from) continue
@@ -374,10 +390,10 @@ export function writtenVerses(book: string): WrittenVerse[] {
 
 /** The book's state for the merge and the work package: the journal brought up to the text as it is now. */
 export function bookStateOf(book: string): BookState | null {
-  const rec = shelf.get(book)
+  const rec = shelf.get(scoped(book))
   if (!rec) return null
   const now = commit(rec)
-  if (now !== rec) shelf.put(now)
+  if (now !== rec) shelf.put(scoped(book), now)
   return now.state
 }
 
@@ -443,24 +459,24 @@ function commit(rec: Shelved): Shelved {
 const timers = new Map<string, number>()
 
 /** A moment after the last letter, the journal takes the change (in the app; the tests ask for it when they need it). */
-function commitSoon(code: string) {
+function commitSoon(key: string) {
   if (typeof window === 'undefined') return
-  if (timers.has(code)) clearTimeout(timers.get(code))
+  if (timers.has(key)) clearTimeout(timers.get(key))
   timers.set(
-    code,
+    key,
     window.setTimeout(() => {
-      timers.delete(code)
-      const rec = shelf.get(code)
-      if (rec && rec.pendingBy !== null) shelf.put(commit(rec))
+      timers.delete(key)
+      const rec = shelf.get(key)
+      if (rec && rec.pendingBy !== null) shelf.put(key, commit(rec))
     }, 1500)
   )
 }
 
 /** The journal takes every change being written (leaving the app, before a book is shared). */
 export function flushBooks() {
-  for (const code of shelf.codes()) {
-    const rec = shelf.get(code)
-    if (rec && rec.pendingBy !== null) shelf.put(commit(rec))
+  for (const key of shelf.codes()) {
+    const rec = shelf.get(key)
+    if (rec && rec.pendingBy !== null) shelf.put(key, commit(rec))
   }
 }
 
@@ -469,7 +485,8 @@ export function flushBooks() {
  * first; `now` has the journal take this one at once (a join, a choice: not typed letter by letter).
  */
 function change(book: string, by: string, chapter: number, edits: VerseSlotEdit[], now = false) {
-  let rec = shelf.get(book) ?? emptyBook(book)
+  const key = scoped(book)
+  let rec = shelf.get(key) ?? emptyBook(book)
   if (rec.pendingBy !== null && rec.pendingBy !== by) rec = commit(rec)
   // The chapter alone is written again, when the book has it; the book, when the chapter is to be made.
   const parts = partsOf(book, rec.working)
@@ -484,13 +501,13 @@ function change(book: string, by: string, chapter: number, edits: VerseSlotEdit[
     }
   } else working = applyVerseEdits(rec.working, chapter, edits)
   if (working === rec.working) {
-    if (!shelf.get(book)) shelf.put(rec)
+    if (!shelf.get(key)) shelf.put(key, rec)
     return
   }
   rec = { ...rec, working, pendingBy: by, pendingAt: [...new Set([...rec.pendingAt, ...edits.map((e) => `${chapter}:${e.from}`)])] }
   if (now) rec = commit(rec)
-  shelf.put(rec)
-  if (!now) commitSoon(book)
+  shelf.put(key, rec)
+  if (!now) commitSoon(key)
 }
 
 export function writeDraft(book: string, chapter: number, verse: number, text: string, by: string) {
@@ -537,9 +554,26 @@ function moveLegacyText() {
       })
       .filter((x) => x.text.trim() || x.to > x.verse)
       .sort((a, b) => a.chapter - b.chapter || a.verse - b.verse)
-    shelf.put(emptyBook(code))
+    shelf.put(code, emptyBook(code))
     for (const x of verses)
       change(code, x.by ?? '', x.chapter, [{ from: x.verse, to: x.to, text: x.text, leads: x.to === x.verse ? leadsOf(code, x.chapter, x.verse) : [] }], true)
+  }
+}
+
+/**
+ * A book kept by its code alone (before each project kept its own) goes to each project that has it, as it is, once;
+ * then it is forgotten, so a project that adds the book later begins it new.
+ */
+export function moveBooksToProjects(projects: Array<{ id: string; books: Array<{ code: string }> }>) {
+  for (const key of shelf.codes()) {
+    if (key.includes('~')) continue
+    const rec = shelf.get(key)
+    if (!rec) continue
+    for (const p of projects.filter((x) => x.books.some((b) => b.code === key))) {
+      const theirs = `${key}~${p.id}`
+      if (!shelf.get(theirs)) shelf.put(theirs, commit(rec))
+    }
+    shelf.remove(key)
   }
 }
 
@@ -558,9 +592,9 @@ export function forgetBooks() {
  * waits as a conflict for a person. `by` is who gathers it.
  */
 export function mergeBook(book: string, other: BookState, by: string): MergeReport {
-  const rec = commit(shelf.get(book) ?? emptyBook(book))
+  const rec = commit(shelf.get(scoped(book)) ?? emptyBook(book))
   const { state, report } = mergeInto(rec.state, { ...other, book, pending: [] }, personOf(by), new Date().toISOString())
-  shelf.put({ state, working: state.usfm, pendingBy: null, pendingAt: [] })
+  shelf.put(scoped(book), { state, working: state.usfm, pendingBy: null, pendingAt: [] })
   return withDecidedTaken(rec.state.usfm, state.usfm, report)
 }
 
@@ -578,7 +612,7 @@ function withDecidedTaken(before: string, after: string, report: MergeReport): M
 
 /** What gathering another copy would do, before anything is done. */
 export function mergePreview(book: string, other: BookState, by: string): MergeReport & { same: number } {
-  const rec = commit(shelf.get(book) ?? emptyBook(book))
+  const rec = commit(shelf.get(scoped(book)) ?? emptyBook(book))
   const merged = mergeInto(rec.state, { ...other, book, pending: [] }, personOf(by), new Date().toISOString())
   const report = withDecidedTaken(rec.state.usfm, merged.state.usfm, merged.report)
   // Verses the other copy brings that this one already says: the same text, or one it took in and went past (a place
@@ -631,7 +665,7 @@ export function bookFrom(
 
 // ——— What waits for a person: the merge's pending conflicts ——————————————————————————————————————————————————————
 
-const pendingOf = (book: string): Conflict[] => shelf.get(book)?.state.pending ?? []
+const pendingOf = (book: string): Conflict[] => shelf.get(scoped(book))?.state.pending ?? []
 
 /** A verse's lines in a piece of USFM (a conflict's other version keeps them, as a poem's). */
 function linesIn(usfm: string, chapter: number, verse: number): string {
@@ -661,9 +695,9 @@ export function otherVersionsOf(book: string): Array<{ chapter: number; verse: n
 
 /** A person decides a conflict (`decide`): the choice goes into the journal and is not asked again anywhere. */
 function settle(book: string, conflict: Conflict, keepTheirs: boolean, by: string) {
-  const rec = commit(shelf.get(book) ?? emptyBook(book))
+  const rec = commit(shelf.get(scoped(book)) ?? emptyBook(book))
   const state = decide(rec.state, conflict.id, { keep: keepTheirs ? 'theirs' : 'mine' }, personOf(by), new Date().toISOString())
-  shelf.put({ state, working: state.usfm, pendingBy: null, pendingAt: [] })
+  shelf.put(scoped(book), { state, working: state.usfm, pendingBy: null, pendingAt: [] })
 }
 
 /** Keeps the other version (it replaces the verse) or this one; either way the choice is made, by `by`. */
@@ -746,7 +780,7 @@ function moveLegacyWaiting() {
 
 /** Leaves a conflict waiting in a book: what is here against these verses, received from `by`. */
 function waitAt(book: string, place: Place, kind: Conflict['kind'], verses: Array<{ from: number; to: number; text: string }>, by: string) {
-  const rec = commit(shelf.get(book) ?? emptyBook(book))
+  const rec = commit(shelf.get(scoped(book)) ?? emptyBook(book))
   const empty: VerseSlotEdit[] = []
   for (let v = place.from; v <= place.to; v++) empty.push({ from: v, to: v, text: '' })
   const theirsBook = applyVerseEdits(applyVerseEdits(rec.state.usfm, place.chapter, empty), place.chapter, verses)
@@ -764,5 +798,5 @@ function waitAt(book: string, place: Place, kind: Conflict['kind'], verses: Arra
     foundAt: new Date().toISOString(),
     foundBy: personKey(personOf('')),
   }
-  if (!rec.state.pending.some((x) => x.id === conflict.id)) shelf.put({ ...rec, state: { ...rec.state, pending: [...rec.state.pending, conflict] } })
+  if (!rec.state.pending.some((x) => x.id === conflict.id)) shelf.put(scoped(book), { ...rec, state: { ...rec.state, pending: [...rec.state.pending, conflict] } })
 }

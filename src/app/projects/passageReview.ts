@@ -9,6 +9,8 @@
  * marks it improved. In the prototype it lives in this browser; wired, in the book's journal.
  */
 
+import { scoped } from './scope'
+
 export type Criterion = 'fiel' | 'claro' | 'natural' | 'preciso'
 export const CRITERIA: Criterion[] = ['fiel', 'claro', 'natural', 'preciso']
 
@@ -51,8 +53,9 @@ const write = (k: string, v: unknown) => {
     /* kept on screen for this visit */
   }
 }
-const passageKey = (book: string, chapter: number, first: number) => `${KEY}.pasaje.${book}.${chapter}.${first}`
-const observationsKey = (book: string, chapter: number, verse: number) => `${KEY}.observacion.${book}.${chapter}.${verse}`
+// Each project keeps its own review of a book (scope.ts).
+const passageKey = (book: string, chapter: number, first: number) => `${KEY}.pasaje.${scoped(book)}.${chapter}.${first}`
+const observationsKey = (book: string, chapter: number, verse: number) => `${KEY}.observacion.${scoped(book)}.${chapter}.${verse}`
 
 /** A fingerprint of a section's text: an answer given on another text no longer stands. */
 export function textKey(texts: string[]): string {

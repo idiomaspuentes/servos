@@ -66,6 +66,17 @@ Desde el 16 de octubre de 2026 la app guarda cada libro así (cableado, pasos 1 
    copia del libro (`bookFrom`), cada versículo cambio de su autor, con un origen propio para no confundirlos con los
    mismos nombres de este aparato; el mismo archivo da la misma copia, así que traerlo dos veces no trae nada nuevo.
 
+5. **Cada proyecto, su libro** (`src/app/projects/scope.ts`). Dos proyectos de un aparato pueden traducir el mismo
+   libro (Jonás al kichwa y al quechua de Cusco): cada uno guarda su trabajo, el texto y su diario, la alineación,
+   las revisiones, las notas, las grabaciones y dónde iba cada persona (`jon~biblia-kichwa`). La app dice el proyecto
+   al mostrar una de sus pantallas; lo que trabaja con varios lo dice para cada uno (el progreso del inicio,
+   compartir, recibir, agregar un libro). Fuera de un proyecto no se encuentra nada: un lugar que olvide decirlo se
+   ve vacío, nunca con el trabajo de otro proyecto. Lo que estaba guardado por el libro solo pasó una vez a cada
+   proyecto que tiene el libro, y la copia compartida se borró.
+6. **Un libro grande sigue rápido.** El libro se guarda entero, pero en memoria va partido por capítulos: una letra
+   escribe y vuelve a leer solo su capítulo, y el diario compara solo los capítulos escritos. Con un libro del tamaño de
+   Salmos, una letra cuesta unos 4 ms en una computadora (antes 200 ms); una prueba lo vigila.
+
 ## Lo que falta
 
 - **Los choques pendientes no viajan.** Las decisiones sí; un choque sin decidir queda en el aparato donde se

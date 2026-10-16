@@ -11,6 +11,7 @@ import { MenuRow } from '../frame/Sheet'
 import { useT } from '../i18n/i18n'
 import { bookName, type Project } from '../projects/model'
 import { previewBook, readShared, receiveShared, versesIn, type BookReceived, type Destination, type SharedFile } from '../projects/share'
+import { inProject } from '../projects/scope'
 
 export function ReceiveScreen({
   projects,
@@ -64,7 +65,11 @@ export function ReceiveScreen({
   const sameLanguage = file ? projects.filter((p) => p.id !== file.project.id && p.languageCode === file.project.languageCode) : []
   const target = destination?.kind === 'join' ? projects.find((p) => p.id === destination.projectId) : undefined
   const previews = useMemo(
-    () => (file ? file.books.map((b) => previewBook(b, !target?.books.some((x) => x.code === b.code), { from: file.from, at: file.at, person })) : []),
+    // What it would change in the project it goes to; a new project has nothing yet.
+    () =>
+      file
+        ? inProject(target?.id ?? '~nuevo', () => file.books.map((b) => previewBook(b, !target?.books.some((x) => x.code === b.code), { from: file.from, at: file.at, person })))
+        : [],
     [file, target]
   )
 

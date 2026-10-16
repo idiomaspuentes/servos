@@ -8,6 +8,7 @@ import { MenuRow, Sheet } from '../frame/Sheet'
 import { useT } from '../i18n/i18n'
 import { BOOKS, bookName, type Phase, type Project } from '../projects/model'
 import { previewBook, receiveBook } from '../projects/share'
+import { inProject } from '../projects/scope'
 import { readUsfmBook, type UsfmBook } from '../projects/usfmImport'
 
 export function AddBookSheet({
@@ -63,10 +64,11 @@ export function AddBookSheet({
             <UsfmFound
               found={found}
               person={person}
+              projectId={project.id}
               isNew={!has.has(found.code ?? '')}
               onAgain={() => file.current?.click()}
               onBring={() => {
-                receiveBook(found.book, !has.has(found.code!), { from: person, at: `usfm:${found.id}`, person })
+                inProject(project.id, () => receiveBook(found.book, !has.has(found.code!), { from: person, at: `usfm:${found.id}`, person }))
                 onCreate(found.code!, 'traduccion')
               }}
             />
@@ -108,7 +110,22 @@ export function AddBookSheet({
 }
 
 /** What a USFM file brings, said before anything is written; one button to bring it in. */
-function UsfmFound({ found, isNew, person, onAgain, onBring }: { found: UsfmBook; isNew: boolean; person: string; onAgain(): void; onBring(): void }) {
+function UsfmFound({
+  found,
+  isNew,
+  person,
+  projectId,
+  onAgain,
+  onBring,
+}: {
+  found: UsfmBook
+  isNew: boolean
+  person: string
+  /** The project the book goes into: what it would change there. */
+  projectId: string
+  onAgain(): void
+  onBring(): void
+}) {
   const t = useT()
   if (!found.code || !found.verses) {
     return (
@@ -122,7 +139,7 @@ function UsfmFound({ found, isNew, person, onAgain, onBring }: { found: UsfmBook
       </div>
     )
   }
-  const p = previewBook(found.book, isNew, { from: person, at: `usfm:${found.id}`, person })
+  const p = inProject(projectId, () => previewBook(found.book, isNew, { from: person, at: `usfm:${found.id}`, person }))
   return (
     <div className="usfm-found">
       <strong>{bookName(found.code)}</strong>

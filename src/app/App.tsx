@@ -10,6 +10,7 @@ import { useT } from './i18n/i18n'
 import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type Position } from './miniapps/contract'
 import { miniApp } from './miniapps/registry'
 import { loadProjects, saveProjects, titleOf, type Phase, type Project } from './projects/model'
+import { inProject, setProject } from './projects/scope'
 import { placeLabel, stepPercent } from './projects/progress'
 import { keepLastApp, keepPlace, lastAppOf, placeOf } from './projects/work'
 import { AddBookSheet } from './screens/AddBook'
@@ -58,6 +59,8 @@ export function App() {
   const t = useT()
   const [projects, setProjectsState] = useState<Project[]>(loadProjects)
   const [screen, setScreen] = useState<Screen>({ kind: 'home' })
+  // The project the screen belongs to is the one whose work is read and written (scope.ts); home belongs to none.
+  setProject('projectId' in screen ? (screen.projectId ?? null) : null)
   const [resume, setResumeState] = useState<Resume | null>(loadResume)
   // Who uses this phone, and who is working now: kept, since every change carries the name. Null the first time.
   const [people, setPeopleState] = useState<People | null>(loadPeople)
@@ -123,8 +126,9 @@ export function App() {
 
   const home = () => setScreen({ kind: 'home' })
   // Where home's «Continue» goes: into the mini app last worked in, at its place, in the book last opened; or else the book.
-  const resumeApp = resume ? miniApp(lastAppOf(person, resume.book) ?? '') : undefined
-  const resumePlace = resume && resumeApp && resumeApp.positionLine !== false ? placeOf(person, resume.book, resumeApp.id) : null
+  const resumeApp = resume ? miniApp(inProject(resume.projectId, () => lastAppOf(person, resume.book)) ?? '') : undefined
+  const resumePlace =
+    resume && resumeApp && resumeApp.positionLine !== false ? inProject(resume.projectId, () => placeOf(person, resume.book, resumeApp.id)) : null
   const bookScreen = screen.kind === 'book' ? screen : null
   const appScreen = screen.kind === 'app' ? screen : null
   // Back from a mini app: to the one it was opened from, at the place it was left, or else to its book.
@@ -246,11 +250,11 @@ export function App() {
           }
           progressOf={(p, code) => {
             const b = p.books.find((x) => x.code === code)
-            return b ? stepPercent(p, code, b.phase) : null
+            return b ? inProject(p.id, () => stepPercent(p, code, b.phase)) : null
           }}
           onResume={(r) => {
             if (!resumeApp || !project(r.projectId)) return openBook(r.projectId, r.book)
-            openAt(r.book, resumeApp)
+            inProject(r.projectId, () => openAt(r.book, resumeApp))
             setScreen({ kind: 'app', projectId: r.projectId, book: r.book, id: resumeApp.id })
           }}
           onAddProject={() => setAddProject(true)}

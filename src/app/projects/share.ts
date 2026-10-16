@@ -23,6 +23,7 @@ import type { BookEntry, Phase, Project } from './model'
 import type { NoteCheck } from './noteChecks'
 import { blobOf, gatherTakes, keepSound, recordedPlaces, soundBase64, takesOf, type Take } from './recordings'
 import { placesOf, textKey, type BookState } from '../../core'
+import { inProject, scoped } from './scope'
 import { bookFrom, bookStateOf, mergeBook, mergePreview, textOf, type StudyNote } from './work'
 
 export const SHARE_FORMAT = 'servos-compartir'
@@ -115,19 +116,20 @@ const json = <T,>(k: string): T | null => {
 export function shareBook(code: string, phase: Phase): SharedBook {
   // The book itself, its journal brought up to what is written now; what waits for a choice here is not shared.
   const state = bookStateOf(code)
-  const alignments = keys(`${P}.alineacion.${code}.`).flatMap((k) => {
-    const [source, chapter, verse] = k.slice(`${P}.alineacion.${code}.`.length).split('.')
+  const book = scoped(code)
+  const alignments = keys(`${P}.alineacion.${book}.`).flatMap((k) => {
+    const [source, chapter, verse] = k.slice(`${P}.alineacion.${book}.`.length).split('.')
     const kept = json<{ groups: AlignmentGroup[]; text: string; by?: string; at?: string }>(k)
     return kept ? [{ chapter: Number(chapter), verse: Number(verse), source, ...kept }] : []
   })
   const checks: SharedBook['checks'] = {}
   for (const store of ['revisionNota', 'revisionPalabra']) {
-    for (const k of keys(`${P}.${store}.${code}.`)) {
+    for (const k of keys(`${P}.${store}.${book}.`)) {
       const check = json<NoteCheck>(k)
-      if (check) (checks[store] ??= {})[k.slice(`${P}.${store}.${code}.`.length)] = check
+      if (check) (checks[store] ??= {})[k.slice(`${P}.${store}.${book}.`.length)] = check
     }
   }
-  const studyNotes = keys(`${P}.comprension.${code}.`).flatMap((k) => {
+  const studyNotes = keys(`${P}.comprension.${book}.`).flatMap((k) => {
     const notes = json<StudyNote[]>(k)
     return notes?.length ? [{ chapter: Number(k.split('.').pop()), notes }] : []
   })
@@ -153,7 +155,7 @@ export async function withSounds(file: SharedFile): Promise<SharedFile> {
 /** These books of a project, with its glossary and settings, as one file. */
 export function shareProject(project: Project, codes: string[], from: string, now = new Date()): SharedFile {
   const { books, ...rest } = project
-  return {
+  return inProject(project.id, () => ({
     format: SHARE_FORMAT,
     version: 2,
     from,
@@ -161,7 +163,7 @@ export function shareProject(project: Project, codes: string[], from: string, no
     project: rest,
     books: books.filter((b) => codes.includes(b.code)).map((b) => ({ ...shareBook(b.code, b.phase), ...(b.name ? { name: b.name } : {}) })),
     glossary: readGlossary(project.id),
-  }
+  }))
 }
 
 /** A received file, if it is one of Servos's. */
@@ -258,7 +260,7 @@ export function receiveBook(book: SharedBook, isNew: boolean, from: Gathering): 
   const { code } = book
   mergeBook(code, copyOf(book, from), from.person)
   for (const a of book.alignments) {
-    const k = `${P}.alineacion.${code}.${a.source}.${a.chapter}.${a.verse}`
+    const k = `${P}.alineacion.${scoped(code)}.${a.source}.${a.chapter}.${a.verse}`
     // The text that says the verse now, after the verses were gathered (joined ones by their first).
     const now = textOf(code, a.chapter, a.verse).replace(/\n/g, ' ').trim()
     if (a.text.trim() !== now) continue
@@ -269,7 +271,7 @@ export function receiveBook(book: SharedBook, isNew: boolean, from: Gathering): 
   }
   for (const [store, byId] of Object.entries(book.checks)) {
     for (const [id, check] of Object.entries(byId)) {
-      const k = `${P}.${store}.${code}.${id}`
+      const k = `${P}.${store}.${scoped(code)}.${id}`
       const mine = json<NoteCheck>(k)
       if (!mine || (mine.at ?? '') < (check.at ?? '')) {
         set(k, JSON.stringify(check))
@@ -278,7 +280,7 @@ export function receiveBook(book: SharedBook, isNew: boolean, from: Gathering): 
     }
   }
   for (const { chapter, notes } of book.studyNotes) {
-    const k = `${P}.comprension.${code}.${chapter}`
+    const k = `${P}.comprension.${scoped(code)}.${chapter}`
     const mine = json<StudyNote[]>(k) ?? []
     const same = (a: number[], b: number[]) => a.join(',') === b.join(',')
     for (const note of notes) {
@@ -323,7 +325,7 @@ export function receiveShared(
       ? projects.find((p) => p.id === destination.projectId)!
       : { ...file.project, id: freeId(file.project.id, projects), books: [] as BookEntry[] }
   const books = file.books.filter((b) => codes.includes(b.code))
-  const received = books.map((b) => receiveBook(b, !target.books.some((x) => x.code === b.code), { from: file.from, at: file.at, person }))
+  const received = inProject(target.id, () => books.map((b) => receiveBook(b, !target.books.some((x) => x.code === b.code), { from: file.from, at: file.at, person })))
   const added = books
     .filter((b) => !target.books.some((x) => x.code === b.code))
     .map((b) => ({ code: b.code, phase: b.phase, ...(b.name ? { name: b.name } : {}) }))

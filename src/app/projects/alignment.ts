@@ -13,6 +13,7 @@
 import type { AlignmentGroup } from '@usfm-tools/types'
 import { normalizeWordForAlignmentMatch, reconcileAlignments, tokenizeWords, type OriginalWordToken, type WordToken } from '@usfm-tools/editor-core'
 import type { PrototypeText } from '../../prototype/data'
+import { scoped } from './scope'
 
 /** The words of a verse of the draft, each with its occurrence among the same words, as the alignment reads them. */
 export function draftTokens(text: string, sid: string): WordToken[] {
@@ -72,7 +73,8 @@ export interface KeptAlignment {
   at?: string
 }
 
-const key = (book: string, chapter: number, verse: number, source: string) => `servos.prototipo.alineacion.${book}.${source}.${chapter}.${verse}`
+// Each project keeps its own alignment of a book (scope.ts).
+const key = (book: string, chapter: number, verse: number, source: string) => `servos.prototipo.alineacion.${scoped(book)}.${source}.${chapter}.${verse}`
 
 export function readAlignment(book: string, chapter: number, verse: number, source: string): KeptAlignment | null {
   try {

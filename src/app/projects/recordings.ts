@@ -9,6 +9,8 @@
  * Wired, a take is a file of the place in the book's journal.
  */
 
+import { scoped } from './scope'
+
 export interface Take {
   id: string
   by: string
@@ -27,7 +29,8 @@ interface VerseTakes {
 }
 
 const KEY = 'servos.prototipo.grabacion'
-const metaKey = (book: string, chapter: number, verse: number) => `${KEY}.${book}.${chapter}.${verse}`
+// Each project keeps its own recordings of a book (scope.ts); the sound is kept by its take, apart.
+const metaKey = (book: string, chapter: number, verse: number) => `${KEY}.${scoped(book)}.${chapter}.${verse}`
 const readMeta = (book: string, chapter: number, verse: number): VerseTakes => {
   try {
     return (JSON.parse(localStorage.getItem(metaKey(book, chapter, verse)) ?? 'null') as VerseTakes | null) ?? { takes: [], chosen: null }
@@ -75,7 +78,7 @@ export interface PlaceTakes {
 
 /** Every place of a book that has recordings, in order. */
 export function recordedPlaces(book: string): PlaceTakes[] {
-  const prefix = `${KEY}.${book}.`
+  const prefix = `${KEY}.${scoped(book)}.`
   const out: PlaceTakes[] = []
   try {
     for (let i = 0; i < localStorage.length; i++) {

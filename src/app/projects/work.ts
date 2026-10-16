@@ -9,12 +9,14 @@
  */
 
 import { authorOf, bookFrom, mergeBook, otherVersion, textOf } from './bookText'
+import { scoped } from './scope'
 
 // The book's text is the door's (bookText.ts); it is offered from here too, where the screens have always asked for it.
 export * from './bookText'
 
 const KEY = 'servos.prototipo'
-const placeKey = (person: string, book: string, app: string) => `${KEY}.posicion.${person}.${book}.${app}`
+// Where a person was, and their notes, are kept for the book of each project (scope.ts).
+const placeKey = (person: string, book: string, app: string) => `${KEY}.posicion.${person}.${scoped(book)}.${app}`
 
 function read(key: string): string | null {
   try {
@@ -108,7 +110,7 @@ export function placeOf(person: string, book: string, app: string): Place | null
 export const keepPlace = (person: string, book: string, app: string, place: Place) => write(placeKey(person, book, app), JSON.stringify(place))
 
 /** The mini app a person last opened from a book: what «Continue» goes back to, and whose progress the chapters show. */
-const lastAppKey = (person: string, book: string) => `servos.prototipo.ultimaApp.${person}.${book}`
+const lastAppKey = (person: string, book: string) => `servos.prototipo.ultimaApp.${person}.${scoped(book)}`
 export const lastAppOf = (person: string, book: string): string | null => read(lastAppKey(person, book))
 export const keepLastApp = (person: string, book: string, app: string) => write(lastAppKey(person, book), app)
 
@@ -123,7 +125,7 @@ export interface StudyNote {
   by: string
 }
 
-const studyKey = (book: string, chapter: number) => `${KEY}.comprension.${book}.${chapter}`
+const studyKey = (book: string, chapter: number) => `${KEY}.comprension.${scoped(book)}.${chapter}`
 
 export function studyNotesOf(book: string, chapter: number): StudyNote[] {
   try {

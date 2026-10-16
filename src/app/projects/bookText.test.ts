@@ -1,7 +1,8 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { authorOf, bookStateOf, deviceId, forgetBooks, joinWithNext, openBooks, readDraft, separateJoined, writeDraft } from './bookText'
+import { authorOf, bookStateOf, deviceId, forgetBooks, joinWithNext, moveBooksToProjects, openBooks, readDraft, separateJoined, writeDraft } from './bookText'
+import { inProject, moveWorkToProjects, setProject } from './scope'
 
 let store = new Map<string, string>()
 beforeEach(() => {
@@ -105,5 +106,47 @@ describe('behind the door, the book is one USFM and its journal', () => {
     writeDraft('jon', 1, 1, 'Shuk punchami, Taytaku.', 'Ana')
     await openBooks()
     expect(readDraft('jon', 1, 1)).toBe('Shuk punchami, Taytaku.')
+  })
+})
+
+describe('each project keeps its own work of a book', () => {
+  const projects = [
+    { id: 'kichwa', books: [{ code: 'jon' }] },
+    { id: 'quechua', books: [{ code: 'jon' }, { code: 'tit' }] },
+    { id: 'aymara', books: [{ code: 'tit' }] },
+  ]
+
+  it('keeps two projects’ Jonah apart', () => {
+    inProject('kichwa', () => writeDraft('jon', 1, 1, 'Shuk punchami.', 'Ana'))
+    inProject('quechua', () => writeDraft('jon', 1, 1, 'Huk punchaw.', 'Bea'))
+    expect(inProject('kichwa', () => [readDraft('jon', 1, 1), authorOf('jon', 1, 1)])).toEqual(['Shuk punchami.', 'Ana'])
+    expect(inProject('quechua', () => [readDraft('jon', 1, 1), authorOf('jon', 1, 1)])).toEqual(['Huk punchaw.', 'Bea'])
+  })
+
+  it('finds nothing outside a project: a place that forgets to say it shows empty, not another project’s work', () => {
+    inProject('kichwa', () => writeDraft('jon', 1, 1, 'Shuk punchami.', 'Ana'))
+    setProject(null)
+    expect(readDraft('jon', 1, 1)).toBe('')
+  })
+
+  it('moves work kept by the book alone into each project that has the book, once, and forgets the shared copy', () => {
+    setProject(null)
+    writeDraft('jon', 1, 1, 'Shuk punchami.', 'Ana')
+    store.set('servos.prototipo.alineacion.jon.UGNT.1.1', '{"groups":[]}')
+    store.set('servos.prototipo.posicion.Ana.jon.editor', '{"chapter":1,"verse":5}')
+    moveBooksToProjects(projects)
+    moveWorkToProjects(projects)
+    expect(inProject('kichwa', () => readDraft('jon', 1, 1))).toBe('Shuk punchami.')
+    expect(inProject('quechua', () => readDraft('jon', 1, 1))).toBe('Shuk punchami.')
+    expect(inProject('aymara', () => readDraft('jon', 1, 1))).toBe('')
+    expect(readDraft('jon', 1, 1)).toBe('')
+    expect([...store.keys()].filter((k) => k.includes('alineacion')).sort()).toEqual([
+      'servos.prototipo.alineacion.jon~kichwa.UGNT.1.1',
+      'servos.prototipo.alineacion.jon~quechua.UGNT.1.1',
+    ])
+    expect(store.get('servos.prototipo.posicion.Ana.jon~quechua.editor')).toBe('{"chapter":1,"verse":5}')
+    // From then on, each project's copy goes its own way.
+    inProject('quechua', () => writeDraft('jon', 1, 1, 'Huk punchaw.', 'Bea'))
+    expect(inProject('kichwa', () => readDraft('jon', 1, 1))).toBe('Shuk punchami.')
   })
 })

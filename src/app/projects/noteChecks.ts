@@ -11,6 +11,7 @@
  */
 
 import type { PrototypeData, PrototypeNote } from '../../prototype/data'
+import { scoped } from './scope'
 
 /**
  * The categories of the checks, by Translation Academy article: translationCore 3's grouping of translation notes,
@@ -100,7 +101,8 @@ export interface NoteCheck {
 export const wordsOfVerse = (text: string) => text.split(/\s+/).filter(Boolean)
 
 /** Where a check is kept: the store names the kind of check (`revisionNota`, `revisionPalabra`), the id what is checked. */
-const key = (book: string, id: string, store: string) => `servos.prototipo.${store}.${book}.${id}`
+// Each project keeps its own checks of a book (scope.ts).
+const key = (book: string, id: string, store: string) => `servos.prototipo.${store}.${scoped(book)}.${id}`
 
 export function readCheck(book: string, id: string, store = 'revisionNota'): NoteCheck | null {
   try {

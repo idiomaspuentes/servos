@@ -41,6 +41,7 @@ import { placesOfOriginals, wordAt } from '../../frame/TouchWords'
 import { alignmentFor, draftTokens, readAlignment, sourceWords, writeAlignment } from '../../projects/alignment'
 import { joinedVerses, textOf } from '../../projects/work'
 import type { MiniApp, MiniAppCenterProps, Position } from '../contract'
+import { scoped } from '../../projects/scope'
 
 const verseTextOf = (book: string, chapter: number, verse: number) => textOf(book, chapter, verse).replace(/\n/g, ' ')
 /** The verses aligned together where the person is: the verse, or the verses joined with it (kept on the first). */
@@ -51,7 +52,7 @@ const sidOf = (at: Position) => {
 }
 
 /** The source chosen for a book, kept for the next visit: the TPL until another is chosen. */
-const sourceKey = (book: string) => `servos.prototipo.alineacion.fuente.${book}`
+const sourceKey = (book: string) => `servos.prototipo.alineacion.fuente.${scoped(book)}`
 function readSource(book: string): string {
   try {
     return localStorage.getItem(sourceKey(book)) ?? 'TPL'
