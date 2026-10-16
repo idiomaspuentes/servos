@@ -127,8 +127,7 @@ button:disabled { opacity: 0.45; cursor: default; }
   width: 100%; text-align: center; display: block;
 }
 .button-secondary { width: 100%; background: none; border-color: color-mix(in srgb, var(--text-soft) 35%, transparent); }
-.button-quiet { border-color: transparent; background: none; color: var(--accent); }
-.button-link { border: 0; background: none; color: var(--accent); padding-inline: 0; text-align: start; text-decoration: underline; }
+.button-quiet { border-color: transparent; background: none; color: var(--text); }
 .file-button { position: relative; overflow: hidden; }
 .file-button input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
@@ -180,7 +179,7 @@ textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
 .badge { font-size: 0.75rem; background: var(--accent-soft); color: var(--accent); border: 0; border-radius: 6px; padding: 0.1rem 0.45rem; margin-inline-start: 0.5rem; font-weight: 600; }
 .notice { background: var(--warn-bg); color: var(--warn-text); padding: 0.75rem; border-radius: var(--radius); }
 /* What is normal (saved, copied, left for later) is said plainly, without the colour kept for what went wrong */
-.status { margin: 0; padding: 0.6rem 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--text); }
+.status { margin: 0; padding: 0.6rem 0.75rem; border-radius: var(--radius); background: var(--surface-soft); color: var(--text); }
 .markdown ul { padding-inline-start: 1.25rem; margin-block: 0 0.75rem; }
 
 /* Sheets */
@@ -282,7 +281,7 @@ textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
 .project-card h2 { text-wrap: balance; }
 .project-card p { margin: 0; }
 .book-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: 0.5rem; }
-.book-tile { display: flex; flex-direction: column; align-items: stretch; gap: 0.2rem; text-align: start; background: var(--surface-soft); }
+.book-tile { display: flex; flex-direction: column; align-items: stretch; gap: 0.2rem; text-align: start; border-color: transparent; background: var(--surface-soft); }
 .book-tile-name { font-weight: 600; }
 .book-tile-phase { font-size: 0.85rem; color: var(--text-soft); }
 /* A project's card: its name with its settings beside it, its books, and one more tile to add a book */
@@ -304,7 +303,9 @@ textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
 /* New Bible */
 .field-row { display: grid; grid-template-columns: minmax(0, 1fr) 6.5rem; gap: 0.75rem; }
 fieldset.field { border: 0; padding: 0; margin: 0; }
-.choice-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.choice-row { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 3px; border-radius: 14px; background: var(--track); }
+.choice-row > .choice { border: 0; border-radius: 11px; background: none; color: var(--text-soft); font-weight: 600; }
+.choice-row > .choice.is-on { background: var(--pill); color: var(--text); box-shadow: var(--shadow-raised); }
 .choice.is-on, .option.is-on, .book-chip.is-on { border-color: var(--accent); background: var(--accent-soft); color: var(--text); box-shadow: inset 0 0 0 1px var(--accent); }
 .option { display: flex; flex-direction: column; align-items: flex-start; text-align: start; gap: 0.15rem; width: 100%; }
 .option-title { font-weight: 600; }
@@ -327,15 +328,6 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 
 /* A book's steps */
 .steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
-.step { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
-.step details { padding-inline: 1rem; }
-.step details[open] { padding-block-end: 0.75rem; }
-.step summary { min-height: var(--touch); display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; cursor: pointer; padding-block: 0.5rem; }
-.step-name { font-weight: 600; }
-.step-state { font-size: 0.8rem; color: var(--text-soft); }
-.step.is-enCurso { border-color: var(--accent); }
-.step.is-enCurso .step-state { color: var(--accent); font-weight: 600; }
-.step-apps { list-style: none; margin: 0 0 0.5rem; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
 .app-row { display: flex; flex-direction: column; align-items: flex-start; text-align: start; gap: 0.15rem; width: 100%; }
 .app-row-name { font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; }
 .app-row-progress { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.75rem; width: 100%; font-size: 0.85rem; color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -479,10 +471,9 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .edit-hint { margin: 0; font-size: 0.85rem; color: var(--text-soft); }
 
 /* A verse or a section at a time: two choices side by side, the chosen one filled in quietly */
-.unit-switch { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; margin-block-end: 0.5rem; }
-.unit-switch-option { min-height: var(--touch); border: 0; border-radius: 0; background: var(--surface); color: var(--text-soft); }
-.unit-switch-option + .unit-switch-option { border-inline-start: 1px solid var(--line); }
-.unit-switch-option[aria-checked='true'] { background: var(--accent-soft); color: var(--text); font-weight: 600; }
+.unit-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 3px; border-radius: 999px; background: var(--track); margin-block-end: 0.5rem; }
+.unit-switch-option { min-height: var(--touch); border: 0; border-radius: 999px; background: none; color: var(--text-soft); font-weight: 600; }
+.unit-switch-option[aria-checked='true'] { background: var(--pill); color: var(--text); font-weight: 700; box-shadow: var(--shadow-raised); }
 .screen-fill.is-writing .edit-where { display: none; }
 
 /* A section: each verse's fields after its number, as the verse stands in the text */
@@ -598,12 +589,12 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .badge-done { background: var(--done-soft); color: var(--done); }
 .glossary-uses { display: flex; flex-direction: column; gap: 0.4rem; border-block-start: 1px solid var(--line); padding-block-start: 0.75rem; }
 .glossary-uses h3 { margin: 0; font-size: 1rem; }
-.glossary-use-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
-.glossary-use { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.75rem; width: 100%; text-align: start; font-weight: 400; background: var(--surface); color: var(--text); border: 1px solid var(--line); }
+.glossary-use-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.glossary-use { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.75rem; width: 100%; text-align: start; font-weight: 400; background: none; color: var(--text); border: 0; border-block-start: 1px solid var(--hair); border-radius: 0; }
 .glossary-use-place { font-weight: 600; font-variant-numeric: tabular-nums; }
 .glossary-use-state { color: var(--text-soft); font-size: 0.9rem; }
 .glossary-use.is-uses .glossary-use-state { color: var(--done); }
-.glossary-use.is-other { border-color: var(--warn-text); }
+.glossary-use.is-other { box-shadow: inset 3px 0 0 var(--warn-text); }
 .glossary-use.is-other .glossary-use-state { color: var(--warn-text); font-weight: 600; }
 .glossary-entry-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 1.1rem; }
 .glossary-share { display: flex; flex-direction: column; gap: 0.5rem; border-block-start: 1px solid var(--line); padding-block-start: 0.75rem; }
@@ -621,9 +612,9 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .review-figure { margin: 0; font-size: 1.25rem; text-wrap: balance; }
 /* The phrase a note is about, before the note: in one text at a time, chosen by the small tabs above it */
 .review-quote { overflow: hidden; overflow: clip; touch-action: pan-y; user-select: none; -webkit-user-select: none; display: flex; flex-direction: column; gap: 0.4rem; padding: 0.5rem 0.75rem 0.75rem; border-inline-start: 3px solid var(--accent); border-radius: var(--radius); background: var(--surface); }
-.review-quote-switch { display: flex; flex-wrap: wrap; gap: 0.25rem; }
-.review-quote-switch button { min-height: var(--touch); min-width: var(--touch); padding: 0.15rem 0.7rem; border: 1px solid transparent; border-radius: 999px; background: none; color: var(--text-soft); font-size: 0.85rem; font-weight: 600; }
-.review-quote-switch button[aria-checked='true'] { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
+.review-quote-switch { display: flex; gap: 3px; padding: 3px; width: max-content; max-width: 100%; overflow-x: auto; scrollbar-width: none; border-radius: 999px; background: var(--track); }
+.review-quote-switch button { flex: none; min-height: var(--touch); min-width: var(--touch); padding: 0.15rem 0.7rem; border: 0; border-radius: 999px; background: none; color: var(--text-soft); font-size: 0.85rem; font-weight: 600; }
+.review-quote-switch button[aria-checked='true'] { background: var(--pill); color: var(--text); font-weight: 700; box-shadow: var(--shadow-raised); }
 .review-quote-text { margin: 0; font-size: 1.15rem; font-weight: 600; line-height: 1.45; }
 .review-quote-text.is-original { font-weight: 400; font-size: 1.3rem; }
 .review-quote-text.is-verse { font-weight: 400; font-size: 1.05rem; line-height: 1.55; }
@@ -894,9 +885,18 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .button-danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 55%, transparent); }
 .step-note { margin: 0; text-align: center; font-size: 0.85rem; }
 .publish-where-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.publish-where-head .chip { flex: none; white-space: nowrap; }
 .helps-steps { display: flex; align-items: center; justify-content: center; gap: 0.9rem; }
 .word-help-actions { margin-block-start: 0.25rem; }
 .review-more-places { min-height: var(--touch); }
 .study-write { margin-block-start: 1rem; }
 /* Scroll bars thin where text scrolls, not to compete with the text */
 .pane, .edit-fields, .review-scroll, .publish, .sheet-body, .study-intro { scrollbar-width: thin; }
+
+/* Cards on the ground, all alike (principle 12, three tones): lifted by tone and a soft shadow, no drawn edge; a card
+   that says a state keeps its coloured edge at the start. */
+.project-card, .translate-card, .receive-books li, .settings-phase, .glossary-entry, .review-renderings li, .usfm-found,
+.publish-where, .publish-book, .passage-text, .voice-source, .study-other-note {
+  border: 0; border-radius: 14px; box-shadow: var(--shadow-card);
+}
+.observation, .word-help { border-block: 0; border-inline-end: 0; box-shadow: var(--shadow-card); }
