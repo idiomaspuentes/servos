@@ -55,7 +55,7 @@ nuevas sin tocar las demás.
 | Mini app | Qué hace | Lo que reusa de Taller o de `usfm-ast` |
 |---|---|---|
 | **Estudio** | Leer el libro con sus recursos antes de traducir: textos puente, notas, preguntas, palabras, academia | La lectura de ayudas pegadas al versículo de Taller |
-| **Editor** | Escribir el borrador, versículo por versículo, con los textos puente al lado | El editor de USFM de `usfm-ast`; las reglas de escritura del USFM de Taller (poesía, notas) |
+| **Traducir por escrito** (el editor) | Escribir el borrador, por sección o por versículo, con los textos puente al lado | El editor de USFM de `usfm-ast`; las reglas de escritura del USFM de Taller (poesía, notas) |
 | **Revisar con las notas** | Comprobar que cada frase difícil (las notas que enlazan a la Academia) quedó traducida como explica su nota y se entiende bien. Tres pasos por nota: leer la nota, marcar en el borrador las palabras que lo dicen, responder (bien, mejorarla ahora en el editor, mejorarla después). Por versículo, o por categoría y figura | La revisión de translationCore 3 y 4 y la Afinación de Taller (texto de referencia cambiable, marcar palabras con el dedo) |
 | **Revisar con las palabras** | Comprobar cada uso de una palabra (términos clave, otros términos, nombres) con los mismos tres pasos, y en el tercero cómo se tradujo en los demás lugares del libro: donde significa lo mismo, igual; donde significa otra cosa, según su sentido. Palabra por palabra, o por versículo | «Revisar palabras clave» de Taller; los dos revisores comparten `miniapps/checking` |
 | **Revisar el pasaje** | Leer cada sección entera y pesarla con cuatro preguntas, una a la vez: ¿es fiel (dice lo mismo que la fuente), clara (se entiende a la primera), natural (suena como habla la gente), precisa (nombres, números, lugares, términos)? «Sí» pasa a la siguiente; «hay algo que mejorar» marca las palabras con el dedo y abre el editor o lo anota para después: la nota se ve bajo su versículo en el editor hasta que alguien la da por mejorada. Una respuesta vale mientras el texto no cambie | Los pasos y el marcado con el dedo de los otros revisores |
@@ -381,7 +381,7 @@ Propuesta de etapas, para conversar:
    que todo lo demás necesita.
 2. **Personas, proyectos y paquetes:** entrar sin internet, crear un proyecto, importar un paquete de recursos,
    exportar e importar un paquete de trabajo.
-3. **Estudio y Editor**, en teléfono y computadora.
+3. **Estudio y Traducir por escrito**, en teléfono y computadora.
 4. **El solucionador de choques**, sobre el corazón de la etapa 1.
 5. **Revisor de desafíos y de palabras clave.**
 6. **Alineador.**
