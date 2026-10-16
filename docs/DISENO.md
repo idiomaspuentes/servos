@@ -216,6 +216,8 @@ sabe hasta dónde incorporó a cada persona, y las decisiones viajan dentro de l
 - Dos alineaciones distintas del mismo texto con la misma referencia (decidido el 14 de octubre): si las hizo la
   misma persona, queda la más reciente; si las hicieron personas distintas, es un choque de alineación y se decide
   como los de texto.
+- **Hecho** (16 de octubre de 2026): la capa está en el corazón (`src/core/alignment.ts`) y dentro de cada libro; el
+  choque de alineación se elige en el alineador («Bea alineó este versículo de otra manera. ¿Cuál queda?»).
 - **La alineación alimenta el glosario** (idea del 15 de octubre, para la mini app de revisión «Alineación»): al
   alinear un versículo con el original, la palabra con que se tradujo cada palabra del hebreo o del griego se anota
   en el glosario del proyecto (en el archivo de esa palabra, sección 7), con el versículo como ejemplo. Lo que el

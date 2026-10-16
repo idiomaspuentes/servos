@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { readCheck, writeCheck } from './noteChecks'
 import { addTake, takesOf } from './recordings'
+import { alignmentConflictAt, chooseAlignment, readAlignment, writeAlignment } from './alignment'
+import { moveAlignmentsIn } from './bookText'
 import { readShared, receiveShared, shareProject, previewBook } from './share'
 import { authorOf, chooseVersion, joinWithNext, otherVersion, readDraft, writeDraft, studyNotesOf, writeStudyNote } from './work'
 import type { Project } from './model'
@@ -128,5 +130,56 @@ describe('recordings in a work package', () => {
     expect(books[0].recordingsTaken).toBe(1)
     expect(takesOf('jon', 1, 1).map((x) => x.id)).toEqual(['bea1'])
     expect(JSON.stringify(takesOf('jon', 1, 1))).not.toContain('sound')
+  })
+})
+
+describe('la alineación viaja con el libro y sigue a su texto', () => {
+  const links = (word: string) => [{ sources: [{ content: word, occurrence: 1, occurrences: 1, strong: '', lemma: '' }], targets: [{ word, occurrence: 1, occurrences: 1 }] }]
+  /** Bea writes and aligns 1:1 on her phone, and shares; then the phone is «another» one. */
+  function beaAligned(text = 'Taytaku rimarqa') {
+    writeDraft('jon', 1, 1, text, 'Bea')
+    writeAlignment('jon', 1, 1, 'UHB', { groups: links('Taytaku') as never, text, by: 'Bea' })
+    const file = readShared(JSON.stringify(shareProject(project, ['jon'], 'Bea')))!
+    store.clear()
+    return file
+  }
+  const receive = (file: ReturnType<typeof beaAligned>) => receiveShared(file, ['jon'], { kind: 'join', projectId: 'kichwa' }, [project], 'Ana').books[0]
+
+  it('llega con el libro, con quien la hizo', () => {
+    const got = receive(beaAligned())
+    expect(got.alignmentsTaken).toBe(1)
+    expect(readAlignment('jon', 1, 1, 'UHB')).toMatchObject({ text: 'Taytaku rimarqa', by: 'Bea' })
+  })
+
+  it('dos personas que alinean el mismo texto de otra manera eligen una; lo elegido no se vuelve a preguntar', () => {
+    const file = beaAligned()
+    writeDraft('jon', 1, 1, 'Taytaku rimarqa', 'Ana')
+    writeAlignment('jon', 1, 1, 'UHB', { groups: links('rimarqa') as never, text: 'Taytaku rimarqa', by: 'Ana' })
+    expect(receive(file).alignmentChoices).toBe(1)
+    expect(alignmentConflictAt('jon', 1, 1, 'UHB')?.theirs.by).toBe('Bea')
+    chooseAlignment('jon', 1, 1, 'UHB', true, 'Ana')
+    expect(readAlignment('jon', 1, 1, 'UHB')?.groups).toEqual(links('Taytaku'))
+    expect(receive(file).alignmentChoices).toBe(0)
+    expect(alignmentConflictAt('jon', 1, 1, 'UHB')).toBeNull()
+  })
+
+  it('una hecha sobre otro texto que el que queda entra igual, para revisar, y no pisa la hecha sobre el texto que queda', () => {
+    const file = beaAligned('Taytaku nirqa')
+    writeDraft('jon', 1, 1, 'Taytaku rimarqa', 'Ana')
+    receive(file)
+    // Ana's text stays (Bea's waits as the other version); Bea's alignment comes, made on her text.
+    expect(readDraft('jon', 1, 1)).toBe('Taytaku rimarqa')
+    expect(readAlignment('jon', 1, 1, 'UHB')).toMatchObject({ text: 'Taytaku nirqa', by: 'Bea' })
+    writeAlignment('jon', 1, 1, 'UHB', { groups: links('rimarqa') as never, text: 'Taytaku rimarqa', by: 'Ana' })
+    receive(file)
+    expect(readAlignment('jon', 1, 1, 'UHB')).toMatchObject({ text: 'Taytaku rimarqa', by: 'Ana' })
+  })
+
+  it('las alineaciones guardadas versículo por versículo pasan a la capa del libro, una vez', () => {
+    writeDraft('jon', 1, 1, 'Taytaku rimarqa', 'Ana')
+    store.set('servos.prototipo.alineacion.jon~kichwa.UHB.1.1', JSON.stringify({ groups: links('Taytaku'), text: 'Taytaku rimarqa', by: 'Carlos', at: '2026-10-10' }))
+    moveAlignmentsIn()
+    expect(readAlignment('jon', 1, 1, 'UHB')).toMatchObject({ by: 'Carlos', text: 'Taytaku rimarqa' })
+    expect([...store.keys()].some((k) => k.includes('.alineacion.'))).toBe(false)
   })
 })

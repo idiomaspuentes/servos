@@ -13,7 +13,10 @@
 import type { AlignmentGroup } from '@usfm-tools/types'
 import { normalizeWordForAlignmentMatch, reconcileAlignments, tokenizeWords, type OriginalWordToken, type WordToken } from '@usfm-tools/editor-core'
 import type { PrototypeText } from '../../prototype/data'
-import { scoped } from './scope'
+import { alignmentAt, setAlignment } from './bookText'
+
+// Two alignments of a verse made apart by two people: chosen in the aligner.
+export { alignmentConflictAt, chooseAlignment } from './bookText'
 
 /** The words of a verse of the draft, each with its occurrence among the same words, as the alignment reads them. */
 export function draftTokens(text: string, sid: string): WordToken[] {
@@ -73,23 +76,18 @@ export interface KeptAlignment {
   at?: string
 }
 
-// Each project keeps its own alignment of a book (scope.ts).
-const key = (book: string, chapter: number, verse: number, source: string) => `servos.prototipo.alineacion.${scoped(book)}.${source}.${chapter}.${verse}`
-
+/**
+ * A verse's alignment with a text, as the book keeps it (its alignment layer, with its own diary: `bookText.ts` and
+ * `src/core/alignment.ts`), each project its own.
+ */
 export function readAlignment(book: string, chapter: number, verse: number, source: string): KeptAlignment | null {
-  try {
-    return JSON.parse(localStorage.getItem(key(book, chapter, verse, source)) ?? 'null') as KeptAlignment | null
-  } catch {
-    return null
-  }
+  const a = alignmentAt(book, chapter, verse, source)
+  return a ? { groups: a.groups as AlignmentGroup[], text: a.on, by: a.by, ...(a.at ? { at: a.at } : {}) } : null
 }
 
+/** Keeps a verse's alignment with a text: the journal takes it a moment after, as the person's alignment. */
 export function writeAlignment(book: string, chapter: number, verse: number, source: string, kept: KeptAlignment) {
-  try {
-    localStorage.setItem(key(book, chapter, verse, source), JSON.stringify(kept))
-  } catch {
-    /* kept on screen for this visit */
-  }
+  setAlignment(book, chapter, verse, source, kept.text, kept.groups, kept.by ?? '')
 }
 
 /** The links of a verse for its text as it is now: those made on another text follow the words that stayed. */

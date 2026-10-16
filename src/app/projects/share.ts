@@ -2,16 +2,18 @@
  * Sharing work between computers without internet (design, section 7, «the work package»): «Share» puts books of a
  * project in one file, `.servos`, and «Receive» gathers such a file in, saying first what it brings and what it would
  * change, book by book. Everything goes, without asking layer by layer: each book itself (its USFM and its journal,
- * `src/core`), and what hangs on each verse with the text it was made on (the alignment with each source, the checks
- * with notes and with words, the study notes), the recordings with their sound; and the project's glossary, settings
- * and mini apps.
+ * and its alignment with each text, with the alignment's own diary: `src/core`), and what hangs on each verse with the
+ * text it was made on (the checks with notes and with words, the study notes), the recordings with their sound; and the
+ * project's glossary, settings and mini apps.
  *
  * A book is gathered by the merge of `src/core` (the book's door, `mergeBook`): what does not clash comes in by
  * itself, a change already taken here (or older) stays out, a choice someone already made is applied, and what two
  * people changed apart from the same text waits for a person; the choice goes into the journal and is not asked again
- * wherever the book goes. The conflicts waiting on a phone stay there (they are not shared). Each other layer follows
- * its text (design, 6.8): an alignment or a check comes in only if it was made on the text that stays; the glossary is
- * gathered word by word; two study notes on the same verses stay both; recordings take by take, none lost.
+ * wherever the book goes. The conflicts waiting on a phone stay there (they are not shared). The alignment follows its
+ * text (design, 6.8, `mergeAlignments`): the one made on the text that stays wins; two of the same text made apart are
+ * the latest when one person made both, a choice when two did. Each other layer follows its text too: a check comes in
+ * only if it was made on the text that stays; the glossary is gathered word by word; two study notes on the same
+ * verses stay both; recordings take by take, none lost.
  *
  * A file of the first kind (version 1) carried loose verses instead of the book; so does a USFM file read in. They
  * are made a copy of the book, each verse its writer's change, and gathered the same way.
@@ -24,7 +26,7 @@ import type { NoteCheck } from './noteChecks'
 import { blobOf, gatherTakes, keepSound, recordedPlaces, soundBase64, takesOf, type Take } from './recordings'
 import { placesOf, textKey, type BookState } from '../../core'
 import { inProject, scoped } from './scope'
-import { bookFrom, bookStateOf, mergeBook, mergePreview, textOf, type StudyNote } from './work'
+import { alignmentFrom, bookFrom, bookStateOf, mergeBook, mergePreview, type StudyNote } from './work'
 
 export const SHARE_FORMAT = 'servos-compartir'
 
@@ -57,7 +59,8 @@ export interface SharedBook {
   state?: BookState
   /** Instead of the book, loose verses: a file of the first kind, or a USFM file read in. */
   verses?: SharedVerse[]
-  alignments: SharedAlignment[]
+  /** A file of the first kind: the alignments alone (version 2 carries them in `state`). */
+  alignments?: SharedAlignment[]
   /** By store (`revisionNota`, `revisionPalabra`), then by what was checked. */
   checks: Record<string, Record<string, NoteCheck>>
   studyNotes: Array<{ chapter: number; notes: StudyNote[] }>
@@ -117,11 +120,6 @@ export function shareBook(code: string, phase: Phase): SharedBook {
   // The book itself, its journal brought up to what is written now; what waits for a choice here is not shared.
   const state = bookStateOf(code)
   const book = scoped(code)
-  const alignments = keys(`${P}.alineacion.${book}.`).flatMap((k) => {
-    const [source, chapter, verse] = k.slice(`${P}.alineacion.${book}.`.length).split('.')
-    const kept = json<{ groups: AlignmentGroup[]; text: string; by?: string; at?: string }>(k)
-    return kept ? [{ chapter: Number(chapter), verse: Number(verse), source, ...kept }] : []
-  })
   const checks: SharedBook['checks'] = {}
   for (const store of ['revisionNota', 'revisionPalabra']) {
     for (const k of keys(`${P}.${store}.${book}.`)) {
@@ -133,7 +131,9 @@ export function shareBook(code: string, phase: Phase): SharedBook {
     const notes = json<StudyNote[]>(k)
     return notes?.length ? [{ chapter: Number(k.split('.').pop()), notes }] : []
   })
-  return { code, phase, ...(state ? { state: { ...state, pending: [] } } : { verses: [] }), alignments, checks, studyNotes, recordings: recordedPlaces(code) }
+  // The alignment goes in the book, with its diary; what waits for a choice here stays here.
+  const shared = state && { ...state, pending: [], ...(state.alignment ? { alignment: { ...state.alignment, pending: [] } } : {}) }
+  return { code, phase, ...(shared ? { state: shared } : { verses: [] }), checks, studyNotes, recordings: recordedPlaces(code) }
 }
 
 /** The file with the sound of every take on this phone in it (kept apart from the rest, where sound is kept). */
@@ -214,7 +214,9 @@ export interface Gathering {
 export function copyOf(book: SharedBook, from: Gathering): BookState {
   if (book.state) return book.state
   const verses = (book.verses ?? []).map((v) => ({ chapter: v.chapter, verse: v.verse, to: v.joinedTo, text: v.text, by: v.by }))
-  return bookFrom(book.code, verses, `${from.from}~${from.at}~${textKey(JSON.stringify(verses))}`.replace(/@/g, ''))
+  const origin = `${from.from}~${from.at}~${textKey(JSON.stringify(verses))}`.replace(/@/g, '')
+  const copy = bookFrom(book.code, verses, origin)
+  return book.alignments?.length ? { ...copy, alignment: alignmentFrom(book.alignments, origin) } : copy
 }
 
 /** How many verses with text a shared book brings. */
@@ -231,7 +233,7 @@ export function previewBook(book: SharedBook, isNew: boolean, from: Gathering): 
     same: r.same,
     choices: r.conflicts.length,
     waiting: 0,
-    alignments: book.alignments.length,
+    alignments: book.state ? Object.keys(book.state.alignment?.current ?? {}).length : (book.alignments?.length ?? 0),
     checks: 0,
     studyNotes: 0,
     recordings: 0,
@@ -249,6 +251,8 @@ export function previewBook(book: SharedBook, isNew: boolean, from: Gathering): 
 export interface BookReceived extends BookPreview {
   /** Alignments and checks taken in (made on the text that stays). */
   alignmentsTaken: number
+  /** Alignments made of the same text by two people apart: chosen in the aligner. */
+  alignmentChoices: number
   checksTaken: number
   /** Recordings taken in. */
   recordingsTaken: number
@@ -256,19 +260,12 @@ export interface BookReceived extends BookPreview {
 
 /** Gathers a received book in: nothing written here is overwritten without a choice; each layer follows its text. */
 export function receiveBook(book: SharedBook, isNew: boolean, from: Gathering): BookReceived {
-  const result: BookReceived = { ...previewBook(book, isNew, from), alignmentsTaken: 0, checksTaken: 0, recordingsTaken: 0 }
+  const result: BookReceived = { ...previewBook(book, isNew, from), alignmentsTaken: 0, alignmentChoices: 0, checksTaken: 0, recordingsTaken: 0 }
   const { code } = book
-  mergeBook(code, copyOf(book, from), from.person)
-  for (const a of book.alignments) {
-    const k = `${P}.alineacion.${scoped(code)}.${a.source}.${a.chapter}.${a.verse}`
-    // The text that says the verse now, after the verses were gathered (joined ones by their first).
-    const now = textOf(code, a.chapter, a.verse).replace(/\n/g, ' ').trim()
-    if (a.text.trim() !== now) continue
-    const mine = json<{ text: string; at?: string }>(k)
-    if (mine && mine.text.trim() === now && (mine.at ?? '') >= (a.at ?? '')) continue
-    set(k, JSON.stringify({ groups: a.groups, text: a.text, by: a.by, at: a.at }))
-    result.alignmentsTaken++
-  }
+  // The text, and its alignment after it.
+  const merged = mergeBook(code, copyOf(book, from), from.person)
+  result.alignmentsTaken = merged.alignment.taken.length + merged.alignment.decided.length
+  result.alignmentChoices = merged.alignment.conflicts.length
   for (const [store, byId] of Object.entries(book.checks)) {
     for (const [id, check] of Object.entries(byId)) {
       const k = `${P}.${store}.${scoped(code)}.${id}`

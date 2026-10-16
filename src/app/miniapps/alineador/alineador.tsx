@@ -38,7 +38,7 @@ import {
 import type { AlignmentGroup } from '@usfm-tools/types'
 import { chapterOf } from '../../../prototype/data'
 import { placesOfOriginals, wordAt } from '../../frame/TouchWords'
-import { alignmentFor, draftTokens, readAlignment, sourceWords, writeAlignment } from '../../projects/alignment'
+import { alignmentConflictAt, alignmentFor, chooseAlignment, draftTokens, readAlignment, sourceWords, writeAlignment } from '../../projects/alignment'
 import { joinedVerses, textOf } from '../../projects/work'
 import type { MiniApp, MiniAppCenterProps, Position } from '../contract'
 import { scoped } from '../../projects/scope'
@@ -101,8 +101,17 @@ function Center({ context }: MiniAppCenterProps) {
   const [words, setWords] = useState<number[]>([])
   const [picked, setPicked] = useState<string[]>([])
   const [carrying, setCarrying] = useState<string | null>(null)
+  // Another person aligned this verse of this text another way, apart: which stays is chosen here.
+  const [conflict, setConflict] = useState(() => alignmentConflictAt(book, position.chapter, verse, source.abbreviation))
+  const choose = (keepTheirs: boolean) => {
+    chooseAlignment(book, position.chapter, verse, source.abbreviation, keepTheirs, person.name)
+    setGroups(alignmentFor(readAlignment(book, position.chapter, verse, source.abbreviation), text))
+    setConflict(null)
+    frame.setSaved('guardado')
+  }
   // A new verse, or another source: its links as kept, following the words of the draft that stayed, and its history.
   useEffect(() => {
+    setConflict(alignmentConflictAt(book, position.chapter, verse, source.abbreviation))
     setGroups(alignmentFor(readAlignment(book, position.chapter, verse, source.abbreviation), text))
     setHistoryState(histories.get(historyKey) ?? NONE)
     setWords([])
@@ -239,6 +248,21 @@ function Center({ context }: MiniAppCenterProps) {
           </div>
           <span className={left ? 'align-left' : 'align-left is-done'}>{left ? t('alineador.quedan', { n: left }) : t('alineador.listo')}</span>
         </div>
+
+        {conflict && (
+          // As the app's suggestions: said once, above the work, with the two ways; the one shown is this phone's.
+          <section className="suggestion" aria-label={t('alineador.dosManeras', { nombre: conflict.theirs.by })}>
+            <p>{t('alineador.dosManeras', { nombre: conflict.theirs.by || t('alineador.otraPersona') })}</p>
+            <div className="chip-row">
+              <button type="button" className="chip" onClick={() => choose(false)}>
+                {t('alineador.laQueSeVe')}
+              </button>
+              <button type="button" className="chip" onClick={() => choose(true)}>
+                {t('alineador.laDe', { nombre: conflict.theirs.by || t('alineador.otraPersona') })}
+              </button>
+            </div>
+          </section>
+        )}
 
         <div className="align-bank-head">
           <span className="quiet">{t('alineador.suTraduccion')}</span>
@@ -497,6 +521,10 @@ export const alineador: MiniApp = {
       fuente: 'Alinear con',
       quedan: 'Quedan {n}',
       listo: 'Todo alineado',
+      dosManeras: '{nombre} alineó este versículo de otra manera. ¿Cuál queda?',
+      laQueSeVe: 'La que se ve',
+      laDe: 'La de {nombre}',
+      otraPersona: 'Otra persona',
       suTraduccion: 'Su traducción',
       comoSeHace: 'Toque una palabra (o varias) y luego su caja, o mantenga el dedo y arrástrela a la caja.',
       tocarCaja: 'Ahora toque la caja de la palabra que traduce.',
@@ -522,6 +550,10 @@ export const alineador: MiniApp = {
       fuente: 'Alinhar com',
       quedan: 'Faltam {n}',
       listo: 'Tudo alinhado',
+      dosManeras: '{nombre} alinhou este versículo de outra maneira. Qual fica?',
+      laQueSeVe: 'A que se vê',
+      laDe: 'A de {nombre}',
+      otraPersona: 'Outra pessoa',
       suTraduccion: 'Sua tradução',
       comoSeHace: 'Toque uma palavra (ou várias) e depois sua caixa, ou mantenha o dedo e arraste-a até a caixa.',
       tocarCaja: 'Agora toque a caixa da palavra que ela traduz.',
@@ -547,6 +579,10 @@ export const alineador: MiniApp = {
       fuente: 'Align with',
       quedan: '{n} left',
       listo: 'All aligned',
+      dosManeras: '{nombre} aligned this verse another way. Which one stays?',
+      laQueSeVe: 'The one shown',
+      laDe: '{nombre}’s',
+      otraPersona: 'Someone else',
       suTraduccion: 'Your translation',
       comoSeHace: 'Touch a word (or several), then its box, or hold your finger on it and drag it to the box.',
       tocarCaja: 'Now touch the box of the word it translates.',

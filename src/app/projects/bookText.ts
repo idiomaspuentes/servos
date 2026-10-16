@@ -18,8 +18,13 @@
  */
 
 import {
+  alignmentPlaceId,
   changesBetween,
   decide,
+  decideAlignment,
+  emptyAlignmentLayer,
+  mergeAlignments,
+  recordAlignment,
   mergeInto,
   seenUpTo,
   personKey,
@@ -29,6 +34,9 @@ import {
   startBook,
   textKey,
   usfmOfRange,
+  type AlignmentLayer,
+  type AlignmentPlace,
+  type AlignmentReport,
   type BookState,
   type Conflict,
   type Entry,
@@ -96,6 +104,8 @@ interface Shelved {
   pendingBy: string | null
   /** `chapter:verse` of the verses written since the journal last took a change. */
   pendingAt: string[]
+  /** Alignments made since the journal last took a change, by `alignmentPlaceId`. */
+  alignPending?: Record<string, { place: AlignmentPlace; on: string; groups: unknown }>
 }
 
 /** The books kept, each by its key: the book's code with its project (`jon~biblia-kichwa`, `scope.ts`). */
@@ -430,10 +440,12 @@ function emptyBook(code: string): Shelved {
  * rest of the book is as the journal last took it; else the whole book.
  */
 function commit(rec: Shelved): Shelved {
-  if (rec.pendingBy === null && rec.working === rec.state.usfm) return rec
+  if (rec.pendingBy === null && rec.working === rec.state.usfm && !Object.keys(rec.alignPending ?? {}).length) return rec
   const person = personOf(rec.pendingBy ?? '')
   const at = new Date().toISOString()
   const code = rec.state.book
+  // Only alignments were made: the text is as the journal took it, nothing of it to compare.
+  if (rec.working === rec.state.usfm) return { state: withAlignments(rec.state, rec, person, at), working: rec.working, pendingBy: null, pendingAt: [] }
   const written = [...new Set(rec.pendingAt.map((x) => Number(x.split(':')[0])))]
   const was = partsOf(code, rec.state.usfm)
   const now = partsOf(code, rec.working)
@@ -443,7 +455,7 @@ function commit(rec: Shelved): Shelved {
     was.chapters.size === now.chapters.size &&
     [...now.chapters].every(([c, text]) => written.includes(c) || was.chapters.get(c) === text)
   if (!onlyThose) {
-    const state = recordEdits(rec.state, person, rec.working, at)
+    const state = withAlignments(recordEdits(rec.state, person, rec.working, at), rec, person, at)
     return { state, working: state.usfm, pendingBy: null, pendingAt: [] }
   }
   let seq = seenUpTo(rec.state, personKey(person)) + 1
@@ -453,7 +465,17 @@ function commit(rec: Shelved): Shelved {
     seq += made.length
     entries.push(...made)
   }
-  return { state: { ...rec.state, usfm: rec.working, journal: [...rec.state.journal, ...entries] }, working: rec.working, pendingBy: null, pendingAt: [] }
+  const state = withAlignments({ ...rec.state, usfm: rec.working, journal: [...rec.state.journal, ...entries] }, rec, person, at)
+  return { state, working: rec.working, pendingBy: null, pendingAt: [] }
+}
+
+/** The alignments made since the journal last took a change, each a line of the alignment's diary. */
+function withAlignments(state: BookState, rec: Shelved, person: Person, at: string): BookState {
+  const made = Object.values(rec.alignPending ?? {})
+  if (!made.length) return state
+  let layer = state.alignment ?? emptyAlignmentLayer()
+  for (const a of made) layer = recordAlignment(layer, person, a.place, a.on, a.groups, at)
+  return { ...state, alignment: layer }
 }
 
 const timers = new Map<string, number>()
@@ -591,11 +613,16 @@ export function forgetBooks() {
  * or older stays out, a decision already taken is applied, and what two people changed apart from the same text
  * waits as a conflict for a person. `by` is who gathers it.
  */
-export function mergeBook(book: string, other: BookState, by: string): MergeReport {
+export function mergeBook(book: string, other: BookState, by: string): MergeReport & { alignment: AlignmentReport } {
   const rec = commit(shelf.get(scoped(book)) ?? emptyBook(book))
-  const { state, report } = mergeInto(rec.state, { ...other, book, pending: [] }, personOf(by), new Date().toISOString())
+  const at = new Date().toISOString()
+  const { state, report } = mergeInto(rec.state, { ...other, book, pending: [] }, personOf(by), at)
   shelf.put(scoped(book), { state, working: state.usfm, pendingBy: null, pendingAt: [] })
-  return withDecidedTaken(rec.state.usfm, state.usfm, report)
+  // The alignment follows its text: what each was made on is weighed against the verse as it now stands here.
+  const theirs = other.alignment ? { ...other.alignment, pending: [] } : emptyAlignmentLayer()
+  const merged = mergeAlignments(state.alignment ?? emptyAlignmentLayer(), theirs, (p) => alignedText(book, p.chapter, p.verse), personOf(by), at)
+  shelf.put(scoped(book), { state: { ...state, alignment: merged.layer }, working: state.usfm, pendingBy: null, pendingAt: [] })
+  return { ...withDecidedTaken(rec.state.usfm, state.usfm, report), alignment: merged.report }
 }
 
 /**
@@ -661,6 +688,84 @@ export function bookFrom(
     parts.chapters.set(chapter, text)
   }
   return { book, usfm: joinBook(parts), journal, pending: [] }
+}
+
+// ——— The alignment: a layer of the book, with its own diary (`src/core/alignment.ts`) ——————————————————————————
+
+/** A verse's text as the aligner reads it: the text that says it (joined verses by their first), one line. */
+const alignedText = (book: string, chapter: number, verse: number) => textOf(book, chapter, verse).replace(/\n/g, ' ').trim()
+
+/** The alignment that counts for a verse with a text: its links, the verse's text they were made on, who made them. */
+export function alignmentAt(book: string, chapter: number, verse: number, source: string): { groups: unknown; on: string; by: string; at: string } | null {
+  const rec = shelf.get(scoped(book))
+  if (!rec) return null
+  const id = alignmentPlaceId({ chapter, verse, source })
+  const making = rec.alignPending?.[id]
+  if (making) return { groups: making.groups, on: making.on, by: rec.pendingBy ?? '', at: '' }
+  const e = rec.state.alignment?.current[id]
+  return e ? { groups: e.groups, on: e.on, by: nameOf(e.by), at: e.at } : null
+}
+
+/** `by` aligned a verse with a text: kept at once, taken by the journal a moment after (as the text is). */
+export function setAlignment(book: string, chapter: number, verse: number, source: string, on: string, groups: unknown, by: string) {
+  const key = scoped(book)
+  let rec = shelf.get(key) ?? emptyBook(book)
+  if (rec.pendingBy !== null && rec.pendingBy !== by) rec = commit(rec)
+  const place = { chapter, verse, source }
+  rec = { ...rec, pendingBy: by, alignPending: { ...rec.alignPending, [alignmentPlaceId(place)]: { place, on, groups } } }
+  shelf.put(key, rec)
+  commitSoon(key)
+}
+
+/** Two alignments of a verse's same text, made apart by two people: which each is, and who made it. */
+export function alignmentConflictAt(book: string, chapter: number, verse: number, source: string) {
+  const c = shelf.get(scoped(book))?.state.alignment?.pending.find((x) => alignmentPlaceId(x.place) === alignmentPlaceId({ chapter, verse, source }))
+  return c ? { id: c.id, mine: { groups: c.mine.groups, by: nameOf(c.mine.by) }, theirs: { groups: c.theirs.groups, by: nameOf(c.theirs.by) } } : null
+}
+
+/** Every alignment of a book waiting for a person to choose. */
+export const alignmentConflictsOf = (book: string): AlignmentPlace[] => (shelf.get(scoped(book))?.state.alignment?.pending ?? []).map((c) => c.place)
+
+/** Chooses between two alignments of a verse (`decideAlignment`): the choice is in the diary, not asked again. */
+export function chooseAlignment(book: string, chapter: number, verse: number, source: string, keepTheirs: boolean, by: string) {
+  const key = scoped(book)
+  const rec = commit(shelf.get(key) ?? emptyBook(book))
+  const c = rec.state.alignment?.pending.find((x) => alignmentPlaceId(x.place) === alignmentPlaceId({ chapter, verse, source }))
+  if (!c || !rec.state.alignment) return
+  const alignment = decideAlignment(rec.state.alignment, c.id, keepTheirs ? 'theirs' : 'mine', personOf(by), new Date().toISOString())
+  shelf.put(key, { ...rec, state: { ...rec.state, alignment } })
+}
+
+/** An alignment layer made of loose alignments (a file of the first kind): each its maker's, from `origin`. */
+export function alignmentFrom(list: Array<{ chapter: number; verse: number; source: string; groups: unknown; text: string; by?: string; at?: string }>, origin: string): AlignmentLayer {
+  let layer = emptyAlignmentLayer()
+  for (const a of list) layer = recordAlignment(layer, { name: a.by ?? '', device: origin }, { chapter: a.chapter, verse: a.verse, source: a.source }, a.text, a.groups, a.at ?? '')
+  return layer
+}
+
+/**
+ * The alignments the prototype kept verse by verse (by book and project), moved into each book's layer once: each
+ * as its maker's alignment, made when it was.
+ */
+export function moveAlignmentsIn() {
+  const prefix = `${KEY}.alineacion.`
+  for (const k of keysUnder(prefix)) {
+    if (k.startsWith(`${prefix}fuente.`)) continue
+    const [id, source, chapter, verse] = k.slice(prefix.length).split('.')
+    let kept: { groups: unknown; text: string; by?: string; at?: string } | null = null
+    try {
+      kept = JSON.parse(read(k) ?? 'null')
+    } catch {
+      /* a broken one is dropped */
+    }
+    if (kept && id && source) {
+      const code = id.split('~')[0]
+      const rec = commit(shelf.get(id) ?? emptyBook(code))
+      const layer = recordAlignment(rec.state.alignment ?? emptyAlignmentLayer(), personOf(kept.by ?? ''), { chapter: Number(chapter), verse: Number(verse), source }, kept.text, kept.groups, kept.at ?? new Date().toISOString())
+      shelf.put(id, { ...rec, state: { ...rec.state, alignment: layer } })
+    }
+    write(k, null)
+  }
 }
 
 // ——— What waits for a person: the merge's pending conflicts ——————————————————————————————————————————————————————

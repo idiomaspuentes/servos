@@ -77,6 +77,13 @@ Desde el 16 de octubre de 2026 la app guarda cada libro así (cableado, pasos 1 
    escribe y vuelve a leer solo su capítulo, y el diario compara solo los capítulos escritos. Con un libro del tamaño de
    Salmos, una letra cuesta unos 4 ms en una computadora (antes 200 ms); una prueba lo vigila.
 
+7. **La alineación, una capa del libro** (`src/core/alignment.ts`, diseño 6.8). Por versículo y por texto con que se
+   alinea, con el texto del versículo sobre el que se hizo y su propio diario (cada alineación, con la que
+   reemplazó). Viaja dentro del libro. Al juntar sigue a su texto: gana la hecha sobre el texto que queda; dos del
+   mismo texto hechas por separado son la más reciente si las hizo una persona, un choque si las hicieron dos (se
+   elige en el alineador, y la elección queda en el diario); una que entra hecha sobre otro texto queda, para
+   revisar. El diario toma las alineaciones como el texto: cuando la persona se detiene.
+
 ## Lo que falta
 
 - **Los choques pendientes no viajan.** Las decisiones sí; un choque sin decidir queda en el aparato donde se
@@ -85,8 +92,6 @@ Desde el 16 de octubre de 2026 la app guarda cada libro así (cableado, pasos 1 
   de elegir; la pantalla de elegir muestra una y, al decidirla, la otra.
 - **Borrar un versículo a propósito no se propaga**, por la regla 2. Habrá que ver si hace falta una forma explícita
   de borrar.
-- **La alineación como capa aparte** (diseño, 6.8) todavía no está. Hoy, cuando entra un versículo, entra escrito con
-  su alineación, como en Taller.
 - **Las pruebas de Taller para `src/usfm`** (`scripts/verify-usfm-merge.mts`, con sus casos P1–P9) no están
   copiadas todavía.
 - La huella del texto es FNV-1a de 64 bits: basta para distinguir los versículos de un libro, pero no es una huella

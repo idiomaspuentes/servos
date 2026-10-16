@@ -639,5 +639,6 @@
   "persona.tema.sistema": "Like the phone",
   "persona.tema.claro": "Light",
   "persona.tema.oscuro": "Dark",
-  "libro.estaEn": "The book is in {paso}."
+  "libro.estaEn": "The book is in {paso}.",
+  "recibir.alineacionesElegir": "Verses aligned two ways, to choose while aligning: {n}."
 }

@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { App } from './App'
 import { applyTheme, themeOf } from './frame/theme'
-import { moveBooksToProjects, openBooks } from './projects/bookText'
+import { moveAlignmentsIn, moveBooksToProjects, openBooks } from './projects/bookText'
 import { loadProjects } from './projects/model'
 import { moveWorkToProjects } from './projects/scope'
 import { I18nProvider } from './i18n/i18n'
@@ -19,6 +19,8 @@ void openBooks()
     const projects = loadProjects()
     moveBooksToProjects(projects)
     moveWorkToProjects(projects)
+    // Alignments kept verse by verse go into their book's alignment layer, once.
+    moveAlignmentsIn()
   })
   .finally(() =>
     createRoot(document.getElementById('root')!).render(

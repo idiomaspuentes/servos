@@ -101,6 +101,7 @@ export function ReceiveScreen({
                 <span className="quiet">{t('recibir.entraron', { n: b.taken, iguales: b.same })}</span>
                 {b.choices > 0 && <span className="quiet">{t('recibir.paraElegirDespues', { n: b.choices })}</span>}
                 {b.alignmentsTaken + b.checksTaken > 0 && <span className="quiet">{t('recibir.capas', { n: b.alignmentsTaken + b.checksTaken })}</span>}
+                {b.alignmentChoices > 0 && <span className="quiet">{t('recibir.alineacionesElegir', { n: b.alignmentChoices })}</span>}
                 {b.recordingsTaken > 0 && <span className="quiet">{t('recibir.grabacionesEntraron', { n: b.recordingsTaken })}</span>}
               </li>
             ))}
