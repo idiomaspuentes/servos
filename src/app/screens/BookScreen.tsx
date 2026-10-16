@@ -42,6 +42,7 @@ export function BookScreen({
   onReceiveWork,
   onChooseVersions,
   onTogether,
+  onTeamWork,
   person,
   lastApp,
   placeFor,
@@ -65,6 +66,8 @@ export function BookScreen({
   onChooseVersions(): void
   /** How the team works on the book: everyone the same (to bring together) or each a part. */
   onTogether(together: boolean): void
+  /** Leaves this phone's work on Door43 and brings in what the others left there. */
+  onTeamWork(): void
   person: string
   /** The mini app the person last opened from this book. */
   lastApp?: string | null
@@ -391,6 +394,14 @@ export function BookScreen({
             onClick={() => {
               setMore(false)
               onReceiveWork()
+            }}
+          />
+          <MenuRow
+            label={t('libro.equipoDoor43')}
+            description={t('libro.equipoDoor43Ayuda')}
+            onClick={() => {
+              setMore(false)
+              onTeamWork()
             }}
           />
           {/* How the team works on the book, chosen in place (principle 12, pills on a track); the line under it says

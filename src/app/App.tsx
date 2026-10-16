@@ -16,6 +16,7 @@ import { keepLastApp, keepPlace, lastAppOf, placeOf } from './projects/work'
 import { AddBookSheet } from './screens/AddBook'
 import { BookScreen } from './screens/BookScreen'
 import { GatherScreen } from './screens/GatherScreen'
+import { TeamWorkScreen } from './screens/TeamWorkScreen'
 import { closeTopSheet, onSheets } from './frame/Sheet'
 import { GlossaryScreen } from './screens/GlossaryScreen'
 import { Home, type Resume } from './screens/Home'
@@ -42,6 +43,7 @@ type Screen =
   | { kind: 'recibir'; back: Screen; projectId?: string; book?: string }
   | { kind: 'translate' }
   | { kind: 'elegir'; projectId: string; book: string; back: Screen }
+  | { kind: 'equipo'; projectId: string; book: string; back: Screen }
 
 /** The chapters of a book whose texts and helps the prototype has (every chapter of Titus and Jonah). */
 const chaptersFor = (book: string) => chaptersOf(book).map((c) => chapterOf(book, c)!)
@@ -147,7 +149,7 @@ export function App() {
   // the screen goes back and, if still away from home, sets another.
   const goBack = useRef(home)
   goBack.current =
-    screen.kind === 'app' ? leaveApp : screen.kind === 'glossary' || screen.kind === 'receive' || screen.kind === 'recibir' || screen.kind === 'elegir' ? () => setScreen(screen.back) : home
+    screen.kind === 'app' ? leaveApp : screen.kind === 'glossary' || screen.kind === 'receive' || screen.kind === 'recibir' || screen.kind === 'elegir' || screen.kind === 'equipo' ? () => setScreen(screen.back) : home
   const armed = useRef(false)
   // An entry kept for a sheet open on home (home keeps none of its own).
   const sheetEntry = useRef(false)
@@ -318,6 +320,7 @@ export function App() {
           onGlossary={() => setScreen({ kind: 'glossary', projectId: bookScreen.projectId, back: bookScreen })}
           onReceiveWork={() => setScreen({ kind: 'recibir', back: bookScreen, projectId: bookScreen.projectId, book: bookScreen.book })}
           onChooseVersions={() => setScreen({ kind: 'elegir', projectId: bookScreen.projectId, book: bookScreen.book, back: bookScreen })}
+          onTeamWork={() => setScreen({ kind: 'equipo', projectId: bookScreen.projectId, book: bookScreen.book, back: bookScreen })}
           person={person}
         />
       )}
@@ -395,6 +398,17 @@ export function App() {
         />
       )}
       {screen.kind === 'translate' && <TranslateUi onBack={home} />}
+      {screen.kind === 'equipo' && project(screen.projectId) && (
+        <TeamWorkScreen
+          project={project(screen.projectId)!}
+          projects={projects}
+          title={titleOf(project(screen.projectId), screen.book)}
+          person={person}
+          onBack={() => setScreen(screen.back)}
+          onReceived={setProjects}
+          onGather={() => setScreen({ kind: 'elegir', projectId: screen.projectId, book: screen.book, back: { kind: 'book', projectId: screen.projectId, book: screen.book } })}
+        />
+      )}
       {screen.kind === 'elegir' && project(screen.projectId) && (
         <GatherScreen
           project={project(screen.projectId)!}

@@ -280,13 +280,14 @@ function Center({ context }: MiniAppCenterProps) {
 }
 
 /** Where the project goes: one of the account's organizations, and the repository's name. */
-function DestinationForm({
+export function DestinationForm({
   host,
   proposed,
   organizations,
   projectName,
   onSave,
   onCancel,
+  saveLabel,
 }: {
   host: string
   proposed: Destination
@@ -294,6 +295,8 @@ function DestinationForm({
   projectName: string
   onSave(d: Destination): void
   onCancel?(): void
+  /** What saving it does where the form is used for something else than publishing now. */
+  saveLabel?: string
 }) {
   const t = useT()
   const [orgs, setOrgs] = useState<string[] | null>(null)
@@ -337,7 +340,7 @@ function DestinationForm({
         <span className="quiet">{t('publicar.repositorioAyuda')}</span>
       </label>
       <button type="submit" className="button-primary" disabled={!valid}>
-        {t('publicar.guardarDestino')}
+        {saveLabel ?? t('publicar.guardarDestino')}
       </button>
       {onCancel && (
         <button type="button" className="button-secondary" onClick={onCancel}>

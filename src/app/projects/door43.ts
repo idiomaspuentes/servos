@@ -196,14 +196,23 @@ export async function publish(
   to: Destination,
   /** Text as `content`; a sound (or anything not text) as `base64`. */
   files: Array<{ path: string; content: string } | { path: string; base64: string }>,
-  message: string
+  message: string,
+  /** A repository made private the first time (the team's work), not public (what it publishes). */
+  options: { private?: boolean } = {}
 ): Promise<FileResult[]> {
   const config = configOf(to.host)
   try {
     await getRepo(config, to.owner, to.repo, account.token)
   } catch (e) {
     if (!(e instanceof DcsApiError && e.status === 404)) throw e
-    await createOrgRepo(config, to.owner, { name: to.repo, description: '', private: false, auto_init: true, default_branch: 'master', token: account.token })
+    await createOrgRepo(config, to.owner, {
+      name: to.repo,
+      description: '',
+      private: options.private ?? false,
+      auto_init: true,
+      default_branch: 'master',
+      token: account.token,
+    })
   }
   const results: FileResult[] = []
   for (const file of files) {
@@ -261,3 +270,48 @@ export function fingerprint(text: string): string {
 
 /** The repository's page on Door43. */
 export const repoUrl = (to: Destination) => `${to.host}/${to.owner}/${to.repo}`
+
+// ——— The team's work through Door43 (design 6.10) ————————————————————————————————————————————————————————————————
+// The same package as by card or Bluetooth, left where the others can take it: each one leaves their own file (by
+// person and phone, replaced each time), and taking one in is the same gathering, so taking it twice brings nothing.
+
+/** The repository where the team leaves its work for one another: beside the one it publishes, and private. */
+export const workRepoOf = (to: Destination): Destination => ({ ...to, repo: `${to.repo}-servos` })
+
+const WORK = 'trabajo'
+const slug = (s: string) =>
+  s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '') || 'persona'
+
+/** A person's file there: theirs from this phone, replaced each time they leave their work. */
+export const workPathOf = (person: string, device: string) => `${WORK}/${slug(person)}-${device}.servos.json`
+
+/** Leaves a person's work (a package's text) for the others, making the private repository the first time. */
+export async function leaveWork(account: Door43Account, to: Destination, text: string, person: string, device: string): Promise<FileResult> {
+  const [result] = await publish(account, workRepoOf(to), [{ path: workPathOf(person, device), content: text }], `Trabajo de ${person}`, { private: true })
+  return result
+}
+
+/** The work the others left, each file's text (this phone's own left out); none yet, when nobody left any. */
+export async function workLeft(account: Door43Account, to: Destination, device: string): Promise<Array<{ path: string; text: string }>> {
+  const config = configOf(to.host)
+  const at = workRepoOf(to)
+  let listed: ContentsResponse | ContentsResponse[]
+  try {
+    listed = await getContents(config, at.owner, at.repo, WORK, { token: account.token })
+  } catch (e) {
+    if (e instanceof DcsApiError && e.status === 404) return []
+    throw e
+  }
+  const theirs = (Array.isArray(listed) ? listed : []).filter((x) => x.type === 'file' && x.name.endsWith('.servos.json') && !x.name.endsWith(`-${device}.servos.json`))
+  const out: Array<{ path: string; text: string }> = []
+  for (const x of theirs) {
+    const got = await getContents(config, at.owner, at.repo, x.path, { token: account.token })
+    if (!Array.isArray(got) && got.content) out.push({ path: x.path, text: decodeBase64(got.content.replace(/\s/g, '')) })
+  }
+  return out
+}

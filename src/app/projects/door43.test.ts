@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fileOf, fingerprint, manifestOf, problemOf, proposedRepo, publish } from './door43'
+import { fileOf, fingerprint, leaveWork, manifestOf, problemOf, proposedRepo, publish, workLeft, workPathOf, workRepoOf } from './door43'
 import { DcsApiError } from '../../door43/dcs'
 
 describe('a project published to Door43', () => {
@@ -95,5 +95,69 @@ describe('uploading the files', () => {
     expect((await publish(account, to, [{ path: 'a.usfm', content: 'uno' }], 'Servos'))[0].state).toBe('same')
     expect((await publish(account, to, [{ path: 'a.usfm', content: 'dos' }], 'Servos'))[0].state).toBe('written')
     expect(d.files.get('a.usfm')?.content).toBe('dos')
+  })
+})
+
+describe('el trabajo del equipo por Door43', () => {
+  afterEach(() => vi.unstubAllGlobals())
+  const account = { host: 'https://qa.door43.org', username: 'ana', token: 't' }
+  const to = { host: 'https://qa.door43.org', owner: 'BSOJ', repo: 'qu_reg' }
+
+  // A Door43 in memory that also lists a folder, and keeps whether a repository was made private.
+  function door43() {
+    const repos = new Map<string, { private: boolean }>()
+    const files = new Map<string, { content: string; sha: string }>()
+    let n = 0
+    vi.stubGlobal('fetch', async (url: string, init: RequestInit = {}) => {
+      const path = decodeURIComponent(new URL(url).pathname.replace('/api/v1', ''))
+      const method = init.method ?? 'GET'
+      const ok = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status })
+      let m = /^\/repos\/([^/]+)\/([^/]+)$/.exec(path)
+      if (m) return repos.has(`${m[1]}/${m[2]}`) ? ok({ name: m[2] }) : ok({ message: 'not found' }, 404)
+      m = /^\/orgs?\/([^/]+)\/repos$/.exec(path)
+      if (m && method === 'POST') {
+        const body = JSON.parse(String(init.body))
+        repos.set(`${m[1]}/${body.name}`, { private: Boolean(body.private) })
+        return ok({}, 201)
+      }
+      m = /^\/repos\/([^/]+)\/([^/]+)\/contents\/(.+)$/.exec(path)
+      if (m) {
+        if (!repos.has(`${m[1]}/${m[2]}`)) return ok({ message: 'not found' }, 404)
+        const key = `${m[1]}/${m[2]}/${m[3]}`
+        const f = files.get(key)
+        if (method === 'GET') {
+          if (f) return ok({ name: m[3].split('/').pop(), path: m[3], sha: f.sha, size: 1, type: 'file', content: Buffer.from(f.content).toString('base64') })
+          const inside = [...files.keys()].filter((k) => k.startsWith(`${key}/`)).map((k) => k.slice(`${m![1]}/${m![2]}/`.length))
+          return inside.length ? ok(inside.map((p) => ({ name: p.split('/').pop(), path: p, sha: 'x', size: 1, type: 'file' }))) : ok({ message: 'not found' }, 404)
+        }
+        const body = JSON.parse(String(init.body))
+        if (f && body.sha !== f.sha) return ok({ message: 'sha' }, 409)
+        files.set(key, { content: Buffer.from(body.content, 'base64').toString('utf-8'), sha: `s${++n}` })
+        return ok({ content: {}, commit: { sha: 'c', message: '' } }, 201)
+      }
+      return ok({}, 404)
+    })
+    return { repos, files }
+  }
+
+  it('cada uno deja su archivo en un repositorio privado junto al del proyecto, uno por persona y teléfono', async () => {
+    const { repos, files } = door43()
+    expect(workRepoOf(to).repo).toBe('qu_reg-servos')
+    expect(workPathOf('María José', 'a1b2')).toBe('trabajo/maria-jose-a1b2.servos.json')
+    expect((await leaveWork(account, to, '{"de":"Bea"}', 'Bea', 'dev-b')).state).toBe('written')
+    expect(repos.get('BSOJ/qu_reg-servos')).toEqual({ private: true })
+    // Left again with the same text, nothing is written; with other text, the file is replaced.
+    expect((await leaveWork(account, to, '{"de":"Bea"}', 'Bea', 'dev-b')).state).toBe('same')
+    expect((await leaveWork(account, to, '{"de":"Bea","mas":1}', 'Bea', 'dev-b')).state).toBe('written')
+    expect([...files.keys()]).toEqual(['BSOJ/qu_reg-servos/trabajo/bea-dev-b.servos.json'])
+  })
+
+  it('al traer, llega lo de los demás y no lo que este teléfono dejó; si nadie dejó nada, nada', async () => {
+    door43()
+    expect(await workLeft(account, to, 'dev-a')).toEqual([])
+    await leaveWork(account, to, '{"de":"Ana"}', 'Ana', 'dev-a')
+    await leaveWork(account, to, '{"de":"Bea"}', 'Bea', 'dev-b')
+    await leaveWork(account, to, '{"de":"Carla"}', 'Carla', 'dev-c')
+    expect((await workLeft(account, to, 'dev-a')).map((x) => x.text)).toEqual(['{"de":"Bea"}', '{"de":"Carla"}'])
   })
 })

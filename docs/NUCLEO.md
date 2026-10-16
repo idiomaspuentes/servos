@@ -122,6 +122,12 @@ Desde el 16 de octubre de 2026 la app guarda cada libro así (cableado, pasos 1 
     «la versión de Bea», y el libro cuenta secciones para juntar. Un versículo con versiones esperando no cuenta como
     traducido en ningún modo. Al recibir, un libro sin nombre ya no pierde lo que el proyecto sabe de él (antes se
     reescribía solo con su código y su paso).
+15. **El trabajo del equipo por Door43** (`leaveWork`, `workLeft`, `TeamWorkScreen`). El mismo paquete, dejado en
+    `{owner}/{repo}-servos/trabajo/{persona}-{teléfono}.servos.json` (privado, hecho la primera vez) y traído por los
+    demás; se recibe con `receiveShared` como cualquier archivo. El lugar del proyecto en Door43 se elige una vez y sirve
+    también para publicar. Probado contra el mock de Door43 (dos teléfonos: dejar, traer, traer otra vez, sin
+    conexión); falta QA. Pendiente: el sonido de las grabaciones, y archivos grandes (Door43 puede no devolver el
+    contenido de un archivo muy grande por la API de contenidos).
 
 ## Lo que falta
 
