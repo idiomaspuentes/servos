@@ -55,7 +55,9 @@ Desde el 16 de octubre de 2026 la app guarda cada libro así (cableado, pasos 1 
    diario toma un cambio cuando la persona deja de escribir un momento, cuando escribe otra persona o al salir de la
    app: un versículo escrito letra por letra es un solo cambio. Cada aparato tiene su id, así que dos personas del
    mismo nombre en dos aparatos son dos personas. Los libros se guardan en IndexedDB (o en localStorage donde no se
-   puede).
+   puede). Al irse la página (recargar, cerrar, pasar a otra app), lo que no se terminó de guardar se copia al momento
+   en localStorage, porque una escritura en IndexedDB empezada entonces puede no terminar; la próxima vez esa copia
+   gana, y se borra cuando IndexedDB ya tiene el libro.
 3. **Lo que ya estaba**, escrito versículo por versículo por el prototipo, entra al libro una sola vez, cada
    versículo como cambio de quien lo escribió.
 

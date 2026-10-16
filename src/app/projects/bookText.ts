@@ -163,14 +163,44 @@ function openDb(): Promise<IDBDatabase> {
   })
 }
 
-function dbShelf(db: IDBDatabase, books: Map<string, Shelved>): Shelf & { flush(): void } {
+/**
+ * What the page was leaving with, copied at once into localStorage: a write to the database started as the page goes
+ * may not end before it is gone (a reload right after a letter lost it). Read first the next time; dropped once the
+ * database has the book.
+ */
+const LEAVING = 'servos.saliendo.'
+
+function dbShelf(db: IDBDatabase, books: Map<string, Shelved>): Shelf & { flush(leaving?: boolean): void } {
   const waiting = new Map<string, number>()
-  const save = (code: string) => {
+  // Saves started and not yet ended, by the order they were made in; and the save each copy on leaving was made with.
+  const writing = new Map<string, number>()
+  const leftWith = new Map<string, number>()
+  let made = 0
+  const save = (code: string, leaving = false) => {
     waiting.delete(code)
     const rec = books.get(code)
     if (!rec) return
+    const order = ++made
+    if (leaving) {
+      try {
+        localStorage.setItem(LEAVING + code, JSON.stringify(rec))
+        leftWith.set(code, order)
+      } catch {
+        /* too big for localStorage: the database is all there is */
+      }
+    }
     try {
-      db.transaction(STORE, 'readwrite').objectStore(STORE).put(rec, code)
+      const tx = db.transaction(STORE, 'readwrite')
+      tx.objectStore(STORE).put(rec, code)
+      writing.set(code, order)
+      tx.oncomplete = () => {
+        if (writing.get(code) === order) writing.delete(code)
+        // A copy made with this save or an older one is no longer needed; one made after it still is.
+        if ((leftWith.get(code) ?? 0) <= order) {
+          write(LEAVING + code, null)
+          leftWith.delete(code)
+        }
+      }
     } catch {
       /* kept in memory for this visit */
     }
@@ -193,10 +223,12 @@ function dbShelf(db: IDBDatabase, books: Map<string, Shelved>): Shelf & { flush(
       }
     },
     codes: () => [...books.keys()],
-    flush() {
-      for (const [code, timer] of waiting) {
-        clearTimeout(timer)
-        save(code)
+    /** Saves what waits now; `leaving`, also what is still being saved, each with its copy in localStorage. */
+    flush(leaving = false) {
+      const codes = new Set([...waiting.keys(), ...(leaving ? writing.keys() : [])])
+      for (const code of codes) {
+        if (waiting.has(code)) clearTimeout(waiting.get(code))
+        save(code, leaving)
       }
     },
   }
@@ -221,11 +253,21 @@ export async function openBooks(): Promise<void> {
       req.onerror = () => reject(req.error)
     })
     for (const code of localShelf.codes()) if (!books.has(code)) books.set(code, localShelf.get(code)!)
+    // What the page left with last time is newer than what the database has, if the database did not get it.
+    const left: Array<[string, Shelved]> = []
+    for (const k of keysUnder(LEAVING)) {
+      try {
+        left.push([k.slice(LEAVING.length), JSON.parse(read(k) ?? '') as Shelved])
+      } catch {
+        write(k, null)
+      }
+    }
     const kept = dbShelf(db, books)
+    for (const [code, rec] of left) kept.put(code, rec)
     shelf = kept
     const leave = () => {
       flushBooks()
-      kept.flush()
+      kept.flush(true)
     }
     window.addEventListener('pagehide', leave)
     document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && leave())
