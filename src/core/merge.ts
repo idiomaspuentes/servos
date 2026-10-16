@@ -43,16 +43,25 @@ function verdictFor(params: { place: Place; mine: BookPlace; theirs: BookPlace; 
     if (!emptied || seenUpTo(other, emptied.by) >= emptied.seq) return "take";
     if (emptied.base === theirs.key) return "keep";
   }
-  // Somebody already chose between exactly these two versions.
-  const decision = [...params.decisions].reverse().find((row) => row.over?.includes(mine.key) && row.over.includes(theirs.key) && intersects(row.place, place));
-  if (decision?.key === mine.key) return "decided-keep";
-  if (decision?.key === theirs.key) return "decided-take";
+  // Somebody already chose between these two versions (among others, maybe). A choice made knowing an earlier one
+  // replaces it; two made apart that keep different texts are not settled (they are weighed below).
+  const over = params.decisions.filter((row) => row.over?.includes(mine.key) && row.over.includes(theirs.key) && intersects(row.place, place));
+  const kept = new Set(over.filter((row) => !over.some((other) => other.after?.includes(row.id))).map((row) => row.key));
+  if (kept.size === 1 && kept.has(mine.key)) return "decided-keep";
+  if (kept.size === 1 && kept.has(theirs.key)) return "decided-take";
   // Either copy still waits for a person to choose between these two: having taken the other's change in its diary is
   // not having chosen it.
   const pair = [mine.key, theirs.key].sort().join("|");
   if ([...me.pending, ...other.pending].some((c) => [c.mine.key, c.theirs.key].sort().join("|") === pair && intersects(c.place, place))) return "conflict";
   const theirsBy = producerOf(other, place, theirs.key);
   const mineBy = producerOf(me, place, mine.key);
+  // Both texts are decisions: the one made knowing the other stands; made apart, over some of the same versions, a
+  // person chooses again between what each kept.
+  if (mineBy?.kind === "decision" && theirsBy?.kind === "decision" && mineBy.id !== theirsBy.id) {
+    if (theirsBy.after?.includes(mineBy.id)) return "take";
+    if (mineBy.after?.includes(theirsBy.id)) return "keep";
+    if (mineBy.over?.some((key) => theirsBy.over?.includes(key))) return "conflict";
+  }
   // A decision between this text and another (a new one written while deciding, perhaps) comes after it.
   if (theirsBy?.kind === "decision" && theirsBy.over?.includes(mine.key)) return "take";
   if (mineBy?.kind === "decision" && mineBy.over?.includes(theirs.key)) return "keep";
@@ -218,22 +227,47 @@ export function mergeInto(me: BookState, other: BookState, by: Person, at: strin
 export function decide(state: BookState, conflictId: string, choice: { keep: "mine" | "theirs" } | { usfm: string }, by: Person, at: string): BookState {
   const conflict = state.pending.find((row) => row.id === conflictId);
   if (!conflict) throw new Error("Ese choque ya no está pendiente.");
+  return decideAll(state, [conflictId], "usfm" in choice ? choice : { key: choice.keep === "mine" ? conflict.mine.key : conflict.theirs.key }, by, at);
+}
+
+/**
+ * A person gathers every version of a place at once (several people wrote the same verses): keeps one of them, by
+ * its key, or writes one of their own from them (`usfm` of the whole book after writing it). One decision goes into
+ * the diary with the keys of every version weighed and the decisions of that place it was made knowing, so none of
+ * those versions is asked again anywhere the book travels.
+ */
+export function decideAll(state: BookState, conflictIds: string[], choice: { key: string } | { usfm: string }, by: Person, at: string): BookState {
+  const conflicts = conflictIds.map((id) => state.pending.find((row) => row.id === id));
+  if (!conflicts.length || conflicts.some((c) => !c)) throw new Error("Ese choque ya no está pendiente.");
+  const all = conflicts as Conflict[];
+  const range: Place = {
+    chapter: all[0]!.place.chapter,
+    from: Math.min(...all.map((c) => c.place.from)),
+    to: Math.max(...all.map((c) => c.place.to)),
+  };
+  if (all.some((c) => c.place.chapter !== range.chapter)) throw new Error("Se decide un lugar a la vez.");
   let usfm = state.usfm;
   if ("usfm" in choice) usfm = choice.usfm;
-  else if (choice.keep === "theirs") usfm = putRangeAsIs(usfm, conflict.theirs.usfm, conflict.place);
-  const now = placesOf(usfm).filter((place) => intersects(place, conflict.place));
+  else {
+    const received = all.find((c) => c.theirs.key === choice.key);
+    if (received) usfm = putRangeAsIs(usfm, received.theirs.usfm, received.place);
+    else if (!all.some((c) => c.mine.key === choice.key)) throw new Error("Esa versión no es de este lugar.");
+  }
+  const now = placesOf(usfm).filter((place) => intersects(place, range));
   const text = now.map((place) => place.text).filter(Boolean).join(" ");
-  const before = placesOf(state.usfm).filter((place) => intersects(place, conflict.place));
+  const before = placesOf(state.usfm).filter((place) => intersects(place, range));
   const key = personKey(by);
   const decision = entry({
     by: key,
     seq: seenUpTo(state, key) + 1,
-    place: now.length === 1 ? now[0]! : conflict.place,
-    base: before.length === 1 ? before[0]!.key : conflict.mine.key,
+    place: now.length === 1 ? now[0]! : range,
+    base: before.length === 1 ? before[0]!.key : all[0]!.mine.key,
     text,
     at,
     kind: "decision",
-    over: [conflict.mine.key, conflict.theirs.key],
+    over: [...new Set(all.flatMap((c) => [c.mine.key, c.theirs.key]))],
+    after: state.journal.filter((row) => row.kind === "decision" && intersects(row.place, range)).map((row) => row.id),
   });
-  return { ...state, usfm, journal: [...state.journal, decision], pending: state.pending.filter((row) => row.id !== conflictId) };
+  const done = new Set(conflictIds);
+  return { ...state, usfm, journal: [...state.journal, decision], pending: state.pending.filter((row) => !done.has(row.id)) };
 }

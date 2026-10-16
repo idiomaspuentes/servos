@@ -39,6 +39,8 @@ export function ChooseScreen({
   // The verses to choose, as they were on opening: one chosen or left for later does not move the others.
   const [queue] = useState(() => versesToChoose(book, chapters.map((c) => ({ chapter: c.chapter, verses: c.verses.map((v) => v.verse) }))))
   const [at, setAt] = useState(0)
+  // A verse several people wrote waits once for each of them: they come one after another, on the same verse.
+  const [round, setRound] = useState(0)
   const [chosen, setChosen] = useState(0)
   const [source, setSource] = useState(false)
   useProjectFont(project.font)
@@ -102,13 +104,14 @@ export function ChooseScreen({
               />
             ) : (
               <TwoVersions
-                key={`${place.chapter}.${place.verse}`}
+                key={`${place.chapter}.${place.verse}.${round}`}
                 here={{ text: readDraft(book, place.chapter, place.verse), by: authorOf(book, place.chapter, place.verse) ?? '' }}
                 received={received!}
                 inScreen
                 onChoose={(keepReceived) => {
                   chooseVersion(book, place.chapter, place.verse, keepReceived, person)
-                  next()
+                  if (otherVersion(book, place.chapter, place.verse)) setRound((n) => n + 1)
+                  else next()
                 }}
               />
             )}

@@ -21,6 +21,7 @@ import {
   alignmentPlaceId,
   changesBetween,
   decide,
+  decideAll,
   decideAlignment,
   emptyAlignmentLayer,
   mergeAlignments,
@@ -834,15 +835,84 @@ const carried = (c: Conflict) => !c.foundBy.endsWith(`@${deviceId()}`)
 /** The other version waiting at a verse: the merge's conflict over its text, as received. */
 export function otherVersion(book: string, chapter: number, verse: number): OtherVersion | null {
   const c = pendingOf(book).find((x) => x.kind === 'texto' && x.place.chapter === chapter && x.place.from === verse)
-  return c ? { text: linesIn(c.theirs.usfm, chapter, verse) || c.theirs.text, by: c.theirs.by ? nameOf(c.theirs.by) : '', ...(carried(c) ? { carried: true } : {}) } : null
+  return c ? receivedOf(c) : null
 }
 
-/** Every version of a book waiting for a choice, in order. */
+/** A conflict's version received, as the screens show it. */
+const receivedOf = (c: Conflict): OtherVersion => ({
+  text: linesIn(c.theirs.usfm, c.place.chapter, c.place.from) || c.theirs.text,
+  by: c.theirs.by ? nameOf(c.theirs.by) : '',
+  ...(carried(c) ? { carried: true } : {}),
+})
+
+/** Every version of a book waiting for a choice, in order (a verse several wrote has one for each of them). */
 export function otherVersionsOf(book: string): Array<{ chapter: number; verse: number } & OtherVersion> {
   return pendingOf(book)
     .filter((x) => x.kind === 'texto')
-    .map((x) => ({ chapter: x.place.chapter, verse: x.place.from, ...otherVersion(book, x.place.chapter, x.place.from)! }))
+    .map((x) => ({ chapter: x.place.chapter, verse: x.place.from, ...receivedOf(x) }))
     .sort((a, b) => a.chapter - b.chapter || a.verse - b.verse)
+}
+
+/** One way a verse was written, among those waiting to be gathered. */
+export interface Version {
+  /** What `gather` keeps. */
+  key: string
+  text: string
+  /** Everyone who wrote it (two who wrote the same words are one version), in the order they did. */
+  by: string[]
+  /** The one the verse has now on this phone. */
+  here: boolean
+  /** Found on another phone and passed on with the book. */
+  carried?: boolean
+}
+
+const sameText = (a: string, b: string) => a.replace(/\s+/g, ' ').trim() === b.replace(/\s+/g, ' ').trim()
+
+/**
+ * Every version of a verse waiting to be gathered (several people wrote it): the one it has now first, then each
+ * received, once each. Empty when nothing waits there.
+ */
+export function versionsAt(book: string, chapter: number, verse: number): Version[] {
+  const rec = shelf.get(scoped(book))
+  const slot = chapterSlots(book, chapter).get(verse)
+  const waiting = pendingOf(book).filter((x) => x.kind === 'texto' && x.place.chapter === chapter && x.place.from === verse)
+  if (!rec || !slot || !waiting.length) return []
+  // Who wrote a text there: each writing of it; a text no one wrote but chose (written while deciding), its chooser.
+  const writers = (place: Place, key: string) => {
+    const names = rec.state.journal.filter((e) => e.kind === 'edit' && e.key === key && samePlace(e.place, place)).map((e) => nameOf(e.by))
+    const made = producerOf(rec.state, place, key)
+    return [...new Set(names.length ? names : made ? [nameOf(made.by)] : [])].filter(Boolean)
+  }
+  const out: Version[] = [{ key: slot.key, text: slot.lines, by: writers({ chapter, from: verse, to: slot.to }, slot.key), here: true }]
+  for (const c of waiting) {
+    const { text, carried } = receivedOf(c)
+    if (out.some((v) => v.key === c.theirs.key || sameText(v.text, text))) continue
+    out.push({ key: c.theirs.key, text, by: writers(c.place, c.theirs.key), here: false, ...(carried ? { carried } : {}) })
+  }
+  return out
+}
+
+/**
+ * Gathers a verse several people wrote: keeps one of its versions (`key`, from `versionsAt`) or one written from them
+ * (`text`, its lines as the editor gives them). One decision closes every version waiting there and travels with the
+ * book, so nobody is asked about them again.
+ */
+export function gather(book: string, chapter: number, verse: number, choice: { key: string } | { text: string }, by: string) {
+  const rec = commit(shelf.get(scoped(book)) ?? emptyBook(book))
+  const waiting = rec.state.pending.filter((x) => x.kind === 'texto' && x.place.chapter === chapter && x.place.from === verse)
+  if (!waiting.length) return
+  const ids = waiting.map((x) => x.id)
+  const to = joinedTo(book, chapter, verse) ?? verse
+  // The one here is kept as it is (as the conflicts know it, by the text it had when they were found).
+  const here = chapterSlots(book, chapter).get(verse)?.key
+  const decision =
+    'text' in choice
+      ? { usfm: applyVerseEdits(rec.state.usfm, chapter, [{ from: verse, to, text: choice.text, leads: to === verse ? leadsOf(book, chapter, verse) : [] }]) }
+      : choice.key === here && !waiting.some((x) => x.theirs.key === here)
+        ? { key: waiting[0].mine.key }
+        : choice
+  const state = decideAll(rec.state, ids, decision, personOf(by), new Date().toISOString())
+  shelf.put(scoped(book), { state, working: state.usfm, pendingBy: null, pendingAt: [] })
 }
 
 /** A person decides a conflict (`decide`): the choice goes into the journal and is not asked again anywhere. */

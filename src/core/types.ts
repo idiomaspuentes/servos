@@ -33,6 +33,11 @@ export type Entry = {
   kind: "edit" | "decision";
   /** For a decision: the keys of the versions that were compared. The same pair is not asked again. */
   over?: string[];
+  /**
+   * For a decision: the decisions of that place it was made knowing (by id), which it replaces. Two decisions made
+   * apart, neither knowing the other, that keep different texts are asked again.
+   */
+  after?: string[];
 };
 
 /** Two versions of a place that both changed from the same text: a person decides. */

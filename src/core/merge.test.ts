@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { placesOf } from "./book";
 import { recordEdits, seenUpTo, startBook } from "./journal";
-import { decide, mergeInto } from "./merge";
+import { decide, decideAll, mergeInto } from "./merge";
 import { personKey, type BookState, type Person } from "./types";
 
 const ana: Person = { name: "Ana", device: "tel-ana" };
@@ -283,5 +283,71 @@ describe("un choque sin decidir viaja con el libro", () => {
     const { state } = mergeInto(c, a, carla, at());
     expect(state.pending).toEqual([]);
     expect(textOf(state, 1)).toBe("Pablo, siervo de Dios y apóstol.");
+  });
+});
+
+describe("varias personas tradujeron lo mismo: se junta una vez", () => {
+  const dani: Person = { name: "Dani", device: "tel-dani" };
+  /** Four wrote verse 1 apart; Ana's copy gathers the other three. */
+  function fourOnOneVerse() {
+    const mk = (person: Person, text: string) => startBook({ book: "TIT", usfm: tit({ 1: { 1: text } }), person, at: at() });
+    const others = [mk(beto, "Pablo, esclavo de Dios."), mk(carla, "Pablo, servidor de Dios."), mk(dani, "Pablo, el siervo de Dios.")];
+    let a = mk(ana, "Pablo, siervo de Dios.");
+    for (const o of others) a = mergeInto(a, o, ana, at()).state;
+    return { a, others };
+  }
+
+  it("una sola decisión cierra todas las versiones del versículo, y viaja: a nadie se le vuelve a preguntar", () => {
+    const { a, others } = fourOnOneVerse();
+    expect(a.pending).toHaveLength(3);
+    const carlas = a.pending.find((c) => c.theirs.text === "Pablo, servidor de Dios.")!;
+    const gathered = decideAll(a, a.pending.map((c) => c.id), { key: carlas.theirs.key }, ana, at());
+    expect([textOf(gathered, 1), gathered.pending]).toEqual(["Pablo, servidor de Dios.", []]);
+    for (const o of others) {
+      const { state, report } = mergeInto(o, gathered, beto, at());
+      expect([textOf(state, 1), report.conflicts.length]).toEqual(["Pablo, servidor de Dios.", 0]);
+    }
+  });
+
+  it("una mezcla escrita a partir de todas entra igual en cada copia", () => {
+    const { a, others } = fourOnOneVerse();
+    const blend = tit({ 1: { 1: "Pablo, el servidor de Dios." } });
+    const gathered = decideAll(a, a.pending.map((c) => c.id), { usfm: blend }, ana, at());
+    for (const o of others) expect(textOf(mergeInto(o, gathered, beto, at()).state, 1)).toBe("Pablo, el servidor de Dios.");
+  });
+
+  it("dos personas que juntan por separado y dejan textos distintos: se vuelve a elegir, no gana una en silencio", () => {
+    const { a } = fourOnOneVerse();
+    // Beto and Carla each took Ana's gathered copy home before anyone chose, and each chose apart.
+    const atBeto = decideAll(a, a.pending.map((c) => c.id), { usfm: tit({ 1: { 1: "Pablo, el servidor de Dios." } }) }, beto, at());
+    const atCarla = decideAll(a, a.pending.map((c) => c.id), { key: a.pending[0]!.theirs.key }, carla, at());
+    const toBeto = mergeInto(atBeto, atCarla, beto, at());
+    const toCarla = mergeInto(atCarla, atBeto, carla, at());
+    expect(toBeto.report.conflicts.map((c) => [c.mine.text, c.theirs.text])).toEqual([["Pablo, el servidor de Dios.", "Pablo, esclavo de Dios."]]);
+    expect(toCarla.report.conflicts.map((c) => [c.mine.text, c.theirs.text])).toEqual([["Pablo, esclavo de Dios.", "Pablo, el servidor de Dios."]]);
+    // Chosen again on one side, with both choices known: it stands everywhere.
+    const settled = decide(toBeto.state, toBeto.state.pending[0]!.id, { keep: "theirs" }, beto, at());
+    const { state, report } = mergeInto(toCarla.state, settled, carla, at());
+    expect([textOf(state, 1), state.pending, report.conflicts]).toEqual(["Pablo, esclavo de Dios.", [], []]);
+  });
+
+  it("dos que eligen por separado la misma versión no tienen nada que volver a elegir", () => {
+    const { a } = fourOnOneVerse();
+    const key = a.pending[1]!.theirs.key;
+    const atBeto = decideAll(a, a.pending.map((c) => c.id), { key }, beto, at());
+    const atCarla = decideAll(a, a.pending.map((c) => c.id), { key }, carla, at());
+    expect(mergeInto(atBeto, atCarla, beto, at()).report.conflicts).toEqual([]);
+  });
+
+  it("dos que eligen versiones distintas del mismo par, por separado, tampoco se pisan: se vuelve a elegir", () => {
+    const a = startBook({ book: "TIT", usfm: tit({ 1: { 1: "Pablo, siervo de Dios." } }), person: ana, at: at() });
+    const b = startBook({ book: "TIT", usfm: tit({ 1: { 1: "Pablo, esclavo de Dios." } }), person: beto, at: at() });
+    const met = mergeInto(a, b, ana, at()).state;
+    const keptMine = decide(met, met.pending[0]!.id, { keep: "mine" }, carla, at());
+    const keptTheirs = decide(met, met.pending[0]!.id, { keep: "theirs" }, dani, at());
+    const one = mergeInto(keptMine, keptTheirs, carla, at());
+    const other = mergeInto(keptTheirs, keptMine, dani, at());
+    expect([textOf(one.state, 1), one.report.conflicts.length]).toEqual(["Pablo, siervo de Dios.", 1]);
+    expect([textOf(other.state, 1), other.report.conflicts.length]).toEqual(["Pablo, esclavo de Dios.", 1]);
   });
 });

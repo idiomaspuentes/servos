@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { readShared, receiveShared, shareProject } from './share'
-import { bookStateOf, forgetBooks, otherVersion, readDraft, writeDraft } from './work'
+import { bookStateOf, forgetBooks, gather, otherVersion, otherVersionsOf, readDraft, versionsAt, writeDraft } from './work'
 import type { Project } from './model'
 import { setProject } from './scope'
 
@@ -145,5 +145,73 @@ describe('cuatro traducen el mismo capítulo y una junta las cuatro', () => {
     expect(waiting(1)).toEqual([team.Bea[0], team.Carla[0]].sort())
     expect(waiting(2)).toEqual([team.Bea[1], team.Carla[1], team.Dani[1]].sort())
     expect(waiting(3)).toEqual([team.Carla[2], team.Dani[2]].sort())
+  })
+})
+
+describe('juntar las versiones de varios: una vez por versículo', () => {
+  const team = {
+    Ana: ['Taytaku Jonasman rimarqa', 'Hatun Ninive llaktaman riy', 'Jonasqa miticurqa'],
+    Bea: ['Taytaku rimarqa Jonasman', 'Ninive llaktaman riy', 'Jonasqa miticurqa'],
+    Carla: ['Diosmi Jonasman rimarqa', 'Ninive llaktaman rinki', 'Jonasqa Tarsisman miticurqa'],
+    Dani: ['Taytaku Jonasman rimarqa', 'Ninive hatun llaktaman riy', 'Jonasqa karuman miticurqa'],
+  }
+  /** Each wrote chapter 1 on their phone; `who` receives the other three files. */
+  function allWrote(...who: string[]) {
+    for (const [name, texts] of Object.entries(team)) {
+      on(name)
+      texts.forEach((t, i) => writeDraft('jon', 1, i + 1, t, name))
+    }
+    const files = Object.keys(team).map(share)
+    for (const name of who) for (const file of files) if (file.from !== name) receive(file, name)
+  }
+
+  it('se ven todas las versiones de un versículo a la vez, la de aquí primero, cada una una vez', () => {
+    allWrote('Ana')
+    on('Ana')
+    expect(versionsAt('jon', 1, 2).map((v) => [v.by, v.text, v.here])).toEqual([
+      [['Ana'], team.Ana[1], true],
+      [['Bea'], team.Bea[1], false],
+      [['Carla'], team.Carla[1], false],
+      [['Dani'], team.Dani[1], false],
+    ])
+    // Dani wrote verse 1 as Ana did: three versions, not four, and that one is both of theirs.
+    expect(versionsAt('jon', 1, 1).map((v) => v.by)).toEqual([['Ana', 'Dani'], ['Bea'], ['Carla']])
+    // The list of what waits names each version once, not the first one again and again.
+    expect(otherVersionsOf('jon').filter((v) => v.verse === 2).map((v) => v.by).sort()).toEqual(['Bea', 'Carla', 'Dani'])
+  })
+
+  it('Ana junta cada versículo una vez (una versión o una mezcla) y, al compartir, a nadie se le pregunta nada', () => {
+    allWrote('Ana')
+    on('Ana')
+    gather('jon', 1, 1, { key: versionsAt('jon', 1, 1).find((v) => v.by.includes('Carla'))!.key }, 'Ana')
+    gather('jon', 1, 2, { text: 'Hatun Ninive llaktaman rinki' }, 'Ana')
+    gather('jon', 1, 3, { key: versionsAt('jon', 1, 3).find((v) => v.here)!.key }, 'Ana')
+    const gathered = ['Diosmi Jonasman rimarqa', 'Hatun Ninive llaktaman rinki', 'Jonasqa miticurqa']
+    expect([versesOn('Ana', 1, [1, 2, 3]), otherVersionsOf('jon')]).toEqual([gathered, []])
+    const file = share('Ana')
+    for (const name of ['Bea', 'Carla', 'Dani']) {
+      expect(receive(file, name).choices).toBe(0)
+      expect(versesOn(name, 1, [1, 2, 3])).toEqual(gathered)
+    }
+  })
+
+  it('si Bea y Carla juntan por separado y dejan otra cosa en un versículo, ese se vuelve a elegir; lo demás no', () => {
+    allWrote('Bea', 'Carla')
+    for (const name of ['Bea', 'Carla']) {
+      on(name)
+      gather('jon', 1, 1, { key: versionsAt('jon', 1, 1).find((v) => v.by.includes('Carla'))!.key }, name)
+      gather('jon', 1, 3, { key: versionsAt('jon', 1, 3).find((v) => v.by.includes('Dani'))!.key }, name)
+    }
+    on('Bea')
+    gather('jon', 1, 2, { text: 'Ninive hatun llaktaman rinki' }, 'Bea')
+    on('Carla')
+    gather('jon', 1, 2, { key: versionsAt('jon', 1, 2).find((v) => v.by.includes('Carla'))!.key }, 'Carla')
+    expect(receive(share('Carla'), 'Bea').choices).toBe(1)
+    // Bea's mix, which nobody wrote before, is hers: she wrote it while gathering.
+    expect(versionsAt('jon', 1, 2).map((v) => [v.by, v.text])).toEqual([
+      [['Bea'], 'Ninive hatun llaktaman rinki'],
+      [['Carla'], 'Ninive llaktaman rinki'],
+    ])
+    expect(versesOn('Bea', 1, [1, 3])).toEqual([team.Carla[0], team.Dani[2]])
   })
 })

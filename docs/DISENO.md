@@ -231,6 +231,36 @@ sabe hasta dónde incorporó a cada persona, y las decisiones viajan dentro de l
 - **Git (`isomorphic-git`)** como respaldo y como formato para subir a Door43. Git guarda; la mezcla la decide
   Servos.
 
+### 6.10 Todos traducen lo mismo: juntar las versiones
+
+Acordado el 16 de octubre. Algunos equipos no se reparten el trabajo: todos traducen lo mismo (el capítulo 1, por
+ejemplo) y después juntan lo mejor de cada uno, eligiendo una versión o haciendo una mezcla de todas.
+
+- **Un solo formato, varias vías.** El trabajo de cada quien llega como el paquete de siempre: por USB, tarjeta o
+  Bluetooth, o por Door43, que es un buzón más (cada quien sube su paquete al repositorio del proyecto). Git no junta
+  el USFM: lo junta Servos, versículo por versículo, venga de donde venga.
+- **Donde sea.** Se puede juntar entre todos frente a una computadora, una persona que recibe el trabajo de todos, o
+  cada quien en la suya. Una decisión es una línea del diario: viaja con el libro y cierra la elección en todos los
+  aparatos. Si dos personas juntan por separado el mismo versículo y dejan textos distintos, no gana una en silencio:
+  se vuelve a elegir entre lo que dejó cada una. Una decisión tomada sabiendo de otra la reemplaza.
+- **Todas a la vez, una decisión.** De un versículo se ven todas sus versiones juntas, cada una con quienes la
+  escribieron (dos que escribieron lo mismo son una versión, «Ana y Dani»). Una sola decisión, sea una versión o una
+  mezcla, cierra todas y no se vuelve a preguntar a nadie.
+- **La pantalla va por sección; los datos, por versículo.** Se traduce por secciones y la fluidez se juzga leyendo el
+  pasaje entero; guardado por versículo, la mezcla puede ser fina y lo demás se sigue juntando solo. La pantalla
+  «Juntar»: (1) leer la sección de cada uno de corrido, con lo que cambia resaltado; (2) quedarse con la de alguien
+  para toda la sección, de un toque; (3) bajar versículo por versículo, solo donde difieren, para elegir uno o hacer
+  una mezcla.
+- **En el teléfono, se elige tocando.** Elegir una versión o armar la mezcla no pide teclado: se tocan las frases de
+  cada versión que se quedan. El teclado es solo para retocar la mezcla ya armada, y mientras está arriba se ve solo
+  la mezcla, como en el editor.
+- **El equipo dice cómo trabaja**, por libro o capítulo: «repartido» (cada quien su parte) o «todos traducen lo
+  mismo». En el segundo, las versiones distintas no son choques: al recibir se dice «llegó la versión de Bea del
+  capítulo 1», el libro muestra lo que falta juntar, y una sección cuenta como hecha cuando se juntó.
+
+Hecho: el corazón (`decideAll`, `versionsAt`, `gather`) y las dos decisiones por separado. Falta la pantalla, el modo
+de trabajo y Door43 como vía.
+
 ## 7. Los paquetes
 
 | Paquete | Qué lleva | Quién lo hace |

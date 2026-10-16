@@ -22,7 +22,17 @@ export function producerOf(state: Pick<BookState, "journal">, place: Place, key:
   return undefined;
 }
 
-export function entry(params: { by: PersonKey; seq: number; place: Place; base: string; text: string; at: string; kind?: Entry["kind"]; over?: string[] }): Entry {
+export function entry(params: {
+  by: PersonKey;
+  seq: number;
+  place: Place;
+  base: string;
+  text: string;
+  at: string;
+  kind?: Entry["kind"];
+  over?: string[];
+  after?: string[];
+}): Entry {
   const { by, seq, place, base, text, at } = params;
   return {
     id: `${by}#${seq}`,
@@ -35,6 +45,7 @@ export function entry(params: { by: PersonKey; seq: number; place: Place; base: 
     at,
     kind: params.kind ?? "edit",
     ...(params.over ? { over: params.over } : {}),
+    ...(params.after?.length ? { after: params.after } : {}),
   };
 }
 
