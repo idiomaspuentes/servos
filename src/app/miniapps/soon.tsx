@@ -17,12 +17,6 @@ function soon(
   return { id, phase, needs, unit: 'verse', helps: true, writes: false, comingSoon: true, Center: () => null, texts, ...(checks ? { checks } : {}) }
 }
 
-export const editorVoz = soon('editorVoz', 'traduccion', ['text'], {
-  es: { nombre: 'Traducir de viva voz', descripcion: 'Decir cada versículo en su idioma y grabarlo, en lugar de escribirlo' },
-  pt: { nombre: 'Traduzir em voz alta', descripcion: 'Dizer cada versículo no seu idioma e gravá-lo, em vez de escrevê-lo' },
-  en: { nombre: 'Translate by voice', descripcion: 'Say each verse in your language and record it, instead of writing it' },
-})
-
 export const comunitaria = soon('comunitaria', 'comunitaria', ['text'], {
   es: { nombre: 'Lectura con la comunidad', descripcion: 'Leer el libro en voz alta con otras personas y anotar lo que no se entiende' },
   pt: { nombre: 'Leitura com a comunidade', descripcion: 'Ler o livro em voz alta com outras pessoas e anotar o que não se entende' },

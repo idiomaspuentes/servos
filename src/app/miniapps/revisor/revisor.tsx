@@ -156,9 +156,9 @@ function Center({ context }: MiniAppCenterProps) {
 
         {/* The source, a layer away: to weigh faithfulness and precision against it. */}
         <div className="passage-source">
-          <div className="review-quote-switch" role="tablist" aria-label={t('revisor.comparar')}>
+          <div className="review-quote-switch" role="radiogroup" aria-label={t('revisor.comparar')}>
             {data.texts.map((x) => (
-              <button key={x.abbreviation} type="button" role="tab" aria-selected={source === x.abbreviation} onClick={() => setSource((s) => (s === x.abbreviation ? null : x.abbreviation))}>
+              <button key={x.abbreviation} type="button" role="radio" aria-checked={source === x.abbreviation} onClick={() => setSource((s) => (s === x.abbreviation ? null : x.abbreviation))}>
                 {x.original ? t(`estudio.lengua.${x.lang ?? 'original'}`) : x.abbreviation}
               </button>
             ))}

@@ -12,7 +12,8 @@ import { revisor } from './revisor/revisor'
 import { revisorNotas } from './revisorNotas/revisorNotas'
 import { revisorPalabras } from './revisorPalabras/revisorPalabras'
 import { alineador } from './alineador/alineador'
-import { comunitaria, editorVoz } from './soon'
+import { comunitaria } from './soon'
+import { editorVoz } from './voz/voz'
 import { publicar } from './publicar/publicar'
 
 const apps: MiniApp[] = []

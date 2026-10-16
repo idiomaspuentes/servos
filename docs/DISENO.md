@@ -351,6 +351,12 @@ No es parte de la primera etapa, pero el diseño no debe cerrarle la puerta:
 - Los paquetes pueden llevar archivos de audio.
 - La lista de mini apps admite una de grabación.
 
+Hecho en el prototipo, «Traducir de viva voz» (paso Traducción): por versículo, arriba lo que se va a decir (el TPL, el
+TPS a un toque); un botón grande para grabar y, ya grabado, la grabación para oírla, «Grabar otra vez» y el camino al
+siguiente. Ninguna toma se pierde: cuenta la última, o la que se elija entre las anteriores, y cada una lleva quién la
+grabó, cuándo y cuánto dura. El sonido se guarda en IndexedDB; lo demás, por versículo. Si el versículo está escrito
+se ve debajo, con el camino al editor. Falta que los paquetes («Compartir») y la publicación lleven el audio.
+
 ## 11. Arquitectura
 
 - **Una base de código web** (React + Vite + TypeScript, como Taller) empaquetada como:

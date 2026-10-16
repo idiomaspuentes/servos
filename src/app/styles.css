@@ -795,3 +795,18 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 
 .version-unit { display: flex; gap: 0.4rem; align-items: baseline; }
 .version-unit .verse-number { flex: none; font-size: 0.75rem; color: var(--text-soft); }
+
+/* Translating aloud: what to say, one big button to record, the recording to hear */
+.voice-source { display: flex; flex-direction: column; gap: 0.4rem; padding: 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); font-size: 1.05rem; line-height: 1.6; }
+.voice-record { display: flex; flex-direction: column; gap: 0.6rem; align-items: stretch; }
+.voice-button { display: flex; align-items: center; justify-content: center; gap: 0.6rem; min-height: 4.5rem; border: 0; border-radius: 999px; background: var(--accent); color: var(--accent-text); font-size: 1.2rem; font-weight: 700; }
+.voice-button.is-recording { background: var(--danger); color: #fff; font-variant-numeric: tabular-nums; }
+.voice-dot { width: 1rem; height: 1rem; border-radius: 50%; background: currentColor; }
+.voice-button.is-recording .voice-dot { border-radius: 3px; animation: voice-pulse 1s ease-in-out infinite; }
+@keyframes voice-pulse { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .voice-button.is-recording .voice-dot { animation: none; } }
+.voice-audio { width: 100%; }
+.voice-takes { list-style: none; margin: 0.4rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+.voice-takes li { display: flex; flex-direction: column; gap: 0.2rem; }
+.voice-written { display: flex; flex-direction: column; gap: 0.25rem; border-block-start: 1px solid var(--line); padding-block-start: 0.6rem; }
+.voice-written-text { margin: 0; font-family: var(--project-font, var(--font)); white-space: pre-line; }
