@@ -52,7 +52,8 @@ export function ChapterLines({
     if (!verse || !pane) return
     const target = writing === undefined ? null : verse.querySelector<HTMLElement>('.is-writing-line')
     if (!target) {
-      pane.scrollTop = Math.max(0, verse.offsetTop - 12)
+      const top = verse.offsetTop - 12
+      pane.scrollTop = top < pane.clientHeight / 3 ? 0 : top
       return
     }
     const p = pane.getBoundingClientRect()

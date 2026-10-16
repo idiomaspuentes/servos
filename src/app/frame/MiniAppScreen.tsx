@@ -126,6 +126,8 @@ export function MiniAppScreen({
   const goStop = (index: number) => onPosition({ ...position, verse: stops[index][0] })
   const title = bookTitle ?? data.book.name
   const passage = passageOf(title, position.chapter, shown, t)
+  // «n of total» counts the verses or sections: an introduction is named by the passage, not counted among them.
+  const counted = stops.filter((s) => s[0] > 0)
   // A place another mini app left (an introduction, where this one has none) becomes this one's first stop.
   const lost = !stops.some((s) => s.includes(position.verse))
   useEffect(() => {
@@ -243,7 +245,8 @@ export function MiniAppScreen({
           </button>
           <button type="button" className="position-label" onClick={() => setVerseList(true)}>
             {/* Which unit it goes by is said, so the person knows there is another (chosen in the sheet this opens). */}
-            <strong>{passage}</strong> · {t(app.sections && unit === 'section' && shown[0] > 0 ? 'marco.posicionSeccion' : 'marco.posicion', { n: at + 1, total: stops.length })}
+            <strong>{passage}</strong>
+            {shown[0] > 0 && ` · ${t(app.sections && unit === 'section' ? 'marco.posicionSeccion' : 'marco.posicion', { n: counted.indexOf(shown) + 1, total: counted.length })}`}
           </button>
           {atEnd && !backLabel ? (
             // At the book's last verse the way on is back to the book: said, where the arrow was.

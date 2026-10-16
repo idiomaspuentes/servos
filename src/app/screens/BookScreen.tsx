@@ -147,9 +147,11 @@ export function BookScreen({
   const leadCard = (app: MiniApp) => {
     const done = app.done ? doneOf(app) : null
     const next = app.done ? nextOf(app) : null
-    const place = placeFor(app.id)
+    const used = placeFor(app.id)
+    // A mini app that does not go by verses (publishing) has no verse to say.
+    const place = app.positionLine === false ? null : used
     const allDone = done !== null && !next
-    const go = allDone ? 'libro.ver' : place ? 'libro.continuar' : 'libro.empezar'
+    const go = allDone ? 'libro.ver' : used ? 'libro.continuar' : 'libro.empezar'
     const open = byChapter === app.id
     return (
       <li key={app.id} className="tool-card">

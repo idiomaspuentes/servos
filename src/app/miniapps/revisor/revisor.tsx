@@ -9,6 +9,7 @@
  * improved. With the four answered, the way on is the next section.
  */
 
+import { useWide } from '../../frame/Panes'
 import { useState } from 'react'
 import { chapterOf, type PrototypeData } from '../../../prototype/data'
 import { WordLines } from '../../frame/TouchWords'
@@ -59,7 +60,10 @@ function Center({ context }: MiniAppCenterProps) {
   const criterion = chosen ?? firstOpen
   const observations = units.flatMap((v) => observationsOf(book, chapter, v))
   const open = observations.filter((o) => o.state === 'abierta')
-  const shownSource = source ? data.texts.find((x) => x.abbreviation === source) : null
+  // Wide, the translation and a source are side by side from the start; on a phone the source is a touch away.
+  const wide = useWide()
+  const sourceShown = source ?? (wide ? (data.texts.find((x) => !x.original)?.abbreviation ?? null) : null)
+  const shownSource = sourceShown ? data.texts.find((x) => x.abbreviation === sourceShown) : null
 
   const yes = () => {
     if (!criterion) return
@@ -132,46 +136,54 @@ function Center({ context }: MiniAppCenterProps) {
           <p className="review-done">✓ {t(open.length ? 'revisor.revisadoConNotas' : 'revisor.revisado', { n: open.length })}</p>
         )}
 
-        {/* The team's translation of the section, in the centre; its words to mark when something is to improve. */}
-        <section className="passage-text" aria-label={t('revisor.suTraduccion')}>
-          {marking && <p className="review-instruction">{t('revisor.marque')}</p>}
-          {units.map((v, i) => {
-            const joined = joinedVerses(book, chapter, v)
-            return (
-              <div key={v} className="passage-verse">
-                <span className="verse-number">{joined.length > 1 ? `${v}–${joined[joined.length - 1]}` : v}</span>
-                {marking ? (
-                  <WordPicker
-                    words={wordsOf(texts[i])}
-                    picked={picked?.verse === v ? picked.words : []}
-                    onChange={(words) => setPicked(words.length ? { verse: v, words } : null)}
-                  />
-                ) : (
-                  <span className="passage-verse-text">{texts[i] || '—'}</span>
-                )}
-              </div>
-            )
-          })}
-        </section>
+        <div className="passage-compare">
+          {/* The team's translation of the section, in the centre; its words to mark when something is to improve. */}
+          <section className="passage-text" aria-label={t('revisor.suTraduccion')}>
+            {marking && <p className="review-instruction">{t('revisor.marque')}</p>}
+            {units.map((v, i) => {
+              const joined = joinedVerses(book, chapter, v)
+              return (
+                <div key={v} className="passage-verse">
+                  <span className="verse-number">{joined.length > 1 ? `${v}–${joined[joined.length - 1]}` : v}</span>
+                  {marking ? (
+                    <WordPicker
+                      words={wordsOf(texts[i])}
+                      picked={picked?.verse === v ? picked.words : []}
+                      onChange={(words) => setPicked(words.length ? { verse: v, words } : null)}
+                    />
+                  ) : (
+                    <span className="passage-verse-text">{texts[i] || '—'}</span>
+                  )}
+                </div>
+              )
+            })}
+          </section>
 
-        {/* The source, a layer away: to weigh faithfulness and precision against it. */}
-        <div className="passage-source">
-          <div className="review-quote-switch" role="radiogroup" aria-label={t('revisor.comparar')}>
-            {data.texts.map((x) => (
-              <button key={x.abbreviation} type="button" role="radio" aria-checked={source === x.abbreviation} onClick={() => setSource((s) => (s === x.abbreviation ? null : x.abbreviation))}>
-                {x.original ? t(`estudio.lengua.${x.lang ?? 'original'}`) : x.abbreviation}
-              </button>
-            ))}
-          </div>
-          {shownSource ? (
-            <div className="versions-source" dir={shownSource.dir}>
-              {shown.map((v) => (
-                <WordLines key={v} lines={shownSource.lines[v] ?? []} verse={v} lit={new Set()} onWord={() => {}} />
+          {/* The source, a layer away: to weigh faithfulness and precision against it. */}
+          <div className="passage-source">
+            <div className="review-quote-switch" role="radiogroup" aria-label={t('revisor.comparar')}>
+              {data.texts.map((x) => (
+                <button
+                  key={x.abbreviation}
+                  type="button"
+                  role="radio"
+                  aria-checked={sourceShown === x.abbreviation}
+                  onClick={() => setSource(wide ? x.abbreviation : sourceShown === x.abbreviation ? null : x.abbreviation)}
+                >
+                  {x.original ? t(`estudio.lengua.${x.lang ?? 'original'}`) : x.abbreviation}
+                </button>
               ))}
             </div>
-          ) : (
-            <p className="quiet passage-source-hint">{t('revisor.compararAyuda')}</p>
-          )}
+            {shownSource ? (
+              <div className="versions-source" dir={shownSource.dir}>
+                {shown.map((v) => (
+                  <WordLines key={v} lines={shownSource.lines[v] ?? []} verse={v} lit={new Set()} onWord={() => {}} />
+                ))}
+              </div>
+            ) : (
+              <p className="quiet passage-source-hint">{t('revisor.compararAyuda')}</p>
+            )}
+          </div>
         </div>
 
         {marking && (

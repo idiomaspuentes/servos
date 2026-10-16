@@ -395,13 +395,11 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .panes-track, .panes-track * { touch-action: pan-y pinch-zoom; }
 .pane { position: relative; flex: 0 0 100%; min-width: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0.75rem 1rem; }
 @media (prefers-reduced-motion: reduce) { .panes-track { transition: none; } }
-/* On a phone the panes are a strip of chips at the top, next to what they change; a swipe moves between them as
-   before. The foot keeps one band: the position line, the one way on. */
-@media (max-width: 899px) {
-  .panes-tabs { gap: 0.25rem; padding: 0.5rem; border-block-end: 0; }
-  .panes-tab { min-height: var(--touch); padding-inline: 0.6rem; border: 1px solid color-mix(in srgb, var(--text-soft) 45%, transparent); border-radius: 999px; font-size: 0.9rem; }
-  .panes-tab[aria-selected='true'] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
-}
+/* The panes are a strip of chips at the top, next to what they change, at every width (as the helps' kinds are); on a
+   phone a swipe moves between them as well. The foot keeps one band: the position line, the one way on. */
+.panes-tabs { gap: 0.25rem; padding: 0.5rem; border-block-end: 0; }
+.panes-tab { min-height: var(--touch); padding-inline: 0.6rem; border: 1px solid color-mix(in srgb, var(--text-soft) 45%, transparent); border-radius: 999px; font-size: 0.9rem; }
+.panes-tab[aria-selected='true'] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 
 /* Wide: what is read on the left, what is written on the right */
 .panes-split { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
@@ -413,6 +411,21 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 @media (min-width: 900px) {
   .screen-fill:has(> * .review) { max-width: 48rem; }
   .screen-fill:has(> * .align) { max-width: 62rem; }
+  /* The passage review compares side by side: the translation and its source */
+  .screen-fill:has(> * .passage) { max-width: 74rem; }
+  .passage .review-scroll, .passage .review-next { max-width: 72rem; }
+}
+
+/* Wide: the header and the position line go across the window, whatever the width of what is under them, so «‹» and
+   «Más» stay in one place from screen to screen; the position's arrows sit beside the place, not at the window's ends;
+   and in a mini app of one column the way on comes right after what is read, not at the window's foot (a thumb is not
+   reaching for it there). */
+@media (min-width: 900px) {
+  html { overflow-x: clip; }
+  .screen > .header, .screen > .position { margin-inline: calc(50% - 50vw); padding-inline: 1.5rem; }
+  .screen > .position { display: flex; justify-content: center; gap: 1rem; }
+  .main-fill > .review, .main-fill > .align { flex: 0 1 auto; }
+  .review-scroll, .align-boxes { flex: 0 1 auto; }
 }
 
 /* A line of the text as it is set: a poem's line has a rule at its start and is set in by its depth (as in Taller) */
@@ -546,7 +559,11 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .chip:active { background: var(--accent-soft); }
 .chip-question { text-align: start; border-style: dashed; }
 .study-answers, .general-notes { font-size: 0.95rem; }
-.study-answers summary, .general-notes summary { min-height: var(--touch); display: flex; align-items: center; color: var(--accent); cursor: pointer; }
+/* Folded, as a row that unfolds (principle 12): the text's colour and ▾, not a loose blue link */
+.study-answers summary, .general-notes summary { min-height: var(--touch); display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; color: var(--text); font-weight: 600; cursor: pointer; list-style: none; }
+.study-answers summary::-webkit-details-marker, .general-notes summary::-webkit-details-marker { display: none; }
+.study-answers summary::after, .general-notes summary::after { content: '▾'; font-size: 1rem; transition: transform 0.15s; }
+.study-answers[open] > summary::after, .general-notes[open] > summary::after { transform: rotate(180deg); }
 .general-notes { margin-block: 0.25rem 0.5rem; padding-inline: 0.75rem; border-inline-start: 3px solid var(--line); font-family: var(--font); font-size: 1rem; line-height: 1.5; }
 
 /* The glossary: adding a word from the editor, and the project's list */
@@ -837,6 +854,11 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .voice-takes li { display: flex; flex-direction: column; gap: 0.2rem; }
 .voice-written { display: flex; flex-direction: column; gap: 0.25rem; border-block-start: 1px solid var(--line); padding-block-start: 0.6rem; }
 .voice-written-text { margin: 0; font-family: var(--project-font, var(--font)); white-space: pre-line; }
+.voice-written .chip { align-self: flex-start; }
+.passage-compare { display: flex; flex-direction: column; gap: 0.75rem; }
+@media (min-width: 900px) {
+  .passage-compare { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+}
 
 /* Principle 12: a row opens more (› a sheet, ▾ here); a suggestion is a neutral card; the arrows of a list are
    tinted circles; a destructive action is outlined in red */

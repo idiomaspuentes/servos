@@ -124,7 +124,7 @@ export function App() {
   const home = () => setScreen({ kind: 'home' })
   // Where home's «Continue» goes: into the mini app last worked in, at its place, in the book last opened; or else the book.
   const resumeApp = resume ? miniApp(lastAppOf(person, resume.book) ?? '') : undefined
-  const resumePlace = resume && resumeApp ? placeOf(person, resume.book, resumeApp.id) : null
+  const resumePlace = resume && resumeApp && resumeApp.positionLine !== false ? placeOf(person, resume.book, resumeApp.id) : null
   const bookScreen = screen.kind === 'book' ? screen : null
   const appScreen = screen.kind === 'app' ? screen : null
   // Back from a mini app: to the one it was opened from, at the place it was left, or else to its book.
