@@ -371,9 +371,14 @@ grabó el teléfono.
 - **Almacenamiento** por la capa de `platform-adapters` de `usfm-ast`, que ya abstrae la web, Tauri y Capacitor.
 - **Del lado de `usfm-ast`:** el analizador y el editor de USFM, el alineador y la lectura de formatos. Los
   sistemas de choques de `usfm-ast` no se usan.
-- **De Taller:** la mezcla por versículo, el solucionador de choques y la lectura de ayudas. **Por decidir:** si se
-  sacan a un paquete compartido que usen las dos apps, o si Servos los copia y los adapta. Compartirlos evita que
-  diverjan, pero ata los ritmos de las dos apps.
+- **De Taller:** la mezcla por versículo, el solucionador de choques y la lectura de ayudas. **Decidido (16 de
+  octubre de 2026):** por ahora Servos los copia y los adapta (`src/usfm`), hasta que el corazón esté probado en las
+  pantallas; después se piensa en sacarlos a un paquete compartido, que evita que diverjan pero ata los ritmos de las
+  dos apps.
+- **Una sola puerta al texto del libro** (`src/app/projects/bookText.ts`): los versículos, quién escribió cada uno,
+  las uniones, las versiones que esperan una elección y los choques de estructura se leen y se escriben solo por ahí
+  (una prueba lo vigila). Detrás de esa puerta el prototipo guarda versículo por versículo; el cableado pone ahí el
+  libro en USFM con su diario (`src/core`).
 
 ## 12. Por dónde empezar
 
@@ -396,7 +401,8 @@ Propuesta de etapas, para conversar:
 
 - El orden de las fases, y si cada equipo arma el suyo (sección 3).
 - PIN opcional por persona (sección 5).
-- El formato del paquete de trabajo (sección 7).
+- El formato del paquete de trabajo (sección 7): se define al cablear el compartir con la mezcla real (paso 4 del
+  cableado), cuando el paquete tenga que llevar el USFM del libro y su diario.
 - A dónde va cada proyecto en Door43 (sección 8).
 - Paquete compartido con Taller o copia adaptada (sección 11).
 - El nombre de dominio `servos.bible` todavía no está apartado.

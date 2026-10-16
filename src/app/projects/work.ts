@@ -4,17 +4,17 @@
  * the master copy: the verse is the smallest part anyone can take, so it is what records its writer, and chapters and
  * sections only add up their verses.
  *
- * In the prototype this lives in this browser (localStorage). Wired, each change is an entry of the book's journal
- * (design, section 6), and gathering work merges journals; a verse two people wrote differently keeps both until
- * someone chooses.
+ * The text itself, verse by verse, is kept behind one door (bookText.ts); here is what is reckoned from it, and what
+ * is the person's own: where they were, and the notes written while studying.
  */
 
+import { authorOf, keepOtherVersion, otherVersion, readDraft, textOf, writeDraft, type OtherVersion } from './bookText'
+
+// The book's text is the door's (bookText.ts); it is offered from here too, where the screens have always asked for it.
+export * from './bookText'
+
 const KEY = 'servos.prototipo'
-const draftKey = (book: string, chapter: number, verse: number) => `${KEY}.borrador.${book}.${chapter}.${verse}`
-const authorKey = (book: string, chapter: number, verse: number) => `${KEY}.autor.${book}.${chapter}.${verse}`
-const otherKey = (book: string, chapter: number, verse: number) => `${KEY}.otra.${book}.${chapter}.${verse}`
 const placeKey = (person: string, book: string, app: string) => `${KEY}.posicion.${person}.${book}.${app}`
-const joinKey = (book: string, chapter: number, verse: number) => `${KEY}.union.${book}.${chapter}.${verse}`
 
 function read(key: string): string | null {
   try {
@@ -31,97 +31,6 @@ function write(key: string, value: string | null) {
   } catch {
     /* kept on screen for this visit */
   }
-}
-
-/** The verse as written: its lines parted by `\n`, or empty. */
-export const readDraft = (book: string, chapter: number, verse: number): string => read(draftKey(book, chapter, verse)) ?? ''
-
-/** Who wrote the verse last, or null when nobody has; of a verse joined to the one before, who wrote them together. */
-export const authorOf = (book: string, chapter: number, verse: number): string | null => {
-  const at = joinStartOf(book, chapter, verse)
-  return readDraft(book, chapter, at).trim() ? read(authorKey(book, chapter, at)) : null
-}
-
-/**
- * Verses joined: when a language says two verses (or more) in one sentence, as USFM's `\v 1-2`. The join is kept on the
- * first verse (the last one it reaches), and so is the text of them all; the others stay empty while joined.
- */
-export function joinedTo(book: string, chapter: number, verse: number): number | null {
-  const end = Number(read(joinKey(book, chapter, verse)))
-  return Number.isFinite(end) && end > verse ? end : null
-}
-
-/** The verse whose text says this one: the first of the verses it is joined with, or itself. */
-export function joinStartOf(book: string, chapter: number, verse: number): number {
-  for (let start = verse - 1; start >= Math.max(1, verse - 30); start--) {
-    const end = joinedTo(book, chapter, start)
-    if (end !== null) return end >= verse ? start : verse
-  }
-  return verse
-}
-
-/** The verses said together with this one, in order: itself alone when it is not joined. */
-export function joinedVerses(book: string, chapter: number, verse: number): number[] {
-  const start = joinStartOf(book, chapter, verse)
-  const end = joinedTo(book, chapter, start) ?? start
-  return Array.from({ length: end - start + 1 }, (_, i) => start + i)
-}
-
-/** What translates a verse: its own text, or that of the verses it is joined with. */
-export const textOf = (book: string, chapter: number, verse: number): string => readDraft(book, chapter, joinStartOf(book, chapter, verse))
-
-/**
- * Joins the verses this one is in with the next verse (and with those that one is joined with): their texts follow
- * one another in the first verse, and the next stays empty while joined.
- */
-export function joinWithNext(book: string, chapter: number, verse: number, by: string) {
-  const start = joinStartOf(book, chapter, verse)
-  const next = (joinedTo(book, chapter, start) ?? start) + 1
-  const end = joinedTo(book, chapter, next) ?? next
-  const text = [readDraft(book, chapter, start), ...Array.from({ length: end - next + 1 }, (_, i) => readDraft(book, chapter, next + i))]
-    .map((x) => x.trim())
-    .filter(Boolean)
-    .join(' ')
-  writeDraft(book, chapter, start, text, by)
-  for (let v = next; v <= end; v++) {
-    write(draftKey(book, chapter, v), null)
-    write(authorKey(book, chapter, v), null)
-  }
-  write(joinKey(book, chapter, next), null)
-  write(joinKey(book, chapter, start), String(end))
-}
-
-/** Separates the verses this one is joined with: the text stays in the first, for the person to share out. */
-export function separateJoined(book: string, chapter: number, verse: number) {
-  write(joinKey(book, chapter, joinStartOf(book, chapter, verse)), null)
-}
-
-export function writeDraft(book: string, chapter: number, verse: number, text: string, by: string) {
-  write(draftKey(book, chapter, verse), text)
-  write(authorKey(book, chapter, verse), text.trim() ? by : null)
-}
-
-/** Another version of a verse, received from someone while this computer had its own: kept until someone chooses. */
-export interface OtherVersion {
-  text: string
-  by: string
-}
-
-export function otherVersion(book: string, chapter: number, verse: number): OtherVersion | null {
-  const raw = read(otherKey(book, chapter, verse))
-  if (!raw) return null
-  try {
-    return JSON.parse(raw) as OtherVersion
-  } catch {
-    return null
-  }
-}
-
-/** Keeps the other version (it replaces the verse) or this one; either way the choice is made. */
-export function chooseVersion(book: string, chapter: number, verse: number, keepOther: boolean) {
-  const other = otherVersion(book, chapter, verse)
-  if (other && keepOther) writeDraft(book, chapter, verse, other.text, other.by)
-  write(otherKey(book, chapter, verse), null)
 }
 
 /** How far the translation of some verses has gone, and who wrote them. */
@@ -176,7 +85,7 @@ export function receiveWork(file: WorkFile): Received {
     } else if (here.trim() === text.trim()) {
       result.same++
     } else {
-      write(otherKey(file.book, chapter, verse), JSON.stringify({ text, by: file.from } satisfies OtherVersion))
+      keepOtherVersion(file.book, chapter, verse, { text, by: file.from } satisfies OtherVersion)
       result.choices++
     }
   }
@@ -242,77 +151,4 @@ export function writeStudyNote(book: string, chapter: number, verses: number[], 
   const others = studyNotesOf(book, chapter).filter((n) => !sameVerses(n.verses, verses))
   const notes = text.trim() ? [...others, { verses, text, by }].sort((a, b) => a.verses[0] - b.verses[0]) : others
   write(studyKey(book, chapter), notes.length ? JSON.stringify(notes) : null)
-}
-
-/**
- * Verses joined on one side and not on the other (design 6.2, «choque de estructura»): this phone says 1 and 2 apart
- * and the other said them as one (1–2), or the other way round, with text on both sides. Not to be decided verse by
- * verse: the person chooses which way stays for the whole stretch. Kept by its first verse, with what was received.
- */
-export interface StructureConflict {
-  chapter: number
-  /** The stretch the two ways cover together. */
-  from: number
-  to: number
-  /** The way received: its verses, each one or a join, with its text. */
-  received: Array<{ from: number; to: number; text: string; by: string }>
-}
-
-const structureKey = (book: string, chapter: number, from: number) => `${KEY}.estructura.${book}.${chapter}.${from}`
-
-export function structureConflictsOf(book: string, chapter?: number): StructureConflict[] {
-  const prefix = `${KEY}.estructura.${book}.${chapter === undefined ? '' : `${chapter}.`}`
-  const out: StructureConflict[] = []
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i)
-      if (!k?.startsWith(prefix)) continue
-      const c = JSON.parse(localStorage.getItem(k) ?? 'null') as StructureConflict | null
-      if (c) out.push(c)
-    }
-  } catch {
-    /* nothing to read */
-  }
-  return out.sort((a, b) => a.chapter - b.chapter || a.from - b.from)
-}
-
-export const structureConflictAt = (book: string, chapter: number, verse: number) =>
-  structureConflictsOf(book, chapter).find((c) => c.from <= verse && verse <= c.to) ?? null
-
-/** Keeps a way received that does not fit this phone's: with one already waiting there, the two are one stretch. */
-export function keepStructureConflict(book: string, c: StructureConflict) {
-  const there = structureConflictsOf(book, c.chapter).find((x) => x.from <= c.to && c.from <= x.to)
-  const merged: StructureConflict = there
-    ? {
-        chapter: c.chapter,
-        from: Math.min(there.from, c.from),
-        to: Math.max(there.to, c.to),
-        received: [...there.received, ...c.received.filter((r) => !there.received.some((x) => x.from === r.from))].sort((a, b) => a.from - b.from),
-      }
-    : c
-  if (there && there.from !== merged.from) write(structureKey(book, c.chapter, there.from), null)
-  write(structureKey(book, c.chapter, merged.from), JSON.stringify(merged))
-}
-
-/**
- * Chooses the way a stretch stays: this phone's (nothing changes), or the one received: the stretch's verses take its
- * joins and its texts, each with who wrote it.
- */
-export function chooseStructure(book: string, chapter: number, from: number, keepReceived: boolean) {
-  const c = structureConflictsOf(book, chapter).find((x) => x.from === from)
-  if (!c) return
-  if (keepReceived) {
-    for (let v = c.from; v <= c.to; v++) {
-      write(draftKey(book, chapter, v), null)
-      write(authorKey(book, chapter, v), null)
-      write(joinKey(book, chapter, v), null)
-      write(otherKey(book, chapter, v), null)
-    }
-    for (const r of c.received) {
-      write(draftKey(book, chapter, r.from), r.text)
-      write(authorKey(book, chapter, r.from), r.by || null)
-      if (r.to > r.from) write(joinKey(book, chapter, r.from), String(r.to))
-    }
-  }
-  write(structureKey(book, chapter, from), null)
 }

@@ -21,7 +21,20 @@ import { gatherGlossary, readGlossary, saveGlossaryEntry, type GlossaryEntry } f
 import type { BookEntry, Phase, Project } from './model'
 import type { NoteCheck } from './noteChecks'
 import { blobOf, gatherTakes, keepSound, recordedPlaces, soundBase64, takesOf, type Take } from './recordings'
-import { joinStartOf, joinedVerses, keepStructureConflict, textOf, type StudyNote } from './work'
+import {
+  joinStartOf,
+  joinedVerses,
+  keepOtherVersion,
+  keepStructureConflict,
+  otherVersion,
+  otherVersionsOf,
+  readDraft,
+  replaceStretch,
+  textOf,
+  writeDraft,
+  writtenVerses,
+  type StudyNote,
+} from './work'
 
 export const SHARE_FORMAT = 'servos-compartir'
 
@@ -105,25 +118,12 @@ const json = <T,>(k: string): T | null => {
     return null
   }
 }
-/** `servos.prototipo.borrador.jon.1.2` → [1, 2]. */
-const place = (k: string) => k.split('.').slice(-2).map(Number) as [number, number]
 
 /** A book of this phone, as it is shared. */
 export function shareBook(code: string, phase: Phase): SharedBook {
-  const verses: SharedVerse[] = []
-  for (const k of keys(`${P}.borrador.${code}.`)) {
-    const [chapter, verse] = place(k)
-    const text = get(k) ?? ''
-    const joined = Number(get(`${P}.union.${code}.${chapter}.${verse}`))
-    if (!text.trim() && !joined) continue
-    verses.push({ chapter, verse, text, by: get(`${P}.autor.${code}.${chapter}.${verse}`), ...(joined > verse ? { joinedTo: joined } : {}) })
-  }
-  verses.sort((a, b) => a.chapter - b.chapter || a.verse - b.verse)
-  const others = keys(`${P}.otra.${code}.`).flatMap((k) => {
-    const [chapter, verse] = place(k)
-    const o = json<{ text: string; by: string }>(k)
-    return o ? [{ chapter, verse, ...o }] : []
-  })
+  // The text through the book's door: each verse with its writer and joins; the versions waiting for a choice.
+  const verses: SharedVerse[] = writtenVerses(code)
+  const others = otherVersionsOf(code)
   const alignments = keys(`${P}.alineacion.${code}.`).flatMap((k) => {
     const [source, chapter, verse] = k.slice(`${P}.alineacion.${code}.`.length).split('.')
     const kept = json<{ groups: AlignmentGroup[]; text: string; by?: string; at?: string }>(k)
@@ -207,7 +207,7 @@ export interface BookPreview {
   recordings: number
 }
 
-const draftHere = (code: string, chapter: number, verse: number) => get(`${P}.borrador.${code}.${chapter}.${verse}`) ?? ''
+const draftHere = readDraft
 /**
  * How a verse received (alone, or a join up to `to`) fits this phone's verses: the same way (the same verse, or the
  * same join), or another; and, when another, the stretch both ways cover and whether this phone has text in it.
@@ -222,8 +222,7 @@ function shapeOf(code: string, chapter: number, verse: number, to: number) {
 }
 
 /** The text of another version already waiting for a choice at a verse, if one is. */
-const waitingOf = (code: string, chapter: number, verse: number): string | null =>
-  json<{ text: string }>(`${P}.otra.${code}.${chapter}.${verse}`)?.text.trim() ?? null
+const waitingOf = (code: string, chapter: number, verse: number): string | null => otherVersion(code, chapter, verse)?.text.trim() ?? null
 
 export function previewBook(book: SharedBook, isNew: boolean): BookPreview {
   const p: BookPreview = { code: book.code, isNew, taken: 0, same: 0, choices: 0, waiting: 0, alignments: book.alignments.length, checks: 0, studyNotes: 0, recordings: 0 }
@@ -274,10 +273,7 @@ export function receiveBook(book: SharedBook, isNew: boolean): BookReceived {
       // a text said for 1–2 is not a version of verse 1.
       if (!v.text.trim()) continue
       if (!shape.written) {
-        for (let x = shape.from; x <= shape.to; x++) set(`${P}.union.${code}.${v.chapter}.${x}`, null)
-        set(`${P}.borrador.${code}.${v.chapter}.${v.verse}`, v.text)
-        set(`${P}.autor.${code}.${v.chapter}.${v.verse}`, v.by)
-        if (to > v.verse) set(`${P}.union.${code}.${v.chapter}.${v.verse}`, String(to))
+        replaceStretch(code, v.chapter, shape.from, shape.to, [{ from: v.verse, to, text: v.text, by: v.by }])
       } else {
         keepStructureConflict(code, { chapter: v.chapter, from: shape.from, to: shape.to, received: [{ from: v.verse, to, text: v.text, by: v.by ?? '' }] })
       }
@@ -285,16 +281,14 @@ export function receiveBook(book: SharedBook, isNew: boolean): BookReceived {
     }
     const here = draftHere(code, v.chapter, v.verse)
     if (v.text.trim() && !here.trim()) {
-      set(`${P}.borrador.${code}.${v.chapter}.${v.verse}`, v.text)
-      set(`${P}.autor.${code}.${v.chapter}.${v.verse}`, v.by)
+      writeDraft(code, v.chapter, v.verse, v.text, v.by ?? '')
     } else if (v.text.trim() && here.trim() !== v.text.trim() && waitingOf(code, v.chapter, v.verse) === null) {
       // Only where no other version waits: one waiting for a choice is not replaced without it.
-      set(`${P}.otra.${code}.${v.chapter}.${v.verse}`, JSON.stringify({ text: v.text, by: v.by ?? '' }))
+      keepOtherVersion(code, v.chapter, v.verse, { text: v.text, by: v.by ?? '' })
     }
   }
   for (const o of book.others) {
-    const k = `${P}.otra.${code}.${o.chapter}.${o.verse}`
-    if (!get(k) && draftHere(code, o.chapter, o.verse).trim() !== o.text.trim()) set(k, JSON.stringify({ text: o.text, by: o.by }))
+    if (!otherVersion(code, o.chapter, o.verse) && draftHere(code, o.chapter, o.verse).trim() !== o.text.trim()) keepOtherVersion(code, o.chapter, o.verse, { text: o.text, by: o.by })
   }
   for (const a of book.alignments) {
     const k = `${P}.alineacion.${code}.${a.source}.${a.chapter}.${a.verse}`
