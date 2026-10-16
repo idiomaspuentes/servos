@@ -892,12 +892,51 @@ export function versionsAt(book: string, chapter: number, verse: number): Versio
   return out
 }
 
+/** What to keep of a verse being gathered: one of its versions (`key`, from `versionsAt`) or a text made from them. */
+export type Gathered = { chapter: number; verse: number; choice: { key: string } | { text: string } }
+
+// The last gathering done on this phone, to take back at once while nothing else was written: the book before it, and
+// the book after it as its text and the length of its journal (the book may be read again from where it is kept).
+const lastGathering = new Map<string, { before: Shelved; working: string; journal: number }>()
+const stillAfter = (key: string) => {
+  const last = lastGathering.get(key)
+  const rec = shelf.get(key)
+  return Boolean(last && rec && rec.pendingBy === null && rec.working === last.working && rec.state.journal.length === last.journal)
+}
+
 /**
  * Gathers a verse several people wrote: keeps one of its versions (`key`, from `versionsAt`) or one written from them
  * (`text`, its lines as the editor gives them). One decision closes every version waiting there and travels with the
  * book, so nobody is asked about them again.
  */
 export function gather(book: string, chapter: number, verse: number, choice: { key: string } | { text: string }, by: string) {
+  gatherAll(book, [{ chapter, verse, choice }], by)
+}
+
+/** Gathers several verses at once (a section kept whole), as one thing to take back with `undoGather`. */
+export function gatherAll(book: string, verses: Gathered[], by: string) {
+  const key = scoped(book)
+  const before = commit(shelf.get(key) ?? emptyBook(book))
+  shelf.put(key, before)
+  for (const { chapter, verse, choice } of verses) gatherOne(book, chapter, verse, choice, by)
+  const after = shelf.get(key)
+  if (after && after !== before) lastGathering.set(key, { before, working: after.working, journal: after.state.journal.length })
+}
+
+/** The last gathering can still be taken back: nothing was written in the book since. */
+export const canUndoGather = (book: string): boolean => stillAfter(scoped(book))
+
+/** Takes the last gathering back, the versions waiting again as they were; false when it no longer can be. */
+export function undoGather(book: string): boolean {
+  const key = scoped(book)
+  const last = lastGathering.get(key)
+  if (!last || !stillAfter(key)) return false
+  shelf.put(key, last.before)
+  lastGathering.delete(key)
+  return true
+}
+
+function gatherOne(book: string, chapter: number, verse: number, choice: { key: string } | { text: string }, by: string) {
   const rec = commit(shelf.get(scoped(book)) ?? emptyBook(book))
   const waiting = rec.state.pending.filter((x) => x.kind === 'texto' && x.place.chapter === chapter && x.place.from === verse)
   if (!waiting.length) return

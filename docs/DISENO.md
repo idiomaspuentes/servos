@@ -258,8 +258,12 @@ ejemplo) y después juntan lo mejor de cada uno, eligiendo una versión o hacien
   mismo». En el segundo, las versiones distintas no son choques: al recibir se dice «llegó la versión de Bea del
   capítulo 1», el libro muestra lo que falta juntar, y una sección cuenta como hecha cuando se juntó.
 
-Hecho: el corazón (`decideAll`, `versionsAt`, `gather`) y las dos decisiones por separado. Falta la pantalla, el modo
-de trabajo y Door43 como vía.
+Hecho: el corazón (`decideAll`, `versionsAt`, `gather`), las dos decisiones por separado y la pantalla «Juntar»
+(`GatherScreen`, sobre el boceto acordado): la sección de cada uno en pestañas, sin resaltar, y «Quedarse con la de
+Bea en 1:1–3»; versículo por versículo, todas las versiones a la vez con lo que cambia resaltado; la mezcla en trozos
+que se leen como su versículo (cortados en sus signos, y un tramo de más de siete palabras otra vez, en cualquier
+idioma), con la propuesta de la app punteada; «Retocar» con solo la mezcla a la vista; y «Deshacer» lo último
+mientras nada más se escribió. Falta el modo de trabajo y Door43 como vía.
 
 ## 7. Los paquetes
 

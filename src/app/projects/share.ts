@@ -247,7 +247,8 @@ export function previewBook(book: SharedBook, isNew: boolean, from: Gathering): 
     taken: r.taken.length,
     // The same text, or one this phone has already taken in and gone past.
     same: r.same,
-    choices: r.conflicts.length,
+    // Verses (or stretches) to choose in, not conflicts: a verse several wrote waits once for each other version.
+    choices: new Set(r.conflicts.map((c) => `${c.place.chapter}:${c.place.from}`)).size,
     waiting: 0,
     alignments: book.state ? Object.keys(book.state.alignment?.current ?? {}).length : (book.alignments?.length ?? 0),
     checks: 0,

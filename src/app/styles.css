@@ -927,3 +927,38 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .menu-choice { display: flex; flex-direction: column; gap: 0.4rem; padding: 0.6rem 0.9rem 0.75rem; border-block-end: 1px solid var(--line); }
 .choice-row.is-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .book-where { margin: -0.25rem 0 0; font-size: 0.85rem; padding-inline: 0.25rem; }
+
+/* Bringing versions together (design 6.10): each one's section read through in tabs, the versions of a verse as the
+   cards of «two versions», and a mix made by touching pieces that read inline as their verse. The one piece chosen
+   in the mix is outlined; the piece the app proposes for it, dashed: two things, two looks. The foot keeps its arrows
+   under the thumb. */
+.gather { display: flex; flex-direction: column; min-height: 100vh; }
+.gather > .main { flex: 1; }
+.gather-foot { position: sticky; inset-block-end: 0; z-index: 1; }
+.gather-foot-label { text-align: center; font-size: 0.9rem; }
+.gather-hint { margin: 0; }
+.gather-label { font-size: 0.85rem; font-weight: 600; color: var(--text-soft); }
+.gather-notice { display: flex; align-items: center; gap: 0.6rem; }
+.gather-notice-text { flex: 1; min-width: 0; font-size: 0.95rem; }
+.gather-done { color: var(--done); font-weight: 700; }
+.gather-card { flex-shrink: 0; border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-card); overflow: hidden; }
+.gather-reading { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.6rem 0.9rem 0.9rem; }
+.gather-caption { margin: 0; font-size: 0.85rem; color: var(--text-soft); }
+.gather-verse { margin: 0; font-size: 1.1rem; line-height: 1.6; white-space: pre-line; overflow-wrap: anywhere; font-family: var(--project-font, var(--font)); }
+.mix-flow { font-size: 1.1rem; line-height: 2.55; overflow-wrap: anywhere; font-family: var(--project-font, var(--font)); }
+.mix-box { flex-shrink: 0; padding: 0.3rem 0.6rem; border-radius: var(--radius); border: 1px solid var(--accent); background: var(--surface); }
+.gather-pieces { padding: 0.3rem 0.75rem 0.6rem; }
+.mix-piece { padding: 0.4rem 0.15rem; border-radius: 6px; cursor: pointer; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.mix-piece:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+.mix-piece.is-mine { background: var(--surface-soft); }
+.mix-piece.is-chosen { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); }
+.mix-piece.is-source { background: color-mix(in srgb, var(--surface-soft) 45%, var(--surface)); box-shadow: inset 0 0 0 1px var(--line); }
+.mix-piece.is-used { background: none; box-shadow: none; color: var(--text-soft); }
+.mix-piece.is-match { background: var(--surface); box-shadow: none; outline: 2px dashed var(--accent); outline-offset: -2px; color: var(--text); }
+.gather-typing > .main { display: flex; flex-direction: column; }
+.gather-typing-field { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.gather-typing-field textarea {
+  flex: 1; min-height: 8rem; padding: 0.6rem 0.75rem; border-radius: var(--radius); border: 1px solid var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent); background: var(--surface); color: var(--text); resize: none;
+  font-family: var(--project-font, var(--font)); font-size: 1.1rem; line-height: 1.55;
+}

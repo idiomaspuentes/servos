@@ -240,10 +240,10 @@ export function BookScreen({
         {toChoose > 0 && (
           // Work received that came written another way: said where the book opens, with the way to choose.
           <section className="book-choose">
-            <strong>{t('libro.dosVersiones', { n: toChoose })}</strong>
-            <span className="quiet">{t('libro.dosVersionesAyuda')}</span>
+            <strong>{t('libro.porJuntar', { n: toChoose })}</strong>
+            <span className="quiet">{t('libro.porJuntarAyuda')}</span>
             <button type="button" className="button-secondary" onClick={onChooseVersions}>
-              {t('libro.elegir')} →
+              {t('libro.juntar')} →
             </button>
           </section>
         )}

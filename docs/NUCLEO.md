@@ -112,11 +112,15 @@ Desde el 16 de octubre de 2026 la app guarda cada libro así (cableado, pasos 1 
     decisiones de ese lugar conocía (`after`): la que se tomó sabiendo de otra la reemplaza, y dos tomadas por
     separado que dejan textos distintos se vuelven a elegir (antes ganaba una en silencio, o cada aparato se quedaba
     con la del otro).
+13. **La pantalla «Juntar»** (`GatherScreen`, diseño 6.10) reemplaza a la de elegir entre dos. Va por sección
+    (`sectionsToGather`, `readingsOf`): la de cada uno se lee de corrido y se deja una para toda la sección con una
+    sola acción (`gatherAll`); o versículo por versículo, con todas sus versiones; o una mezcla tocando trozos
+    (`mix.ts`). Lo último se puede deshacer (`undoGather`) mientras nada más se escribió en el libro. Al recibir se
+    cuentan versículos para juntar, no choques.
 
 ## Lo que falta
 
-- **La pantalla de elegir compara de dos en dos.** Un versículo que escribieron varios espera una vez por cada
-  versión; la pantalla las muestra una tras otra en el mismo versículo. Juntarlas todas a la vez es la pantalla
-  «Juntar» (diseño 6.10), que falta.
+- **El editor muestra dos versiones a la vez.** Cuando un versículo que se escribe tiene versiones esperando, el
+  editor ofrece la primera frente a la de aquí; con varias, una tras otra. Para verlas todas está «Juntar».
 - La huella del texto es FNV-1a de 64 bits: basta para distinguir los versículos de un libro, pero no es una huella
   criptográfica.

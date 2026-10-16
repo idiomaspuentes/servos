@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { readShared, receiveShared, shareProject } from './share'
-import { bookStateOf, forgetBooks, gather, otherVersion, otherVersionsOf, readDraft, versionsAt, writeDraft } from './work'
+import { bookStateOf, canUndoGather, flushBooks, forgetBooks, gather, gatherAll, otherVersion, otherVersionsOf, readDraft, undoGather, versionsAt, writeDraft } from './work'
+import { readingsOf, sectionsToGather, waitingIn } from './versions'
 import type { Project } from './model'
 import { setProject } from './scope'
 
@@ -213,5 +214,61 @@ describe('juntar las versiones de varios: una vez por versículo', () => {
       [['Carla'], 'Ninive llaktaman rinki'],
     ])
     expect(versesOn('Bea', 1, [1, 3])).toEqual([team.Carla[0], team.Dani[2]])
+  })
+})
+
+describe('juntar por sección', () => {
+  const team = {
+    Ana: ['Taytaku Jonasman rimarqa', 'Hatun Ninive llaktaman riy', 'Jonasqa miticurqa'],
+    Bea: ['Taytaku rimarqa Jonasman', 'Ninive llaktaman riy', 'Jonasqa miticurqa'],
+    Carla: ['Diosmi Jonasman rimarqa', 'Ninive llaktaman rinki', 'Jonasqa Tarsisman miticurqa'],
+    Dani: ['Taytaku Jonasman rimarqa', 'Ninive hatun llaktaman riy', 'Jonasqa karuman miticurqa'],
+  }
+  const jonah1 = [{ chapter: 1, verses: Array.from({ length: 17 }, (_, i) => i + 1), sections: [[1, 2, 3], [4, 5], [6, 7]] }]
+  function anaGathersAll() {
+    for (const [name, texts] of Object.entries(team)) {
+      on(name)
+      texts.forEach((t, i) => writeDraft('jon', 1, i + 1, t, name))
+    }
+    for (const file of ['Bea', 'Carla', 'Dani'].map(share)) receive(file, 'Ana')
+    on('Ana')
+  }
+
+  it('lo que falta juntar va por sección: solo la que tiene versiones esperando', () => {
+    anaGathersAll()
+    expect(sectionsToGather('jon', jonah1)).toEqual([{ kind: 'seccion', chapter: 1, verses: [1, 2, 3] }])
+  })
+
+  it('cada uno se lee de corrido en la sección; la de aquí primero, con quien la escribió así', () => {
+    anaGathersAll()
+    const readings = readingsOf('jon', 1, [1, 2, 3])
+    expect(readings.map((r) => [r.names, r.here])).toEqual([
+      [['Ana'], true],
+      [['Bea'], false],
+      [['Carla'], false],
+      [['Dani'], false],
+    ])
+    // Bea wrote verse 3 as Ana did: her reading has the text here there.
+    expect(readings[1].verses.map((v) => v.text)).toEqual(team.Bea)
+    expect(readings[3].verses.map((v) => v.text)).toEqual(team.Dani)
+  })
+
+  it('quedarse con la de alguien para toda la sección cierra todo lo que esperaba en ella, y se puede deshacer al momento', () => {
+    anaGathersAll()
+    const carla = readingsOf('jon', 1, [1, 2, 3]).find((r) => r.names.includes('Carla'))!
+    gatherAll('jon', carla.verses.map((v) => ({ chapter: 1, verse: v.verse, choice: { key: v.key } })), 'Ana')
+    expect([versesOn('Ana', 1, [1, 2, 3]), waitingIn('jon', 1, [1, 2, 3])]).toEqual([team.Carla, []])
+    on('Ana')
+    expect(canUndoGather('jon')).toBe(true)
+    expect(undoGather('jon')).toBe(true)
+    expect([versesOn('Ana', 1, [1, 2, 3]), waitingIn('jon', 1, [1, 2, 3])]).toEqual([team.Ana, [1, 2, 3]])
+  })
+
+  it('después de escribir otra cosa en el libro, ya no se deshace (no se pierde lo escrito)', () => {
+    anaGathersAll()
+    gather('jon', 1, 2, { key: versionsAt('jon', 1, 2).find((v) => v.by.includes('Bea'))!.key }, 'Ana')
+    writeDraft('jon', 1, 4, 'Chaymanta', 'Ana')
+    flushBooks()
+    expect([canUndoGather('jon'), undoGather('jon'), readDraft('jon', 1, 4)]).toEqual([false, false, 'Chaymanta'])
   })
 })

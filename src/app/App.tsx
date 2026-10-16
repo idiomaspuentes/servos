@@ -15,7 +15,7 @@ import { placeLabel, stepPercent } from './projects/progress'
 import { keepLastApp, keepPlace, lastAppOf, placeOf } from './projects/work'
 import { AddBookSheet } from './screens/AddBook'
 import { BookScreen } from './screens/BookScreen'
-import { ChooseScreen } from './screens/ChooseScreen'
+import { GatherScreen } from './screens/GatherScreen'
 import { closeTopSheet, onSheets } from './frame/Sheet'
 import { GlossaryScreen } from './screens/GlossaryScreen'
 import { Home, type Resume } from './screens/Home'
@@ -380,7 +380,7 @@ export function App() {
       )}
       {screen.kind === 'translate' && <TranslateUi onBack={home} />}
       {screen.kind === 'elegir' && project(screen.projectId) && (
-        <ChooseScreen
+        <GatherScreen
           project={project(screen.projectId)!}
           book={screen.book}
           title={titleOf(project(screen.projectId), screen.book)}
