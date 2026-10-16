@@ -782,12 +782,17 @@ function linesIn(usfm: string, chapter: number, verse: number): string {
 export interface OtherVersion {
   text: string
   by: string
+  /** Found on another phone and passed on with the book: neither version was sent from there to here. */
+  carried?: boolean
 }
+
+/** A choice another phone found and passed on, not one found here (when this phone received the other version). */
+const carried = (c: Conflict) => !c.foundBy.endsWith(`@${deviceId()}`)
 
 /** The other version waiting at a verse: the merge's conflict over its text, as received. */
 export function otherVersion(book: string, chapter: number, verse: number): OtherVersion | null {
   const c = pendingOf(book).find((x) => x.kind === 'texto' && x.place.chapter === chapter && x.place.from === verse)
-  return c ? { text: linesIn(c.theirs.usfm, chapter, verse) || c.theirs.text, by: c.theirs.by ? nameOf(c.theirs.by) : '' } : null
+  return c ? { text: linesIn(c.theirs.usfm, chapter, verse) || c.theirs.text, by: c.theirs.by ? nameOf(c.theirs.by) : '', ...(carried(c) ? { carried: true } : {}) } : null
 }
 
 /** Every version of a book waiting for a choice, in order. */
@@ -823,6 +828,8 @@ export interface StructureConflict {
   to: number
   /** The way received: its verses, each one or a join, with its text. */
   received: Array<{ from: number; to: number; text: string; by: string }>
+  /** Found on another phone and passed on with the book. */
+  carried?: boolean
 }
 
 const asStretch = (c: Conflict): StructureConflict => ({
@@ -832,6 +839,7 @@ const asStretch = (c: Conflict): StructureConflict => ({
   received: listVerseSpans(c.theirs.usfm)
     .filter((s) => s.chapter === c.place.chapter)
     .map((s) => ({ from: s.verse, to: Math.max(s.verse, s.verseTo), text: verseLinesText(c.theirs.usfm, s), by: c.theirs.by ? nameOf(c.theirs.by) : '' })),
+  ...(carried(c) ? { carried: true } : {}),
 })
 
 export function structureConflictsOf(book: string, chapter?: number): StructureConflict[] {

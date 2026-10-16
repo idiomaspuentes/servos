@@ -316,7 +316,8 @@ describe('dos versiones sin elegir viajan con el libro', () => {
     store = carla
     const [received] = receive(fromAna, 'Carla').books
     expect(received.choices).toBe(1)
-    expect([readDraft('jon', 1, 2), otherVersion('jon', 1, 2)]).toEqual(['Ninive llaktaman rimay', { text: 'Ninive llaktaman riy', by: 'Bea' }])
+    // Said by who wrote each: neither was sent from Bea to Carla.
+    expect([readDraft('jon', 1, 2), otherVersion('jon', 1, 2)]).toEqual(['Ninive llaktaman rimay', { text: 'Ninive llaktaman riy', by: 'Bea', carried: true }])
     chooseVersion('jon', 1, 2, true, 'Carla')
     const fromCarla = share('Carla')
     store = ana

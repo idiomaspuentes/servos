@@ -102,6 +102,8 @@ Desde el 16 de octubre de 2026 la app guarda cada libro así (cableado, pasos 1 
     se le pregunta. Una decisión tomada en cualquier aparato las cierra en los demás al traer su libro, también si al
     decidir se escribió una versión nueva. Y un aparato que tiene la elección abierta ya no cuenta como si hubiera
     elegido: antes, quien recibía su libro tomaba su versión sin preguntar, porque su diario ya traía la otra.
+    Donde la elección llegó así, la pantalla dice cada versión por quien la escribió («La que está ahora · Ana», «La de
+    Bea»), no «la de este teléfono» y «la que mandó Bea»: ninguna de las dos se escribió aquí ni se mandó desde allá.
 
 ## Lo que falta
 

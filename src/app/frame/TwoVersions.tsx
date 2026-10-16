@@ -1,7 +1,8 @@
 /**
  * Choosing between two versions of a verse (design 6.2): both in full, each with the words the other lacks marked,
  * so the few words to weigh stand out. One is touched, and the one filled button keeps it; the other is gone. The
- * verse kept can be corrected afterwards like any other, in the editor.
+ * verse kept can be corrected afterwards like any other, in the editor. A choice that came with the book from another
+ * phone, where nobody chose yet, says each version by who wrote it: neither was sent from there to here.
  */
 
 import { useMemo, useState } from 'react'
@@ -51,11 +52,19 @@ export function TwoVersions({
 
   return (
     <section className="versions" aria-label={t('versiones.titulo')}>
-      <p className="versions-ask">{t('versiones.pregunta')}</p>
-      {version('here', here.by ? t('versiones.aquiDe', { nombre: here.by }) : t('versiones.aqui'), a)}
-      {version('received', t('versiones.recibidaDe', { nombre: received.by }), b)}
+      <p className="versions-ask">{t(received.carried ? 'versiones.preguntaLlegaron' : 'versiones.pregunta')}</p>
+      {version('here', received.carried ? (here.by ? t('versiones.ahoraDe', { nombre: here.by }) : t('versiones.ahora')) : here.by ? t('versiones.aquiDe', { nombre: here.by }) : t('versiones.aqui'), a)}
+      {version('received', t(received.carried ? 'versiones.laDe' : 'versiones.recibidaDe', { nombre: received.by }), b)}
       <button type="button" className={inScreen ? 'button-primary' : 'button-secondary'} disabled={!picked} onClick={() => picked && onChoose(picked === 'received')}>
-        {picked === 'here' ? t('versiones.quedarseAqui') : picked === 'received' ? t('versiones.quedarseRecibida', { nombre: received.by }) : t('versiones.elijaUna')}
+        {picked === 'here'
+          ? received.carried
+            ? here.by
+              ? t('versiones.quedarseRecibida', { nombre: here.by })
+              : t('versiones.quedarseAhora')
+            : t('versiones.quedarseAqui')
+          : picked === 'received'
+            ? t('versiones.quedarseRecibida', { nombre: received.by })
+            : t('versiones.elijaUna')}
       </button>
       <p className="quiet versions-after">{t('versiones.despues')}</p>
     </section>
@@ -113,11 +122,17 @@ export function TwoShapes({
   )
   return (
     <section className="versions" aria-label={t('versiones.formaTitulo')}>
-      <p className="versions-ask">{t('versiones.formaPregunta', { aqui: shapeOf(here), alla: shapeOf(conflict.received), nombre: by })}</p>
-      {shape('here', t('versiones.aqui'), here)}
-      {shape('received', t('versiones.recibidaDe', { nombre: by }), conflict.received)}
+      <p className="versions-ask">
+        {t(conflict.carried ? 'versiones.formaPreguntaLlegaron' : 'versiones.formaPregunta', { aqui: shapeOf(here), alla: shapeOf(conflict.received), nombre: by })}
+      </p>
+      {shape('here', t(conflict.carried ? 'versiones.ahora' : 'versiones.aqui'), here)}
+      {shape('received', t(conflict.carried ? 'versiones.laDe' : 'versiones.recibidaDe', { nombre: by }), conflict.received)}
       <button type="button" className={inScreen ? 'button-primary' : 'button-secondary'} disabled={!picked} onClick={() => picked && onChoose(picked === 'received')}>
-        {picked === 'here' ? t('versiones.quedarseAqui') : picked === 'received' ? t('versiones.quedarseRecibida', { nombre: by }) : t('versiones.elijaUna')}
+        {picked === 'here'
+          ? t(conflict.carried ? 'versiones.quedarseAhora' : 'versiones.quedarseAqui')
+          : picked === 'received'
+            ? t('versiones.quedarseRecibida', { nombre: by })
+            : t('versiones.elijaUna')}
       </button>
       <p className="quiet versions-after">{t('versiones.formaDespues')}</p>
     </section>
