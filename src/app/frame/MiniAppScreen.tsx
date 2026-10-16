@@ -228,16 +228,23 @@ export function MiniAppScreen({
 
       {app.positionLine !== false && (
         <nav className="position" aria-label={passage}>
-          <button type="button" className="button-quiet position-arrow" aria-label={t(unit === 'section' ? 'marco.seccionAnterior' : 'marco.anterior')} disabled={atStart} onPointerDown={keep} onClick={previous}>
+          <button type="button" className="pager-arrow position-arrow" aria-label={t(unit === 'section' ? 'marco.seccionAnterior' : 'marco.anterior')} disabled={atStart} onPointerDown={keep} onClick={previous}>
             ‹
           </button>
           <button type="button" className="position-label" onClick={() => setVerseList(true)}>
             {/* Which unit it goes by is said, so the person knows there is another (chosen in the sheet this opens). */}
             <strong>{passage}</strong> · {t(app.sections && unit === 'section' && shown[0] > 0 ? 'marco.posicionSeccion' : 'marco.posicion', { n: at + 1, total: stops.length })}
           </button>
-          <button type="button" className="button-quiet position-arrow" aria-label={t(unit === 'section' ? 'marco.seccionSiguiente' : 'marco.siguiente')} disabled={atEnd} onPointerDown={keep} onClick={following}>
-            ›
-          </button>
+          {atEnd && !backLabel ? (
+            // At the book's last verse the way on is back to the book: said, where the arrow was.
+            <button type="button" className="position-done" onPointerDown={keep} onClick={onBack}>
+              {t('marco.listo')}
+            </button>
+          ) : (
+            <button type="button" className="pager-arrow position-arrow" aria-label={t(unit === 'section' ? 'marco.seccionSiguiente' : 'marco.siguiente')} disabled={atEnd} onPointerDown={keep} onClick={following}>
+              ›
+            </button>
+          )}
         </nav>
       )}
       <p className="position-crossed" role="status" aria-live="polite">
@@ -247,7 +254,8 @@ export function MiniAppScreen({
       <main className={app.fills ? 'main main-fill' : 'main'}>
         {/* Drawn anew after an action of «More» changed what it shows (verses joined). */}
         <Center key={redrawn} context={context} />
-        {app.primary && (
+        {/* One way on: a button that only leads to the next verse is the position line's arrow, not a second way. */}
+        {app.primary && (!app.primary.nextOnly || (backLabel && app.primary.returning)) && (
           <button type="button" className="button-primary" onPointerDown={keep} onClick={() => app.primary!.run(context)}>
             {backLabel && app.primary.returning
               ? t(app.primary.returning, { app: backLabel })

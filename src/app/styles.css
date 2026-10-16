@@ -111,9 +111,10 @@ button:disabled { opacity: 0.45; cursor: default; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
 /* Position line: «Tito 1:3 · 3 de 16 ‹ ›» */
-.position { display: grid; grid-template-columns: var(--touch) 1fr var(--touch); align-items: center; background: var(--surface-soft); }
+.position { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.5rem; padding: 0.35rem 0.75rem calc(0.35rem + env(safe-area-inset-bottom, 0px)); background: var(--surface-soft); }
+.position-done { min-height: var(--touch); padding-inline: 1rem; border: 0; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 .position-label { border: 0; background: none; min-height: var(--touch); }
-.position-arrow { font-size: 1.4rem; padding: 0; }
+.position-arrow { font-size: 1.3rem; }
 
 /* The verse: the center of the screen */
 .center { display: flex; flex-direction: column; gap: 0.25rem; }
@@ -384,11 +385,12 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .panes-track, .panes-track * { touch-action: pan-y pinch-zoom; }
 .pane { position: relative; flex: 0 0 100%; min-width: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0.75rem 1rem; }
 @media (prefers-reduced-motion: reduce) { .panes-track { transition: none; } }
-/* On a phone the tabs are at the foot, under the thumb; the mark of the one open on their top edge */
+/* On a phone the panes are a strip of chips at the top, next to what they change; a swipe moves between them as
+   before. The foot keeps one band: the position line, the one way on. */
 @media (max-width: 899px) {
-  .panes-tabs { order: 2; border-block-end: 0; border-block-start: 1px solid var(--line); }
-  .panes-tab { border-block-end: 0; border-block-start: 3px solid transparent; }
-  .panes-tab[aria-selected='true'] { border-block-start-color: var(--accent); }
+  .panes-tabs { gap: 0.25rem; padding: 0.5rem; border-block-end: 0; }
+  .panes-tab { min-height: var(--touch); padding-inline: 0.6rem; border: 1px solid color-mix(in srgb, var(--text-soft) 45%, transparent); border-radius: 999px; font-size: 0.9rem; }
+  .panes-tab[aria-selected='true'] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 }
 
 /* Wide: what is read on the left, what is written on the right */
@@ -827,7 +829,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .row-button.is-fold[aria-expanded='true']::after { transform: rotate(180deg); }
 .suggestion { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
 .suggestion p { margin: 0; font-weight: 600; }
-.pager-arrow { width: var(--touch); height: var(--touch); min-height: var(--touch); padding: 0; display: inline-grid; place-items: center; border: 0; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: 1.2rem; }
+.pager-arrow { width: var(--touch); height: var(--touch); min-height: var(--touch); padding: 0; display: inline-grid; place-items: center; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: 1.5rem; font-weight: 600; line-height: 1; }
 .button-danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 55%, transparent); }
 .step-note { margin: 0; text-align: center; font-size: 0.85rem; }
 .publish-where-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
@@ -835,3 +837,4 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .word-help-actions { margin-block-start: 0.25rem; }
 .review-more-places { min-height: var(--touch); }
 .tool-card > .row-button { padding-inline: 0.8rem; }
+.study-write { margin-block-start: 1rem; }

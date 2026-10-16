@@ -28,7 +28,7 @@ function Center({ context }: MiniAppCenterProps) {
   const read = () => studyNoteOn(position.book, position.chapter, shown)
   const [key, setKey] = useState(unitKey)
   const [note, setNote] = useState(() => ({ text: read()?.text ?? '', by: read()?.by ?? null }))
-  const [pane, setPane] = useState('')
+  const [, setPane] = useState('')
   const [open, setOpen] = useState<{ id: string } | undefined>(undefined)
   if (key !== unitKey) {
     setKey(unitKey)
@@ -85,9 +85,6 @@ function Center({ context }: MiniAppCenterProps) {
         <article className="study-intro" aria-label={t(position.verse === BOOK_INTRO ? 'marco.introLibro' : 'marco.introCapitulo')}>
           <Markdown text={intro} />
         </article>
-        <button type="button" className="button-primary study-next" onClick={frame.next}>
-          {frame.atEnd ? t('marco.listoVolver', { libro: context.bookTitle }) : t('estudio.seguir')}
-        </button>
       </div>
     )
   }
@@ -138,6 +135,12 @@ function Center({ context }: MiniAppCenterProps) {
           />
           {/* The helps reached by touching words, also all together and counted, folded under the text: whoever does
               not know which words to touch sees that there are notes, and goes through them one at a time. */}
+          {/* The note on the section, offered where the reading ends (principle 5): not the one thing to do. */}
+          {!x.original && !wide && !note.text.trim() && (
+            <button type="button" className="button-secondary study-write" onClick={() => toNote()}>
+              ✎ {t('estudio.escribirNota')}
+            </button>
+          )}
           {!x.original && helpsCount > 0 && (
             // Open, the note shown lights its words in the text above, as in the editor.
             <details className="advanced study-helps" onToggle={(e) => e.currentTarget.open && helpsOpened()}>
@@ -167,19 +170,9 @@ function Center({ context }: MiniAppCenterProps) {
     },
   ]
 
-  // Writing the note (or, wide, beside it): the button goes on; reading: it leads to the note, unless there is one.
-  const atNote = wide || pane === 'nota'
-  const button =
-    atNote || note.text.trim()
-      ? { label: atNote ? 'estudio.guardarSeguir' : 'estudio.seguir', run: frame.next }
-      : { label: 'estudio.escribirNota', run: () => toNote() }
-
   return (
     <div className="study" ref={root}>
       <Panes panes={panes} label={t('estudio.paneles')} fixed="nota" open={open} onPane={setPane} holdFocus={false} />
-      <button type="button" className="button-primary study-next" onClick={button.run}>
-        {button.run === frame.next && frame.atEnd ? t('marco.listoVolver', { libro: context.bookTitle }) : t(button.label)}
-      </button>
     </div>
   )
 }
@@ -203,7 +196,7 @@ export const estudio: MiniApp = {
       nombre: 'Estudio',
       descripcion: 'Leer el libro con sus introducciones, notas, preguntas y palabras clave antes de traducir',
       seguir: 'Seguir leyendo',
-      escribirNota: 'Escribir mi nota →',
+      escribirNota: 'Escribir mi nota',
       miNota: 'Mi nota',
       notasGenerales: 'Notas sobre todo el versículo ({n})',
       verRespuestas: 'Ver las respuestas',
@@ -230,7 +223,7 @@ export const estudio: MiniApp = {
       nombre: 'Estudo',
       descripcion: 'Ler o livro com suas introduções, notas, perguntas e palavras-chave antes de traduzir',
       seguir: 'Continuar lendo',
-      escribirNota: 'Escrever minha nota →',
+      escribirNota: 'Escrever minha nota',
       miNota: 'Minha nota',
       notasGenerales: 'Notas sobre todo o versículo ({n})',
       verRespuestas: 'Ver as respostas',
@@ -257,7 +250,7 @@ export const estudio: MiniApp = {
       nombre: 'Study',
       descripcion: 'Read the book with its introductions, notes, questions, and key words before translating',
       seguir: 'Keep reading',
-      escribirNota: 'Write my note →',
+      escribirNota: 'Write my note',
       miNota: 'My note',
       notasGenerales: 'Notes on the whole verse ({n})',
       verRespuestas: 'See the answers',

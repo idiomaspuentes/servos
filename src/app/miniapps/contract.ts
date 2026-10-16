@@ -109,6 +109,11 @@ export interface MiniAppAction {
    * back to it rather than on: «Save and go back». Given `{app}`, the other one's name.
    */
   returning?: string
+  /**
+   * It only leads on to the next verse, as the position line's arrow does: then it is not drawn (one way on, not two),
+   * except where it goes back to the mini app this one was opened from (`returning`), which the line does not do.
+   */
+  nextOnly?: boolean
   description?: string
   run(context: MiniAppContext): void
 }

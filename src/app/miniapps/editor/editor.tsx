@@ -330,6 +330,7 @@ export const editor: MiniApp = {
     },
   ],
   primary: {
+    nextOnly: true,
     label: 'editor.guardarSeguir',
     returning: 'editor.guardarVolver',
     run: (c) => c.frame.next(),

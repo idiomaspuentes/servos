@@ -172,13 +172,6 @@ function Center({ context }: MiniAppCenterProps) {
           </button>
         </section>
       </div>
-      {take && !recording && (
-        <div className="review-next">
-          <button type="button" className="button-primary" onClick={frame.next}>
-            {frame.atEnd ? t('marco.listoVolver', { libro: context.bookTitle }) : `${t('editorVoz.siguiente')} →`}
-          </button>
-        </div>
-      )}
     </div>
   )
 }

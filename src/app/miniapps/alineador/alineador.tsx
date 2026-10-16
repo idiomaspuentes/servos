@@ -487,7 +487,7 @@ export const alineador: MiniApp = {
     return computeAlignedSourceIndices(draft, deriveAlignmentBoxes(tokens, groups, draft)).every(Boolean)
   },
   Center,
-  primary: { label: 'alineador.seguir', returning: 'alineador.guardarVolver', run: (c) => c.frame.next() },
+  primary: { nextOnly: true, label: 'alineador.seguir', returning: 'alineador.guardarVolver', run: (c) => c.frame.next() },
   texts: {
     es: {
       nombre: 'Alinear la traducción',

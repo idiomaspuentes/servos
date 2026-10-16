@@ -227,11 +227,7 @@ function Center({ context }: MiniAppCenterProps) {
           <button type="button" className="button-primary" onClick={yes}>
             {t(`revisor.si.${criterion}`)}
           </button>
-        ) : (
-          <button type="button" className="button-primary" onClick={frame.next}>
-            {frame.atEnd ? t('marco.listoVolver', { libro: context.bookTitle }) : `${t('revisor.siguiente')} →`}
-          </button>
-        )}
+        ) : null}
         {marking && !picked && <p className="quiet review-hint">{t('revisor.primeroMarque')}</p>}
       </div>
     </div>

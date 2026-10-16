@@ -629,5 +629,6 @@
   "marco.ahoraNo": "Ahora no",
   "libro.nombrarAccion": "Escribir el nombre",
   "libro.pasoNota": "El libro pasa a {paso} para todo el equipo. Se puede volver.",
-  "versiones.loQueDice": "Lo que dice el {texto}"
+  "versiones.loQueDice": "Lo que dice el {texto}",
+  "marco.listo": "Listo"
 }
