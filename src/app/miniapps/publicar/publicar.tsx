@@ -169,18 +169,18 @@ function Center({ context }: MiniAppCenterProps) {
   return (
     <div className="publish">
       <section className="publish-where">
-        <p>
-          <strong>
-            {to.owner}/{to.repo}
-          </strong>{' '}
-          <span className="quiet">· {where(to.host)}</span>
-        </p>
-        <p className="quiet">
-          {t('publicar.comoQuien', { usuario: account.username })}{' '}
-          <button type="button" className="button-link" onClick={() => setChoosing(true)}>
-            {t('publicar.cambiar')}
+        <div className="publish-where-head">
+          <p>
+            <strong>
+              {to.owner}/{to.repo}
+            </strong>{' '}
+            <span className="quiet">· {where(to.host)}</span>
+          </p>
+          <button type="button" className="chip" onClick={() => setChoosing(true)}>
+            ✎ {t('publicar.cambiar')}
           </button>
-        </p>
+        </div>
+        <p className="quiet">{t('publicar.comoQuien', { usuario: account.username })}</p>
       </section>
 
       <h2 className="publish-heading">{t('publicar.libros')}</h2>
@@ -310,7 +310,7 @@ function DestinationForm({
         {t('publicar.guardarDestino')}
       </button>
       {onCancel && (
-        <button type="button" className="button-quiet" onClick={onCancel}>
+        <button type="button" className="button-secondary" onClick={onCancel}>
           {t('publicar.noCambiar')}
         </button>
       )}
@@ -345,7 +345,7 @@ export const publicar: MiniApp = {
       guardarDestino: 'Publicar ahí',
       noCambiar: 'Dejarlo como estaba',
       comoQuien: 'Publica {usuario}.',
-      cambiar: 'Cambiar dónde',
+      cambiar: 'Cambiar',
       libros: 'Lo que se sube',
       nada: 'Este proyecto todavía no tiene libros en este teléfono.',
       traducidos: 'Versículos traducidos: {n} de {total} · alineados: {a}',
@@ -381,7 +381,7 @@ export const publicar: MiniApp = {
       guardarDestino: 'Publicar ali',
       noCambiar: 'Deixar como estava',
       comoQuien: 'Publica {usuario}.',
-      cambiar: 'Mudar onde',
+      cambiar: 'Mudar',
       libros: 'O que se envia',
       nada: 'Este projeto ainda não tem livros neste telefone.',
       traducidos: 'Versículos traduzidos: {n} de {total} · alinhados: {a}',
@@ -417,7 +417,7 @@ export const publicar: MiniApp = {
       guardarDestino: 'Publish there',
       noCambiar: 'Leave it as it was',
       comoQuien: '{usuario} publishes.',
-      cambiar: 'Change where',
+      cambiar: 'Change',
       libros: 'What is uploaded',
       nada: 'This project has no books on this phone yet.',
       traducidos: 'Verses translated: {n} of {total} · aligned: {a}',

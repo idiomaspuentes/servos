@@ -515,7 +515,6 @@
   "recibir.capas": "Alineaciones y revisiones que entraron, hechas sobre el texto que quedó: {n}.",
   "recibir.glosarioNuevas": "Palabras nuevas en el glosario: {n}.",
   "recibir.irAl": "Ir a {libro}",
-  "recibir.listo": "Listo",
   "interfaz.grupo.compartir": "Compartir",
   "interfaz.grupo.recibir": "Recibir",
   "versiones.titulo": "Dos versiones",
@@ -529,8 +528,6 @@
   "versiones.despues": "La que quede se puede corregir después en el editor.",
   "versiones.despuesEste": "Dejar este para después",
   "versiones.nDe": "{n} de {total}",
-  "versiones.verFuente": "Ver lo que dice el {texto}",
-  "versiones.ocultarFuente": "Ocultar el {texto}",
   "versiones.listo": "Listo. Versículos elegidos: {n}.",
   "versiones.ninguno": "No queda ningún versículo con dos versiones.",
   "versiones.quedan": "Quedan para después: {n}. El libro le recuerda cuántos faltan.",
@@ -597,7 +594,7 @@
   "libro.nombre": "Nombre del libro",
   "libro.nombreEs": "En {idioma}: {nombre}",
   "libro.nombreSinPoner": "Todavía como en el texto puente: {libro}",
-  "libro.nombrarPregunta": "¿Cómo se dice «{libro}» en {idioma}? Escribir el nombre",
+  "libro.nombrarPregunta": "¿Cómo se dice «{libro}» en {idioma}?",
   "libro.nombreComo": "Cómo se dice «{libro}» en {idioma}",
   "libro.nombreDonde": "Así se ve en la app, y así va en el título del libro al guardarlo en USFM o publicarlo.",
   "libro.nombreGuardar": "Guardar el nombre",
@@ -628,5 +625,9 @@
   "versiones.formaPregunta": "Aquí estos versículos están {aqui}. {nombre} los mandó {alla}. ¿Cuál queda para todo el pasaje?",
   "versiones.formaDespues": "La que quede se puede corregir después en el editor, y los versículos se pueden unir o separar allí.",
   "versiones.unidos": "unidos ({v})",
-  "versiones.separados": "separados ({v})"
+  "versiones.separados": "separados ({v})",
+  "marco.ahoraNo": "Ahora no",
+  "libro.nombrarAccion": "Escribir el nombre",
+  "libro.pasoNota": "El libro pasa a {paso} para todo el equipo. Se puede volver.",
+  "versiones.loQueDice": "Lo que dice el {texto}"
 }

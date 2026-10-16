@@ -185,7 +185,7 @@ function Center({ context }: MiniAppCenterProps) {
             </button>
             <button
               type="button"
-              className="button-quiet"
+              className="button-secondary"
               onClick={() => {
                 setMarking(false)
                 setPicked(null)

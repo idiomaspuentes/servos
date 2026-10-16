@@ -182,11 +182,11 @@ export function checkingCenter<I extends Checkable>(kind: CheckKind<I>) {
           {filterLabel} ▾
         </button>
         <div className="review-steps">
-          <button type="button" className="button-quiet" disabled={!previous} onClick={() => go(previous)} aria-label={t(k('anterior'))}>
+          <button type="button" className="pager-arrow" disabled={!previous} onClick={() => go(previous)} aria-label={t(k('anterior'))}>
             ‹
           </button>
           <span className="quiet">{item ? t(k('notaN'), { n: at + 1, total: list.length }) : list.length}</span>
-          <button type="button" className="button-quiet" disabled={!following} onClick={() => go(following)} aria-label={t(k('siguiente'))}>
+          <button type="button" className="pager-arrow" disabled={!following} onClick={() => go(following)} aria-label={t(k('siguiente'))}>
             ›
           </button>
         </div>
@@ -263,7 +263,7 @@ export function checkingCenter<I extends Checkable>(kind: CheckKind<I>) {
                 {t('marco.listoVolver', { libro: context.bookTitle })}
               </button>
             )}
-            <button type="button" className="button-quiet" onClick={() => setFinished(false)}>
+            <button type="button" className="button-secondary" onClick={() => setFinished(false)}>
               {t(k('verUltima'))}
             </button>
           </div>

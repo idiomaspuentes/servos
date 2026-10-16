@@ -7,6 +7,7 @@
 
 import { useState } from 'react'
 import { Markdown } from '../../frame/Markdown'
+import { RowButton } from '../../frame/Actions'
 import { Sheet } from '../../frame/Sheet'
 import { useT } from '../../i18n/i18n'
 import { CATEGORY_ORDER, checksOf, slugOf, type CheckItem } from '../../projects/noteChecks'
@@ -70,9 +71,7 @@ function Against({ item, quote, lookup }: AgainstProps<NoteItem>) {
         <Markdown text={item.note.note} />
       </div>
       {academy && (
-        <button type="button" className="button-quiet review-again-article" onClick={() => setArticle(true)}>
-          {t('revisorNotas.leerArticulo', { titulo: academy.title })}
-        </button>
+        <RowButton label={t('revisorNotas.leerArticulo', { titulo: academy.title })} onClick={() => setArticle(true)} />
       )}
       {article && academy && (
         <Sheet title={academy.title} onClose={() => setArticle(false)}>

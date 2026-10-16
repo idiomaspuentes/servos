@@ -92,6 +92,30 @@ Lo que se aprende en una mini app sirve en la siguiente, y una mini app nueva no
 - **Cada pantalla se mide en español, portugués e inglés a 375 px**, y en los idiomas que se agreguen con el editor de la interfaz (diseño, sección 9): las frases cambian de largo.
 - **Lugar para la voz.** Donde hoy hay una caja de texto, el diseño deja lugar para una grabación (diseño, sección 10).
 
+### 12. Cada acción tiene su forma
+
+Nada que actúe flota solo como texto azul: un enlace suelto en una línea se ve viejo y no dice qué es. Cada acción
+toma la forma de su papel:
+
+| Papel | Forma | Ejemplos |
+|---|---|---|
+| Lo principal | Botón lleno, uno por pantalla | «Continuar», «Sí, se entiende bien» |
+| Una alternativa que hace algo | Botón con borde, del ancho del lleno, debajo de él | «Dejar este para después», «Elegir otro archivo» |
+| Salir o cancelar, sin hacer nada | El «‹» del encabezado o «Cerrar» de la hoja; sin botón propio | Terminar de recibir, dejar una hoja |
+| Abrir algo más | Fila de ancho completo con su flecha: › abre una hoja u otro lugar, ▾ despliega aquí y gira al abrir | «Por capítulo», «Leer el artículo», los pliegues |
+| Actuar sobre una cosa | Chip pegado a la cosa: borde, verbo y su signo (✎, +) | «✎ Cambiar», «+ Agregar al glosario», «↶ Deshacer» |
+| Lo que la app sugiere una vez | Tarjeta neutra, debajo de lo que sigue, con su acción y «Ahora no» | «¿Cómo se dice «Jonás» en kichwa?» |
+| Pasar el libro de paso | Botón con borde al pie del paso, con una línea que dice qué cambia | «Terminar Traducción y pasar a Revisión» |
+| Moverse en una lista | Dos círculos teñidos de 44 px con la posición en medio | «‹ 2 de 5 ›» |
+| Algo que no se deshace | Botón con borde rojo | «Desvincular de este teléfono» |
+
+- **Chip no es etiqueta.** El chip hace algo: tiene borde, un verbo y su signo. La etiqueta dice un estado: va teñida,
+  sin borde, con un adjetivo («Acordada», «Pronto»), y no se toca.
+- **Presupuesto por pantalla:** un botón lleno y, como mucho, dos con borde; lo demás, filas y chips. Una sola
+  sugerencia a la vez.
+- **El texto azul queda** dentro de una frase (al final, como «…Ver en Door43») y en el encabezado, que tiene su lugar
+  fijo de siempre («‹ Inicio», «Más»).
+
 ## Cómo comprobarlo
 
 Antes de dar por hecha una pantalla, se recorre a 375 px como lo haría alguien poco hábil con la tecnología, y se anotan los números:
@@ -103,6 +127,7 @@ Antes de dar por hecha una pantalla, se recorre a 375 px como lo haría alguien 
 - [ ] ¿Cuántas alturas de pantalla mide? (dos o menos)
 - [ ] ¿Algo queda fijo sin necesidad, o tapa la caja con el teclado abierto?
 - [ ] ¿Hay algún icono sin palabra?
+- [ ] ¿Hay alguna acción que sea solo texto azul suelto en una línea? (ninguna)
 - [ ] ¿Las ayudas que se ven son las del versículo en que se trabaja?
 - [ ] ¿Se ve quién está trabajando, y si lo hecho está solo en el aparato o también en Door43?
 - [ ] ¿Funciona igual con el modo avión puesto?

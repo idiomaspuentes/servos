@@ -9,6 +9,7 @@ import type { PrototypeData } from '../../prototype/data'
 import { useT } from '../i18n/i18n'
 import { entriesAbout, type GlossaryEntry } from '../projects/glossary'
 import { studyNotesAbout } from '../projects/work'
+import { RowButton } from './Actions'
 import { Markdown } from './Markdown'
 import { rangeOf } from './PlacePicker'
 import { showInPane } from './Panes'
@@ -134,9 +135,7 @@ export function HelpsPanel({
             </p>
             <Markdown text={note.note} />
             {note.academy && data.academy[note.academy] && (
-              <button type="button" className="button-link" onClick={() => setArticle(data.academy[note.academy!])}>
-                {t('ayudas.leerArticulo', { titulo: data.academy[note.academy].title })}
-              </button>
+              <RowButton label={t('ayudas.leerArticulo', { titulo: data.academy[note.academy].title })} onClick={() => setArticle(data.academy[note.academy!])} />
             )}
           </>
         )}
@@ -169,9 +168,7 @@ export function HelpsPanel({
             {answer ? (
               <p>{questions[index].response}</p>
             ) : (
-              <button type="button" className="button-quiet" onClick={() => setAnswer(true)}>
-                {t('ayudas.verRespuesta')}
-              </button>
+              <RowButton kind="fold" label={t('ayudas.verRespuesta')} expanded={false} onClick={() => setAnswer(true)} />
             )}
           </>
         )}
@@ -184,21 +181,19 @@ export function HelpsPanel({
               {words[index].keyTerm && <span className="badge">{t('ayudas.palabraClave')}</span>}
             </p>
             {data.words[words[index].article] && (
-              <button type="button" className="button-link" onClick={() => setArticle(data.words[words[index].article])}>
-                {t('ayudas.leerArticulo', { titulo: data.words[words[index].article].title })}
-              </button>
+              <RowButton label={t('ayudas.leerArticulo', { titulo: data.words[words[index].article].title })} onClick={() => setArticle(data.words[words[index].article])} />
             )}
           </>
         )}
 
         {count > 1 && (
           <div className="helps-steps">
-            <button type="button" className="button-quiet" disabled={index === 0} onClick={() => setIndex((i) => i - 1)}>
-              ‹ {t('ayudas.anterior')}
+            <button type="button" className="pager-arrow" aria-label={t('ayudas.anterior')} disabled={index === 0} onClick={() => setIndex((i) => i - 1)}>
+              ‹
             </button>
             <span className="quiet">{t('ayudas.cuenta', { i: index + 1, n: count })}</span>
-            <button type="button" className="button-quiet" disabled={index === count - 1} onClick={() => setIndex((i) => i + 1)}>
-              {t('ayudas.siguiente')} ›
+            <button type="button" className="pager-arrow" aria-label={t('ayudas.siguiente')} disabled={index === count - 1} onClick={() => setIndex((i) => i + 1)}>
+              ›
             </button>
           </div>
         )}

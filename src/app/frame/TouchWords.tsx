@@ -7,6 +7,7 @@
  * lights its words in every pane.
  */
 
+import { RowButton } from './Actions'
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { flushSync } from 'react-dom'
 import type { Places, PrototypeData, PrototypeNote, PrototypeText } from '../../prototype/data'
@@ -321,8 +322,8 @@ export function WordHelpCard({
           {word}
         </span>
         {count > 1 && <span className="quiet">{t('ayudas.cuenta', { i: touched.index + 1, n: count })}</span>}
-        <button type="button" className="button-quiet word-help-close" aria-label={t('ayudas.cerrar')} onClick={close}>
-          ×
+        <button type="button" className="button-quiet word-help-close" onClick={close}>
+          {t('ayudas.cerrar')}
         </button>
       </div>
 
@@ -374,9 +375,7 @@ export function WordHelpCard({
           )}
           <Markdown text={help.note.note} />
           {help.note.academy && data.academy[help.note.academy] && (
-            <button type="button" className="button-link" onClick={() => setArticle(data.academy[help.note.academy!])}>
-              {t('ayudas.leerArticulo', { titulo: data.academy[help.note.academy].title })}
-            </button>
+            <RowButton label={t('ayudas.leerArticulo', { titulo: data.academy[help.note.academy].title })} onClick={() => setArticle(data.academy[help.note.academy!])} />
           )}
         </>
       )}
@@ -386,9 +385,7 @@ export function WordHelpCard({
           <p className="word-help-kind">{t('ayudas.lexico')}</p>
           <OriginalFacts data={data} place={help.place} />
           <Referents data={data} verse={help.verse} place={help.place} />
-          <button type="button" className="button-link" onClick={() => setDiagram({ verse: help.verse, place: help.place })}>
-            {t('st.open')}
-          </button>
+          <RowButton label={t('st.open')} onClick={() => setDiagram({ verse: help.verse, place: help.place })} />
           {help.brief && <p className="help-quote">{help.brief}</p>}
           {help.byVerse && <p className="help-verse">{t('ayudas.enEsteVersiculo')}</p>}
           {help.here.map((s, i) => (
@@ -419,31 +416,34 @@ export function WordHelpCard({
             </p>
           )}
           {data.words[help.article] && (
-            <button type="button" className="button-link" onClick={() => setArticle(data.words[help.article])}>
-              {t('ayudas.leerArticulo', { titulo: data.words[help.article].title })}
-            </button>
+            <RowButton label={t('ayudas.leerArticulo', { titulo: data.words[help.article].title })} onClick={() => setArticle(data.words[help.article])} />
           )}
         </>
       )}
 
-      {onNote && (
-        <button type="button" className="button-quiet word-help-note" onClick={() => onNote(word)}>
-          + {t('ayudas.anotarPalabra')}
-        </button>
-      )}
-      {onGlossary && (
-        <button type="button" className="button-quiet word-help-note" onClick={onGlossary}>
-          {touched.helps.some((h) => h.kind === 'glosario') ? t('ayudas.cambiarGlosario') : `+ ${t('ayudas.agregarGlosario')}`}
-        </button>
+      {(onNote || onGlossary) && (
+        // What the person can do with the word touched: chips on the card that is about it.
+        <div className="chip-row word-help-actions">
+          {onNote && (
+            <button type="button" className="chip" onClick={() => onNote(word)}>
+              + {t('ayudas.anotarPalabra')}
+            </button>
+          )}
+          {onGlossary && (
+            <button type="button" className="chip" onClick={onGlossary}>
+              {touched.helps.some((h) => h.kind === 'glosario') ? `✎ ${t('ayudas.cambiarGlosario')}` : `+ ${t('ayudas.agregarGlosario')}`}
+            </button>
+          )}
+        </div>
       )}
 
       {count > 1 && (
         <div className="helps-steps">
-          <button type="button" className="button-quiet" disabled={touched.index === 0} onClick={() => onIndex(touched.index - 1)}>
-            ‹ {t('ayudas.anterior')}
+          <button type="button" className="pager-arrow" aria-label={t('ayudas.anterior')} disabled={touched.index === 0} onClick={() => onIndex(touched.index - 1)}>
+            ‹
           </button>
-          <button type="button" className="button-quiet" disabled={touched.index === count - 1} onClick={() => onIndex(touched.index + 1)}>
-            {t('ayudas.siguiente')} ›
+          <button type="button" className="pager-arrow" aria-label={t('ayudas.siguiente')} disabled={touched.index === count - 1} onClick={() => onIndex(touched.index + 1)}>
+            ›
           </button>
         </div>
       )}

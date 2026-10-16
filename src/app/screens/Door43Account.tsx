@@ -42,7 +42,7 @@ export function Door43AccountSheet({ person, onClose, onLinked }: { person: stri
           <p className="status">{t('door43.vinculada', { usuario: account.username, donde: t(`door43.host.${hostName(account.host)}`) })}</p>
           <button
             type="button"
-            className="button-quiet"
+            className="button-secondary button-danger"
             onClick={() => {
               forgetAccount(person)
               setAccount(null)
@@ -96,7 +96,7 @@ export function Door43AccountSheet({ person, onClose, onLinked }: { person: stri
           <button type="submit" className="button-primary" disabled={busy || (withToken ? !token.trim() : !username.trim() || !password)}>
             {busy ? t('door43.vinculando') : t('door43.vincular')}
           </button>
-          <button type="button" className="button-quiet" onClick={() => setWithToken((w) => !w)}>
+          <button type="button" className="button-secondary" onClick={() => setWithToken((w) => !w)}>
             {t(withToken ? 'door43.conContrasena' : 'door43.conLlave')}
           </button>
         </form>

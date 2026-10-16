@@ -11,6 +11,7 @@
 
 import { useEffect, useState } from 'react'
 import { Markdown } from '../../frame/Markdown'
+import { RowButton } from '../../frame/Actions'
 import { Sheet } from '../../frame/Sheet'
 import { useT } from '../../i18n/i18n'
 import { readGlossaryFor, type GlossaryEntry } from '../../projects/glossary'
@@ -165,7 +166,7 @@ function Against({ item, data, lookup, context, here, all, renderingAt, go }: Ag
               <span className="review-places">
                 {allPlaces ? chips(unchecked) : chips(unchecked).slice(0, FEW)}
                 {!allPlaces && chips(unchecked).length > FEW && (
-                  <button type="button" className="button-quiet review-more-places" onClick={() => setAllPlaces(true)}>
+                  <button type="button" className="chip review-more-places" onClick={() => setAllPlaces(true)}>
                     {t('revisorPalabras.verTodos', { n: chips(unchecked).length - FEW })}
                   </button>
                 )}
@@ -177,9 +178,7 @@ function Against({ item, data, lookup, context, here, all, renderingAt, go }: Ag
       )}
       <Glossary entries={glossaryOf(item, data, context.project.id)} />
       {article && (
-        <button type="button" className="button-quiet review-again-article" onClick={() => setWhole(true)}>
-          {t('revisorPalabras.leerArticulo', { titulo: article.title.split(',')[0] })}
-        </button>
+        <RowButton label={t('revisorPalabras.leerArticulo', { titulo: article.title.split(',')[0] })} onClick={() => setWhole(true)} />
       )}
       {whole && article && (
         <Sheet title={article.title} onClose={() => setWhole(false)}>

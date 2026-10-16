@@ -38,13 +38,13 @@ export function LanguageSearch({ value, onChange, label }: { value: ChosenLangua
           </span>
           <button
             type="button"
-            className="button-quiet"
+            className="chip"
             onClick={() => {
               setChanging(true)
               setQuery('')
             }}
           >
-            {t('idiomas.cambiar')}
+            ✎ {t('idiomas.cambiar')}
           </button>
         </div>
       </div>
@@ -95,7 +95,7 @@ export function LanguageSearch({ value, onChange, label }: { value: ChosenLangua
         </ul>
       )}
       {list && query.trim().length > 1 && found.length === 0 && <p className="quiet">{t('idiomas.ninguno')}</p>}
-      <button type="button" className="button-quiet language-by-hand" onClick={() => setByHand(true)}>
+      <button type="button" className="button-secondary language-by-hand" onClick={() => setByHand(true)}>
         {t('idiomas.aMano')}
       </button>
     </div>

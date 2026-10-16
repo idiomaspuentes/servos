@@ -515,7 +515,6 @@
   "recibir.capas": "Alinhamentos e revisões que entraram, feitos sobre o texto que ficou: {n}.",
   "recibir.glosarioNuevas": "Palavras novas no glossário: {n}.",
   "recibir.irAl": "Ir para {libro}",
-  "recibir.listo": "Pronto",
   "interfaz.grupo.compartir": "Compartilhar",
   "interfaz.grupo.recibir": "Receber",
   "versiones.titulo": "Duas versões",
@@ -529,8 +528,6 @@
   "versiones.despues": "A que ficar pode ser corrigida depois no editor.",
   "versiones.despuesEste": "Deixar este para depois",
   "versiones.nDe": "{n} de {total}",
-  "versiones.verFuente": "Ver o que diz o {texto}",
-  "versiones.ocultarFuente": "Ocultar o {texto}",
   "versiones.listo": "Pronto. Versículos escolhidos: {n}.",
   "versiones.ninguno": "Não resta nenhum versículo com duas versões.",
   "versiones.quedan": "Ficam para depois: {n}. O livro lembra quantos faltam.",
@@ -597,7 +594,7 @@
   "libro.nombre": "Nome do livro",
   "libro.nombreEs": "Em {idioma}: {nombre}",
   "libro.nombreSinPoner": "Ainda como no texto-ponte: {libro}",
-  "libro.nombrarPregunta": "Como se diz «{libro}» em {idioma}? Escrever o nome",
+  "libro.nombrarPregunta": "Como se diz «{libro}» em {idioma}?",
   "libro.nombreComo": "Como se diz «{libro}» em {idioma}",
   "libro.nombreDonde": "Assim aparece no app, e assim vai no título do livro ao salvá-lo em USFM ou publicá-lo.",
   "libro.nombreGuardar": "Salvar o nome",
@@ -628,5 +625,9 @@
   "versiones.formaPregunta": "Aqui estes versículos estão {aqui}. {nombre} os mandou {alla}. Qual fica para toda a passagem?",
   "versiones.formaDespues": "A que ficar pode ser corrigida depois no editor, e ali os versículos podem ser unidos ou separados.",
   "versiones.unidos": "unidos ({v})",
-  "versiones.separados": "separados ({v})"
+  "versiones.separados": "separados ({v})",
+  "marco.ahoraNo": "Agora não",
+  "libro.nombrarAccion": "Escrever o nome",
+  "libro.pasoNota": "O livro passa para {paso} para toda a equipe. Pode-se voltar.",
+  "versiones.loQueDice": "O que diz o {texto}"
 }

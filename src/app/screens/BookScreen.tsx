@@ -13,6 +13,7 @@
 
 import { useState } from 'react'
 import type { PrototypeData } from '../../prototype/data'
+import { RowButton, Suggestion } from '../frame/Actions'
 import { MenuRow, Sheet } from '../frame/Sheet'
 import { useT } from '../i18n/i18n'
 import type { MiniApp } from '../miniapps/contract'
@@ -71,6 +72,15 @@ export function BookScreen({
   const name = titleOf(project, book.code)
   const source = bookName(book.code)
   const [naming, setNaming] = useState(false)
+  // «Not now» to naming the book is kept by book: the suggestion does not come back; «More» still offers it.
+  const declinedKey = `servos.prototipo.sugerencia.nombre.${project.id}.${book.code}`
+  const [declined, setDeclined] = useState(() => {
+    try {
+      return localStorage.getItem(declinedKey) === '1'
+    } catch {
+      return false
+    }
+  })
   const at = PHASES.indexOf(book.phase)
   const appsOf = (phase: Phase) => project.miniApps[phase].map((id) => miniApp(id)).filter((a): a is MiniApp => Boolean(a))
   const allApps = PHASES.flatMap((p) => appsOf(p)).filter((a) => !a.comingSoon)
@@ -121,12 +131,6 @@ export function BookScreen({
         </button>
       </header>
       <main className="main">
-        {!book.name && (
-          // Once, until the team names it: its name is the team's, in its language.
-          <button type="button" className="button-quiet book-name-ask" onClick={() => setNaming(true)}>
-            {t('libro.nombrarPregunta', { libro: source, idioma: project.languageName })}
-          </button>
-        )}
         {!chapters.length ? (
           <>
             <p className="notice">{t('libro.faltaPaquete', { libro: name })}</p>
@@ -159,6 +163,23 @@ export function BookScreen({
               {t('libro.elegir')} →
             </button>
           </section>
+        )}
+
+        {!book.name && !declined && chapters.length > 0 && (
+          // Once, under what continues the work, until the team names the book or says not now (principle 12).
+          <Suggestion
+            text={t('libro.nombrarPregunta', { libro: source, idioma: project.languageName })}
+            action={t('libro.nombrarAccion')}
+            onAction={() => setNaming(true)}
+            onDismiss={() => {
+              setDeclined(true)
+              try {
+                localStorage.setItem(declinedKey, '1')
+              } catch {
+                /* for this visit */
+              }
+            }}
+          />
         )}
 
         {/* The steps, always in sight as tabs, each with how far it has gone; the one the book is in, marked. */}
@@ -218,10 +239,10 @@ export function BookScreen({
                 {done !== null && chapters.length > 0 && (
                   <div className="tool-card-foot">
                     <span className="quiet">{next ? t('libro.siguiente', { lugar: placeName(next) }) : t('libro.todoHecho')}</span>
-                    <button type="button" className="button-quiet" aria-expanded={open} onClick={() => setByChapter(open ? null : app.id)}>
-                      {t('libro.porCapitulo')} {open ? '▴' : '▾'}
-                    </button>
                   </div>
+                )}
+                {done !== null && chapters.length > 0 && (
+                  <RowButton kind="fold" label={t('libro.porCapitulo')} expanded={open} onClick={() => setByChapter(open ? null : app.id)} />
                 )}
                 {open && (
                   <ul className="tool-chapters">
@@ -252,14 +273,20 @@ export function BookScreen({
 
         {/* Moving the book on, said plainly, at the foot of the step it is in; or back, or ahead, from another. */}
         {shownAt === at && at < PHASES.length - 1 && (
-          <button type="button" className="button-quiet book-pass" onClick={() => onPhase(PHASES[at + 1])}>
-            {t('libro.terminadoPasar', { paso: t(`pasos.${shown}`), siguiente: t(`pasos.${PHASES[at + 1]}`) })} ›
-          </button>
+          <>
+            <button type="button" className="button-secondary" onClick={() => onPhase(PHASES[at + 1])}>
+              {t('libro.terminadoPasar', { paso: t(`pasos.${shown}`), siguiente: t(`pasos.${PHASES[at + 1]}`) })} →
+            </button>
+            <p className="quiet step-note">{t('libro.pasoNota', { paso: t(`pasos.${PHASES[at + 1]}`) })}</p>
+          </>
         )}
         {shownAt !== at && (
-          <button type="button" className="button-quiet book-pass" onClick={() => onPhase(shown)}>
-            {shownAt < at ? `‹ ${t('libro.volverA', { paso: t(`pasos.${shown}`) })}` : `${t('libro.pasarA', { paso: t(`pasos.${shown}`) })} ›`}
-          </button>
+          <>
+            <button type="button" className="button-secondary" onClick={() => onPhase(shown)}>
+              {shownAt < at ? `← ${t('libro.volverA', { paso: t(`pasos.${shown}`) })}` : `${t('libro.pasarA', { paso: t(`pasos.${shown}`) })} →`}
+            </button>
+            <p className="quiet step-note">{t('libro.pasoNota', { paso: t(`pasos.${shown}`) })}</p>
+          </>
         )}
       </main>
 

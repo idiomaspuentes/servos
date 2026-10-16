@@ -96,7 +96,7 @@ export function GlossaryEntrySheet({
             <button type="button" className="button-primary" disabled={!rendering.trim()} onClick={save}>
               {t('editor.guardarGlosario')}
             </button>
-            <button type="button" className="button-quiet" onClick={() => setEditing(false)}>
+            <button type="button" className="button-secondary" onClick={() => setEditing(false)}>
               {t('glosario.noCambiar')}
             </button>
           </>

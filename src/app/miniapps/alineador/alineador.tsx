@@ -241,7 +241,7 @@ function Center({ context }: MiniAppCenterProps) {
 
         <div className="align-bank-head">
           <span className="quiet">{t('alineador.suTraduccion')}</span>
-          <button type="button" className="button-quiet" onClick={editDraft}>
+          <button type="button" className="chip" onClick={editDraft}>
             ✎ {t('alineador.corregirBorrador')}
           </button>
         </div>
@@ -291,16 +291,16 @@ function Center({ context }: MiniAppCenterProps) {
                   {t('alineador.vaciar')}
                 </button>
               )}
-              <button type="button" className="button-quiet" onClick={() => setPicked([])}>
-                {t('alineador.cancelar')}
+              <button type="button" className="chip" onClick={() => setPicked([])}>
+                ✕ {t('alineador.cancelar')}
               </button>
             </>
           ) : (
             <>
-              <button type="button" className="button-quiet" disabled={!history.past.length} onClick={undo}>
+              <button type="button" className="chip" disabled={!history.past.length} onClick={undo}>
                 ↶ {t('alineador.deshacer')}
               </button>
-              <button type="button" className="button-quiet" disabled={!history.future.length} onClick={redo}>
+              <button type="button" className="chip" disabled={!history.future.length} onClick={redo}>
                 {t('alineador.rehacer')} ↷
               </button>
             </>

@@ -515,7 +515,6 @@
   "recibir.capas": "Alignments and checks that came in, made on the text that stayed: {n}.",
   "recibir.glosarioNuevas": "New words in the glossary: {n}.",
   "recibir.irAl": "Go to {libro}",
-  "recibir.listo": "Done",
   "interfaz.grupo.compartir": "Share",
   "interfaz.grupo.recibir": "Receive",
   "versiones.titulo": "Two versions",
@@ -529,8 +528,6 @@
   "versiones.despues": "The one kept can be corrected later in the editor.",
   "versiones.despuesEste": "Leave this one for later",
   "versiones.nDe": "{n} of {total}",
-  "versiones.verFuente": "See what the {texto} says",
-  "versiones.ocultarFuente": "Hide the {texto}",
   "versiones.listo": "Done. Verses chosen: {n}.",
   "versiones.ninguno": "No verse with two versions is left.",
   "versiones.quedan": "Left for later: {n}. The book keeps saying how many.",
@@ -597,7 +594,7 @@
   "libro.nombre": "Book name",
   "libro.nombreEs": "In {idioma}: {nombre}",
   "libro.nombreSinPoner": "Still as in the bridge text: {libro}",
-  "libro.nombrarPregunta": "How do you say «{libro}» in {idioma}? Write the name",
+  "libro.nombrarPregunta": "How do you say «{libro}» in {idioma}?",
   "libro.nombreComo": "How «{libro}» is said in {idioma}",
   "libro.nombreDonde": "This is how it shows in the app, and how it goes in the book's title when saved as USFM or published.",
   "libro.nombreGuardar": "Save the name",
@@ -628,5 +625,9 @@
   "versiones.formaPregunta": "Here these verses are {aqui}. {nombre} sent them {alla}. Which stays for the whole passage?",
   "versiones.formaDespues": "The one kept can be corrected later in the editor, where verses can be joined or separated.",
   "versiones.unidos": "joined ({v})",
-  "versiones.separados": "apart ({v})"
+  "versiones.separados": "apart ({v})",
+  "marco.ahoraNo": "Not now",
+  "libro.nombrarAccion": "Write the name",
+  "libro.pasoNota": "The book moves to {paso} for the whole team. It can go back.",
+  "versiones.loQueDice": "What the {texto} says"
 }

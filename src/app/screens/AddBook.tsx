@@ -131,7 +131,7 @@ function UsfmFound({ found, isNew, onAgain, onBring }: { found: UsfmBook; isNew:
       <button type="button" className="button-primary" onClick={onBring}>
         {t(isNew ? 'libroNuevo.usfmAgregar' : 'libroNuevo.usfmJuntar', { libro: bookName(found.code) })}
       </button>
-      <button type="button" className="button-quiet" onClick={onAgain}>
+      <button type="button" className="button-secondary" onClick={onAgain}>
         {t('libroNuevo.usfmOtro')}
       </button>
     </div>

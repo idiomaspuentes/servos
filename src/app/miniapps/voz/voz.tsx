@@ -149,7 +149,7 @@ function Center({ context }: MiniAppCenterProps) {
                       <span className="quiet">{t('editorVoz.grabadoPor', { nombre: x.by, duracion: clock(x.ms) })}</span>
                       <button
                         type="button"
-                        className="button-quiet"
+                        className="chip"
                         onClick={() => {
                           chooseTake(book, chapter, place, x.id)
                           redraw((n) => n + 1)
@@ -167,8 +167,8 @@ function Center({ context }: MiniAppCenterProps) {
         {/* Said and written may go together: what is written of the verse, and the way to write it. */}
         <section className="voice-written">
           {written.trim() ? <p className="voice-written-text">{written}</p> : <p className="quiet">{t('editorVoz.sinEscribir')}</p>}
-          <button type="button" className="button-quiet" onClick={() => frame.open('editor', { book, chapter, verse: place })}>
-            {t(written.trim() ? 'editorVoz.corregirEscrito' : 'editorVoz.escribirlo')}
+          <button type="button" className="chip" onClick={() => frame.open('editor', { book, chapter, verse: place })}>
+            ✎ {t(written.trim() ? 'editorVoz.corregirEscrito' : 'editorVoz.escribirlo')}
           </button>
         </section>
       </div>

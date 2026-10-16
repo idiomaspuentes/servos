@@ -107,9 +107,6 @@ export function ReceiveScreen({
               {t('recibir.irAl', { libro: bookName(first) })} →
             </button>
           )}
-          <button type="button" className="button-quiet" onClick={() => onGo(done.projectId, null)}>
-            {t('recibir.listo')}
-          </button>
         </main>
       </div>
     )
@@ -239,7 +236,7 @@ export function ReceiveScreen({
         >
           {t('recibir.recibir')}
         </button>
-        <button type="button" className="button-quiet" onClick={() => setFile(null)}>
+        <button type="button" className="button-secondary" onClick={() => setFile(null)}>
           {t('recibir.otroArchivo')}
         </button>
       </main>

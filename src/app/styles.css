@@ -150,7 +150,8 @@ textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
 .help-original { color: var(--text-soft); font-size: 0.9rem; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
 .help-question { font-weight: 600; }
 .helps-steps { display: flex; justify-content: space-between; align-items: center; gap: 0.25rem; border-block-start: 1px solid var(--line); margin-block-start: 0.75rem; padding-block-start: 0.25rem; }
-.badge { font-size: 0.75rem; background: var(--accent-soft); color: var(--accent); border-radius: 999px; padding: 0.1rem 0.5rem; margin-inline-start: 0.5rem; font-weight: 600; }
+/* A badge says a state: tinted, no border, a word like «Agreed»; never a verb (a chip is the action) */
+.badge { font-size: 0.75rem; background: var(--accent-soft); color: var(--accent); border: 0; border-radius: 6px; padding: 0.1rem 0.45rem; margin-inline-start: 0.5rem; font-weight: 600; }
 .notice { background: var(--warn-bg); color: var(--warn-text); padding: 0.75rem; border-radius: var(--radius); }
 /* What is normal (saved, copied, left for later) is said plainly, without the colour kept for what went wrong */
 .status { margin: 0; padding: 0.6rem 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--text); }
@@ -281,11 +282,14 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .choice.is-on, .option.is-on, .book-chip.is-on { border-color: var(--accent); background: var(--accent-soft); color: var(--text); box-shadow: inset 0 0 0 1px var(--accent); }
 .option { display: flex; flex-direction: column; align-items: flex-start; text-align: start; gap: 0.15rem; width: 100%; }
 .option-title { font-weight: 600; }
-.advanced summary { min-height: var(--touch); display: block; box-sizing: border-box; padding-block: 0.65rem; line-height: 1.35; color: var(--accent); cursor: pointer; list-style: none; }
+/* A fold is a row: its name, what it holds quietly after, and ▾ at the right, turning when open */
+.advanced summary { min-height: var(--touch); display: flex; align-items: center; gap: 0.4rem; box-sizing: border-box; padding: 0.6rem 0.25rem; line-height: 1.35; color: var(--text); font-weight: 600; cursor: pointer; list-style: none; border-block: 1px solid var(--line); }
 .advanced summary .quiet { margin-inline-start: 0.35rem; }
 .advanced summary::-webkit-details-marker { display: none; }
 /* A fold says it opens: an arrow after its name, turned when open */
-.advanced summary::after { content: '▾'; display: inline-block; margin-inline-start: 0.35rem; font-size: 0.85em; transition: transform 0.15s; }
+.advanced summary::after { content: '▾'; margin-inline-start: auto; color: var(--text-soft); font-size: 1rem; transition: transform 0.15s; }
+.advanced summary .quiet { font-weight: 400; }
+.advanced[open] > summary { border-block-end-color: transparent; }
 .advanced[open] > summary::after { transform: rotate(180deg); }
 
 /* Add a book */
@@ -515,7 +519,9 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .study { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.5rem; }
 .study-next { flex: none; margin-inline: 1rem; width: auto; }
 .study-prompts { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-.chip { min-height: var(--touch); padding: 0.25rem 0.75rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-size: 0.9rem; }
+/* A chip acts on the thing it is stuck to: a border, a verb (and its sign) */
+.chip { min-height: var(--touch); padding: 0.25rem 0.85rem; border: 1px solid color-mix(in srgb, var(--text-soft) 55%, transparent); border-radius: 999px; background: var(--surface); color: var(--text); font-size: 0.9rem; width: auto; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
 .chip:active { background: var(--accent-soft); }
 .chip-question { text-align: start; border-style: dashed; }
 .study-answers, .general-notes { font-size: 0.95rem; }
@@ -810,3 +816,22 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .voice-takes li { display: flex; flex-direction: column; gap: 0.2rem; }
 .voice-written { display: flex; flex-direction: column; gap: 0.25rem; border-block-start: 1px solid var(--line); padding-block-start: 0.6rem; }
 .voice-written-text { margin: 0; font-family: var(--project-font, var(--font)); white-space: pre-line; }
+
+/* Principle 12: a row opens more (› a sheet, ▾ here); a suggestion is a neutral card; the arrows of a list are
+   tinted circles; a destructive action is outlined in red */
+.row-button { display: flex; align-items: center; gap: 0.5rem; width: 100%; min-height: var(--touch); padding: 0.55rem 0.25rem; border: 0; border-block-start: 1px solid var(--line); border-radius: 0; background: none; color: var(--text); font-weight: 600; text-align: start; }
+.row-button-label { flex: 1; min-width: 0; }
+.row-button-meta { color: var(--text-soft); font-weight: 400; font-size: 0.9rem; }
+.row-button::after { content: '›'; color: var(--text-soft); font-size: 1.25rem; line-height: 1; }
+.row-button.is-fold::after { content: '▾'; font-size: 1rem; transition: transform 0.15s; }
+.row-button.is-fold[aria-expanded='true']::after { transform: rotate(180deg); }
+.suggestion { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.suggestion p { margin: 0; font-weight: 600; }
+.pager-arrow { width: var(--touch); height: var(--touch); min-height: var(--touch); padding: 0; display: inline-grid; place-items: center; border: 0; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: 1.2rem; }
+.button-danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 55%, transparent); }
+.step-note { margin: 0; text-align: center; font-size: 0.85rem; }
+.publish-where-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.helps-steps { display: flex; align-items: center; justify-content: center; gap: 0.9rem; }
+.word-help-actions { margin-block-start: 0.25rem; }
+.review-more-places { min-height: var(--touch); }
+.tool-card > .row-button { padding-inline: 0.8rem; }

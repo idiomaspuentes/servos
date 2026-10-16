@@ -7,6 +7,7 @@
 import { useState } from 'react'
 import type { PrototypeData } from '../../prototype/data'
 import { useProjectFont } from '../frame/fonts'
+import { RowButton } from '../frame/Actions'
 import { TwoShapes, TwoVersions } from '../frame/TwoVersions'
 import { WordLines } from '../frame/TouchWords'
 import { useT } from '../i18n/i18n'
@@ -77,9 +78,7 @@ export function ChooseScreen({
               {name} {place.chapter}:{stretch ? `${stretch.from}–${stretch.to}` : place.verse}
             </h2>
             {/* What it translates, a layer away: the choice is between the two, and the bridge text helps weigh it. */}
-            <button type="button" className="button-quiet versions-source-toggle" aria-expanded={source} onClick={() => setSource((s) => !s)}>
-              {t(source ? 'versiones.ocultarFuente' : 'versiones.verFuente', { texto: bridge?.abbreviation ?? textAbbreviation })} {source ? '▴' : '▾'}
-            </button>
+            <RowButton kind="fold" label={t('versiones.loQueDice', { texto: bridge?.abbreviation ?? textAbbreviation })} expanded={source} onClick={() => setSource((s) => !s)} />
             {source && bridge && (
               <div className="versions-source" dir={bridge.dir}>
                 {(stretch ? Array.from({ length: stretch.to - stretch.from + 1 }, (_, i) => stretch.from + i) : [place.verse]).map((v) => (
@@ -110,7 +109,7 @@ export function ChooseScreen({
                 }}
               />
             )}
-            <button type="button" className="button-quiet" onClick={() => setAt((n) => n + 1)}>
+            <button type="button" className="button-secondary" onClick={() => setAt((n) => n + 1)}>
               {t('versiones.despuesEste')}
             </button>
           </>
