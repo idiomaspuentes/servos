@@ -638,5 +638,6 @@
   "persona.apariencia": "Appearance",
   "persona.tema.sistema": "Like the phone",
   "persona.tema.claro": "Light",
-  "persona.tema.oscuro": "Dark"
+  "persona.tema.oscuro": "Dark",
+  "libro.estaEn": "The book is in {paso}."
 }

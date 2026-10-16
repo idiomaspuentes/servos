@@ -352,21 +352,22 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .book-steps[data-more-start][data-more-end] { -webkit-mask-image: linear-gradient(to right, transparent, #000 3rem, #000 calc(100% - 3rem), transparent); mask-image: linear-gradient(to right, transparent, #000 3rem, #000 calc(100% - 3rem), transparent); }
 .book-step { flex: none; display: inline-flex; align-items: center; gap: 0.35rem; width: auto; min-height: var(--touch); padding: 0.25rem 0.85rem; border: 0; border-radius: 999px; background: none; color: var(--text-soft); font-size: 0.9rem; font-weight: 600; }
 .book-step.is-current { color: var(--text); }
-.book-step.is-current::before { content: ''; width: 0.45rem; height: 0.45rem; border-radius: 999px; background: var(--accent); }
+.book-step.is-current::before { content: ''; width: 0.55rem; height: 0.55rem; border-radius: 999px; background: var(--accent); }
 .book-step[aria-selected='true'] { background: var(--pill); color: var(--text); font-weight: 700; box-shadow: var(--shadow-raised); }
-.book-step-state { font-size: 0.8rem; font-variant-numeric: tabular-nums; color: var(--accent); }
+/* How far a step has gone, said quietly: blue is for going on (the filled button, the bar) */
+.book-step-state { font-size: 0.8rem; font-variant-numeric: tabular-nums; color: var(--text-soft); }
 .book-step-state.is-done { color: var(--done); font-weight: 700; }
 .tool-cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
 .tool-card { border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-card); }
 .tool-card-main { display: flex; flex-direction: column; align-items: stretch; gap: 0.25rem; padding: 0.75rem 0.8rem; color: var(--text); }
-.tool-card-name { font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; }
+.tool-card-name { font-size: 1.1rem; font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; }
 .tool-card-go { margin-block-start: 0.5rem; }
 /* The step's other mini apps: one row each, quiet, under the card */
 .tool-card > .row-button { padding-inline: 0.8rem; }
 .tool-cards > li:not(.tool-card) > .row-button { padding-inline: 0.8rem; }
 .tool-cards > li:not(.tool-card):last-child > .row-button { border-block-end: 1px solid var(--hair); }
 .tool-soon { display: flex; align-items: center; justify-content: space-between; min-height: var(--touch); padding-inline: 0.8rem; color: var(--text-soft); }
-.tool-progress { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.75rem; margin-block-start: 0.25rem; font-size: 0.85rem; font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; }
+.tool-progress { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.75rem; margin-block-start: 0.25rem; font-size: 0.85rem; font-weight: 600; color: var(--text-soft); font-variant-numeric: tabular-nums; }
 .progress-bar { height: 6px; border-radius: 3px; background: var(--surface-soft); overflow: hidden; }
 .progress-bar > span { display: block; height: 100%; background: var(--accent); }
 /* Done is green: the whole bar, a step with its ✓, a check answered right, a verse aligned */
@@ -925,3 +926,4 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 /* A choice made in place in a menu (light or dark): its name, and the pills under it */
 .menu-choice { display: flex; flex-direction: column; gap: 0.4rem; padding: 0.6rem 0.9rem 0.75rem; border-block-end: 1px solid var(--line); }
 .choice-row.is-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.book-where { margin: -0.25rem 0 0; font-size: 0.85rem; padding-inline: 0.25rem; }

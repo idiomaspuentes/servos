@@ -122,7 +122,8 @@ export function BookScreen({
   const nextPhase = at < PHASES.length - 1 ? PHASES[at + 1] : null
   const moveOnLabel = nextPhase ? `${t('libro.terminadoPasar', { paso: t(`pasos.${book.phase}`), siguiente: t(`pasos.${nextPhase}`) })} →` : ''
 
-  // The steps slide in one row: the one shown is brought into sight.
+  // The steps slide in one row: the one shown is brought into sight, and with it, where it fits, the one the book is
+  // in; the row moves only as much as that needs (centring the shown one hid the book's own step).
   const stepsRef = useRef<HTMLDivElement>(null)
   // Which ends of the row have steps out of sight: those ends fade, so it is seen that the row goes on.
   const [hidden, setHidden] = useState<{ start: boolean; end: boolean }>({ start: false, end: false })
@@ -136,7 +137,21 @@ export function BookScreen({
   useEffect(() => {
     const row = stepsRef.current
     const on = row?.querySelector<HTMLElement>('[aria-selected="true"]')
-    if (row && on) row.scrollLeft = Math.max(0, on.offsetLeft - row.offsetLeft - (row.clientWidth - on.offsetWidth) / 2)
+    if (row && on) {
+      const box = row.getBoundingClientRect()
+      const span = (e: HTMLElement) => {
+        const r = e.getBoundingClientRect()
+        return [r.left - box.left + row.scrollLeft, r.right - box.left + row.scrollLeft]
+      }
+      const pad = 24
+      const [onFrom, onTo] = span(on)
+      const book = row.querySelector<HTMLElement>('.is-current')
+      const [bookFrom, bookTo] = book ? span(book) : [onFrom, onTo]
+      const both = Math.max(onTo, bookTo) - Math.min(onFrom, bookFrom) <= row.clientWidth - 2 * pad
+      const [from, to] = both ? [Math.min(onFrom, bookFrom), Math.max(onTo, bookTo)] : [onFrom, onTo]
+      if (from - pad < row.scrollLeft) row.scrollLeft = Math.max(0, from - pad)
+      else if (to + pad > row.scrollLeft + row.clientWidth) row.scrollLeft = to + pad - row.clientWidth
+    }
     measureSteps()
   }, [shown])
   useEffect(() => {
@@ -261,6 +276,8 @@ export function BookScreen({
           })}
         </div>
 
+        {/* Looking at another step than the book's: where the book is, said once, quietly (its step may be out of sight). */}
+        {shownAt !== at && <p className="quiet book-where">{t('libro.estaEn', { paso: t(`pasos.${book.phase}`) })}</p>}
         {shownApps.length === 0 && <p className="quiet">{t('libro.ningunaApp')}</p>}
         <ul className="tool-cards">
           {lead && leadCard(lead)}
