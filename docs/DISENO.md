@@ -263,7 +263,10 @@ Hecho: el corazón (`decideAll`, `versionsAt`, `gather`), las dos decisiones por
 Bea en 1:1–3»; versículo por versículo, todas las versiones a la vez con lo que cambia resaltado; la mezcla en trozos
 que se leen como su versículo (cortados en sus signos, y un tramo de más de siete palabras otra vez, en cualquier
 idioma), con la propuesta de la app punteada; «Retocar» con solo la mezcla a la vista; y «Deshacer» lo último
-mientras nada más se escribió. Falta el modo de trabajo y Door43 como vía.
+mientras nada más se escribió. Y el modo de trabajo: en «Más» del libro, «Cómo trabaja el equipo» (Por partes ·
+Todos lo mismo), que viaja con el libro; con «Todos lo mismo», al recibir se dice «Llegó la versión de Bea» y la
+tarjeta del libro cuenta secciones para juntar y de quiénes llegaron versiones. En los dos modos, un versículo con
+versiones esperando no cuenta como traducido hasta que se junta. Falta Door43 como vía.
 
 ## 7. Los paquetes
 

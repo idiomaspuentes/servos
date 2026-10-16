@@ -17,11 +17,13 @@ import {
   authorOf,
   chooseVersion,
   joinedVerses,
+  joinStartOf,
   joinWithNext,
   otherVersion,
   readDraft,
   separateJoined,
   textOf,
+  versionsAt,
   writeDraft,
   type OtherVersion,
   chooseStructure,
@@ -291,7 +293,8 @@ export const editor: MiniApp = {
   unit: 'section',
   sections: true,
   // A verse joined to the one before is translated with it.
-  done: (at) => Boolean(textOf(at.book, at.chapter, at.verse).trim()),
+  // Written, and not waiting to be brought together with other versions of it: until then the verse is not settled.
+  done: (at) => Boolean(textOf(at.book, at.chapter, at.verse).trim()) && !versionsAt(at.book, at.chapter, joinStartOf(at.book, at.chapter, at.verse)).length,
   helps: false,
   fills: true,
   writes: true,

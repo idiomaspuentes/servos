@@ -17,6 +17,11 @@ export interface BookEntry {
   phase: Phase
   /** Its name as the team says it in its language («Jonás» in the bridge text, «Jonasmanta» in theirs). */
   name?: string
+  /**
+   * How the team works on it (design 6.10): everyone translates the same and then they bring the versions together,
+   * rather than each one a part. What arrives written another way is then a version to gather, not a clash.
+   */
+  together?: boolean
 }
 
 export interface Project {

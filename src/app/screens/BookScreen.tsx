@@ -20,7 +20,8 @@ import type { MiniApp } from '../miniapps/contract'
 import { miniApp } from '../miniapps/registry'
 import { PHASES, bookName, titleOf, type BookEntry, type Phase, type Project } from '../projects/model'
 import { doneIn as doneInBook, percent as pct, placeLabel, stepPercent, versesOf } from '../projects/progress'
-import { versesToChoose } from '../projects/versions'
+import { namesTogether } from '../projects/mix'
+import { sectionsToGather, versesToChoose, versionsFrom } from '../projects/versions'
 import { workOf } from '../projects/work'
 import { saveFile } from '../frame/saveFile'
 import { bookUsfm } from '../projects/usfmExport'
@@ -40,6 +41,7 @@ export function BookScreen({
   onGlossary,
   onReceiveWork,
   onChooseVersions,
+  onTogether,
   person,
   lastApp,
   placeFor,
@@ -59,8 +61,10 @@ export function BookScreen({
   onGlossary(): void
   /** Receives work shared from another computer into this book's project. */
   onReceiveWork(): void
-  /** Goes through the verses that came written another way, to keep one version of each. */
+  /** Goes through the verses that came written another way, to keep one version of each or a mix. */
   onChooseVersions(): void
+  /** How the team works on the book: everyone the same (to bring together) or each a part. */
+  onTogether(together: boolean): void
   person: string
   /** The mini app the person last opened from this book. */
   lastApp?: string | null
@@ -112,6 +116,8 @@ export function BookScreen({
   const stepPct = (phase: Phase) => stepPercent(project, book.code, phase, chapters)
 
   const toChoose = versesToChoose(book.code, chapters.map((c) => ({ chapter: c.chapter, verses: versesOf(c) }))).length
+  // Everyone translated the same: what waits is said by section, with whose versions came.
+  const toGather = book.together && toChoose ? sectionsToGather(book.code, chapters.map((c) => ({ chapter: c.chapter, verses: versesOf(c), sections: c.sections }))) : []
   const shownAt = PHASES.indexOf(shown)
   const shownApps = appsOf(shown)
   // The one card of the step shown: the mini app last worked in, or else the step's first that can be opened.
@@ -240,8 +246,10 @@ export function BookScreen({
         {toChoose > 0 && (
           // Work received that came written another way: said where the book opens, with the way to choose.
           <section className="book-choose">
-            <strong>{t('libro.porJuntar', { n: toChoose })}</strong>
-            <span className="quiet">{t('libro.porJuntarAyuda')}</span>
+            <strong>{book.together ? t('libro.porJuntarTodos', { n: toGather.length }) : t('libro.porJuntar', { n: toChoose })}</strong>
+            <span className="quiet">
+              {book.together ? t('libro.porJuntarTodosAyuda', { nombres: namesTogether(versionsFrom(book.code, toGather), t('juntar.y')) }) : t('libro.porJuntarAyuda')}
+            </span>
             <button type="button" className="button-secondary" onClick={onChooseVersions}>
               {t('libro.juntar')} →
             </button>
@@ -385,6 +393,28 @@ export function BookScreen({
               onReceiveWork()
             }}
           />
+          {/* How the team works on the book, chosen in place (principle 12, pills on a track); the line under it says
+              what the one chosen means. */}
+          <div className="menu-choice">
+            <span className="menu-row-label" id="como-trabaja">
+              {t('libro.comoTrabaja')}
+            </span>
+            <div className="choice-row" role="radiogroup" aria-labelledby="como-trabaja">
+              {[false, true].map((on) => (
+                <button
+                  key={String(on)}
+                  type="button"
+                  role="radio"
+                  aria-checked={Boolean(book.together) === on}
+                  className={Boolean(book.together) === on ? 'choice is-on' : 'choice'}
+                  onClick={() => onTogether(on)}
+                >
+                  {t(on ? 'libro.modoJuntos' : 'libro.modoRepartido')}
+                </button>
+              ))}
+            </div>
+            <span className="quiet">{t(book.together ? 'libro.modoJuntosAyuda' : 'libro.modoRepartidoAyuda')}</span>
+          </div>
           {nextPhase && !moveOnInSight && (
             <MenuRow
               label={moveOnLabel}

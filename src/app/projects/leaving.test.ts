@@ -6,7 +6,6 @@ import { beforeEach, expect, it, vi } from 'vitest'
  * goes may not end, so the book is also copied at once into localStorage, and that copy wins the next time.
  */
 const store = new Map<string, string>()
-const listeners: Record<string, () => void> = {}
 beforeEach(() => {
   store.clear()
   globalThis.localStorage = {
@@ -19,31 +18,37 @@ beforeEach(() => {
       return store.size
     },
   } as Storage
-  globalThis.window = { setTimeout, addEventListener: (type: string, f: () => void) => (listeners[type] = f) } as unknown as Window & typeof globalThis
   globalThis.document = { addEventListener() {}, visibilityState: 'visible' } as unknown as Document
 })
 
-/** A page of the app, opened fresh: its own copy of the modules, over the same database and localStorage. */
+/**
+ * A page of the app, opened fresh: its own copy of the modules, over the same database and localStorage, and its own
+ * way of going (`leave`), so a page still opening cannot take another's.
+ */
 async function openPage() {
+  const own: Record<string, () => void> = {}
+  globalThis.window = { setTimeout, addEventListener: (type: string, f: () => void) => (own[type] = f) } as unknown as Window & typeof globalThis
   vi.resetModules()
   const scope = await import('./scope')
   const door = await import('./bookText')
   scope.setProject('kichwa')
   await door.openBooks()
-  return door
+  return { ...door, leave: () => own.pagehide() }
 }
+// Each page reads the prototype's data again: slow when every test file runs at once.
+const SLOW = 30000
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 it('al irse la página, lo escrito queda también en localStorage, y la base de datos lo recibe', async () => {
   const door = await openPage()
   door.writeDraft('jon', 1, 1, 'Taytaku rimarqa', 'Ana')
-  listeners.pagehide()
+  door.leave()
   expect(store.get('servos.saliendo.jon~kichwa')).toContain('Taytaku rimarqa')
   // The page lived on (a phone that only went to another app): once the database has it, the copy goes.
   await pause(50)
   expect(store.has('servos.saliendo.jon~kichwa')).toBe(false)
   expect((await openPage()).readDraft('jon', 1, 1)).toBe('Taytaku rimarqa')
-})
+}, SLOW)
 
 it('si la base de datos no alcanzó a recibirlo, la copia gana la próxima vez y pasa a la base de datos', async () => {
   const first = await openPage()
@@ -52,7 +57,7 @@ it('si la base de datos no alcanzó a recibirlo, la copia gana la próxima vez y
   await pause(400)
   // A letter more, and the page dies with only its copy made (as if the database write had not ended).
   first.writeDraft('jon', 1, 1, 'Taytaku rimarqa Jonasman', 'Ana')
-  listeners.pagehide()
+  first.leave()
   const copy = store.get('servos.saliendo.jon~kichwa')!
   const db = await new Promise<IDBDatabase>((resolve) => {
     const req = indexedDB.open('servos-libros', 1)
@@ -74,4 +79,4 @@ it('si la base de datos no alcanzó a recibirlo, la copia gana la próxima vez y
   await pause(400)
   expect(store.has('servos.saliendo.jon~kichwa')).toBe(false)
   expect((await openPage()).readDraft('jon', 1, 1)).toBe('Taytaku rimarqa Jonasman')
-})
+}, SLOW)

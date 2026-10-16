@@ -85,6 +85,9 @@ export function ReceiveScreen({
     </header>
   )
 
+  // A book everyone translates: what comes is someone's version, to bring together (design 6.10).
+  const togetherOf = (code: string) => target?.books.find((b) => b.code === code)?.together ?? file?.books.find((b) => b.code === code)?.together ?? false
+
   if (done && file) {
     const first = done.books[0]?.code ?? null
     const toChoose = done.books.find((b) => b.choices > 0)?.code
@@ -98,6 +101,7 @@ export function ReceiveScreen({
             {done.books.map((b) => (
               <li key={b.code}>
                 <strong>{bookName(b.code)}</strong>
+                {togetherOf(b.code) && <span>{t('recibir.llegoVersion', { nombre: file.from })}</span>}
                 <span className="quiet">{t('recibir.entraron', { n: b.taken, iguales: b.same })}</span>
                 {b.choices > 0 && <span className="quiet">{t('recibir.paraElegirDespues', { n: b.choices })}</span>}
                 {b.alignmentsTaken + b.checksTaken > 0 && <span className="quiet">{t('recibir.capas', { n: b.alignmentsTaken + b.checksTaken })}</span>}
@@ -225,7 +229,9 @@ export function ReceiveScreen({
                 <span className="quiet">
                   {p.isNew
                     ? t('recibir.libroNuevo', { n: p.taken })
-                    : t('recibir.cambia', { nuevos: p.taken, iguales: p.same, elegir: p.choices })}
+                    : togetherOf(p.code)
+                      ? t('recibir.cambiaTodos', { nombre: file.from, elegir: p.choices, nuevos: p.taken })
+                      : t('recibir.cambia', { nuevos: p.taken, iguales: p.same, elegir: p.choices })}
                   {p.alignments + p.checks + p.studyNotes > 0 && ` · ${t('recibir.traeMas', { n: p.alignments + p.checks + p.studyNotes })}`}
                   {p.recordings > 0 && ` · ${t('recibir.grabaciones', { n: p.recordings })}`}
                   {p.waiting > 0 && ` · ${t('recibir.esperando', { n: p.waiting })}`}

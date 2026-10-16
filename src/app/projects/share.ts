@@ -58,7 +58,9 @@ export interface SharedBook {
   phase: Phase
   /** Its name in the team's language, if the team gave it one. */
   name?: string
-  /** The book: its USFM and its journal (the conflicts waiting on the phone that shares it stay there). */
+  /** Everyone translates it and the versions are brought together (`BookEntry.together`). */
+  together?: boolean
+  /** The book: its USFM, its journal and the choices still open on the phone that shares it. */
   state?: BookState
   /** Instead of the book, loose verses: a file of the first kind, or a USFM file read in. */
   verses?: SharedVerse[]
@@ -177,7 +179,9 @@ export function shareProject(project: Project, codes: string[], from: string, no
     from,
     at: now.toISOString(),
     project: rest,
-    books: books.filter((b) => codes.includes(b.code)).map((b) => ({ ...shareBook(b.code, b.phase), ...(b.name ? { name: b.name } : {}) })),
+    books: books
+      .filter((b) => codes.includes(b.code))
+      .map((b) => ({ ...shareBook(b.code, b.phase), ...(b.name ? { name: b.name } : {}), ...(b.together ? { together: true } : {}) })),
     glossary: readGlossary(project.id),
   }))
 }
@@ -393,10 +397,14 @@ export function receiveShared(
   const received = inProject(target.id, () => books.map((b) => receiveBook(b, !target.books.some((x) => x.code === b.code), { from: file.from, at: file.at, person })))
   const added = books
     .filter((b) => !target.books.some((x) => x.code === b.code))
-    .map((b) => ({ code: b.code, phase: b.phase, ...(b.name ? { name: b.name } : {}) }))
-  // A name the book did not have here comes in; one it had stays.
-  const named = target.books.map((x) => (x.name ? x : { ...x, name: books.find((b) => b.code === x.code)?.name }))
-  const updated: Project = { ...target, books: [...named.map((x) => (x.name ? x : { code: x.code, phase: x.phase })), ...added] }
+    .map((b) => ({ code: b.code, phase: b.phase, ...(b.name ? { name: b.name } : {}), ...(b.together ? { together: true } : {}) }))
+  // A name the book did not have here comes in; one it had stays. How the team works on it here stays as it is here.
+  const named = target.books.map((x) => {
+    if (x.name) return x
+    const name = books.find((b) => b.code === x.code)?.name
+    return name ? { ...x, name } : x
+  })
+  const updated: Project = { ...target, books: [...named, ...added] }
   const { gathered, changed } = gatherGlossary(readGlossary(updated.id), file.glossary ?? [])
   for (const entry of changed) saveGlossaryEntry(updated.id, entry)
   const next = destination.kind === 'join' ? projects.map((p) => (p.id === updated.id ? updated : p)) : [...projects, updated]

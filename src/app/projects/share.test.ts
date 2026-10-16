@@ -329,3 +329,40 @@ describe('dos versiones sin elegir viajan con el libro', () => {
     expect([readDraft('jon', 1, 2), otherVersion('jon', 1, 2)]).toEqual(['Ninive llaktaman riy', null])
   })
 })
+
+describe('cómo trabaja el equipo viaja con el libro', () => {
+  it('un libro que todos traducen llega así a un proyecto nuevo; uno sin nombre lo conserva al recibir', async () => {
+    const together = { ...project, books: [{ code: 'jon', phase: 'traduccion' as const, together: true }] }
+    writeDraft('jon', 1, 1, 'Taytaku rimarqa', 'Bea')
+    const file = readShared(JSON.stringify(shareProject(together, ['jon'], 'Bea')))!
+    expect(file.books[0].together).toBe(true)
+    store.clear()
+    const { projects } = receiveShared(file, ['jon'], { kind: 'new' }, [], 'Ana')
+    expect(projects[0].books[0].together).toBe(true)
+    // Received again into a project where the book has no name: how the team works on it here is not lost.
+    const again = receiveShared(file, ['jon'], { kind: 'join', projectId: projects[0].id }, projects, 'Ana')
+    expect(again.projects[0].books[0]).toEqual({ code: 'jon', phase: 'traduccion', together: true })
+  })
+})
+
+describe('el avance de la traducción', () => {
+  it('un versículo con versiones esperando a juntarse no cuenta como hecho hasta que se junta', async () => {
+    const { miniApp } = await import('../miniapps/registry')
+    const editor = miniApp('editor')!
+    writeDraft('jon', 1, 2, 'Ninive llaktaman rimay', 'Ana')
+    const fromBea = (() => {
+      const mine = new Map(store)
+      store.clear()
+      writeDraft('jon', 1, 2, 'Ninive llaktaman riy', 'Bea')
+      const file = readShared(JSON.stringify(shareProject(project, ['jon'], 'Bea')))!
+      store = mine
+      return file
+    })()
+    const at = { book: 'jon', chapter: 1, verse: 2 }
+    expect(editor.done!(at)).toBe(true)
+    receiveShared(fromBea, ['jon'], { kind: 'join', projectId: 'kichwa' }, [project], 'Ana')
+    expect(editor.done!(at)).toBe(false)
+    chooseVersion('jon', 1, 2, true, 'Ana')
+    expect(editor.done!(at)).toBe(true)
+  })
+})

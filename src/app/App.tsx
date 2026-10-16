@@ -291,6 +291,22 @@ export function App() {
             setScreen({ kind: 'app', projectId: bookScreen.projectId, book: bookScreen.book, id: app.id })
           }}
           onPhase={(phase) => setPhase(bookScreen.projectId, bookScreen.book, phase)}
+          onTogether={(on) =>
+            setProjects(
+              projects.map((p) =>
+                p.id !== bookScreen.projectId
+                  ? p
+                  : {
+                      ...p,
+                      books: p.books.map((b) => {
+                        if (b.code !== bookScreen.book) return b
+                        const { together: _was, ...rest } = b
+                        return on ? { ...rest, together: true } : rest
+                      }),
+                    }
+              )
+            )
+          }
           onName={(name) =>
             setProjects(
               projects.map((p) =>

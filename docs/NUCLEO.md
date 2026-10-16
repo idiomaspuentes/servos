@@ -117,6 +117,11 @@ Desde el 16 de octubre de 2026 la app guarda cada libro así (cableado, pasos 1 
     sola acción (`gatherAll`); o versículo por versículo, con todas sus versiones; o una mezcla tocando trozos
     (`mix.ts`). Lo último se puede deshacer (`undoGather`) mientras nada más se escribió en el libro. Al recibir se
     cuentan versículos para juntar, no choques.
+14. **Cómo trabaja el equipo, por libro** (`BookEntry.together`, diseño 6.10): «Por partes» o «Todos lo mismo», en
+    «Más» del libro; viaja en el paquete con el libro (`SharedBook.together`). Con «Todos lo mismo», lo que llega es
+    «la versión de Bea», y el libro cuenta secciones para juntar. Un versículo con versiones esperando no cuenta como
+    traducido en ningún modo. Al recibir, un libro sin nombre ya no pierde lo que el proyecto sabe de él (antes se
+    reescribía solo con su código y su paso).
 
 ## Lo que falta
 

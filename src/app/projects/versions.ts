@@ -95,6 +95,14 @@ export function sectionsToGather(book: string, chapters: Array<{ chapter: number
   )
 }
 
+/** Who sent the versions waiting to be gathered in a book, in the order they come (not who wrote what is here). */
+export function versionsFrom(book: string, steps: GatherStep[]): string[] {
+  const names = steps.flatMap((s) =>
+    s.kind === 'seccion' ? waitingIn(book, s.chapter, s.verses).flatMap((v) => versionsAt(book, s.chapter, v).filter((x) => !x.here).flatMap((x) => x.by)) : []
+  )
+  return [...new Set(names)]
+}
+
 /** A section as someone wrote it: each verse with the version they wrote, or, where they wrote none apart, the one here. */
 export interface Reading {
   /** Who wrote it this way (two who wrote the whole section alike are one reading); empty for a mix no one wrote. */
