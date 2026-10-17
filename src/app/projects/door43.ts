@@ -17,6 +17,7 @@ import {
   createOrUpdateContents,
   createOrgRepo,
   createRelease,
+  deleteContents,
   decodeBase64,
   getContents,
   getRepo,
@@ -283,6 +284,40 @@ export const repoUrl = (to: Destination) => `${to.host}/${to.owner}/${to.repo}`
 export const workRepoOf = (to: Destination): Destination => ({ ...to, repo: `${to.repo}-servos` })
 
 const WORK = 'trabajo'
+// Left gzipped: a book aligned whole is some 20 MB as JSON and a few as gzip, and Door43 stops giving a file's content
+// through the contents API past 10 MB. One left before, not gzipped, is still read.
+const PACKAGE = '.servos.json.gz'
+const OLD_PACKAGE = '.servos.json'
+
+async function gzipped(text: string): Promise<Uint8Array> {
+  const stream = new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'))
+  return new Uint8Array(await new Response(stream).arrayBuffer())
+}
+async function gunzipped(bytes: Uint8Array): Promise<string> {
+  const stream = new Blob([new Uint8Array(bytes)]).stream().pipeThrough(new DecompressionStream('gzip'))
+  return new Response(stream).text()
+}
+function toBase64(bytes: Uint8Array): string {
+  if (typeof Buffer !== 'undefined') return Buffer.from(bytes).toString('base64')
+  let s = ''
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+  return btoa(s)
+}
+function fromBase64(b64: string): Uint8Array {
+  if (typeof Buffer !== 'undefined') return new Uint8Array(Buffer.from(b64, 'base64'))
+  const s = atob(b64)
+  const out = new Uint8Array(s.length)
+  for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i)
+  return out
+}
+
+/** A file's bytes through the raw API: no size limit there (the contents API leaves a big file's content out). */
+async function rawBytes(account: Door43Account, to: Destination, path: string): Promise<Uint8Array> {
+  const url = `${to.host}/api/v1/repos/${encodeURIComponent(to.owner)}/${encodeURIComponent(to.repo)}/raw/${path.split('/').map(encodeURIComponent).join('/')}`
+  const res = await fetch(url, { headers: { Authorization: `token ${account.token}` } })
+  if (!res.ok) throw new DcsApiError(`Could not read ${path}`, res.status)
+  return new Uint8Array(await res.arrayBuffer())
+}
 const slug = (s: string) =>
   s
     .normalize('NFD')
@@ -292,11 +327,25 @@ const slug = (s: string) =>
     .replace(/^-|-$/g, '') || 'persona'
 
 /** A person's file there: theirs from this phone, replaced each time they leave their work. */
-export const workPathOf = (person: string, device: string) => `${WORK}/${slug(person)}-${device}.servos.json`
+export const workPathOf = (person: string, device: string) => `${WORK}/${slug(person)}-${device}${PACKAGE}`
 
-/** Leaves a person's work (a package's text) for the others, making the private repository the first time. */
+/**
+ * Leaves a person's work (a package's text, gzipped) for the others, making the private repository the first time.
+ * One this phone left before, not gzipped, is taken away: the others would bring the same work twice.
+ */
 export async function leaveWork(account: Door43Account, to: Destination, text: string, person: string, device: string): Promise<FileResult> {
-  const [result] = await publish(account, workRepoOf(to), [{ path: workPathOf(person, device), content: text }], `Trabajo de ${person}`, { private: true })
+  const at = workRepoOf(to)
+  const path = workPathOf(person, device)
+  const [result] = await publish(account, at, [{ path, base64: toBase64(await gzipped(text)) }], `Trabajo de ${person}`, { private: true })
+  if (result.state !== 'failed') {
+    const old = path.slice(0, -PACKAGE.length) + OLD_PACKAGE
+    try {
+      const there = await getContents(configOf(at.host), at.owner, at.repo, old, { token: account.token })
+      if (!Array.isArray(there)) await deleteContents(configOf(at.host), at.owner, at.repo, old, { sha: there.sha, message: `Trabajo de ${person}`, token: account.token })
+    } catch {
+      /* none there, or it stays: bringing it in twice brings nothing new */
+    }
+  }
   return result
 }
 
@@ -311,11 +360,15 @@ export async function workLeft(account: Door43Account, to: Destination, device: 
     if (e instanceof DcsApiError && e.status === 404) return []
     throw e
   }
-  const theirs = (Array.isArray(listed) ? listed : []).filter((x) => x.type === 'file' && x.name.endsWith('.servos.json') && !x.name.endsWith(`-${device}.servos.json`))
+  const isPackage = (name: string) => name.endsWith(PACKAGE) || name.endsWith(OLD_PACKAGE)
+  const mine = (name: string) => name.endsWith(`-${device}${PACKAGE}`) || name.endsWith(`-${device}${OLD_PACKAGE}`)
+  const theirs = (Array.isArray(listed) ? listed : []).filter((x) => x.type === 'file' && isPackage(x.name) && !mine(x.name))
   const out: Array<{ path: string; text: string }> = []
   for (const x of theirs) {
     const got = await getContents(config, at.owner, at.repo, x.path, { token: account.token })
-    if (!Array.isArray(got) && got.content) out.push({ path: x.path, text: decodeBase64(got.content.replace(/\s/g, '')) })
+    if (Array.isArray(got)) continue
+    const bytes = got.content ? fromBase64(got.content.replace(/\s/g, '')) : await rawBytes(account, at, x.path)
+    out.push({ path: x.path, text: x.name.endsWith(PACKAGE) ? await gunzipped(bytes) : new TextDecoder().decode(bytes) })
   }
   return out
 }

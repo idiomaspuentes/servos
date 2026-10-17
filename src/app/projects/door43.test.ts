@@ -105,10 +105,13 @@ describe('el trabajo del equipo por Door43', () => {
   const account = { host: 'https://qa.door43.org', username: 'ana', token: 't' }
   const to = { host: 'https://qa.door43.org', owner: 'BSOJ', repo: 'qu_reg' }
 
-  // A Door43 in memory that also lists a folder, and keeps whether a repository was made private.
+  /**
+   * A Door43 in memory that keeps files as bytes, lists a folder, reads raw, deletes, keeps whether a repository was
+   * made private, and leaves a big file's content out of the contents API (as Door43 does past 10 MB).
+   */
   function door43() {
     const repos = new Map<string, { private: boolean }>()
-    const files = new Map<string, { content: string; sha: string }>()
+    const files = new Map<string, { b64: string; sha: string; big?: boolean }>()
     let n = 0
     vi.stubGlobal('fetch', async (url: string, init: RequestInit = {}) => {
       const path = decodeURIComponent(new URL(url).pathname.replace('/api/v1', ''))
@@ -122,19 +125,28 @@ describe('el trabajo del equipo por Door43', () => {
         repos.set(`${m[1]}/${body.name}`, { private: Boolean(body.private) })
         return ok({}, 201)
       }
+      m = /^\/repos\/([^/]+)\/([^/]+)\/raw\/(.+)$/.exec(path)
+      if (m) {
+        const f = files.get(`${m[1]}/${m[2]}/${m[3]}`)
+        return f ? new Response(Buffer.from(f.b64, 'base64')) : ok({ message: 'not found' }, 404)
+      }
       m = /^\/repos\/([^/]+)\/([^/]+)\/contents\/(.+)$/.exec(path)
       if (m) {
         if (!repos.has(`${m[1]}/${m[2]}`)) return ok({ message: 'not found' }, 404)
         const key = `${m[1]}/${m[2]}/${m[3]}`
         const f = files.get(key)
         if (method === 'GET') {
-          if (f) return ok({ name: m[3].split('/').pop(), path: m[3], sha: f.sha, size: 1, type: 'file', content: Buffer.from(f.content).toString('base64') })
+          if (f) return ok({ name: m[3].split('/').pop(), path: m[3], sha: f.sha, size: 1, type: 'file', ...(f.big ? {} : { content: f.b64 }) })
           const inside = [...files.keys()].filter((k) => k.startsWith(`${key}/`)).map((k) => k.slice(`${m![1]}/${m![2]}/`.length))
           return inside.length ? ok(inside.map((p) => ({ name: p.split('/').pop(), path: p, sha: 'x', size: 1, type: 'file' }))) : ok({ message: 'not found' }, 404)
         }
         const body = JSON.parse(String(init.body))
         if (f && body.sha !== f.sha) return ok({ message: 'sha' }, 409)
-        files.set(key, { content: Buffer.from(body.content, 'base64').toString('utf-8'), sha: `s${++n}` })
+        if (method === 'DELETE') {
+          files.delete(key)
+          return ok({ commit: { sha: 'c' } })
+        }
+        files.set(key, { b64: body.content, sha: `s${++n}` })
         return ok({ content: {}, commit: { sha: 'c', message: '' } }, 201)
       }
       return ok({}, 404)
@@ -142,16 +154,18 @@ describe('el trabajo del equipo por Door43', () => {
     return { repos, files }
   }
 
-  it('cada uno deja su archivo en un repositorio privado junto al del proyecto, uno por persona y teléfono', async () => {
+  it('cada uno deja su archivo comprimido en un repositorio privado junto al del proyecto, uno por persona y teléfono', async () => {
     const { repos, files } = door43()
     expect(workRepoOf(to).repo).toBe('qu_reg-servos')
-    expect(workPathOf('María José', 'a1b2')).toBe('trabajo/maria-jose-a1b2.servos.json')
+    expect(workPathOf('María José', 'a1b2')).toBe('trabajo/maria-jose-a1b2.servos.json.gz')
     expect((await leaveWork(account, to, '{"de":"Bea"}', 'Bea', 'dev-b')).state).toBe('written')
     expect(repos.get('BSOJ/qu_reg-servos')).toEqual({ private: true })
+    // Gzipped: what is kept is not the text.
+    expect(Buffer.from(files.get('BSOJ/qu_reg-servos/trabajo/bea-dev-b.servos.json.gz')!.b64, 'base64').subarray(0, 2)).toEqual(Buffer.from([0x1f, 0x8b]))
     // Left again with the same text, nothing is written; with other text, the file is replaced.
     expect((await leaveWork(account, to, '{"de":"Bea"}', 'Bea', 'dev-b')).state).toBe('same')
     expect((await leaveWork(account, to, '{"de":"Bea","mas":1}', 'Bea', 'dev-b')).state).toBe('written')
-    expect([...files.keys()]).toEqual(['BSOJ/qu_reg-servos/trabajo/bea-dev-b.servos.json'])
+    expect([...files.keys()]).toEqual(['BSOJ/qu_reg-servos/trabajo/bea-dev-b.servos.json.gz'])
   })
 
   it('al traer, llega lo de los demás y no lo que este teléfono dejó; si nadie dejó nada, nada', async () => {
@@ -161,5 +175,22 @@ describe('el trabajo del equipo por Door43', () => {
     await leaveWork(account, to, '{"de":"Bea"}', 'Bea', 'dev-b')
     await leaveWork(account, to, '{"de":"Carla"}', 'Carla', 'dev-c')
     expect((await workLeft(account, to, 'dev-a')).map((x) => x.text)).toEqual(['{"de":"Bea"}', '{"de":"Carla"}'])
+  })
+
+  it('un archivo grande, que Door43 no da por la vía de contenidos, se trae por la vía raw', async () => {
+    const { files } = door43()
+    await leaveWork(account, to, '{"de":"Bea","libro":"Salmos"}', 'Bea', 'dev-b')
+    files.get('BSOJ/qu_reg-servos/trabajo/bea-dev-b.servos.json.gz')!.big = true
+    expect((await workLeft(account, to, 'dev-a')).map((x) => x.text)).toEqual(['{"de":"Bea","libro":"Salmos"}'])
+  })
+
+  it('el trabajo dejado antes sin comprimir se sigue trayendo, y quien lo dejó lo cambia por el comprimido al dejar otra vez', async () => {
+    const { files } = door43()
+    await leaveWork(account, to, '{}', 'Ana', 'dev-a')
+    files.set('BSOJ/qu_reg-servos/trabajo/bea-dev-b.servos.json', { b64: Buffer.from('{"de":"Bea, antes"}').toString('base64'), sha: 'old' })
+    expect((await workLeft(account, to, 'dev-a')).map((x) => x.text)).toEqual(['{"de":"Bea, antes"}'])
+    await leaveWork(account, to, '{"de":"Bea"}', 'Bea', 'dev-b')
+    expect([...files.keys()].filter((k) => k.includes('bea'))).toEqual(['BSOJ/qu_reg-servos/trabajo/bea-dev-b.servos.json.gz'])
+    expect((await workLeft(account, to, 'dev-a')).map((x) => x.text)).toEqual(['{"de":"Bea"}'])
   })
 })

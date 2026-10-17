@@ -132,8 +132,10 @@ Desde el 16 de octubre de 2026 la app guarda cada libro así (cableado, pasos 1 
     conexión) y en QA el 17 de octubre (`testingOrg/qu_reg-servos`, privado: Bea deja, Ana trae, recibe y llega a
     «Juntar»). QA mostró que la llave que Servos creaba no podía hacer un repositorio en una organización (pide
     `write:organization`): rompía también la primera publicación; ahora se pide, y una llave de antes se reconoce y
-    se ofrece vincular otra vez. Pendiente: el sonido de las grabaciones, y archivos grandes (Door43 puede no
-    devolver el contenido de un archivo muy grande por la API de contenidos).
+    se ofrece vincular otra vez. El paquete se deja comprimido (`.servos.json.gz`): un libro del tamaño de Salmos,
+    alineado entero, pesa unos 20 MB en JSON y unos pocos comprimido; y uno grande, que Door43 no da por la API de
+    contenidos (pasados 10 MB), se trae por la vía raw. Lo dejado antes sin comprimir se sigue trayendo, y quien lo
+    dejó lo reemplaza al dejar otra vez. Pendiente: el sonido de las grabaciones.
 
 ## Lo que falta
 
