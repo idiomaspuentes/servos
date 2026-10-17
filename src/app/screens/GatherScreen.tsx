@@ -13,7 +13,7 @@ import { useProjectFont } from '../frame/fonts'
 import { WordLines } from '../frame/TouchWords'
 import { TwoShapes } from '../frame/TwoVersions'
 import { useT } from '../i18n/i18n'
-import { joinPieces, matchingPiece, namesTogether, piecesOf, type Piece } from '../projects/mix'
+import { joinPieces, matchingPiece, namesTogether, piecesOf, splitPiece, wordsIn, type Piece } from '../projects/mix'
 import type { Project } from '../projects/model'
 import { compareVersions, readingsOf, sectionsToGather, waitingIn, type GatherStep, type Reading } from '../projects/versions'
 import { canUndoGather, chooseStructure, gather, gatherAll, joinedVerses, structureConflictsOf, undoGather, versionsAt, type Version } from '../projects/work'
@@ -21,7 +21,17 @@ import { canUndoGather, chooseStructure, gather, gatherAll, joinedVerses, struct
 type View =
   | { mode: 'seccion' }
   | { mode: 'versiculo'; at: number }
-  | { mode: 'mezcla'; verse: number; pieces: Piece[]; chosen: number | null; history: Piece[][]; tab: number; typing: string | null }
+  | {
+      mode: 'mezcla'
+      verse: number
+      pieces: Piece[]
+      chosen: number | null
+      history: Piece[][]
+      tab: number
+      typing: string | null
+      /** The piece chosen shows its words, to cut it at one. */
+      cutting?: boolean
+    }
 
 /** What was just kept, said once, with the way back to it while it can still be taken back. */
 type Notice = { text: string; at: number; view: View }
@@ -285,6 +295,9 @@ export function GatherScreen({
     const shownPieces = piecesOf(shown.text)
     const used = new Set(view.pieces.map((p) => p.text))
     const match = view.chosen === null ? -1 : matchingPiece(view.pieces[view.chosen].text, shownPieces)
+    const chosenWords = view.chosen === null ? [] : wordsIn(view.pieces[view.chosen])
+    const cut = (at: number) =>
+      set({ pieces: splitPiece(view.pieces, view.chosen!, at), chosen: null, history: [...view.history, view.pieces], cutting: false })
     const take = (piece: Piece) => {
       if (view.chosen === null) change([...view.pieces, { text: piece.text }])
       else change(view.pieces.map((p, i) => (i === view.chosen ? { text: piece.text, ...(p.lineEnd ? { lineEnd: true } : {}) } : p)))
@@ -297,9 +310,31 @@ export function GatherScreen({
           <div className="mix-box mix-flow" aria-label={t('juntar.suMezcla')}>
             {view.pieces.map((p, i) => (
               <span key={i}>
-                <PieceButton className={i === view.chosen ? 'mix-piece is-mine is-chosen' : 'mix-piece is-mine'} pressed={i === view.chosen} onTake={() => set({ chosen: view.chosen === i ? null : i })}>
-                  {p.text}
-                </PieceButton>
+                {i === view.chosen && view.cutting ? (
+                  // Cutting: each word a place to cut before (the first one cannot be: nothing would come before it).
+                  <span className="mix-piece is-mine is-chosen is-cutting">
+                    {chosenWords.map((w, j) => (
+                      <span key={j}>
+                        {j > 0 && ' '}
+                        {j === 0 ? (
+                          <span className="mix-word is-first">{w}</span>
+                        ) : (
+                          <PieceButton className="mix-word" onTake={() => cut(j)}>
+                            {w}
+                          </PieceButton>
+                        )}
+                      </span>
+                    ))}
+                  </span>
+                ) : (
+                  <PieceButton
+                    className={i === view.chosen ? 'mix-piece is-mine is-chosen' : 'mix-piece is-mine'}
+                    pressed={i === view.chosen}
+                    onTake={() => set({ chosen: view.chosen === i ? null : i, cutting: false })}
+                  >
+                    {p.text}
+                  </PieceButton>
+                )}
                 {p.lineEnd ? <br /> : ' '}
               </span>
             ))}
@@ -308,6 +343,11 @@ export function GatherScreen({
             {view.chosen !== null && (
               <button type="button" className="chip" onClick={() => change(view.pieces.filter((_, i) => i !== view.chosen))}>
                 {t('juntar.quitar')}
+              </button>
+            )}
+            {view.chosen !== null && chosenWords.length > 1 && (
+              <button type="button" className="chip" aria-pressed={Boolean(view.cutting)} onClick={() => set({ cutting: !view.cutting })}>
+                {t('juntar.partir')}
               </button>
             )}
             <button
@@ -322,7 +362,7 @@ export function GatherScreen({
               {t('juntar.retocar')}
             </button>
           </div>
-          <p className="quiet gather-hint">{t(view.chosen === null ? 'juntar.ayudaElegir' : 'juntar.ayudaReemplazar')}</p>
+          <p className="quiet gather-hint">{t(view.cutting ? 'juntar.ayudaPartir' : view.chosen === null ? 'juntar.ayudaElegir' : 'juntar.ayudaReemplazar')}</p>
           <section className="gather-card">
             <div className="panes-tabs" role="tablist" aria-label={t('juntar.deQuien')}>
               {versions.map((v, i) => (

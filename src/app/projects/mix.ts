@@ -38,6 +38,22 @@ export function piecesOf(text: string): Piece[] {
   return out
 }
 
+/** The words of a piece, as it is written (signs kept on them): where a finger can cut it. */
+export const wordsIn = (piece: Piece) => piece.text.split(/\s+/).filter(Boolean)
+
+/**
+ * The pieces with one of them cut in two, the second part beginning at its word `at` (the automatic cut cannot know
+ * the language: the person cuts where the meaning does). A line of a poem that ended after it ends after the second.
+ */
+export function splitPiece(pieces: Piece[], index: number, at: number): Piece[] {
+  const piece = pieces[index]
+  const words = piece ? wordsIn(piece) : []
+  if (at <= 0 || at >= words.length) return pieces
+  const first: Piece = { text: words.slice(0, at).join(' ') }
+  const second: Piece = { text: words.slice(at).join(' '), ...(piece.lineEnd ? { lineEnd: true } : {}) }
+  return [...pieces.slice(0, index), first, second, ...pieces.slice(index + 1)]
+}
+
 /** The verse the pieces make: a space between two, a new line where a line of the poem ended. */
 export const joinPieces = (pieces: Piece[]): string =>
   pieces.map((p, i) => p.text + (i === pieces.length - 1 ? '' : p.lineEnd ? '\n' : ' ')).join('')

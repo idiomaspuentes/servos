@@ -117,8 +117,9 @@ Desde el 16 de octubre de 2026 la app guarda cada libro así (cableado, pasos 1 
 13. **La pantalla «Juntar»** (`GatherScreen`, diseño 6.10) reemplaza a la de elegir entre dos. Va por sección
     (`sectionsToGather`, `readingsOf`): la de cada uno se lee de corrido y se deja una para toda la sección con una
     sola acción (`gatherAll`); o versículo por versículo, con todas sus versiones; o una mezcla tocando trozos
-    (`mix.ts`). Lo último se puede deshacer (`undoGather`) mientras nada más se escribió en el libro. Al recibir se
-    cuentan versículos para juntar, no choques.
+    (`mix.ts`). Un trozo de la mezcla se parte con el dedo («✂ Partir», y se toca la palabra con que empieza la
+    segunda parte: el corte automático no conoce el idioma). Lo último se puede deshacer (`undoGather`) mientras nada
+    más se escribió en el libro. Al recibir se cuentan versículos para juntar, no choques.
 14. **Cómo trabaja el equipo, por libro** (`BookEntry.together`, diseño 6.10): «Por partes» o «Todos lo mismo», en
     «Más» del libro; viaja en el paquete con el libro (`SharedBook.together`). Con «Todos lo mismo», lo que llega es
     «la versión de Bea», y el libro cuenta secciones para juntar. Un versículo con versiones esperando no cuenta como
