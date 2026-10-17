@@ -126,8 +126,11 @@ Desde el 16 de octubre de 2026 la app guarda cada libro así (cableado, pasos 1 
     `{owner}/{repo}-servos/trabajo/{persona}-{teléfono}.servos.json` (privado, hecho la primera vez) y traído por los
     demás; se recibe con `receiveShared` como cualquier archivo. El lugar del proyecto en Door43 se elige una vez y sirve
     también para publicar. Probado contra el mock de Door43 (dos teléfonos: dejar, traer, traer otra vez, sin
-    conexión); falta QA. Pendiente: el sonido de las grabaciones, y archivos grandes (Door43 puede no devolver el
-    contenido de un archivo muy grande por la API de contenidos).
+    conexión) y en QA el 17 de octubre (`testingOrg/qu_reg-servos`, privado: Bea deja, Ana trae, recibe y llega a
+    «Juntar»). QA mostró que la llave que Servos creaba no podía hacer un repositorio en una organización (pide
+    `write:organization`): rompía también la primera publicación; ahora se pide, y una llave de antes se reconoce y
+    se ofrece vincular otra vez. Pendiente: el sonido de las grabaciones, y archivos grandes (Door43 puede no
+    devolver el contenido de un archivo muy grande por la API de contenidos).
 
 ## Lo que falta
 
