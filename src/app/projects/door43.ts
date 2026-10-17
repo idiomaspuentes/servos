@@ -71,7 +71,9 @@ export async function signIn(person: string, host: string, username: string, pas
     username: username.trim(),
     password,
     tokenNamePrefix: 'servos',
-    scopes: ['read:user', 'read:organization', 'write:repository'],
+    // Making a repository in the team's organization (the one published, the team's work) needs write:organization:
+    // with write:repository alone Door43 refuses it (found on QA).
+    scopes: ['read:user', 'read:organization', 'write:organization', 'write:repository'],
   })
   const account = { host, username: user.login, token, fullName: user.full_name || undefined }
   write(`${KEY}.cuenta.${person}`, account)
@@ -174,10 +176,12 @@ export function manifestOf(
 export type FileResult = { path: string; state: 'written' | 'same' | 'failed'; problem?: Problem }
 
 /** Why something could not be done, said in the person's terms. */
-export type Problem = 'offline' | 'signin' | 'permission' | 'conflict' | 'other'
+export type Problem = 'offline' | 'signin' | 'scope' | 'permission' | 'conflict' | 'other'
 export function problemOf(e: unknown): Problem {
   if (e instanceof DcsApiError) {
     if (e.status === 401) return 'signin'
+    // The account may do it, but the key this phone keeps was made without that permission: link the account again.
+    if (e.status === 403 && /required scope/i.test(`${e.message} ${JSON.stringify(e.body ?? '')}`)) return 'scope'
     if (e.status === 403 || e.status === 404) return 'permission'
     if (e.status === 409 || e.status === 422) return 'conflict'
     return 'other'

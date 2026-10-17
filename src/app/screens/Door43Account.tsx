@@ -9,10 +9,21 @@ import { Sheet } from '../frame/Sheet'
 import { useT } from '../i18n/i18n'
 import { HOSTS, accountOf, forgetAccount, hostName, problemOf, signIn, signInWithToken, type Door43Account } from '../projects/door43'
 
-export function Door43AccountSheet({ person, onClose, onLinked }: { person: string; onClose(): void; onLinked?(account: Door43Account): void }) {
+export function Door43AccountSheet({
+  person,
+  onClose,
+  onLinked,
+  host: given,
+}: {
+  person: string
+  onClose(): void
+  onLinked?(account: Door43Account): void
+  /** The Door43 to link to at first (linking again: the one it was). */
+  host?: string
+}) {
   const t = useT()
   const [account, setAccount] = useState(() => accountOf(person))
-  const [host, setHost] = useState(HOSTS.find((h) => h.id === (import.meta.env.DEV ? 'mock' : 'qa'))?.url ?? HOSTS[0].url)
+  const [host, setHost] = useState(given ?? HOSTS.find((h) => h.id === (import.meta.env.DEV ? 'mock' : 'qa'))?.url ?? HOSTS[0].url)
   const [withToken, setWithToken] = useState(false)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')

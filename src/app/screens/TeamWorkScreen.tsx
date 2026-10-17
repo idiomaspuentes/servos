@@ -8,7 +8,7 @@
 import { useState, type ReactNode } from 'react'
 import { DestinationForm } from '../miniapps/publicar/publicar'
 import { useT } from '../i18n/i18n'
-import { accountOf, destinationOf, leaveWork, organizationsOf, problemOf, proposedRepo, setDestination, workLeft, workRepoOf, type Problem } from '../projects/door43'
+import { accountOf, destinationOf, forgetAccount, leaveWork, organizationsOf, problemOf, proposedRepo, setDestination, workLeft, workRepoOf, type Problem } from '../projects/door43'
 import { namesTogether } from '../projects/mix'
 import { bookName, type Project } from '../projects/model'
 import { inProject } from '../projects/scope'
@@ -41,6 +41,8 @@ export function TeamWorkScreen({
   const [account, setAccount] = useState(() => accountOf(person))
   const [to, setTo] = useState(() => destinationOf(project.id))
   const [linking, setLinking] = useState(false)
+  // Linking again keeps the Door43 it was on.
+  const [relinkHost, setRelinkHost] = useState<string | undefined>(undefined)
   const [busy, setBusy] = useState<'trayendo' | 'dejando' | null>(null)
   const [found, setFound] = useState<Found[] | null>(null)
   const [left, setLeft] = useState(false)
@@ -82,6 +84,7 @@ export function TeamWorkScreen({
         {linking && (
           <Door43AccountSheet
             person={person}
+            host={relinkHost}
             onClose={() => setLinking(false)}
             onLinked={(a) => {
               setAccount(a)
@@ -211,9 +214,25 @@ export function TeamWorkScreen({
         </ul>
       )}
       {problem && (
-        <p className="status" role="status">
-          {t(`door43.problema.${problem}`)}
-        </p>
+        <div className="status team-problem" role="status">
+          <span>{t(`door43.problema.${problem}`)}</span>
+          {(problem === 'scope' || problem === 'signin') && (
+            <button
+              type="button"
+              className="chip"
+              onClick={() => {
+                // The key kept is the trouble: forgotten, and the account linked again on the same Door43.
+                forgetAccount(person)
+                setRelinkHost(account.host)
+                setAccount(null)
+                setProblem(null)
+                setLinking(true)
+              }}
+            >
+              ↻ {t('equipo.vincularOtraVez')}
+            </button>
+          )}
+        </div>
       )}
       {left && (
         <p className="status" role="status">

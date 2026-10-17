@@ -41,6 +41,8 @@ describe('a project published to Door43', () => {
     expect(problemOf(new DcsApiError('x', 401))).toBe('signin')
     expect(problemOf(new DcsApiError('x', 403))).toBe('permission')
     expect(problemOf(new TypeError('Failed to fetch'))).toBe('offline')
+    // QA's answer to a key made without write:organization, when making a repository in an organization.
+    expect(problemOf(new DcsApiError('token does not have at least one of required scope(s), required=[write:organization]', 403))).toBe('scope')
   })
 })
 

@@ -312,6 +312,24 @@ export function DestinationForm({
   const [owner, setOwner] = useState(proposed.owner)
   const [repo, setRepo] = useState(proposed.repo)
   const [naming, setNaming] = useState(false)
+  const [search, setSearch] = useState('')
+  // Many organizations: a search narrows the list as it is typed (never focused by itself: the list alone is enough
+  // to touch one), and the list scrolls in its own box, so what comes after it stays in sight.
+  const many = (orgs?.length ?? 0) > 6
+  const wanted = search.trim().toLocaleLowerCase()
+  const shown = orgs?.filter((o) => !wanted || o.toLocaleLowerCase().includes(wanted)) ?? []
+  const marked = (o: string) => {
+    const at = wanted ? o.toLocaleLowerCase().indexOf(wanted) : -1
+    return at < 0 ? (
+      o
+    ) : (
+      <>
+        {o.slice(0, at)}
+        <strong>{o.slice(at, at + wanted.length)}</strong>
+        {o.slice(at + wanted.length)}
+      </>
+    )
+  }
   useEffect(() => {
     organizations()
       .then((list) => {
@@ -335,14 +353,35 @@ export function DestinationForm({
       {failed && <p className="notice">{failed}</p>}
       {orgs === null && !failed && <p className="quiet">{t('publicar.buscandoOrganizaciones')}</p>}
       {orgs?.length === 0 && <p className="notice">{t('publicar.sinOrganizaciones')}</p>}
+      {many && (
+        <input
+          type="search"
+          className="destination-search"
+          value={search}
+          placeholder={t('publicar.buscarOrganizacion')}
+          aria-label={t('publicar.buscarOrganizacion')}
+          autoCapitalize="none"
+          spellCheck={false}
+          enterKeyHint="done"
+          onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={(e) => {
+            // One left: Enter takes it.
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              if (shown.length === 1) setOwner(shown[0])
+            }
+          }}
+        />
+      )}
       {orgs && orgs.length > 0 && (
-        <div className="destination-orgs" role="radiogroup" aria-label={t('publicar.organizacion')}>
-          {orgs.map((o) => (
+        <div className={many ? 'destination-orgs is-scrolled' : 'destination-orgs'} role="radiogroup" aria-label={t('publicar.organizacion')}>
+          {shown.map((o) => (
             <button key={o} type="button" role="radio" aria-checked={owner === o} className="destination-org" onClick={() => setOwner(o)}>
               <span className="destination-dot" aria-hidden="true" />
-              {o}
+              <span>{marked(o)}</span>
             </button>
           ))}
+          {!shown.length && <p className="quiet destination-none">{t('publicar.ningunaAsi', { texto: search.trim() })}</p>}
         </div>
       )}
       {naming ? (
@@ -354,7 +393,7 @@ export function DestinationForm({
       ) : (
         <div className="destination-repo">
           <span className="destination-repo-name">
-            <span className="quiet">{t('publicar.repositorio')}:</span> {repo}
+            <span className="quiet">{t('publicar.repositorio')}:</span> {owner ? `${owner}/${repo}` : repo}
           </span>
           <button type="button" className="chip" onClick={() => setNaming(true)}>
             ✎ {t('publicar.cambiar')}
@@ -397,6 +436,8 @@ export const publicar: MiniApp = {
       organizacion: 'Organización',
       buscandoOrganizaciones: 'Buscando sus organizaciones en Door43…',
       sinOrganizaciones: 'Esta cuenta no está en ninguna organización de Door43. Pida a quien coordina que la agregue.',
+      buscarOrganizacion: 'Buscar una organización',
+      ningunaAsi: 'Ninguna organización lleva «{texto}».',
       repositorio: 'Repositorio',
       repositorioAyuda: 'Su idioma y «reg», como Door43 llama a una Biblia que traduce un equipo. Puede cambiarlo.',
       guardarDestino: 'Publicar ahí',
@@ -435,6 +476,8 @@ export const publicar: MiniApp = {
       organizacion: 'Organização',
       buscandoOrganizaciones: 'Buscando suas organizações no Door43…',
       sinOrganizaciones: 'Esta conta não está em nenhuma organização do Door43. Peça a quem coordena que a adicione.',
+      buscarOrganizacion: 'Buscar uma organização',
+      ningunaAsi: 'Nenhuma organização tem «{texto}».',
       repositorio: 'Repositório',
       repositorioAyuda: 'Sua língua e «reg», como o Door43 chama uma Bíblia que uma equipe traduz. Pode mudá-lo.',
       guardarDestino: 'Publicar ali',
@@ -473,6 +516,8 @@ export const publicar: MiniApp = {
       organizacion: 'Organization',
       buscandoOrganizaciones: 'Looking for your organizations on Door43…',
       sinOrganizaciones: 'This account is in no Door43 organization. Ask whoever coordinates to add it.',
+      buscarOrganizacion: 'Search for an organization',
+      ningunaAsi: 'No organization has «{texto}».',
       repositorio: 'Repository',
       repositorioAyuda: 'Your language and «reg», as Door43 names a Bible a team translates. You can change it.',
       guardarDestino: 'Publish there',

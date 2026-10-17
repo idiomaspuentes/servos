@@ -974,3 +974,10 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .destination-org[aria-checked='true'] .destination-dot { border-color: var(--accent); background: radial-gradient(var(--accent) 0 40%, transparent 45%); }
 .destination-repo { display: flex; align-items: center; gap: 0.6rem; }
 .destination-repo-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+/* Many organizations: a search over them, and the list in its own box (about six rows, the next one cut so it is seen
+   that it goes on), so the repository and the button after it stay in sight. */
+.destination-search { width: 100%; min-height: var(--touch); padding: 0.5rem 0.8rem; border-radius: var(--radius); border: 1px solid var(--line); background: var(--field); color: var(--text); }
+.destination-orgs.is-scrolled { max-height: 17.5rem; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.destination-org strong { color: var(--accent); }
+.destination-none { margin: 0; padding: 0.75rem 0.9rem; }
+.team-problem { display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; }
