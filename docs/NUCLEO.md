@@ -142,8 +142,10 @@ Desde el 16 de octubre de 2026 la app guarda cada libro así (cableado, pasos 1 
     sonido, para siempre, y Door43 no tiene Git LFS: un equipo que regraba llenaría el repositorio de tomas viejas.
     Por eso: las tomas se graban a 32 kbps (Opus), una cuarta parte de lo que graba un navegador por omisión; el
     trabajo del equipo (con el sonido de sus tomas) se deja como adjunto del *release* «trabajo» del repositorio
-    privado, uno por persona y teléfono, reemplazado en su lugar, sin historia (`leaveWork`, `workLeft`); y lo que se
-    publica llevará el audio como adjunto de cada versión numerada. Probado en QA: un adjunto privado se crea, se
+    privado, uno por persona y teléfono, reemplazado en su lugar, sin historia (`leaveWork`, `workLeft`); y al
+    publicar, «Subir» lleva solo el texto a git y «Marcar la versión N» adjunta a esa versión un `audio-JON.zip` por
+    libro, con la toma que cuenta de cada versículo en `audio/JON/001/001-003.webm` (`attachToRelease`, `zipStore`:
+    un zip sin compresión, el sonido ya viene comprimido). Probado en QA: un adjunto privado se crea, se
     sube, se baja con la llave desde el navegador (sin ella, 404) y se borra; la toma de Bea llegó con su sonido al
     teléfono de Ana. Lo dejado antes como archivo del repositorio se sigue trayendo.
 

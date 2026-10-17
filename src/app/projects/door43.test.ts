@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fileOf, fingerprint, leaveWork, manifestOf, problemOf, proposedRepo, publish, signIn, workLeft, workNameOf, workRepoOf } from './door43'
+import { attachToRelease, fileOf, fingerprint, leaveWork, manifestOf, markVersion, problemOf, proposedRepo, publish, signIn, workLeft, workNameOf, workRepoOf } from './door43'
 import { DcsApiError } from '../../door43/dcs'
 
 describe('a project published to Door43', () => {
@@ -238,6 +238,15 @@ describe('el trabajo del equipo por Door43', () => {
     await leaveWork(account, to, '{"de":"Bea"}', 'Bea', 'dev-b')
     await leaveWork(account, to, '{"de":"Carla"}', 'Carla', 'dev-c')
     expect((await workLeft(account, to, 'dev-a')).map((x) => x.text)).toEqual(['{"de":"Bea"}', '{"de":"Carla"}'])
+  })
+
+  it('una versión marcada lleva el audio como adjunto, aparte de la historia del repositorio', async () => {
+    const { repos, releases, assets } = door43()
+    repos.set('BSOJ/qu_reg', { private: false })
+    const release = await markVersion(account, to, 3, 'Versión de prueba')
+    await attachToRelease(account, to, release.id, 'audio-JON.zip', new Uint8Array([0x50, 0x4b, 3, 4]))
+    expect(releases.get('BSOJ/qu_reg@v3')?.id).toBe(release.id)
+    expect([...assets.values()].map((a) => [a.release, a.name, a.bytes.length])).toEqual([[release.id, 'audio-JON.zip', 4]])
   })
 
   it('lo que un Servos anterior dejó como archivo del repositorio se sigue trayendo, y quien lo dejó lo quita al dejar otra vez', async () => {

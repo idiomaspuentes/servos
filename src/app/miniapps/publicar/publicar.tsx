@@ -19,6 +19,7 @@ import {
   hostName,
   keepUploaded,
   manifestOf,
+  attachToRelease,
   markVersion,
   nextVersion,
   organizationsOf,
@@ -32,7 +33,8 @@ import {
   type FileResult,
 } from '../../projects/door43'
 import { titleOf } from '../../projects/model'
-import { audioFileOf, chosenTake, recordedPlaces, soundBase64 } from '../../projects/recordings'
+import { audioFileOf, chosenTake, recordedPlaces, soundOf } from '../../projects/recordings'
+import { zipStore } from '../../projects/zip'
 import { bookUsfm } from '../../projects/usfmExport'
 import { textOf } from '../../projects/work'
 import type { MiniApp, MiniAppCenterProps } from '../contract'
@@ -61,6 +63,8 @@ function Center({ context }: MiniAppCenterProps) {
   const [problem, setProblem] = useState<string | null>(null)
   const [version, setVersion] = useState<number | null>(null)
   const [versioned, setVersioned] = useState<number | null>(null)
+  const [versionTakes, setVersionTakes] = useState(0)
+  const [marking, setMarking] = useState(false)
   const [online, setOnline] = useState(() => (typeof navigator === 'undefined' ? true : navigator.onLine))
   const [, redraw] = useState(0)
   useEffect(() => {
@@ -119,19 +123,15 @@ function Center({ context }: MiniAppCenterProps) {
     setResults(null)
     setVersioned(null)
     try {
-      // The sounds, read from where they are kept; one not on this phone is not uploaded from here.
-      const sounds = (
-        await Promise.all(withWork.flatMap((b) => b.takes).map(async (x) => ({ path: x.path, base64: await soundBase64(x.id) })))
-      ).filter((x): x is { path: string; base64: string } => x.base64 !== null)
+      // The text, in git. The recordings go apart, with each numbered version: git would keep every take ever recorded.
       const files = [
         ...withText.map((b) => ({ path: fileOf(b.code), content: b.usfm })),
-        ...sounds,
         { path: 'manifest.yaml', content: manifestOf(project, to.owner, to.repo, withText.map((b) => ({ code: b.code, title: b.title }))) },
       ]
       const done = await publish(account, to, files, t('publicar.mensaje', { nombre: person.name, libros: withWork.map((b) => b.title).join(', ') }))
       const now = new Date().toISOString()
       for (const b of withWork) {
-        const mine = done.filter((x) => x.path === fileOf(b.code) || b.takes.some((y) => y.path === x.path))
+        const mine = done.filter((x) => x.path === fileOf(b.code))
         if (mine.length && mine.every((r) => r.state !== 'failed')) keepUploaded(project.id, b.code, { at: now, by: person.name, key: b.key })
       }
       setResults(done)
@@ -191,7 +191,8 @@ function Center({ context }: MiniAppCenterProps) {
   // 3. Upload.
   const written = results?.filter((r) => r.state === 'written' && r.path.endsWith('.usfm')).length ?? 0
   const same = results?.filter((r) => r.state === 'same' && r.path.endsWith('.usfm')).length ?? 0
-  const soundsWritten = results?.filter((r) => r.state === 'written' && r.path.startsWith('audio/')).length ?? 0
+  // Recordings of the books uploaded: they go with the version marked, not with the text.
+  const takes = withWork.reduce((n, b) => n + b.takes.length, 0)
   return (
     <div className="publish">
       <section className="publish-where">
@@ -238,7 +239,7 @@ function Center({ context }: MiniAppCenterProps) {
       {results && !problem && (
         <p className="review-done" role="status">
           ✓ {t('publicar.subido', { escritos: written, iguales: same })}
-          {soundsWritten > 0 && ` ${t('publicar.grabacionesSubidas', { n: soundsWritten })}`}{' '}
+          {takes > 0 && ` ${t('publicar.grabacionesConVersion')}`}{' '}
           <a href={repoUrl(to)} target="_blank" rel="noreferrer">
             {t('publicar.verEnDoor43')}
           </a>
@@ -253,24 +254,52 @@ function Center({ context }: MiniAppCenterProps) {
 
       {results && !problem && version !== null && versioned === null ? (
         <section className="publish-version">
-          <p className="quiet">{t('publicar.versionAyuda')}</p>
+          <p className="quiet">
+            {t('publicar.versionAyuda')}
+            {takes > 0 && ` ${t('publicar.versionAyudaGrabaciones')}`}
+          </p>
           <button
             type="button"
             className="button-secondary"
+            disabled={marking}
             onClick={async () => {
+              setMarking(true)
               try {
-                await markVersion(account, to, version, t('publicar.versionNota', { nombre: person.name }))
+                const release = await markVersion(account, to, version, t('publicar.versionNota', { nombre: person.name }))
+                // The take that counts of each place, a zip by book, attached to the version.
+                let attached = 0
+                for (const b of withWork.filter((x) => x.takes.length)) {
+                  const files = (
+                    await Promise.all(
+                      b.takes.map(async (x) => {
+                        const sound = await soundOf(x.id)
+                        return sound ? { name: x.path, bytes: new Uint8Array(await sound.arrayBuffer()) } : null
+                      })
+                    )
+                  ).filter((x) => x !== null)
+                  if (!files.length) continue
+                  await attachToRelease(account, to, release.id, `audio-${b.code.toUpperCase()}.zip`, zipStore(files))
+                  attached += files.length
+                }
+                setVersionTakes(attached)
                 setVersioned(version)
               } catch (e) {
                 setProblem(t(`door43.problema.${problemOf(e)}`))
+              } finally {
+                setMarking(false)
               }
             }}
           >
-            {t('publicar.version', { n: version })}
+            {marking ? t('publicar.marcando') : t('publicar.version', { n: version })}
           </button>
         </section>
       ) : null}
-      {versioned !== null && <p className="review-done">✓ {t('publicar.versionHecha', { n: versioned })}</p>}
+      {versioned !== null && (
+        <p className="review-done">
+          ✓ {t('publicar.versionHecha', { n: versioned })}
+          {versionTakes > 0 && ` ${t('publicar.versionConGrabaciones', { n: versionTakes })}`}
+        </p>
+      )}
 
       <button type="button" className="button-primary publish-go" disabled={busy || !online || withWork.length === 0} onClick={() => void upload().then(() => redraw((n) => n + 1))}>
         {busy ? t('publicar.subiendo') : t('publicar.subir')}
@@ -428,7 +457,10 @@ export const publicar: MiniApp = {
       nombre: 'Publicar en Door43',
       descripcion: 'Subir el proyecto a Door43, cada libro con su alineación y sus grabaciones, y marcar versiones',
       grabaciones: 'grabaciones: {n}',
-      grabacionesSubidas: 'Grabaciones subidas: {n}.',
+      grabacionesConVersion: 'Las grabaciones van con la versión que se marque.',
+      versionAyudaGrabaciones: 'Con ella quedan, aparte del texto, las grabaciones que cuentan de cada versículo.',
+      versionConGrabaciones: 'Con {n} grabaciones.',
+      marcando: 'Marcando la versión…',
       sinCuenta: 'Para publicar, vincule su cuenta de Door43. Se hace una vez en este teléfono.',
       vincularCuenta: 'Vincular mi cuenta de Door43',
       destinoPregunta: '¿Dónde se publica «{proyecto}»?',
@@ -468,7 +500,10 @@ export const publicar: MiniApp = {
       nombre: 'Publicar no Door43',
       descripcion: 'Enviar o projeto ao Door43, cada livro com seu alinhamento e suas gravações, e marcar versões',
       grabaciones: 'gravações: {n}',
-      grabacionesSubidas: 'Gravações enviadas: {n}.',
+      grabacionesConVersion: 'As gravações vão com a versão que se marcar.',
+      versionAyudaGrabaciones: 'Com ela ficam, à parte do texto, as gravações que contam de cada versículo.',
+      versionConGrabaciones: 'Com {n} gravações.',
+      marcando: 'Marcando a versão…',
       sinCuenta: 'Para publicar, vincule sua conta do Door43. Faz-se uma vez neste telefone.',
       vincularCuenta: 'Vincular minha conta do Door43',
       destinoPregunta: 'Onde se publica «{proyecto}»?',
@@ -508,7 +543,10 @@ export const publicar: MiniApp = {
       nombre: 'Publish on Door43',
       descripcion: 'Upload the project to Door43, each book with its alignment and its recordings, and mark versions',
       grabaciones: 'recordings: {n}',
-      grabacionesSubidas: 'Recordings uploaded: {n}.',
+      grabacionesConVersion: 'The recordings go with the version that is marked.',
+      versionAyudaGrabaciones: 'With it, apart from the text, go the recordings that count of each verse.',
+      versionConGrabaciones: 'With {n} recordings.',
+      marcando: 'Marking the version…',
       sinCuenta: 'To publish, link your Door43 account. It is done once on this phone.',
       vincularCuenta: 'Link my Door43 account',
       destinoPregunta: 'Where is «{proyecto}» published?',

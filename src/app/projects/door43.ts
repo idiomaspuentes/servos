@@ -346,6 +346,16 @@ async function call<T>(account: Door43Account, to: Destination, path: string, in
   return (res.status === 204 ? undefined : await res.json()) as T
 }
 
+/**
+ * Attaches a file to a release (a version's recordings, one zip by book): kept apart from the repository's history,
+ * which would keep every take ever recorded (Door43 has no Git LFS).
+ */
+export async function attachToRelease(account: Door43Account, to: Destination, releaseId: number, name: string, bytes: Uint8Array, type = 'application/zip') {
+  const form = new FormData()
+  form.append('attachment', new Blob([new Uint8Array(bytes)], { type }), name)
+  return call<Asset>(account, to, `/releases/${releaseId}/assets?name=${encodeURIComponent(name)}`, { method: 'POST', body: form })
+}
+
 async function ensureRepo(account: Door43Account, to: Destination, privately: boolean) {
   const config = configOf(to.host)
   try {
