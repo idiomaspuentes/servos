@@ -31,6 +31,9 @@ import { ReceivePack } from './screens/ReceivePack'
 import { ReceiveScreen } from './screens/ReceiveScreen'
 import { exampleShared } from './screens/exampleWork'
 import { TranslateUi } from './screens/TranslateUi'
+import { WaitingSheet } from './screens/WaitingSheet'
+import { isOnline, useWaiting, whenNotTyping } from './frame/online'
+import { waiting } from './projects/outbox'
 
 type Screen =
   | { kind: 'home' }
@@ -43,7 +46,8 @@ type Screen =
   | { kind: 'recibir'; back: Screen; projectId?: string; book?: string }
   | { kind: 'translate' }
   | { kind: 'elegir'; projectId: string; book: string; back: Screen }
-  | { kind: 'equipo'; projectId: string; book: string; back: Screen }
+  /** `bring`: opened to bring in the team's work at once (asked without internet, and said yes to when it came). */
+  | { kind: 'equipo'; projectId: string; book: string; back: Screen; bring?: boolean }
 
 /** The chapters of a book whose texts and helps the prototype has (every chapter of Titus and Jonah). */
 const chaptersFor = (book: string) => chaptersOf(book).map((c) => chapterOf(book, c)!)
@@ -73,6 +77,30 @@ export function App() {
   const person = people?.current ?? EXAMPLE_PEOPLE[0]
   const setPerson = (name: string) => people && setPeople({ ...people, current: name })
   const [personMenu, setPersonMenu] = useState(false)
+  // What waited for internet (design 6.11): shown when internet comes, or when the app opens with it, before anything
+  // goes; not while something is being typed. «Not now» holds until internet comes again.
+  const waits = useWaiting(person)
+  const [asking, setAsking] = useState(false)
+  const declined = useRef(false)
+  useEffect(() => {
+    declined.current = false
+    let cancel = () => {}
+    const check = () => {
+      cancel()
+      if (!isOnline() || declined.current || !waiting(person).length) return
+      cancel = whenNotTyping(() => setAsking(true))
+    }
+    const online = () => {
+      declined.current = false
+      check()
+    }
+    window.addEventListener('online', online)
+    check()
+    return () => {
+      window.removeEventListener('online', online)
+      cancel()
+    }
+  }, [person])
   const [door43, setDoor43] = useState(false)
   const [language, setLanguage] = useState(false)
   const [addProject, setAddProject] = useState(false)
@@ -400,10 +428,13 @@ export function App() {
       {screen.kind === 'translate' && <TranslateUi onBack={home} />}
       {screen.kind === 'equipo' && project(screen.projectId) && (
         <TeamWorkScreen
+          key={`${screen.projectId}.${screen.book}.${screen.bring ? 'traer' : ''}`}
           project={project(screen.projectId)!}
           projects={projects}
+          book={screen.book}
           title={titleOf(project(screen.projectId), screen.book)}
           person={person}
+          bringNow={screen.bring}
           onBack={() => setScreen(screen.back)}
           onReceived={setProjects}
           onGather={() => setScreen({ kind: 'elegir', projectId: screen.projectId, book: screen.book, back: { kind: 'book', projectId: screen.projectId, book: screen.book } })}
@@ -487,6 +518,21 @@ export function App() {
         />
       )}
       {door43 && <Door43AccountSheet person={person} onClose={() => setDoor43(false)} />}
+      {asking && (
+        <WaitingSheet
+          errands={waits}
+          projects={projects}
+          person={person}
+          onClose={() => {
+            declined.current = true
+            setAsking(false)
+          }}
+          onBring={(projectId, book) => {
+            setAsking(false)
+            setScreen({ kind: 'equipo', projectId, book, back: { kind: 'book', projectId, book }, bring: true })
+          }}
+        />
+      )}
       {language && <Language onClose={() => setLanguage(false)} />}
     </>
   )

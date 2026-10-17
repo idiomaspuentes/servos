@@ -1,56 +1,35 @@
 /**
  * Publicar en Door43 (design, section 8): the project's books, translated and aligned as they are, uploaded to the
  * team's repository on Door43, each upload kept in its history there; and, when the team holds what is there good, a
- * numbered version. One thing to do at a time: link the account, choose where (once), upload. What changed since the
- * last upload from this phone is said book by book (philosophy, principle 8: on the phone is not on Door43). The
- * recordings said aloud go too: for each place, the take that counts.
+ * numbered version, with the recordings said aloud (for each place, the take that counts). One thing to do at a time:
+ * link the account, choose where (once), upload. What changed since the last upload from this phone is said book by
+ * book (philosophy, principle 8: on the phone is not on Door43). Without internet, uploading or marking a version is
+ * asked all the same: it waits on the phone, and goes when there is internet and the person says yes (design 6.11).
  */
 
 import { useEffect, useMemo, useState } from 'react'
-import { chapterOf, chaptersOf, type PrototypeData } from '../../../prototype/data'
+import { useOnline, useWaiting } from '../../frame/online'
 import { useT } from '../../i18n/i18n'
 import { Door43AccountSheet } from '../../screens/Door43Account'
-import { readAlignment } from '../../projects/alignment'
 import {
   accountOf,
   destinationOf,
-  fileOf,
-  fingerprint,
   hostName,
-  keepUploaded,
-  manifestOf,
-  attachToRelease,
-  markVersion,
   nextVersion,
   organizationsOf,
   problemOf,
   proposedRepo,
-  publish,
   repoUrl,
   setDestination,
   uploadedOf,
   type Destination,
   type FileResult,
+  type Problem,
 } from '../../projects/door43'
 import { titleOf } from '../../projects/model'
-import { audioFileOf, chosenTake, recordedPlaces, soundOf } from '../../projects/recordings'
-import { zipStore } from '../../projects/zip'
-import { bookUsfm } from '../../projects/usfmExport'
-import { textOf } from '../../projects/work'
+import { ask, drop, keysOf, settle, type ErrandKind } from '../../projects/outbox'
+import { booksOf, markVersionWithTakes, uploadProject, withWorkOf, type BookToPublish } from '../../projects/publishing'
 import type { MiniApp, MiniAppCenterProps } from '../contract'
-
-type BookState = {
-  code: string
-  title: string
-  usfm: string
-  written: number
-  total: number
-  aligned: number
-  /** The take that counts for each recorded place, and where it goes. */
-  takes: Array<{ id: string; path: string }>
-  /** What is uploaded of the book, as a fingerprint: its text and which takes count. */
-  key: string
-}
 
 function Center({ context }: MiniAppCenterProps) {
   const { t, project, person } = context
@@ -65,83 +44,92 @@ function Center({ context }: MiniAppCenterProps) {
   const [versioned, setVersioned] = useState<number | null>(null)
   const [versionTakes, setVersionTakes] = useState(0)
   const [marking, setMarking] = useState(false)
-  const [online, setOnline] = useState(() => (typeof navigator === 'undefined' ? true : navigator.onLine))
-  const [, redraw] = useState(0)
-  useEffect(() => {
-    const on = () => setOnline(navigator.onLine)
-    window.addEventListener('online', on)
-    window.addEventListener('offline', on)
-    return () => {
-      window.removeEventListener('online', on)
-      window.removeEventListener('offline', on)
-    }
-  }, [])
+  // Tried with the phone saying it was online, and Door43 could not be reached: it waits all the same.
+  const [unreached, setUnreached] = useState(false)
+  const online = useOnline()
+  const waits = useWaiting(person.name).filter((e) => e.projectId === project.id && (e.kind === 'subir' || e.kind === 'version'))
+  const waitsFor: ErrandKind | null = waits.find((e) => e.kind === 'version') ? 'version' : waits.length ? 'subir' : null
 
   // Each book of the project whose texts are on this phone, as it would be uploaded now.
-  const books = useMemo<BookState[]>(
-    () =>
-      project.books.flatMap((b) => {
-        const chapters = chaptersOf(b.code)
-          .map((c) => chapterOf(b.code, c))
-          .filter((d): d is PrototypeData => Boolean(d))
-        if (!chapters.length) return []
-        const title = titleOf(project, b.code)
-        const original = chapters[0].texts.find((x) => x.original)?.abbreviation
-        let written = 0
-        let total = 0
-        let aligned = 0
-        for (const d of chapters)
-          for (const { verse } of d.verses) {
-            total++
-            if (textOf(b.code, d.chapter, verse).trim()) written++
-            if (original && readAlignment(b.code, d.chapter, verse, original)?.groups.length) aligned++
-          }
-        const usfm = bookUsfm(b.code, project.name, chapters, 'TPL', b.name, true)
-        const takes = recordedPlaces(b.code).flatMap((p) => {
-          const take = chosenTake(b.code, p.chapter, p.verse)
-          return take ? [{ id: take.id, path: audioFileOf(b.code, p.chapter, p.verse, take) }] : []
-        })
-        return [{ code: b.code, title, usfm, written, total, aligned, takes, key: fingerprint(usfm + takes.map((x) => x.id).join()) }]
-      }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [project, results]
-  )
-  const withText = books.filter((b) => b.written > 0)
-  // A book only said aloud is uploaded too: its recordings.
-  const withWork = books.filter((b) => b.written > 0 || b.takes.length > 0)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const books = useMemo<BookToPublish[]>(() => booksOf(project), [project, results])
+  const withWork = withWorkOf(books)
   // Books of the project whose texts are not on this phone: said, not left out unseen (principle 8).
   const missing = project.books.filter((b) => !books.some((x) => x.code === b.code))
+  const stateOf = (b: BookToPublish) => {
+    const up = uploadedOf(project.id, b.code)
+    return !b.written && !b.takes.length ? 'vacio' : !up ? 'nunca' : up.key === b.key ? 'igual' : 'cambio'
+  }
+  // Everything is on Door43 as it is here: a version can be marked without uploading again.
+  const allUp = withWork.length > 0 && withWork.every((b) => stateOf(b) === 'igual')
   // The prototype shared as a page inside Claude may not reach other sites: said before trying, not as a failure.
   const inPage = typeof window !== 'undefined' && 'claude' in window
   const date = (iso: string) => new Date(iso).toLocaleDateString(document.documentElement.lang || undefined)
   const where = (host: string) => t(`door43.host.${hostName(host)}`)
 
+  // The next version's number is Door43's to say.
+  useEffect(() => {
+    if (!account || !to || !online || !allUp || version !== null) return
+    let gone = false
+    nextVersion(account, to)
+      .then((n) => !gone && setVersion(n))
+      .catch(() => {})
+    return () => {
+      gone = true
+    }
+  }, [account, to, online, allUp, version])
+
+  // Kept to go when there is internet, as the books are when it goes.
+  const later = (kind: 'subir' | 'version', tried: boolean) => {
+    ask({ kind, projectId: project.id, person: person.name, keys: keysOf(books) })
+    setResults(null)
+    setProblem(null)
+    setUnreached(tried)
+  }
+  const failed = (e: unknown, kind: 'subir' | 'version') => {
+    const p: Problem = problemOf(e)
+    if (p === 'offline') later(kind, true)
+    else setProblem(t(`door43.problema.${p}`))
+  }
+
   const upload = async () => {
     if (!account || !to) return
+    if (!online) return later('subir', false)
     setBusy(true)
     setProblem(null)
     setResults(null)
     setVersioned(null)
+    setUnreached(false)
     try {
-      // The text, in git. The recordings go apart, with each numbered version: git would keep every take ever recorded.
-      const files = [
-        ...withText.map((b) => ({ path: fileOf(b.code), content: b.usfm })),
-        { path: 'manifest.yaml', content: manifestOf(project, to.owner, to.repo, withText.map((b) => ({ code: b.code, title: b.title }))) },
-      ]
-      const done = await publish(account, to, files, t('publicar.mensaje', { nombre: person.name, libros: withWork.map((b) => b.title).join(', ') }))
-      const now = new Date().toISOString()
-      for (const b of withWork) {
-        const mine = done.filter((x) => x.path === fileOf(b.code))
-        if (mine.length && mine.every((r) => r.state !== 'failed')) keepUploaded(project.id, b.code, { at: now, by: person.name, key: b.key })
-      }
+      const { results: done } = await uploadProject(account, to, project, person.name, (libros) => t('publicar.mensaje', { nombre: person.name, libros }))
+      const failedFile = done.find((r) => r.state === 'failed')
+      if (failedFile?.problem === 'offline') return later('subir', true)
       setResults(done)
-      const failed = done.find((r) => r.state === 'failed')
-      if (failed) setProblem(t(`door43.problema.${failed.problem ?? 'other'}`))
-      else setVersion(await nextVersion(account, to))
+      if (failedFile) setProblem(t(`door43.problema.${failedFile.problem ?? 'other'}`))
+      else {
+        settle('subir', project.id, person.name)
+        setVersion(await nextVersion(account, to).catch(() => null))
+      }
     } catch (e) {
-      setProblem(t(`door43.problema.${problemOf(e)}`))
+      failed(e, 'subir')
     } finally {
       setBusy(false)
+    }
+  }
+
+  const mark = async () => {
+    if (!account || !to) return
+    if (!online || version === null) return later('version', false)
+    setMarking(true)
+    setProblem(null)
+    try {
+      setVersionTakes(await markVersionWithTakes(account, to, withWork, version, t('publicar.versionNota', { nombre: person.name })))
+      settle('version', project.id, person.name)
+      setVersioned(version)
+    } catch (e) {
+      failed(e, 'version')
+    } finally {
+      setMarking(false)
     }
   }
 
@@ -193,6 +181,10 @@ function Center({ context }: MiniAppCenterProps) {
   const same = results?.filter((r) => r.state === 'same' && r.path.endsWith('.usfm')).length ?? 0
   // Recordings of the books uploaded: they go with the version marked, not with the text.
   const takes = withWork.reduce((n, b) => n + b.takes.length, 0)
+  // A version: once everything is up (with internet, its number known), or to wait with the upload for internet.
+  const versionNow = online && version !== null && allUp
+  const versionLater = !online && waitsFor !== 'version' && (allUp || waitsFor === 'subir')
+  const showVersion = versioned === null && !problem && !busy && (versionNow || versionLater)
   return (
     <div className="publish">
       <section className="publish-where">
@@ -216,7 +208,7 @@ function Center({ context }: MiniAppCenterProps) {
       <ul className="publish-books">
         {books.map((b) => {
           const up = uploadedOf(project.id, b.code)
-          const state = !b.written && !b.takes.length ? 'vacio' : !up ? 'nunca' : up.key === b.key ? 'igual' : 'cambio'
+          const state = stateOf(b)
           return (
             <li key={b.code} className={`publish-book is-${state}`}>
               <span className="publish-book-name">{b.title}</span>
@@ -250,50 +242,31 @@ function Center({ context }: MiniAppCenterProps) {
           {problem}
         </p>
       )}
-      {!online && <p className="status">{t('publicar.sinInternet')}</p>}
+      {waitsFor ? (
+        <div className="status waiting-here" role="status">
+          <span>
+            {unreached && `${t('espera.sinLlegar')} `}
+            {online ? t('espera.pendiente', { que: t(`espera.que.${waitsFor}`) }) : t('espera.esperaInternet', { que: t(`espera.que.${waitsFor}`) })}
+          </span>
+          <button type="button" className="chip" onClick={() => waits.forEach((e) => drop(e.id))}>
+            {t('espera.quitar')}
+          </button>
+        </div>
+      ) : (
+        !online && <p className="status">{t('publicar.sinInternet')}</p>
+      )}
 
-      {results && !problem && version !== null && versioned === null ? (
+      {showVersion && (
         <section className="publish-version">
           <p className="quiet">
             {t('publicar.versionAyuda')}
             {takes > 0 && ` ${t('publicar.versionAyudaGrabaciones')}`}
           </p>
-          <button
-            type="button"
-            className="button-secondary"
-            disabled={marking}
-            onClick={async () => {
-              setMarking(true)
-              try {
-                const release = await markVersion(account, to, version, t('publicar.versionNota', { nombre: person.name }))
-                // The take that counts of each place, a zip by book, attached to the version.
-                let attached = 0
-                for (const b of withWork.filter((x) => x.takes.length)) {
-                  const files = (
-                    await Promise.all(
-                      b.takes.map(async (x) => {
-                        const sound = await soundOf(x.id)
-                        return sound ? { name: x.path, bytes: new Uint8Array(await sound.arrayBuffer()) } : null
-                      })
-                    )
-                  ).filter((x) => x !== null)
-                  if (!files.length) continue
-                  await attachToRelease(account, to, release.id, `audio-${b.code.toUpperCase()}.zip`, zipStore(files))
-                  attached += files.length
-                }
-                setVersionTakes(attached)
-                setVersioned(version)
-              } catch (e) {
-                setProblem(t(`door43.problema.${problemOf(e)}`))
-              } finally {
-                setMarking(false)
-              }
-            }}
-          >
-            {marking ? t('publicar.marcando') : t('publicar.version', { n: version })}
+          <button type="button" className="button-secondary" disabled={marking} onClick={() => void mark()}>
+            {marking ? t('publicar.marcando') : versionNow ? t('publicar.version', { n: version }) : t('publicar.versionLuego')}
           </button>
         </section>
-      ) : null}
+      )}
       {versioned !== null && (
         <p className="review-done">
           ✓ {t('publicar.versionHecha', { n: versioned })}
@@ -301,9 +274,11 @@ function Center({ context }: MiniAppCenterProps) {
         </p>
       )}
 
-      <button type="button" className="button-primary publish-go" disabled={busy || !online || withWork.length === 0} onClick={() => void upload().then(() => redraw((n) => n + 1))}>
-        {busy ? t('publicar.subiendo') : t('publicar.subir')}
-      </button>
+      {(online || !waitsFor) && (
+        <button type="button" className="button-primary publish-go" disabled={busy || withWork.length === 0} onClick={() => void upload()}>
+          {busy ? t('publicar.subiendo') : online ? t('publicar.subir') : t('publicar.subirLuego')}
+        </button>
+      )}
     </div>
   )
 }
@@ -455,7 +430,7 @@ export const publicar: MiniApp = {
   texts: {
     es: {
       nombre: 'Publicar en Door43',
-      descripcion: 'Subir el proyecto a Door43, cada libro con su alineación y sus grabaciones, y marcar versiones',
+      descripcion: 'Subir el proyecto a Door43, cada libro con su alineación, y marcar versiones con sus grabaciones',
       grabaciones: 'grabaciones: {n}',
       grabacionesConVersion: 'Las grabaciones van con la versión que se marque.',
       versionAyudaGrabaciones: 'Con ella quedan, aparte del texto, las grabaciones que cuentan de cada versículo.',
@@ -486,7 +461,9 @@ export const publicar: MiniApp = {
       subir: 'Subir a Door43',
       subiendo: 'Subiendo…',
       mensaje: 'Servos: {nombre} sube {libros}',
-      sinInternet: 'Sin internet ahora. Lo hecho está guardado en este teléfono: súbalo cuando haya conexión.',
+      sinInternet: 'Sin internet ahora. Lo hecho está guardado en este teléfono. Puede pedir que se suba: cuando haya internet, se le pregunta antes de enviarlo.',
+      subirLuego: 'Subir cuando haya internet',
+      versionLuego: 'Marcar una versión cuando haya internet',
       subido: 'Subido a Door43. Libros con cambios: {escritos} · sin cambios: {iguales}.',
       verEnDoor43: 'Ver en Door43',
       versionAyuda: 'Cuando el equipo da por bueno lo que está en Door43, se marca como una versión con número.',
@@ -498,7 +475,7 @@ export const publicar: MiniApp = {
     },
     pt: {
       nombre: 'Publicar no Door43',
-      descripcion: 'Enviar o projeto ao Door43, cada livro com seu alinhamento e suas gravações, e marcar versões',
+      descripcion: 'Enviar o projeto ao Door43, cada livro com seu alinhamento, e marcar versões com suas gravações',
       grabaciones: 'gravações: {n}',
       grabacionesConVersion: 'As gravações vão com a versão que se marcar.',
       versionAyudaGrabaciones: 'Com ela ficam, à parte do texto, as gravações que contam de cada versículo.',
@@ -529,7 +506,9 @@ export const publicar: MiniApp = {
       subir: 'Enviar ao Door43',
       subiendo: 'Enviando…',
       mensaje: 'Servos: {nombre} envia {libros}',
-      sinInternet: 'Sem internet agora. O que foi feito está salvo neste telefone: envie quando houver conexão.',
+      sinInternet: 'Sem internet agora. O que foi feito está salvo neste telefone. Pode pedir que seja enviado: quando houver internet, pergunta-se antes de enviar.',
+      subirLuego: 'Enviar quando houver internet',
+      versionLuego: 'Marcar uma versão quando houver internet',
       subido: 'Enviado ao Door43. Livros com mudanças: {escritos} · sem mudanças: {iguales}.',
       verEnDoor43: 'Ver no Door43',
       versionAyuda: 'Quando a equipe dá por bom o que está no Door43, marca-se como uma versão com número.',
@@ -541,7 +520,7 @@ export const publicar: MiniApp = {
     },
     en: {
       nombre: 'Publish on Door43',
-      descripcion: 'Upload the project to Door43, each book with its alignment and its recordings, and mark versions',
+      descripcion: 'Upload the project to Door43, each book with its alignment, and mark versions with their recordings',
       grabaciones: 'recordings: {n}',
       grabacionesConVersion: 'The recordings go with the version that is marked.',
       versionAyudaGrabaciones: 'With it, apart from the text, go the recordings that count of each verse.',
@@ -572,7 +551,9 @@ export const publicar: MiniApp = {
       subir: 'Upload to Door43',
       subiendo: 'Uploading…',
       mensaje: 'Servos: {nombre} uploads {libros}',
-      sinInternet: 'No internet now. What was done is kept on this phone: upload it when there is a connection.',
+      sinInternet: 'No internet now. What was done is kept on this phone. You can ask for it to be uploaded: when there is internet, you are asked before it is sent.',
+      subirLuego: 'Upload when there is internet',
+      versionLuego: 'Mark a version when there is internet',
       subido: 'Uploaded to Door43. Books with changes: {escritos} · unchanged: {iguales}.',
       verEnDoor43: 'See on Door43',
       versionAyuda: 'When the team holds what is on Door43 good, it is marked as a numbered version.',

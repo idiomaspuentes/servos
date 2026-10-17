@@ -3,13 +3,17 @@
  * when there is internet. It is the same package as by card or Bluetooth, gathered the same way: what does not clash
  * comes in by itself, what was written another way waits to be brought together, and taking the same work twice
  * brings nothing new. Who coordinates chose once where the project lives on Door43; the work goes beside it, private.
+ * Without internet, leaving and bringing are asked all the same: they wait on the phone for internet and the person's
+ * yes (design 6.11).
  */
 
-import { useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useOnline, useWaiting } from '../frame/online'
 import { DestinationForm } from '../miniapps/publicar/publicar'
 import { useT } from '../i18n/i18n'
 import { accountOf, destinationOf, forgetAccount, leaveWork, organizationsOf, problemOf, proposedRepo, setDestination, workLeft, workRepoOf, type Problem } from '../projects/door43'
 import { namesTogether } from '../projects/mix'
+import { ask, drop, settle } from '../projects/outbox'
 import { bookName, type Project } from '../projects/model'
 import { inProject } from '../projects/scope'
 import { previewBook, readShared, receiveShared, shareProject, withSounds, type BookPreview, type SharedFile } from '../projects/share'
@@ -21,17 +25,23 @@ type Found = { file: SharedFile; previews: BookPreview[] }
 export function TeamWorkScreen({
   project,
   projects,
+  book,
   title,
   person,
+  bringNow = false,
   onBack,
   onReceived,
   onGather,
 }: {
   project: Project
   projects: Project[]
+  /** The book it was opened from: where bringing in, asked without internet, opens again. */
+  book: string
   /** The book it was opened from, as the team names it: where «back» goes. */
   title: string
   person: string
+  /** Opened to bring in at once (the person said yes to it when internet came back). */
+  bringNow?: boolean
   onBack(): void
   onReceived(projects: Project[]): void
   /** Goes to bring together what came written another way. */
@@ -48,6 +58,18 @@ export function TeamWorkScreen({
   const [left, setLeft] = useState(false)
   const [problem, setProblem] = useState<Problem | null>(null)
   const [done, setDone] = useState<{ names: string[]; choices: number; takes: number } | null>(null)
+  // Tried with the phone saying it was online, and Door43 could not be reached: it waits all the same.
+  const [unreached, setUnreached] = useState(false)
+  const online = useOnline()
+  const waits = useWaiting(person).filter((e) => e.projectId === project.id && (e.kind === 'dejar' || e.kind === 'traer'))
+  // Once, though the screen be drawn twice as it opens.
+  const brought = useRef(false)
+  useEffect(() => {
+    if (!bringNow || !account || !to || brought.current) return
+    brought.current = true
+    void bring()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   // The prototype shared as a page inside Claude may not reach other sites: said before trying, not as a failure.
   const inPage = typeof window !== 'undefined' && 'claude' in window
   const date = (iso: string) => new Date(iso).toLocaleDateString(document.documentElement.lang || undefined)
@@ -118,15 +140,27 @@ export function TeamWorkScreen({
   }
 
   const work = workRepoOf(to)
-  const failed = (e: unknown) => {
-    setProblem(problemOf(e))
+  // Kept to go when there is internet.
+  const later = (kind: 'dejar' | 'traer', tried: boolean) => {
+    ask({ kind, projectId: project.id, person, book })
+    setProblem(null)
+    setUnreached(tried)
+    setBusy(null)
+  }
+  const failed = (e: unknown, kind: 'dejar' | 'traer') => {
+    const p = problemOf(e)
+    if (p === 'offline') return later(kind, true)
+    setProblem(p)
     setBusy(null)
   }
   const bring = async () => {
+    if (!online) return later('traer', false)
     setBusy('trayendo')
     setProblem(null)
+    setUnreached(false)
     try {
       const files = (await workLeft(account, to, deviceId())).map((x) => readShared(x.text)).filter((f): f is SharedFile => Boolean(f))
+      settle('traer', project.id, person)
       setFound(
         inProject(project.id, () =>
           files.map((file) => ({
@@ -137,23 +171,30 @@ export function TeamWorkScreen({
       )
       setBusy(null)
     } catch (e) {
-      failed(e)
+      failed(e, 'traer')
     }
   }
   const leave = async () => {
+    if (!online) return later('dejar', false)
     setBusy('dejando')
     setProblem(null)
+    setUnreached(false)
     try {
       // With the sound of every take: the shelf replaces it in place, so recording again does not pile up versions.
       const file = await withSounds(shareProject(project, project.books.map((b) => b.code), person))
       const result = await leaveWork(account, to, JSON.stringify(file), person, deviceId())
+      if (result.state === 'failed' && result.problem === 'offline') return later('dejar', true)
       if (result.state === 'failed') setProblem(result.problem ?? 'other')
-      else setLeft(true)
+      else {
+        settle('dejar', project.id, person)
+        setLeft(true)
+      }
       setBusy(null)
     } catch (e) {
-      failed(e)
+      failed(e, 'dejar')
     }
   }
+  const waitsFor = (kind: 'dejar' | 'traer') => waits.some((e) => e.kind === kind)
   const receiveAll = () => {
     let now = projects
     let choices = 0
@@ -245,18 +286,39 @@ export function TeamWorkScreen({
           ✓ {t('equipo.dejado')}
         </p>
       )}
+      {waits.length > 0 && (
+        <div className="status waiting-here" role="status">
+          <span>
+            {unreached && `${t('espera.sinLlegar')} `}
+            {(online ? (que: string) => t('espera.pendiente', { que }) : (que: string) => t('espera.esperaInternet', { que }))(
+              namesTogether(
+                [...new Set(waits.map((e) => e.kind))].map((k) => t(`espera.que.${k}`)),
+                t('juntar.y')
+              )
+            )}
+          </span>
+          <button type="button" className="chip" onClick={() => waits.forEach((e) => drop(e.id))}>
+            {t('espera.quitar')}
+          </button>
+        </div>
+      )}
+      {!online && !waits.length && <p className="status">{t('equipo.sinInternet')}</p>}
       {found && anyNew ? (
         <button type="button" className="button-primary" onClick={receiveAll}>
           {t('equipo.recibirTodo')}
         </button>
       ) : (
-        <button type="button" className="button-primary" disabled={busy !== null} onClick={bring}>
-          {busy === 'trayendo' ? t('equipo.trayendo') : t('equipo.traer')}
+        (online || !waitsFor('traer')) && (
+          <button type="button" className="button-primary" disabled={busy !== null} onClick={bring}>
+            {busy === 'trayendo' ? t('equipo.trayendo') : online ? t('equipo.traer') : t('equipo.traerLuego')}
+          </button>
+        )
+      )}
+      {(online || !waitsFor('dejar')) && (
+        <button type="button" className="button-secondary" disabled={busy !== null} onClick={leave}>
+          {busy === 'dejando' ? t('equipo.dejando') : online ? t('equipo.dejar') : t('equipo.dejarLuego')}
         </button>
       )}
-      <button type="button" className="button-secondary" disabled={busy !== null} onClick={leave}>
-        {busy === 'dejando' ? t('equipo.dejando') : t('equipo.dejar')}
-      </button>
       <p className="quiet">{t('equipo.cuenta', { usuario: account.username })}</p>
     </>
   )

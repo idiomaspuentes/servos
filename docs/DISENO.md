@@ -273,6 +273,31 @@ sin dejar historia: git guardaría cada toma regrabada para siempre), y trae el 
 que llegó por tarjeta: se ve antes qué trae cada uno, y traer lo mismo otra vez no trae nada nuevo. Probado contra
 el mock y en QA. Las tomas se graban a 32 kbps.
 
+### 6.11 Lo que espera internet
+
+Acordado el 17 de octubre. Casi siempre se trabaja sin internet, así que lo que necesita Door43 se pide igual y
+espera en el teléfono: subir el proyecto, marcar una versión, dejar el trabajo para el equipo y traer el de los demás.
+
+- **Se pide sin internet.** Los botones lo dicen («Subir cuando haya internet», «Dejar mi trabajo cuando haya
+  internet»), y la pantalla muestra lo que espera, con «Quitar» para no enviarlo. Si el teléfono dice que hay internet
+  pero Door43 no responde (una red sin salida), lo intentado queda esperando igual, y se dice.
+- **Una vez cada cosa.** Pedir lo mismo dos veces lo deja una vez. Marcar una versión sube antes, así que ocupa el
+  lugar de una subida que esperaba; hecho después con internet desde su pantalla, lo que esperaba hacer lo mismo se
+  quita.
+- **Cuando vuelve internet, se pregunta.** Al volver la conexión, o al abrir la app con ella, sube una hoja, «Ya hay
+  internet», con lo que espera de la persona que usa el teléfono: qué va, a dónde (el repositorio del proyecto o el
+  del trabajo del equipo), con cuántas grabaciones, cuándo se pidió y si el libro cambió desde entonces. Un botón lo
+  envía todo; cada cosa se puede quitar; «Ahora no» espera hasta la próxima vez que vuelva la conexión. No sube
+  mientras se escribe: espera a que se suelte el campo.
+- **Va como está al enviarse**, no como estaba al pedirse: se sube el trabajo más reciente, y la hoja avisa si
+  cambió. El número de la versión lo dice Door43 al momento (si no responde, no se adivina).
+- **Lo de cada persona va con su cuenta**, y solo a ella se le pregunta. Lo que no se pudo enviar sigue esperando con
+  su problema; sin conexión a mitad de camino, lo demás no se intenta.
+- **Traer** no envía nada: al decir que sí se abre el trabajo del equipo, que trae lo de los demás para verlo antes
+  de recibirlo.
+
+Hecho en el prototipo (`outbox.ts`, `WaitingSheet`), probado con un Door43 de mentira en la página y en las pruebas.
+
 ## 7. Los paquetes
 
 | Paquete | Qué lleva | Quién lo hace |
@@ -362,7 +387,9 @@ Como en `usfm-editor`:
 - **Se sube todo lo traducido**, cada vez; Door43 guarda la historia de cada subida. Un archivo igual al que ya está
   no se vuelve a escribir, y uno que cambió se actualiza con el `sha` que tiene allá: si alguien subió en el medio,
   se dice, no se pisa. Una **versión con número** (`v1`, `v2`…, un *release*) se marca aparte, cuando el equipo da por
-  bueno lo que está en Door43.
+  bueno lo que está en Door43; se puede marcar sin volver a subir cuando lo del teléfono ya está allá sin cambios.
+  Las grabaciones no van a git (Door43 no tiene LFS, y git guardaría cada toma para siempre): la que cuenta de cada
+  versículo va adjunta a la versión, un `audio-LIBRO.zip` por libro. Probado en QA el 17 de octubre.
 - **La alineación con el original va en el USFM**, donde la hay: cada palabra como `\w`, los grupos en
   `\zaln-s`/`\zaln-e` con Strong, lema y morfología, como los escriben las herramientas de unfoldingWord.
 - **La cuenta**: cada persona vincula la suya una vez en el teléfono (menú de la persona › Cuenta de Door43). La
@@ -370,8 +397,8 @@ Como en `usfm-editor`:
   hecha en Door43. Se ofrece Door43 y su copia de prueba (QA); al programar, un Door43 de mentira en la computadora
   (el de Taller, `npm run mock:door43`).
 - **Sin internet** no se pierde nada: el trabajo está en el teléfono, y la pantalla dice libro por libro si cambió
-  desde la última subida. Falta todavía la cola que sube sola al volver la conexión, y subir el diario («su
-  historia») junto con los libros.
+  desde la última subida. Subir y marcar una versión se piden igual, y esperan a que haya internet y a que la persona
+  diga que sí (6.11). Falta todavía subir el diario («su historia») junto con los libros.
 - El cliente de Door43 es el de Taller (`packages/dcs-client`), copiado en `src/door43/dcs`.
 
 **USFM, de ida y vuelta** (prototipo): un libro empezado en otra app se trae desde su archivo USFM («Agregar un

@@ -1,12 +1,13 @@
 /**
  * Publishing a project to Door43 (design, section 8). A project goes to one repository of its team's organization
  * (`{owner}/{repo}`, chosen once), a Resource Container bundle: each book as `NN-BOOK.usfm`, and a `manifest.yaml`
- * that names them; the recordings said aloud, the take that counts for each place, under `audio/`. Publishing uploads everything translated, each time; Door43 keeps the history of every upload. A
- * numbered version is marked apart (a release), when the team holds a state good.
+ * that names them. Publishing uploads everything translated, each time; Door43 keeps the history of every upload. A
+ * numbered version is marked apart (a release), when the team holds a state good; the recordings said aloud, the take
+ * that counts for each place, go attached to it, a zip by book (git would keep every take ever recorded).
  *
  * Who publishes signs in to Door43 once on this phone: the password is exchanged for a token (Taller's way), and
- * only the token is kept, by person. Without internet nothing is lost: the work stays on the phone, and the app says
- * what has changed since it was last uploaded.
+ * only the token is kept, by person. Without internet nothing is lost: the work stays on the phone, the app says what
+ * has changed since it was last uploaded, and what is asked waits for internet (`outbox.ts`).
  */
 
 import {
@@ -250,9 +251,15 @@ export async function publish(
   return results
 }
 
-/** The next version's number: one more than the last marked on Door43 (`v3` → 4), 1 at first. */
+/**
+ * The next version's number: one more than the last marked on Door43 (`v3` → 4), 1 at first. Not reaching Door43 is
+ * not «none yet»: it fails, rather than propose a number already taken.
+ */
 export async function nextVersion(account: Door43Account, to: Destination): Promise<number> {
-  const releases = await listReleases(configOf(to.host), to.owner, to.repo, { token: account.token }).catch(() => [])
+  const releases = await listReleases(configOf(to.host), to.owner, to.repo, { token: account.token }).catch((e) => {
+    if (e instanceof DcsApiError && e.status === 404) return []
+    throw e
+  })
   const numbers = releases.map((r) => Number(/^v(\d+)$/.exec(r.tag_name)?.[1] ?? 0))
   return Math.max(0, ...numbers) + 1
 }
