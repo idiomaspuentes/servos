@@ -137,8 +137,15 @@ Desde el 16 de octubre de 2026 la app guarda cada libro así (cableado, pasos 1 
     contenidos (pasados 10 MB), se trae por la vía raw. Lo dejado antes sin comprimir se sigue trayendo, y quien lo
     dejó lo reemplaza al dejar otra vez (probado en QA: 1986 bytes sin comprimir, 759 comprimido). La llave que
     se crea al vincular lleva el aparato (`servos-{aparato}-…`): antes, vincular en un aparato borraba las llaves de
-    la misma cuenta en los demás (también en Taller, que tiene el mismo cliente). Pendiente: el sonido de las
-    grabaciones.
+    la misma cuenta en los demás (también en Taller, que tiene el mismo cliente).
+16. **El audio no se guarda en git** (decidido el 17 de octubre). Git guarda cada versión entera de un archivo de
+    sonido, para siempre, y Door43 no tiene Git LFS: un equipo que regraba llenaría el repositorio de tomas viejas.
+    Por eso: las tomas se graban a 32 kbps (Opus), una cuarta parte de lo que graba un navegador por omisión; el
+    trabajo del equipo (con el sonido de sus tomas) se deja como adjunto del *release* «trabajo» del repositorio
+    privado, uno por persona y teléfono, reemplazado en su lugar, sin historia (`leaveWork`, `workLeft`); y lo que se
+    publica llevará el audio como adjunto de cada versión numerada. Probado en QA: un adjunto privado se crea, se
+    sube, se baja con la llave desde el navegador (sin ella, 404) y se borra; la toma de Bea llegó con su sonido al
+    teléfono de Ana. Lo dejado antes como archivo del repositorio se sigue trayendo.
 
 ## Lo que falta
 

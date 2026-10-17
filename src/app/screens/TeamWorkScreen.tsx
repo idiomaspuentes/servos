@@ -47,7 +47,7 @@ export function TeamWorkScreen({
   const [found, setFound] = useState<Found[] | null>(null)
   const [left, setLeft] = useState(false)
   const [problem, setProblem] = useState<Problem | null>(null)
-  const [done, setDone] = useState<{ names: string[]; choices: number } | null>(null)
+  const [done, setDone] = useState<{ names: string[]; choices: number; takes: number } | null>(null)
   // The prototype shared as a page inside Claude may not reach other sites: said before trying, not as a failure.
   const inPage = typeof window !== 'undefined' && 'claude' in window
   const date = (iso: string) => new Date(iso).toLocaleDateString(document.documentElement.lang || undefined)
@@ -157,13 +157,16 @@ export function TeamWorkScreen({
   const receiveAll = () => {
     let now = projects
     let choices = 0
+    let takes = 0
     for (const { file } of found ?? []) {
       const got = receiveShared(file, file.books.map((b) => b.code), { kind: 'join', projectId: project.id }, now, person)
       now = got.projects
       choices += got.books.reduce((n, b) => n + b.choices, 0)
+      takes += got.books.reduce((n, b) => n + b.recordingsTaken, 0)
     }
     onReceived(now)
-    setDone({ names: (found ?? []).map((f) => f.file.from), choices })
+    // One name each: someone may have left work from two phones (or from one that changed).
+    setDone({ names: [...new Set((found ?? []).map((f) => f.file.from))], choices, takes })
     setFound(null)
   }
   const brings = (p: BookPreview) => p.taken + p.choices + p.alignments + p.checks + p.studyNotes + p.recordings > 0
@@ -171,17 +174,19 @@ export function TeamWorkScreen({
   const said = (p: BookPreview, from: string) =>
     !brings(p)
       ? t('equipo.nadaNuevo')
-      : p.isNew
-        ? t('recibir.libroNuevo', { n: p.taken })
-        : togetherOf(p.code)
-          ? t('recibir.cambiaTodos', { nombre: from, elegir: p.choices, nuevos: p.taken })
-          : t('recibir.cambia', { nuevos: p.taken, iguales: p.same, elegir: p.choices })
+      : (p.isNew
+          ? t('recibir.libroNuevo', { n: p.taken })
+          : togetherOf(p.code)
+            ? t('recibir.cambiaTodos', { nombre: from, elegir: p.choices, nuevos: p.taken })
+            : t('recibir.cambia', { nuevos: p.taken, iguales: p.same, elegir: p.choices })) +
+        (p.recordings > 0 ? ` · ${t('recibir.grabaciones', { n: p.recordings })}` : '')
 
   // 3. Brought in: what came, and on to bring the versions together.
   if (done) {
     return screen(
       <>
         <p className="review-done">✓ {t('equipo.recibido', { nombres: namesTogether(done.names, t('juntar.y')) })}</p>
+        {done.takes > 0 && <p className="quiet">{t('recibir.grabacionesEntraron', { n: done.takes })}</p>}
         {done.choices > 0 ? (
           <button type="button" className="button-primary" onClick={onGather}>
             {t('recibir.elegirAhora', { n: done.choices })} →

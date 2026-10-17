@@ -267,10 +267,11 @@ mientras nada más se escribió. Y el modo de trabajo: en «Más» del libro, «
 Todos lo mismo), que viaja con el libro; con «Todos lo mismo», al recibir se dice «Llegó la versión de Bea» y la
 tarjeta del libro cuenta secciones para juntar y de quiénes llegaron versiones. En los dos modos, un versículo con
 versiones esperando no cuenta como traducido hasta que se junta. Y Door43 como vía: en «Más» del libro, «El trabajo
-del equipo en Door43» deja el paquete de cada uno (un archivo por persona y teléfono, que se reemplaza) en un
-repositorio privado junto al del proyecto (`{repo}-servos`), y trae el de los demás para recibirlo como uno que llegó
-por tarjeta: se ve antes qué trae cada uno, y traer lo mismo otra vez no trae nada nuevo. Probado contra el mock y
-en QA. Por ahora no lleva el sonido de las grabaciones (eso sigue por archivo).
+del equipo en Door43» deja el paquete de cada uno, con el sonido de sus tomas, en un repositorio privado junto al
+del proyecto (`{repo}-servos`), como adjunto de su *release* «trabajo» (uno por persona y teléfono, que se reemplaza
+sin dejar historia: git guardaría cada toma regrabada para siempre), y trae el de los demás para recibirlo como uno
+que llegó por tarjeta: se ve antes qué trae cada uno, y traer lo mismo otra vez no trae nada nuevo. Probado contra
+el mock y en QA. Las tomas se graban a 32 kbps.
 
 ## 7. Los paquetes
 
