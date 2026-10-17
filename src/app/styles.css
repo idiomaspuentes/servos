@@ -31,7 +31,7 @@
   --pill: #fffdf8;
   /* A box to write in, when it is not the one being written: the card's paper on the light ground; a faint field on the dark */
   --field: #fffdf8;
-  /* The scripture world in a serif made for reading on screens: the bridge texts, titles and book names (Literata) */
+  /* Ochre: the far bank, what is marked */
   --ochre: #b07b1f;
   /* A field of ink: the one place where going on is the whole block (home's «go on where you left off») */
   --field-ink: #17496a;
@@ -40,10 +40,10 @@
   --field-kicker: #f0cf7f;
   --field-button: #f4efe4;
   --field-button-text: #17496a;
-  --serif: 'Literata Variable', Georgia, 'Times New Roman', serif;
-  /* Figtree: open, compact letters that read well small on a phone, with a plain zero (Atkinson Hyperlegible's slashed
-     one turned «Jonás 1:10» into «1:1Ø»); Latin and its extensions, the rest from the system. */
-  --font: 'Figtree Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* translationCore 4's letters (fonts.css): Charis SIL for the scripture, drawn for long reading of Latin and Cyrillic
+     scripts; Mulish for the interface (tC4's stand-in for unfoldingWord's Avenir), heavy in headings and buttons. */
+  --serif: 'Charis SIL', 'PT Serif', Georgia, 'Times New Roman', serif;
+  --font: 'Mulish', 'Avenir Next', 'Avenir', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   /* Movement: short, easing out, so what is touched answers at once. */
   --ease: cubic-bezier(0.2, 0, 0, 1);
   --quick: 140ms;
@@ -128,10 +128,10 @@ body {
   -webkit-tap-highlight-color: color-mix(in srgb, var(--accent) 14%, transparent);
 }
 /* Headings by size and weight, not by grey: heavier and a little tighter than the text, never one word alone on a line */
-h1 { font-size: 1.75rem; line-height: 1.2; letter-spacing: -0.015em; margin-block: 0.25rem 1rem; font-weight: 700; text-wrap: balance; }
-h2 { font-size: 1.15rem; line-height: 1.3; letter-spacing: -0.006em; margin: 0; font-weight: 650; text-wrap: balance; }
-h3 { font-size: 1rem; margin-block: 1.25rem 0.5rem; font-weight: 650; text-wrap: balance; }
-h4 { font-size: 0.95rem; margin-block: 1rem 0.25rem; font-weight: 650; }
+h1 { font-size: 1.75rem; line-height: 1.2; letter-spacing: -0.015em; margin-block: 0.25rem 1rem; font-weight: 900; text-wrap: balance; }
+h2 { font-size: 1.15rem; line-height: 1.3; letter-spacing: -0.006em; margin: 0; font-weight: 850; text-wrap: balance; }
+h3 { font-size: 1rem; margin-block: 1.25rem 0.5rem; font-weight: 800; text-wrap: balance; }
+h4 { font-size: 0.95rem; margin-block: 1rem 0.25rem; font-weight: 800; }
 p { margin-block: 0 0.75rem; text-wrap: pretty; }
 button, input, select, textarea { font: inherit; color: inherit; }
 
@@ -851,7 +851,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .welcome .main { padding-block: 3rem 2rem; gap: 1.75rem; }
 .welcome-brand { display: flex; flex-direction: column; gap: 0.75rem; }
 .welcome-brand .brand-mark { width: 5.5rem; height: 3.025rem; }
-.welcome-title { margin: 0; font-size: 3.1rem; line-height: 1; font-weight: 700; letter-spacing: -0.025em; }
+.welcome-title { margin: 0; font-size: 3.1rem; line-height: 1; font-weight: 900; letter-spacing: -0.025em; }
 .welcome-what { margin: 0; font-size: 1.15rem; color: var(--text-soft); max-width: 26rem; }
 .welcome .field { gap: 0.5rem; }
 .welcome-name { display: flex; flex-direction: column; gap: 0.75rem; }
@@ -1113,13 +1113,11 @@ button, .file-button, summary, input, select, textarea {
     .chapter-cell, .verse-cell, .file-button):active { transform: none; }
 }
 
-/* Paper and ink: the scripture world in the serif, what is read and what is named; verse numbers in the accent, as a
-   printed Bible's. The buttons and the rest stay in Figtree; what the team writes, in the project's font. */
-:is(h1, h2, .welcome-title, .header-app, .header-brand, .book-tile-name, .tool-card-name, .book-resume-what, .help-quote, .project-card h2) {
-  font-family: var(--serif);
-  letter-spacing: -0.005em;
-}
+/* As translationCore 4: the scripture in Charis SIL, its verse numbers in the accent as a printed Bible's; the
+   interface in Mulish, heavy in what names and what acts (headings 850-900, buttons, tabs and names 800). What the team
+   writes is in the project's font. */
 .chapter-lines { font-family: var(--serif); }
+:is(.button-primary, .button-secondary, .header-app, .header-brand, .book-tile-name, .tool-card-name, .book-resume-what, .panes-tab, .book-step, .helps-tab) { font-weight: 800; }
 :is(.chapter-lines, .verse) .verse-number { color: var(--accent); font-weight: 700; }
 
 /* Home's «go on where you left off» as a field of ink: the first thing touched, and home's own anchor */

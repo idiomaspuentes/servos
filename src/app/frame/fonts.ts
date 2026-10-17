@@ -1,15 +1,18 @@
 /**
- * The project's font (its settings: Charis SIL, Andika, Gentium Plus, Noto Sans), loaded when a project uses it. In
- * the prototype from Google Fonts, one family a request so one missing does not keep the others away; without
- * internet the system's font is used. Wired, the fonts come inside the app, to work offline.
+ * The project's font (its settings: Charis SIL, Andika, Gentium Plus, Noto Sans), loaded when a project uses it.
+ * Charis SIL, the default, comes inside the app (fonts.css), so it is there without internet. The others still come
+ * from Google Fonts, one family a request so one missing does not keep the others away; without internet the system's
+ * font is used until they are bundled too.
  */
 
 import { useEffect } from 'react'
 
+/** Families inside the app: never asked of Google. */
+const BUNDLED = new Set(['Charis SIL'])
 const asked = new Set<string>()
 
 export function loadFont(font: string | undefined) {
-  if (!font || asked.has(font) || typeof document === 'undefined') return
+  if (!font || BUNDLED.has(font) || asked.has(font) || typeof document === 'undefined') return
   asked.add(font)
   const link = document.createElement('link')
   link.rel = 'stylesheet'

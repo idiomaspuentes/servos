@@ -128,12 +128,12 @@ toma la forma de su papel:
   automático, el desenfoque gasta la batería de un teléfono barato y baja la lectura del texto. El carácter viene de
   lo que la app es: el papel, la tinta, la letra de la Escritura, el puente. Un solo campo de tinta en Inicio,
   «Siga donde quedó», que es lo primero que se toca.
-- **Dos letras, y la del equipo** (las tres guardadas dentro de la app, para que estén también sin internet): el mundo
-  de la Escritura en Literata, una letra con serifa hecha para leer en pantalla (los textos puente, los títulos, los
-  nombres de los libros), con los números de versículo en tinta, como en una Biblia impresa; los botones y lo demás
-  en Figtree, con el cero común (la de Atkinson Hyperlegible, con raya, hacía leer «Jonás 1:1Ø»); y lo que escribe
-  el equipo, en la letra del proyecto. Los títulos se distinguen por tamaño y peso, no por gris, y ninguno deja una
-  palabra sola en un renglón.
+- **Las letras de translationCore 4** (17 de octubre; guardadas dentro de la app, con todos sus alfabetos, para que
+  estén también sin internet): la interfaz en Mulish, la que tC4 usa en lugar de Avenir, la de unfoldingWord, gruesa
+  en lo que nombra y en lo que actúa (títulos 850–900, botones, pestañas y nombres 800); la Escritura en Charis SIL,
+  con los números de versículo en tinta, como en una Biblia impresa. Charis es también la letra por defecto de lo que
+  escribe el equipo. Se probaron antes Atkinson Hyperlegible (su cero con raya hacía leer «Jonás 1:1Ø»), Figtree y
+  Literata. Los títulos se distinguen por tamaño y peso, no por gris, y ninguno deja una palabra sola en un renglón.
 - **La marca es un puente**: el arco sobre un tablero que cruza de una orilla a la otra, y el tablero es una línea de
   texto que empieza en papel y termina en ocre, de una lengua a la otra. Es el texto puente, y el nombre de Idiomas
   Puentes. Dentro de la app se dibuja sobre el papel, como la marca de una imprenta, en el color del texto y la

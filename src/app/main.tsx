@@ -9,10 +9,7 @@ import { loadProjects } from './projects/model'
 import { moveWorkToProjects } from './projects/scope'
 import { I18nProvider } from './i18n/i18n'
 import './miniapps/registry'
-// The app's own letters, inside the app so they are there without internet (Latin and its extensions; others fall
-// back to the system's).
-import '@fontsource-variable/figtree/wght.css'
-import '@fontsource-variable/figtree/wght-italic.css'
+// The app's letters, inside it so they are there without internet: Mulish and Charis SIL, as translationCore 4.
 import './fonts.css'
 import './styles.css'
 
