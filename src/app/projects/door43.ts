@@ -26,6 +26,7 @@ import {
   type ContentsResponse,
   type DcsClientConfig,
 } from '../../door43/dcs'
+import { deviceId } from './bookText'
 import { BOOKS, type Project } from './model'
 
 const KEY = 'servos.prototipo.door43'
@@ -66,12 +67,17 @@ export interface Door43Account {
 export const accountOf = (person: string) => read<Door43Account>(`${KEY}.cuenta.${person}`)
 export const forgetAccount = (person: string) => write(`${KEY}.cuenta.${person}`, null)
 
-/** Signs in with a password, which is used for this one request; the token minted is kept for the person. */
+/**
+ * Signs in with a password, which is used for this one request; the token minted is kept for the person. Its name
+ * carries this device (`servos-{device}-…`): signing in again replaces this device's earlier token, never another
+ * device's, so the same person on a phone and a computer is not signed out of one by signing in on the other (found
+ * on QA, with two phones of one account).
+ */
 export async function signIn(person: string, host: string, username: string, password: string): Promise<Door43Account> {
   const { user, token } = await signInWithPassword(configOf(host), {
     username: username.trim(),
     password,
-    tokenNamePrefix: 'servos',
+    tokenNamePrefix: `servos-${deviceId()}`,
     // Making a repository in the team's organization (the one published, the team's work) needs write:organization:
     // with write:repository alone Door43 refuses it (found on QA).
     scopes: ['read:user', 'read:organization', 'write:organization', 'write:repository'],

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fileOf, fingerprint, leaveWork, manifestOf, problemOf, proposedRepo, publish, workLeft, workPathOf, workRepoOf } from './door43'
+import { fileOf, fingerprint, leaveWork, manifestOf, problemOf, proposedRepo, publish, signIn, workLeft, workPathOf, workRepoOf } from './door43'
 import { DcsApiError } from '../../door43/dcs'
 
 describe('a project published to Door43', () => {
@@ -97,6 +97,41 @@ describe('uploading the files', () => {
     expect((await publish(account, to, [{ path: 'a.usfm', content: 'uno' }], 'Servos'))[0].state).toBe('same')
     expect((await publish(account, to, [{ path: 'a.usfm', content: 'dos' }], 'Servos'))[0].state).toBe('written')
     expect(d.files.get('a.usfm')?.content).toBe('dos')
+  })
+})
+
+describe('vincular la cuenta en varios aparatos', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('vincular en un aparato reemplaza su propia llave anterior, no la de otro aparato de la misma cuenta', async () => {
+    const store = new Map([['servos.dispositivo', 'tel-a']])
+    globalThis.localStorage = { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => void store.set(k, v) } as Storage
+    const tokens = [
+      { id: 1, name: 'servos-tel-a-viejo' },
+      { id: 2, name: 'servos-tel-b-suyo' },
+      { id: 3, name: 'otra-app' },
+    ]
+    const deleted: number[] = []
+    let created = ''
+    vi.stubGlobal('fetch', async (url: string, init: RequestInit = {}) => {
+      const path = new URL(url).pathname.replace('/api/v1', '')
+      const method = init.method ?? 'GET'
+      const ok = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status })
+      if (path === '/users/ana/tokens' && method === 'GET') return ok(tokens)
+      const m = /^\/users\/ana\/tokens\/(\d+)$/.exec(path)
+      if (m && method === 'DELETE') {
+        deleted.push(Number(m[1]))
+        return new Response(null, { status: 204 })
+      }
+      if (path === '/users/ana/tokens' && method === 'POST') {
+        created = JSON.parse(String(init.body)).name
+        return ok({ id: 9, name: created, sha1: 'nueva' }, 201)
+      }
+      if (path === '/user') return ok({ id: 1, login: 'ana', full_name: 'Ana' })
+      return ok({}, 404)
+    })
+    const account = await signIn('Ana', 'https://qa.door43.org', 'ana', 'contraseña-de-prueba')
+    expect([account.token, deleted, created.startsWith('servos-tel-a-')]).toEqual(['nueva', [1], true])
   })
 })
 
