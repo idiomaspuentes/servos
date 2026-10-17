@@ -122,7 +122,12 @@ toma la forma de su papel:
   las dos. En el editor, solo la caja que se escribe se dibuja; las demás son un fondo leve.
 - **Papel y tinta** (elegido el 17 de octubre de 2026): el fondo es el papel cálido de una Biblia impresa, el texto
   va en tinta, lo que lleva adelante en un azul tinta profundo, y lo marcado en ocre. Las sombras toman el café del
-  papel, no el gris. En oscuro, el mismo papel de noche con la tinta más clara.
+  papel, no el gris. **De noche, la tinta es el fondo y el papel es la luz**: un azul profundo con el tinte de la
+  paleta, el texto en papel suave (nunca blanco), la profundidad por un tono más claro y no por sombras ni brillos.
+- **Sin vidrio ni degradados** (decidido el 17 de octubre): son la marca más reconocible de un diseño hecho en
+  automático, el desenfoque gasta la batería de un teléfono barato y baja la lectura del texto. El carácter viene de
+  lo que la app es: el papel, la tinta, la letra de la Escritura, el puente. Un solo campo de tinta en Inicio,
+  «Siga donde quedó», que es lo primero que se toca.
 - **Dos letras, y la del equipo** (las tres guardadas dentro de la app, para que estén también sin internet): el mundo
   de la Escritura en Literata, una letra con serifa hecha para leer en pantalla (los textos puente, los títulos, los
   nombres de los libros), con los números de versículo en tinta, como en una Biblia impresa; los botones y lo demás
@@ -131,7 +136,8 @@ toma la forma de su papel:
   palabra sola en un renglón.
 - **La marca es un puente**: el arco sobre un tablero que cruza de una orilla a la otra, y el tablero es una línea de
   texto que empieza en papel y termina en ocre, de una lengua a la otra. Es el texto puente, y el nombre de Idiomas
-  Puentes. Los íconos de la app (`public/`) y la marca de la pantalla (`BrandMark`) son el mismo dibujo.
+  Puentes. Dentro de la app se dibuja sobre el papel, como la marca de una imprenta, en el color del texto y la
+  otra orilla en ocre (`BrandMark`); los íconos del teléfono (`public/`) lo ponen en su cuadrado de tinta.
 - **Lo que se toca responde**: un botón o una tarjeta cede un poco bajo el dedo, una fila se tiñe, y con ratón se marca
   lo que está debajo. El movimiento es corto (una hoja sube deslizándose) y no hay ninguno si la persona pidió menos
   movimiento.

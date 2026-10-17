@@ -32,6 +32,14 @@
   /* A box to write in, when it is not the one being written: the card's paper on the light ground; a faint field on the dark */
   --field: #fffdf8;
   /* The scripture world in a serif made for reading on screens: the bridge texts, titles and book names (Literata) */
+  --ochre: #b07b1f;
+  /* A field of ink: the one place where going on is the whole block (home's «go on where you left off») */
+  --field-ink: #17496a;
+  --on-field: #f4efe4;
+  --on-field-soft: rgba(244, 239, 228, 0.8);
+  --field-kicker: #f0cf7f;
+  --field-button: #f4efe4;
+  --field-button-text: #17496a;
   --serif: 'Literata Variable', Georgia, 'Times New Roman', serif;
   /* Figtree: open, compact letters that read well small on a phone, with a plain zero (Atkinson Hyperlegible's slashed
      one turned «Jonás 1:10» into «1:1Ø»); Latin and its extensions, the rest from the system. */
@@ -42,56 +50,72 @@
   color-scheme: light;
 }
 
-/* The viewer's theme wins either way: an explicit data-theme, else the system's. */
+/* Ink night: at night the ink becomes the ground, a deep blue with the palette's tint, and the paper becomes the light
+   of the text, soft, never white. Depth comes from a lighter step, not from shadows or glows; the ink's blue still
+   goes on, the ochre still marks. The viewer's theme wins either way: an explicit data-theme, else the system's. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #171614;
-    --surface: #22211e;
-    --surface-soft: #2c2a26;
-    --text: #efece4;
-    --text-soft: #b5b0a5;
-    --line: #3d3a34;
-    --accent: #8ab9d9;
-    --accent-text: #0e1a24;
-    --accent-soft: #1c2b35;
-    --mark: #6b5310;
+    --bg: #0f1a20;
+    --surface: #16232b;
+    --surface-soft: #1d2c35;
+    --text: #ece6d8;
+    --text-soft: #a7aea9;
+    --line: #2b3b45;
+    --accent: #93c0dd;
+    --accent-text: #0d1820;
+    --accent-soft: #1b3140;
+    --mark: #5c4815;
     --warn-bg: #3a2c12;
     --warn-text: #f5d79e;
-    --danger: #f09595;
+    --danger: #f09a92;
     --done: #8fcf86;
-    --done-soft: #1f3320;
-    --hair: rgba(239, 236, 228, 0.09);
-    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.2);
-    --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.6);
-    --track: #100f0e;
-    --pill: #34322d;
-    --field: rgba(34, 33, 30, 0.6);
+    --done-soft: #17301f;
+    --hair: rgba(236, 230, 216, 0.09);
+    --shadow-card: none;
+    --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.55);
+    --track: #09131a;
+    --pill: #24343e;
+    --field: rgba(22, 35, 43, 0.7);
+    --ochre: #e2b55c;
+    --field-ink: #1e3747;
+    --on-field: #ece6d8;
+    --on-field-soft: rgba(236, 230, 216, 0.78);
+    --field-kicker: #e2b55c;
+    --field-button: #93c0dd;
+    --field-button-text: #0d1820;
     color-scheme: dark;
   }
 }
 
 :root[data-theme='dark'] {
-  --bg: #171614;
-  --surface: #22211e;
-  --surface-soft: #2c2a26;
-  --text: #efece4;
-  --text-soft: #b5b0a5;
-  --line: #3d3a34;
-  --accent: #8ab9d9;
-  --accent-text: #0e1a24;
-  --accent-soft: #1c2b35;
-  --mark: #6b5310;
+  --bg: #0f1a20;
+  --surface: #16232b;
+  --surface-soft: #1d2c35;
+  --text: #ece6d8;
+  --text-soft: #a7aea9;
+  --line: #2b3b45;
+  --accent: #93c0dd;
+  --accent-text: #0d1820;
+  --accent-soft: #1b3140;
+  --mark: #5c4815;
   --warn-bg: #3a2c12;
   --warn-text: #f5d79e;
-  --danger: #f09595;
+  --danger: #f09a92;
   --done: #8fcf86;
-  --done-soft: #1f3320;
-  --hair: rgba(239, 236, 228, 0.09);
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.2);
-  --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.6);
-  --track: #100f0e;
-  --pill: #34322d;
-  --field: rgba(34, 33, 30, 0.6);
+  --done-soft: #17301f;
+  --hair: rgba(236, 230, 216, 0.09);
+  --shadow-card: none;
+  --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.55);
+  --track: #09131a;
+  --pill: #24343e;
+  --field: rgba(22, 35, 43, 0.7);
+  --ochre: #e2b55c;
+  --field-ink: #1e3747;
+  --on-field: #ece6d8;
+  --on-field-soft: rgba(236, 230, 216, 0.78);
+  --field-kicker: #e2b55c;
+  --field-button: #93c0dd;
+  --field-button-text: #0d1820;
   color-scheme: dark;
 }
 
@@ -104,7 +128,7 @@ body {
   -webkit-tap-highlight-color: color-mix(in srgb, var(--accent) 14%, transparent);
 }
 /* Headings by size and weight, not by grey: heavier and a little tighter than the text, never one word alone on a line */
-h1 { font-size: 1.5rem; line-height: 1.25; letter-spacing: -0.012em; margin-block: 0.25rem 1rem; font-weight: 700; text-wrap: balance; }
+h1 { font-size: 1.75rem; line-height: 1.2; letter-spacing: -0.015em; margin-block: 0.25rem 1rem; font-weight: 700; text-wrap: balance; }
 h2 { font-size: 1.15rem; line-height: 1.3; letter-spacing: -0.006em; margin: 0; font-weight: 650; text-wrap: balance; }
 h3 { font-size: 1rem; margin-block: 1.25rem 0.5rem; font-weight: 650; text-wrap: balance; }
 h4 { font-size: 0.95rem; margin-block: 1rem 0.25rem; font-weight: 650; }
@@ -136,7 +160,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
   overflow-wrap: anywhere; cursor: pointer;
 }
 .header-brand { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 750; font-size: 1.1rem; padding-inline: 0.25rem; letter-spacing: -0.01em; }
-.brand-mark { flex: none; width: 1.6rem; height: 1.6rem; }
+/* The bridge drawn on the page, in the text's colour, its far half in ochre: a printer's mark, not an app's tile */
+.brand-mark { flex: none; width: 2.5rem; height: 1.375rem; color: var(--text); overflow: visible; }
+.brand-mark-other { stroke: var(--ochre); }
 .header-person-chip { grid-column: 3; }
 
 /* Buttons */
@@ -824,8 +850,8 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 /* Its groups apart (what it is · the language · the name and «Start» · the example), each one close inside */
 .welcome .main { padding-block: 3rem 2rem; gap: 1.75rem; }
 .welcome-brand { display: flex; flex-direction: column; gap: 0.75rem; }
-.welcome-brand .brand-mark { width: 3.25rem; height: 3.25rem; }
-.welcome-title { margin: 0; font-size: 2.4rem; line-height: 1.1; font-weight: 750; letter-spacing: -0.02em; }
+.welcome-brand .brand-mark { width: 5.5rem; height: 3.025rem; }
+.welcome-title { margin: 0; font-size: 3.1rem; line-height: 1; font-weight: 700; letter-spacing: -0.025em; }
 .welcome-what { margin: 0; font-size: 1.15rem; color: var(--text-soft); max-width: 26rem; }
 .welcome .field { gap: 0.5rem; }
 .welcome-name { display: flex; flex-direction: column; gap: 0.75rem; }
@@ -1095,3 +1121,13 @@ button, .file-button, summary, input, select, textarea {
 }
 .chapter-lines { font-family: var(--serif); }
 :is(.chapter-lines, .verse) .verse-number { color: var(--accent); font-weight: 700; }
+
+/* Home's «go on where you left off» as a field of ink: the first thing touched, and home's own anchor */
+.book-resume.is-field { gap: 0.25rem; padding: 1.1rem 1rem 1rem; border-radius: 16px; background: var(--field-ink); color: var(--on-field); }
+.book-resume.is-field .book-resume-kicker { color: var(--field-kicker); font-size: 0.85rem; }
+.book-resume.is-field .book-resume-what { font-size: 1.35rem; line-height: 1.25; font-weight: 650; }
+.book-resume.is-field .book-resume-project { color: var(--on-field-soft); margin-block: -0.15rem 0.75rem; }
+.book-resume.is-field .button-primary { background: var(--field-button); border-color: var(--field-button); color: var(--field-button-text); }
+@media (hover: hover) and (pointer: fine) {
+  .book-resume.is-field .button-primary:not(:disabled):hover { background: color-mix(in srgb, var(--field-button) 88%, var(--field-ink)); border-color: color-mix(in srgb, var(--field-button) 88%, var(--field-ink)); }
+}

@@ -59,7 +59,7 @@ export function Home({
       </header>
       <main className="main">
         {resumeProject && resumeBook && (
-          <section className="book-resume" aria-label={t('libro.sigaDonde')}>
+          <section className="book-resume is-field" aria-label={t('libro.sigaDonde')}>
             <span className="book-resume-kicker">{t('libro.sigaDonde')}</span>
             <span className="book-resume-what">{resumeAt ?? `${titleOf(resumeProject, resumeBook.code)} · ${t(`pasos.${resumeBook.phase}`)}`}</span>
             <span className="quiet book-resume-project">{resumeProject.name}</span>
