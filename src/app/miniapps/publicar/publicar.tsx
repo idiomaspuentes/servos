@@ -279,7 +279,11 @@ function Center({ context }: MiniAppCenterProps) {
   )
 }
 
-/** Where the project goes: one of the account's organizations, and the repository's name. */
+/**
+ * Where the project goes: one of the account's organizations, and the repository's name. One question; the
+ * organizations as rows of one card (an account may belong to many); the repository's name, which few change, said
+ * in a line with its chip.
+ */
 export function DestinationForm({
   host,
   proposed,
@@ -288,6 +292,8 @@ export function DestinationForm({
   onSave,
   onCancel,
   saveLabel,
+  heading,
+  help,
 }: {
   host: string
   proposed: Destination
@@ -295,14 +301,17 @@ export function DestinationForm({
   projectName: string
   onSave(d: Destination): void
   onCancel?(): void
-  /** What saving it does where the form is used for something else than publishing now. */
+  /** What saving it does, the question and its line, where the form is used for something else than publishing now. */
   saveLabel?: string
+  heading?: string
+  help?: string
 }) {
   const t = useT()
   const [orgs, setOrgs] = useState<string[] | null>(null)
   const [failed, setFailed] = useState<string | null>(null)
   const [owner, setOwner] = useState(proposed.owner)
   const [repo, setRepo] = useState(proposed.repo)
+  const [naming, setNaming] = useState(false)
   useEffect(() => {
     organizations()
       .then((list) => {
@@ -321,24 +330,37 @@ export function DestinationForm({
         if (valid) onSave({ host, owner, repo })
       }}
     >
-      <h2 className="publish-heading">{t('publicar.destinoPregunta', { proyecto: projectName })}</h2>
-      <p className="quiet">{t('publicar.destinoAyuda')}</p>
-      <fieldset className="field">
-        <legend className="field-label">{t('publicar.organizacion')}</legend>
-        {failed && <p className="notice">{failed}</p>}
-        {orgs === null && !failed && <p className="quiet">{t('publicar.buscandoOrganizaciones')}</p>}
-        {orgs?.length === 0 && <p className="notice">{t('publicar.sinOrganizaciones')}</p>}
-        {orgs?.map((o) => (
-          <button key={o} type="button" className={owner === o ? 'option is-on' : 'option'} aria-pressed={owner === o} onClick={() => setOwner(o)}>
-            <span className="option-title">{o}</span>
+      <h2 className="publish-heading">{heading ?? t('publicar.destinoPregunta', { proyecto: projectName })}</h2>
+      <p className="quiet destination-help">{help ?? t('publicar.destinoAyuda')}</p>
+      {failed && <p className="notice">{failed}</p>}
+      {orgs === null && !failed && <p className="quiet">{t('publicar.buscandoOrganizaciones')}</p>}
+      {orgs?.length === 0 && <p className="notice">{t('publicar.sinOrganizaciones')}</p>}
+      {orgs && orgs.length > 0 && (
+        <div className="destination-orgs" role="radiogroup" aria-label={t('publicar.organizacion')}>
+          {orgs.map((o) => (
+            <button key={o} type="button" role="radio" aria-checked={owner === o} className="destination-org" onClick={() => setOwner(o)}>
+              <span className="destination-dot" aria-hidden="true" />
+              {o}
+            </button>
+          ))}
+        </div>
+      )}
+      {naming ? (
+        <label className="field">
+          <span className="field-label">{t('publicar.repositorio')}</span>
+          <input value={repo} onChange={(e) => setRepo(e.target.value.trim())} autoCapitalize="none" spellCheck={false} autoFocus />
+          <span className="quiet">{t('publicar.repositorioAyuda')}</span>
+        </label>
+      ) : (
+        <div className="destination-repo">
+          <span className="destination-repo-name">
+            <span className="quiet">{t('publicar.repositorio')}:</span> {repo}
+          </span>
+          <button type="button" className="chip" onClick={() => setNaming(true)}>
+            ✎ {t('publicar.cambiar')}
           </button>
-        ))}
-      </fieldset>
-      <label className="field">
-        <span className="field-label">{t('publicar.repositorio')}</span>
-        <input value={repo} onChange={(e) => setRepo(e.target.value.trim())} autoCapitalize="none" spellCheck={false} />
-        <span className="quiet">{t('publicar.repositorioAyuda')}</span>
-      </label>
+        </div>
+      )}
       <button type="submit" className="button-primary" disabled={!valid}>
         {saveLabel ?? t('publicar.guardarDestino')}
       </button>

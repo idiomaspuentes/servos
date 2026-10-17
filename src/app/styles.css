@@ -962,3 +962,15 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
   box-shadow: inset 0 0 0 1px var(--accent); background: var(--surface); color: var(--text); resize: none;
   font-family: var(--project-font, var(--font)); font-size: 1.1rem; line-height: 1.55;
 }
+
+/* Where a project lives on Door43: the organizations as rows of one card, each with its dot (an account may belong to
+   many: rows, not a box each); the repository's name in a line with its chip, since few change it. */
+.destination-help { margin: -0.4rem 0 0; }
+.destination-orgs { display: flex; flex-direction: column; border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-card); overflow: hidden; }
+.destination-org { display: flex; align-items: center; gap: 0.7rem; width: 100%; min-height: var(--touch); padding: 0.55rem 0.9rem; border: 0; border-radius: 0; border-block-start: 1px solid var(--hair); background: none; color: var(--text); text-align: start; font-weight: 500; overflow-wrap: anywhere; }
+.destination-org:first-child { border-block-start: 0; }
+.destination-org[aria-checked='true'] { font-weight: 700; background: color-mix(in srgb, var(--accent-soft) 70%, transparent); }
+.destination-dot { width: 1.1rem; height: 1.1rem; flex: none; border-radius: 50%; border: 2px solid var(--text-soft); }
+.destination-org[aria-checked='true'] .destination-dot { border-color: var(--accent); background: radial-gradient(var(--accent) 0 40%, transparent 45%); }
+.destination-repo { display: flex; align-items: center; gap: 0.6rem; }
+.destination-repo-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }

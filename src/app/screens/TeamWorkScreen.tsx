@@ -97,13 +97,14 @@ export function TeamWorkScreen({
   if (!to) {
     return screen(
       <>
-        <p>{t('equipo.dondeAyuda')}</p>
         <DestinationForm
           host={account.host}
           proposed={{ host: account.host, owner: '', repo: proposedRepo(project) }}
           organizations={() => organizationsOf(account)}
           projectName={project.name}
           saveLabel={t('equipo.guardarAhi')}
+          heading={t('equipo.dondePregunta')}
+          help={t('equipo.dondeAyuda')}
           onSave={(d) => {
             setDestination(project.id, d)
             setTo(d)
