@@ -13,6 +13,7 @@ import './miniapps/registry'
 // back to the system's).
 import '@fontsource-variable/figtree/wght.css'
 import '@fontsource-variable/figtree/wght-italic.css'
+import './fonts.css'
 import './styles.css'
 
 // Before the first paint: a person who chose light or dark does not see the other one flash.

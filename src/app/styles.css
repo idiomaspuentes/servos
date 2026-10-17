@@ -1,34 +1,38 @@
 /* Phone first (375 px), 44 px touch targets, logical properties so a right-to-left language needs no other sheet. */
 
 :root {
-  /* Light: cool neutrals with a little of the accent's blue in them, as tC4's paper, frost and mist (a warm beige
-     fought the blue); ink for text. Each text colour reads at 4.5:1 or more on the ground and on a card. */
-  --bg: #f2f5f7;
-  --surface: #ffffff;
-  --surface-soft: #e8edf1;
-  --text: #1e2c36;
-  --text-soft: #4f5e6a;
-  --line: #d3dce2;
-  --accent: #1f5f8b;
+  /* Paper and ink (chosen 17 October 2026): the warm paper of a printed Bible for the ground, ink for the text, a deep
+     ink blue for going on, ochre for what is marked, as the bridge's second language in the mark. Each text colour
+     reads at 4.5:1 or more on the ground and on a card. */
+  --bg: #f4efe4;
+  --surface: #fffdf8;
+  --surface-soft: #ece5d6;
+  --text: #1f2a30;
+  --text-soft: #5b5e59;
+  --line: #ddd4c2;
+  --accent: #17496a;
   --accent-text: #ffffff;
-  --accent-soft: #e3f0f8;
-  --mark: #fff1b8;
-  --warn-bg: #fcf6ea;
+  --accent-soft: #e3eaed;
+  --mark: #f6dd8f;
+  --warn-bg: #faf0dc;
   --warn-text: #8a5b12;
   --danger: #a21309;
-  --done: #327547;
-  --done-soft: #e8f7ed;
+  --done: #3b7a4a;
+  --done-soft: #e6f2e4;
   --radius: 10px;
   --touch: 44px;
   /* Three tones, as tC4: the ground; a card on it, lifted by tone and a soft shadow, not drawn round; inside a card,
-     nothing in its own box, only hairlines. A pill switch runs on a sunken track, the chosen one raised. */
-  --hair: rgba(1, 66, 99, 0.1);
-  --shadow-card: 0 1px 2px rgba(1, 66, 99, 0.08), 0 2px 8px rgba(1, 66, 99, 0.07);
-  --shadow-raised: 0 1px 2px rgba(1, 66, 99, 0.18);
-  --track: #e2e8ed;
-  --pill: #ffffff;
-  /* A box to write in, when it is not the one being written: white on the light ground; a faint field on the dark */
-  --field: #ffffff;
+     nothing in its own box, only hairlines. A pill switch runs on a sunken track, the chosen one raised. Shadows take
+     the paper's brown, not grey. */
+  --hair: rgba(70, 50, 20, 0.12);
+  --shadow-card: 0 1px 2px rgba(70, 50, 20, 0.08), 0 3px 10px rgba(70, 50, 20, 0.07);
+  --shadow-raised: 0 1px 2px rgba(70, 50, 20, 0.2);
+  --track: #e7e0d0;
+  --pill: #fffdf8;
+  /* A box to write in, when it is not the one being written: the card's paper on the light ground; a faint field on the dark */
+  --field: #fffdf8;
+  /* The scripture world in a serif made for reading on screens: the bridge texts, titles and book names (Literata) */
+  --serif: 'Literata Variable', Georgia, 'Times New Roman', serif;
   /* Figtree: open, compact letters that read well small on a phone, with a plain zero (Atkinson Hyperlegible's slashed
      one turned «Jonás 1:10» into «1:1Ø»); Latin and its extensions, the rest from the system. */
   --font: 'Figtree Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -47,9 +51,9 @@
     --text: #efece4;
     --text-soft: #b5b0a5;
     --line: #3d3a34;
-    --accent: #7db3dc;
+    --accent: #8ab9d9;
     --accent-text: #0e1a24;
-    --accent-soft: #1d2d3a;
+    --accent-soft: #1c2b35;
     --mark: #6b5310;
     --warn-bg: #3a2c12;
     --warn-text: #f5d79e;
@@ -73,9 +77,9 @@
   --text: #efece4;
   --text-soft: #b5b0a5;
   --line: #3d3a34;
-  --accent: #7db3dc;
+  --accent: #8ab9d9;
   --accent-text: #0e1a24;
-  --accent-soft: #1d2d3a;
+  --accent-soft: #1c2b35;
   --mark: #6b5310;
   --warn-bg: #3a2c12;
   --warn-text: #f5d79e;
@@ -1082,3 +1086,12 @@ button, .file-button, summary, input, select, textarea {
     .header-person-chip, .position-arrow, .position-done, .decision, .option, .book-chip, .language-result, .catalog-card,
     .chapter-cell, .verse-cell, .file-button):active { transform: none; }
 }
+
+/* Paper and ink: the scripture world in the serif, what is read and what is named; verse numbers in the accent, as a
+   printed Bible's. The buttons and the rest stay in Figtree; what the team writes, in the project's font. */
+:is(h1, h2, .welcome-title, .header-app, .header-brand, .book-tile-name, .tool-card-name, .book-resume-what, .help-quote, .project-card h2) {
+  font-family: var(--serif);
+  letter-spacing: -0.005em;
+}
+.chapter-lines { font-family: var(--serif); }
+:is(.chapter-lines, .verse) .verse-number { color: var(--accent); font-weight: 700; }
