@@ -7,6 +7,7 @@
  * can be. Dashed is kept for adding, so two things that mean something different do not look alike.
  */
 
+import { BrandMark } from '../frame/BrandMark'
 import { useT } from '../i18n/i18n'
 import { titleOf, type Project } from '../projects/model'
 
@@ -48,7 +49,10 @@ export function Home({
   return (
     <div className="screen">
       <header className="header">
-        <span className="header-brand">Servos</span>
+        <span className="header-brand">
+          <BrandMark />
+          Servos
+        </span>
         <button type="button" className="header-person-chip" onClick={onPersonMenu}>
           {person} ▾
         </button>

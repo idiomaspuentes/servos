@@ -6,6 +6,7 @@
  */
 
 import { useState } from 'react'
+import { BrandMark } from '../frame/BrandMark'
 import { BASE_LANGUAGES, useI18n } from '../i18n/i18n'
 import { EXAMPLE_PEOPLE } from '../projects/people'
 import { LANGUAGE_NAMES } from './Language'
@@ -17,12 +18,16 @@ export function Welcome({ onStart }: { onStart(name: string, example: boolean): 
   return (
     <div className="screen welcome">
       <main className="main">
-        <h1 className="welcome-title">Servos</h1>
-        <p className="welcome-what">{t('bienvenida.que')}</p>
+        <div className="welcome-brand">
+          <BrandMark />
+          <h1 className="welcome-title">Servos</h1>
+          <p className="welcome-what">{t('bienvenida.que')}</p>
+        </div>
 
         <fieldset className="field">
           <legend className="field-label">{t('persona.idioma')}</legend>
-          <div className="welcome-languages" role="radiogroup">
+          {/* Few to choose from, one at a time: pills on a track, as the theme in the person's menu */}
+          <div className="choice-row is-three" role="radiogroup">
             {BASE_LANGUAGES.map((code) => (
               <button
                 key={code}

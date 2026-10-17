@@ -9,6 +9,10 @@ import { loadProjects } from './projects/model'
 import { moveWorkToProjects } from './projects/scope'
 import { I18nProvider } from './i18n/i18n'
 import './miniapps/registry'
+// The app's own letters, inside the app so they are there without internet (Latin and its extensions; others fall
+// back to the system's).
+import '@fontsource-variable/figtree/wght.css'
+import '@fontsource-variable/figtree/wght-italic.css'
 import './styles.css'
 
 // Before the first paint: a person who chose light or dark does not see the other one flash.

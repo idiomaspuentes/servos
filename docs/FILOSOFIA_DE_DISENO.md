@@ -120,6 +120,16 @@ toma la forma de su papel:
 - **Tres tonos, no más** (como tC4): el fondo; encima, tarjetas que se separan por un tono y una sombra suave, no por
   un borde; dentro de una tarjeta, nada en su propia caja, solo líneas finas. Una caja dentro de otra hace competir a
   las dos. En el editor, solo la caja que se escribe se dibuja; las demás son un fondo leve.
+- **La letra** (17 de octubre de 2026): Figtree, guardada dentro de la app para que esté también sin internet, con el
+  cero común (la de Atkinson Hyperlegible, con raya, hacía leer «Jonás 1:1Ø»). Los títulos se distinguen por tamaño
+  y peso, no por gris, y ninguno deja una palabra sola en un renglón. Lo que escribe el equipo va en la letra del
+  proyecto.
+- **Lo que se toca responde**: un botón o una tarjeta cede un poco bajo el dedo, una fila se tiñe, y con ratón se marca
+  lo que está debajo. El movimiento es corto (una hoja sube deslizándose) y no hay ninguno si la persona pidió menos
+  movimiento.
+- **El editor con el teclado abierto se queda como está**: se ve una sola cosa, la caja o la fuente, y el dedo se
+  desliza de una a otra (o se toca la pestaña) sin quitarle el foco a la caja, así el teclado no se cierra. Es lo que
+  hace posible traducir cómodo en un teléfono; ningún cambio de diseño lo toca (`Panes.tsx`).
 
 ## Cómo comprobarlo
 
@@ -131,6 +141,7 @@ Antes de dar por hecha una pantalla, se recorre a 375 px como lo haría alguien 
 - [ ] ¿Hay un solo botón lleno?
 - [ ] ¿Cuántas alturas de pantalla mide? (dos o menos)
 - [ ] ¿Algo queda fijo sin necesidad, o tapa la caja con el teclado abierto?
+- [ ] Con el teclado abierto, ¿se desliza entre la caja y la fuente sin que la caja pierda el foco?
 - [ ] ¿Hay algún icono sin palabra?
 - [ ] ¿Hay alguna acción que sea solo texto azul suelto en una línea? (ninguna)
 - [ ] ¿Las ayudas que se ven son las del versículo en que se trabaja?
