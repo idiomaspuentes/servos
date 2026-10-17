@@ -3,3 +3,5 @@ dist/
 .env*.local
 .DS_Store
 coverage/
+# Other sessions' working copies
+.claude/worktrees/

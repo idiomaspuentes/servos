@@ -82,7 +82,10 @@ export default defineConfig(({ mode }) => ({
     // the sources must win.
     extensions: ['.ts', '.tsx', '.mts', '.mjs', '.js', '.jsx', '.json'],
   },
-  server: { fs: { allow: ['.', BT, USFM_AST] } },
+  // Other sessions' working copies (.claude/worktrees) are not this app: watched or scanned, they hung Taller's dev
+  // servers (its commit a6874a0).
+  server: { fs: { allow: ['.', BT, USFM_AST] }, watch: { ignored: ['**/.claude/**'] } },
+  optimizeDeps: { entries: ['index.html'] },
   test: {
     environment: 'node',
   },
