@@ -135,7 +135,10 @@ Desde el 16 de octubre de 2026 la app guarda cada libro así (cableado, pasos 1 
     se ofrece vincular otra vez. El paquete se deja comprimido (`.servos.json.gz`): un libro del tamaño de Salmos,
     alineado entero, pesa unos 20 MB en JSON y unos pocos comprimido; y uno grande, que Door43 no da por la API de
     contenidos (pasados 10 MB), se trae por la vía raw. Lo dejado antes sin comprimir se sigue trayendo, y quien lo
-    dejó lo reemplaza al dejar otra vez. Pendiente: el sonido de las grabaciones.
+    dejó lo reemplaza al dejar otra vez (probado en QA: 1986 bytes sin comprimir, 759 comprimido). La llave que
+    se crea al vincular lleva el aparato (`servos-{aparato}-…`): antes, vincular en un aparato borraba las llaves de
+    la misma cuenta en los demás (también en Taller, que tiene el mismo cliente). Pendiente: el sonido de las
+    grabaciones.
 
 ## Lo que falta
 
