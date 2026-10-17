@@ -134,10 +134,11 @@ toma la forma de su papel:
   con los números de versículo en tinta, como en una Biblia impresa. Charis es también la letra por defecto de lo que
   escribe el equipo. Se probaron antes Atkinson Hyperlegible (su cero con raya hacía leer «Jonás 1:1Ø»), Figtree y
   Literata. Los títulos se distinguen por tamaño y peso, no por gris, y ninguno deja una palabra sola en un renglón.
-- **La marca es un puente**: el arco sobre un tablero que cruza de una orilla a la otra, y el tablero es una línea de
-  texto que empieza en papel y termina en ocre, de una lengua a la otra. Es el texto puente, y el nombre de Idiomas
-  Puentes. Dentro de la app se dibuja sobre el papel, como la marca de una imprenta, en el color del texto y la
-  otra orilla en ocre (`BrandMark`); los íconos del teléfono (`public/`) lo ponen en su cuadrado de tinta.
+- **La marca es el libro que habla** (elegida el 17 de octubre): un libro abierto, la página izquierda escrita en
+  una lengua y la derecha dicha en voz alta en otra, una onda de voz en ocre. Dice traducir, por escrito y de viva
+  voz, y no solo leer (el libro abierto solo, el de antes, decía «leer»). Se probaron un puente (parecía el ícono de
+  wifi, luego una mesa), dos voces y la alineación (se leía «XI»). Va en su cuadrado de tinta, en la pantalla
+  (`BrandMark`) y en los íconos del teléfono (`public/`).
 - **Lo que se toca responde**: un botón o una tarjeta cede un poco bajo el dedo, una fila se tiñe, y con ratón se marca
   lo que está debajo. El movimiento es corto (una hoja sube deslizándose) y no hay ninguno si la persona pidió menos
   movimiento.

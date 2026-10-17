@@ -2,7 +2,7 @@
 
 :root {
   /* Paper and ink (chosen 17 October 2026): the warm paper of a printed Bible for the ground, ink for the text, a deep
-     ink blue for going on, ochre for what is marked, as the bridge's second language in the mark. Each text colour
+     ink blue for going on, ochre for what is marked, as the voice in the mark. Each text colour
      reads at 4.5:1 or more on the ground and on a card. */
   --bg: #f4efe4;
   --surface: #fffdf8;
@@ -31,8 +31,6 @@
   --pill: #fffdf8;
   /* A box to write in, when it is not the one being written: the card's paper on the light ground; a faint field on the dark */
   --field: #fffdf8;
-  /* Ochre: the far bank, what is marked */
-  --ochre: #b07b1f;
   /* A field of ink: the one place where going on is the whole block (home's «go on where you left off») */
   --field-ink: #17496a;
   --on-field: #f4efe4;
@@ -76,7 +74,6 @@
     --track: #09131a;
     --pill: #24343e;
     --field: rgba(22, 35, 43, 0.7);
-    --ochre: #e2b55c;
     --field-ink: #1e3747;
     --on-field: #ece6d8;
     --on-field-soft: rgba(236, 230, 216, 0.78);
@@ -109,7 +106,6 @@
   --track: #09131a;
   --pill: #24343e;
   --field: rgba(22, 35, 43, 0.7);
-  --ochre: #e2b55c;
   --field-ink: #1e3747;
   --on-field: #ece6d8;
   --on-field-soft: rgba(236, 230, 216, 0.78);
@@ -160,9 +156,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
   overflow-wrap: anywhere; cursor: pointer;
 }
 .header-brand { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 750; font-size: 1.1rem; padding-inline: 0.25rem; letter-spacing: -0.01em; }
-/* The bridge drawn on the page, in the text's colour, its far half in ochre: a printer's mark, not an app's tile */
-.brand-mark { flex: none; width: 2.5rem; height: 1.375rem; color: var(--text); overflow: visible; }
-.brand-mark-other { stroke: var(--ochre); }
+/* The book that speaks, in its square of ink */
+.brand-mark { flex: none; width: 1.75rem; height: 1.75rem; }
 .header-person-chip { grid-column: 3; }
 
 /* Buttons */
@@ -850,7 +845,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 /* Its groups apart (what it is · the language · the name and «Start» · the example), each one close inside */
 .welcome .main { padding-block: 3rem 2rem; gap: 1.75rem; }
 .welcome-brand { display: flex; flex-direction: column; gap: 0.75rem; }
-.welcome-brand .brand-mark { width: 5.5rem; height: 3.025rem; }
+.welcome-brand .brand-mark { width: 3.5rem; height: 3.5rem; }
 .welcome-title { margin: 0; font-size: 3.1rem; line-height: 1; font-weight: 900; letter-spacing: -0.025em; }
 .welcome-what { margin: 0; font-size: 1.15rem; color: var(--text-soft); max-width: 26rem; }
 .welcome .field { gap: 0.5rem; }
