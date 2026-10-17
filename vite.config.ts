@@ -65,6 +65,8 @@ const VERSION = (JSON.parse(readFileSync(resolve(HERE, 'package.json'), 'utf8'))
 export default defineConfig(({ mode }) => ({
   define: { __APP_VERSION__: JSON.stringify(VERSION), __APP_BUILD__: JSON.stringify(buildOf()) },
   plugins: mode === 'pagina' ? [react(), viteSingleFile()] : [react(), offlineShell()],
+  // The single page carries its letters inside it (it has no files beside it).
+  build: mode === 'pagina' ? { assetsInlineLimit: 1_000_000 } : undefined,
   resolve: {
     alias: [
       { find: /^@bt-synergy\/catalog-manager\/core$/, replacement: `${BT}/catalog-manager/src/core.ts` },
