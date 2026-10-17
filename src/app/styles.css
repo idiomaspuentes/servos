@@ -1003,3 +1003,14 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .waiting-here { display: flex; align-items: center; gap: 0.75rem; }
 .waiting-here > span { flex: 1; min-width: 0; }
 .waiting-here .chip { flex: none; }
+
+/* A new version of the app, kept and waiting: said on home, above everything, out of the way of the thumb's work. */
+.app-update {
+  position: fixed; inset-inline: 1rem; bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); z-index: 5;
+  max-width: 36rem; margin-inline: auto; display: flex; align-items: center; gap: 0.75rem;
+  background: var(--surface); box-shadow: var(--shadow-card);
+}
+.app-update > span { flex: 1; min-width: 0; }
+.app-update .chip { flex: none; }
+/* The notice floats over home's end: room is left under it, so nothing stays hidden. */
+body:has(.app-update) .main { padding-block-end: 6rem; }

@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { App } from './App'
+import { keepAppOffline } from './frame/appUpdate'
 import { applyTheme, themeOf } from './frame/theme'
 import { moveAlignmentsIn, moveBooksToProjects, openBooks } from './projects/bookText'
 import { loadProjects } from './projects/model'
@@ -11,6 +12,9 @@ import './styles.css'
 
 // Before the first paint: a person who chose light or dark does not see the other one flash.
 applyTheme(themeOf())
+
+// Installed, the app opens without internet: all of it is kept on the phone at the first visit.
+keepAppOffline()
 
 // The books kept on this device are opened (and the prototype's verse-by-verse text moved in) before anything shows.
 void openBooks()

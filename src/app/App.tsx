@@ -33,6 +33,7 @@ import { exampleShared } from './screens/exampleWork'
 import { TranslateUi } from './screens/TranslateUi'
 import { WaitingSheet } from './screens/WaitingSheet'
 import { isOnline, useWaiting, whenNotTyping } from './frame/online'
+import { switchToNewVersion, useNewVersion } from './frame/appUpdate'
 import { waiting } from './projects/outbox'
 
 type Screen =
@@ -80,6 +81,8 @@ export function App() {
   // What waited for internet (design 6.11): shown when internet comes, or when the app opens with it, before anything
   // goes; not while something is being typed. «Not now» holds until internet comes again.
   const waits = useWaiting(person)
+  // A new version of the app, kept and waiting: said on home, used when the person says so.
+  const newVersion = useNewVersion()
   const [asking, setAsking] = useState(false)
   const declined = useRef(false)
   useEffect(() => {
@@ -293,6 +296,15 @@ export function App() {
           onSettings={(projectId) => setScreen({ kind: 'settings', projectId })}
           onPersonMenu={() => setPersonMenu(true)}
         />
+      )}
+
+      {screen.kind === 'home' && newVersion && (
+        <div className="status app-update" role="status">
+          <span>{t('marco.nuevaVersion')}</span>
+          <button type="button" className="chip" onClick={switchToNewVersion}>
+            {t('marco.usarAhora')}
+          </button>
+        </div>
       )}
 
       {screen.kind === 'newProject' && (

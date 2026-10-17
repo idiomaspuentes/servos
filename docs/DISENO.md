@@ -448,7 +448,14 @@ grabó el teléfono.
 - **Una base de código web** (React + Vite + TypeScript, como Taller) empaquetada como:
   - **Tauri** para computadoras (Windows primero, luego Mac y Linux);
   - **Capacitor** para teléfonos (Android primero, luego iPhone);
-  - **PWA** como extra, para quien tenga internet al instalar.
+  - **PWA** como extra, para quien tenga internet al instalar. **Hecha primero** (17 de octubre), para probar en
+    teléfonos de verdad sin esperar a los instaladores: con la primera visita se guarda **toda** la app en el teléfono
+    (no solo lo ya visto), porque un equipo puede abrirla una vez con internet y trabajar semanas sin él; desde
+    entonces abre sin conexión, sin esperar a la red aunque sea lenta. Door43 nunca se guarda ahí: se le pregunta en
+    vivo, y lo que espera internet espera en la app (6.11). Una versión nueva se baja entera por detrás y se usa
+    cuando la persona toca «Usar ahora» en Inicio, o la próxima vez que abre la app: nunca cambia en medio del
+    trabajo. Se pide al navegador que no borre lo guardado para hacer lugar. La compilación escribe el *service
+    worker* con la lista de sus archivos (`offline/sw.template.js`, `vite.config.ts`).
 - **Almacenamiento** por la capa de `platform-adapters` de `usfm-ast`, que ya abstrae la web, Tauri y Capacitor.
 - **Del lado de `usfm-ast`:** el analizador y el editor de USFM, el alineador y la lectura de formatos. Los
   sistemas de choques de `usfm-ast` no se usan.

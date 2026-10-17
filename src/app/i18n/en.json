@@ -756,5 +756,7 @@
   "espera.que.traer": "bring in the team's work",
   "equipo.sinInternet": "No internet now. You can ask for it all the same: when there is internet, you are asked before it is done.",
   "equipo.traerLuego": "Bring in when there is internet",
-  "equipo.dejarLuego": "Leave my work when there is internet"
+  "equipo.dejarLuego": "Leave my work when there is internet",
+  "marco.nuevaVersion": "There is a new version of Servos.",
+  "marco.usarAhora": "Use it now"
 }

@@ -756,5 +756,7 @@
   "espera.que.traer": "traer el trabajo del equipo",
   "equipo.sinInternet": "Sin internet ahora. Puede pedirlo igual: cuando haya internet, se le pregunta antes de hacerlo.",
   "equipo.traerLuego": "Traer cuando haya internet",
-  "equipo.dejarLuego": "Dejar mi trabajo cuando haya internet"
+  "equipo.dejarLuego": "Dejar mi trabajo cuando haya internet",
+  "marco.nuevaVersion": "Hay una versión nueva de Servos.",
+  "marco.usarAhora": "Usar ahora"
 }

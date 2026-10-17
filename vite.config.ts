@@ -1,8 +1,10 @@
 /// <reference types="vitest/config" />
+import { createHash } from 'node:crypto'
+import { readdirSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import { viteSingleFile } from 'vite-plugin-singlefile'
 
 /**
@@ -20,9 +22,35 @@ const BT = resolve(dirname(fileURLToPath(import.meta.url)), '../bt-synergy/packa
 const USFM_AST = resolve(dirname(fileURLToPath(import.meta.url)), '../usfm-ast/packages')
 const HERE = dirname(fileURLToPath(import.meta.url))
 
+/**
+ * The app kept whole on the phone (`offline/sw.template.js`): the service worker is written with every file this
+ * build made, and a name for the build drawn from them, so a new build is a new worker the phone notices.
+ */
+function offlineShell(): Plugin {
+  const publicDir = resolve(HERE, 'public')
+  return {
+    name: 'servos-offline-shell',
+    apply: 'build',
+    enforce: 'post',
+    generateBundle(_, bundle) {
+      const built = Object.keys(bundle).filter((f) => !f.endsWith('.map') && f !== 'index.html' && f !== 'sw.js')
+      const kept = readdirSync(publicDir)
+      const files = ['./', ...built, ...kept].map((f) => (f === './' ? f : `./${f}`))
+      const hash = createHash('sha1')
+      for (const f of built.sort()) hash.update(f)
+      for (const f of kept.sort()) hash.update(f).update(readFileSync(resolve(publicDir, f)))
+      const build = hash.digest('hex').slice(0, 12)
+      const source = readFileSync(resolve(HERE, 'offline/sw.template.js'), 'utf8')
+        .replace('__BUILD__', build)
+        .replace('__FILES__', JSON.stringify(files, null, 2))
+      this.emitFile({ type: 'asset', fileName: 'sw.js', source })
+    },
+  }
+}
+
 // `vite build --mode pagina`: one self-contained HTML file, to share the prototype as a single page.
 export default defineConfig(({ mode }) => ({
-  plugins: mode === 'pagina' ? [react(), viteSingleFile()] : [react()],
+  plugins: mode === 'pagina' ? [react(), viteSingleFile()] : [react(), offlineShell()],
   resolve: {
     alias: [
       { find: /^@bt-synergy\/catalog-manager\/core$/, replacement: `${BT}/catalog-manager/src/core.ts` },
