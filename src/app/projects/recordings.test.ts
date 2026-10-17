@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { addTake, audioFileOf, blobOf, chooseTake, chosenTake, clock, gatherTakes, recordedPlaces, takeCovering, takesOf } from './recordings'
+import { addTake, audioFileOf, blobOf, chooseTake, chosenTake, clock, gatherTakes, recordedPlaces, recorderOptions, takeCovering, takesOf } from './recordings'
 
 beforeEach(() => {
   const store = new Map<string, string>()
@@ -82,5 +82,14 @@ describe('recordings of a verse said aloud', () => {
   it('says how long a take is as a clock', () => {
     expect(clock(7400)).toBe('0:07')
     expect(clock(65000)).toBe('1:05')
+  })
+})
+
+describe('cómo se graba una toma', () => {
+  it('a 32 kbps, en Opus donde el navegador lo tiene; si no, en lo que tenga, a la misma tasa', () => {
+    expect(recorderOptions((t) => t.startsWith('audio/webm'))).toEqual({ audioBitsPerSecond: 32000, mimeType: 'audio/webm;codecs=opus' })
+    // Safari records AAC in MP4.
+    expect(recorderOptions((t) => t === 'audio/mp4')).toEqual({ audioBitsPerSecond: 32000, mimeType: 'audio/mp4' })
+    expect(recorderOptions(() => false)).toEqual({ audioBitsPerSecond: 32000 })
   })
 })

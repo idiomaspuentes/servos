@@ -8,7 +8,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { WordLines } from '../../frame/TouchWords'
-import { addTake, chooseTake, chosenTake, clock, keepSound, soundOf, takeCovering, takesOf, type Take } from '../../projects/recordings'
+import { addTake, chooseTake, chosenTake, clock, keepSound, recorderOptions, soundOf, takeCovering, takesOf, type Take } from '../../projects/recordings'
 import { joinStartOf, joinedVerses, textOf } from '../../projects/work'
 import type { MiniApp, MiniAppCenterProps } from '../contract'
 
@@ -65,7 +65,7 @@ function Center({ context }: MiniAppCenterProps) {
     setProblem(null)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const recorder = new MediaRecorder(stream)
+      const recorder = new MediaRecorder(stream, recorderOptions())
       const chunks: Blob[] = []
       const started = Date.now()
       const at = { book, chapter, verse: place, to: last }

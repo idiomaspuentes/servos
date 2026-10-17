@@ -11,6 +11,19 @@
 
 import { scoped } from './scope'
 
+/**
+ * A voice is clear at 32 kbps, in Opus where the browser has it: a quarter of what a browser records by default (about
+ * 1 MB a minute), and what is kept, shared and published is that much smaller. A book said aloud whole (Psalms, some
+ * eight hours) is about 115 MB instead of 450.
+ */
+export const VOICE_BITS = 32000
+
+/** How a take is recorded here: Opus at `VOICE_BITS` where the browser has it, else its own kind at that rate. */
+export function recorderOptions(supported: (type: string) => boolean = (type) => typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(type)): MediaRecorderOptions {
+  const mimeType = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/mp4'].find((type) => supported(type))
+  return { audioBitsPerSecond: VOICE_BITS, ...(mimeType ? { mimeType } : {}) }
+}
+
 export interface Take {
   id: string
   by: string
