@@ -85,7 +85,9 @@ Desde el 16 de octubre de 2026 la app guarda cada libro así (cableado, pasos 1 
    reemplazó). Viaja dentro del libro. Al juntar sigue a su texto: gana la hecha sobre el texto que queda; dos del
    mismo texto hechas por separado son la más reciente si las hizo una persona, un choque si las hicieron dos (se
    elige en el alineador, y la elección queda en el diario); una que entra hecha sobre otro texto queda, para
-   revisar. El diario toma las alineaciones como el texto: cuando la persona se detiene.
+   revisar. El diario toma las alineaciones como el texto: cuando la persona se detiene. Dos elecciones tomadas por
+   separado que dejan alineaciones distintas se vuelven a preguntar (antes cada aparato se quedaba con la del otro);
+   una tomada sabiendo de otra la reemplaza (`after`, como en el texto).
 8. **Las pruebas de Taller para la mezcla por versículo** (`src/usfm/verseMerge.test.ts`): sus casos, P1–P9 entre
    ellos, tal como Taller los escribió, sobre la copia de Servos; quedan fuera los de lo que Servos no tiene (git como
    transporte, las ramas de tareas, el comentario de choques, su caché de borradores).

@@ -101,3 +101,38 @@ describe("un choque de alineación sin decidir viaja", () => {
     expect(aligned(back)).toEqual(links("Pablo"));
   });
 });
+
+describe("dos elecciones de alineación tomadas por separado", () => {
+  const carla: Person = { name: "Carla", device: "tel-carla" };
+  const dani: Person = { name: "Dani", device: "tel-dani" };
+  /** Ana and Beto aligned verse 1 apart; Ana's copy has the choice open, and both Carla and Dani take it home. */
+  function openChoice() {
+    const a = recordAlignment(emptyAlignmentLayer(), ana, v1, texto, links("Pablo"), at());
+    const b = recordAlignment(emptyAlignmentLayer(), beto, v1, texto, links("Dios"), at());
+    return mergeAlignments(a, b, now(texto), ana, at()).layer;
+  }
+
+  it("si eligen distinto, se vuelve a elegir en los dos; nadie se queda con la del otro en silencio", () => {
+    const open = openChoice();
+    const atCarla = decideAlignment(open, open.pending[0]!.id, "mine", carla, at());
+    const atDani = decideAlignment(open, open.pending[0]!.id, "theirs", dani, at());
+    const c = mergeAlignments(atCarla, atDani, now(texto), carla, at());
+    const d = mergeAlignments(atDani, atCarla, now(texto), dani, at());
+    expect([aligned(c.layer), c.report.conflicts.length]).toEqual([links("Pablo"), 1]);
+    expect([aligned(d.layer), d.report.conflicts.length]).toEqual([links("Dios"), 1]);
+    // Chosen again, knowing both choices: it stands everywhere, and nothing waits any more.
+    const settled = decideAlignment(c.layer, c.layer.pending[0]!.id, "theirs", carla, at());
+    const back = mergeAlignments(d.layer, settled, now(texto), dani, at());
+    expect([aligned(back.layer), back.layer.pending, back.report.conflicts]).toEqual([links("Dios"), [], []]);
+    const again = mergeAlignments(atCarla, settled, now(texto), carla, at());
+    expect([aligned(again.layer), again.report.conflicts]).toEqual([links("Dios"), []]);
+  });
+
+  it("si eligen lo mismo por separado, no hay nada que volver a elegir", () => {
+    const open = openChoice();
+    const atCarla = decideAlignment(open, open.pending[0]!.id, "theirs", carla, at());
+    const atDani = decideAlignment(open, open.pending[0]!.id, "theirs", dani, at());
+    const { layer, report } = mergeAlignments(atCarla, atDani, now(texto), carla, at());
+    expect([aligned(layer), report.conflicts]).toEqual([links("Dios"), []]);
+  });
+});

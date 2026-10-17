@@ -7,7 +7,8 @@
  * Bringing another copy's alignment in follows the text that stays:
  * - an alignment made on the verse's text as it is now wins over one made on another text;
  * - one this copy has already taken in, or that the other started from, gives way to the newer;
- * - a choice somebody already made between two alignments is applied again;
+ * - a choice somebody already made between two alignments is applied again; two choices made apart that keep
+ *   different alignments are asked again (one made knowing the other replaces it);
  * - two alignments of the same text made apart: the latest, if one person made both; a conflict for a person, if two
  *   people did (decided on 14 October 2026).
  * An alignment that comes in made on another text than the one that stays is kept and said to need review: the links
@@ -39,6 +40,8 @@ export type AlignmentEntry = {
   kind: "edit" | "decision";
   /** For a decision: the keys of the two alignments chosen between. */
   over?: string[];
+  /** For a decision: the decisions of that place it was made knowing (by id), which it replaces. */
+  after?: string[];
 };
 
 /** Two alignments of the same verse's same text, made apart by two people: a person chooses. */
@@ -136,21 +139,24 @@ export function mergeAlignments(
       if (theirs.at > mine.at) take(id, theirs);
       continue;
     }
-    // Both on the text that stays.
-    const decision = [...decisions].reverse().find((d) => alignmentPlaceId(d.place) === id && d.over?.includes(mine.key) && d.over.includes(theirs.key));
-    if (decision?.key === mine.key) {
+    // Both on the text that stays. A choice already made between these two is applied; one made knowing an earlier one
+    // replaces it; two made apart that keep different alignments are not settled: a person chooses again.
+    const over = decisions.filter((d) => alignmentPlaceId(d.place) === id && d.over?.includes(mine.key) && d.over.includes(theirs.key));
+    const kept = new Set(over.filter((d) => !over.some((o) => o.after?.includes(d.id))).map((d) => d.key));
+    if (kept.size === 1 && kept.has(mine.key)) {
       report.decided.push(mine.place);
       continue;
     }
-    if (decision?.key === theirs.key) {
+    if (kept.size === 1 && kept.has(theirs.key)) {
       take(id, theirs, report.decided);
       continue;
     }
+    const apart = kept.size > 1;
     // Either copy still waits for a person to choose between these two: having them in its diary is not choosing.
     const open = [...me.pending, ...other.pending].some(
       (c) => alignmentPlaceId(c.place) === id && [c.mine.key, c.theirs.key].sort().join("|") === [mine.key, theirs.key].sort().join("|"),
     );
-    if (!open) {
+    if (!open && !apart) {
       if (seenUpTo(me, theirs.by) >= theirs.seq) continue;
       if (seenUpTo(other, mine.by) >= mine.seq) {
         take(id, theirs);
@@ -208,6 +214,7 @@ export function decideAlignment(layer: AlignmentLayer, conflictId: string, keep:
     at,
     kind: "decision",
     over: [conflict.mine.key, conflict.theirs.key],
+    after: layer.journal.filter((e) => e.kind === "decision" && alignmentPlaceId(e.place) === alignmentPlaceId(conflict.place)).map((e) => e.id),
   };
   // What counts is the alignment chosen, as its maker made it; the decision says it was chosen.
   return {
