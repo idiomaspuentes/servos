@@ -38,6 +38,11 @@ async function openPage() {
 // Each page reads the prototype's data again: slow when every test file runs at once.
 const SLOW = 30000
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms))
+const LEFT = 'servos.saliendo.jon~kichwa'
+/** Waits for something the database does in its own time (slower when every test file runs at once). */
+async function until(done: () => boolean, ms = 10000) {
+  for (const end = Date.now() + ms; !done(); await pause(20)) if (Date.now() > end) throw new Error('no llegó a pasar')
+}
 
 it('al irse la página, lo escrito queda también en localStorage, y la base de datos lo recibe', async () => {
   const door = await openPage()
@@ -45,8 +50,7 @@ it('al irse la página, lo escrito queda también en localStorage, y la base de 
   door.leave()
   expect(store.get('servos.saliendo.jon~kichwa')).toContain('Taytaku rimarqa')
   // The page lived on (a phone that only went to another app): once the database has it, the copy goes.
-  await pause(50)
-  expect(store.has('servos.saliendo.jon~kichwa')).toBe(false)
+  await until(() => !store.has(LEFT))
   expect((await openPage()).readDraft('jon', 1, 1)).toBe('Taytaku rimarqa')
 }, SLOW)
 
@@ -63,7 +67,8 @@ it('si la base de datos no alcanzó a recibirlo, la copia gana la próxima vez y
     const req = indexedDB.open('servos-libros', 1)
     req.onsuccess = () => resolve(req.result)
   })
-  await pause(50)
+  // Its database write ends (and drops the copy) before the copy is put back, as if that write had never ended.
+  await until(() => !store.has(LEFT))
   const older = JSON.parse(copy)
   older.working = older.state.usfm = older.working.replace('Taytaku rimarqa Jonasman', 'Taytaku rimarqa')
   await new Promise((resolve) => {
@@ -76,7 +81,6 @@ it('si la base de datos no alcanzó a recibirlo, la copia gana la próxima vez y
 
   const next = await openPage()
   expect(next.readDraft('jon', 1, 1)).toBe('Taytaku rimarqa Jonasman')
-  await pause(400)
-  expect(store.has('servos.saliendo.jon~kichwa')).toBe(false)
+  await until(() => !store.has(LEFT))
   expect((await openPage()).readDraft('jon', 1, 1)).toBe('Taytaku rimarqa Jonasman')
 }, SLOW)
