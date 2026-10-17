@@ -1014,3 +1014,12 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .app-update .chip { flex: none; }
 /* The notice floats over home's end: room is left under it, so nothing stays hidden. */
 body:has(.app-update) .main { padding-block-end: 6rem; }
+
+/* Which Servos this is, at the end of the person's menu. */
+.menu-version { margin: 1.5rem 0 0; text-align: center; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+/* A screen that failed: what happened, that the work is kept, and the way back; the detail folded, to copy. */
+.crashed { display: flex; flex-direction: column; gap: 1.5rem; padding-block: 2rem; }
+.crashed h1 { margin: 0; font-size: 1.4rem; text-wrap: balance; }
+.crashed p { margin: 0; }
+.crashed-detail { display: flex; flex-direction: column; gap: 0.75rem; }
+.crashed-detail pre { margin: 0.75rem 0; padding: 0.75rem; border-radius: var(--radius); background: var(--surface-soft); font-size: 0.8rem; white-space: pre-wrap; overflow-wrap: anywhere; }

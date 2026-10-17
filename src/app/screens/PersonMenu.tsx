@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useT } from '../i18n/i18n'
 import { MenuRow, Sheet } from '../frame/Sheet'
 import { setTheme, themeOf, type Theme } from '../frame/theme'
+import { appLabel } from '../frame/version'
 import { accountOf, hostName } from '../projects/door43'
 
 export function PersonMenu({
@@ -100,6 +101,8 @@ export function PersonMenu({
           + {t('persona.agregar')}
         </button>
       )}
+      {/* Which Servos this is, for whoever reports something. */}
+      <p className="quiet menu-version">{appLabel()}</p>
     </Sheet>
   )
 }

@@ -758,5 +758,11 @@
   "equipo.traerLuego": "Bring in when there is internet",
   "equipo.dejarLuego": "Leave my work when there is internet",
   "marco.nuevaVersion": "There is a new version of Servos.",
-  "marco.usarAhora": "Use it now"
+  "marco.usarAhora": "Use it now",
+  "marco.fallo": "Something failed on this screen",
+  "marco.falloAyuda": "Your work is kept on this phone. Go back to home to go on.",
+  "marco.volverInicio": "Back to home",
+  "marco.falloDetalle": "Detail, to report the error",
+  "marco.copiar": "Copy",
+  "marco.copiado": "Copied"
 }

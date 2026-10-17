@@ -1,4 +1,5 @@
 /// <reference types="vitest/config" />
+import { execSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { readdirSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
@@ -48,8 +49,21 @@ function offlineShell(): Plugin {
   }
 }
 
+/** The commit the app is built from, with a mark when there were changes not yet committed. */
+function buildOf(): string {
+  try {
+    const sha = execSync('git rev-parse --short HEAD', { cwd: HERE }).toString().trim()
+    const dirty = execSync('git status --porcelain --untracked-files=no', { cwd: HERE }).toString().trim() !== ''
+    return dirty ? `${sha}+` : sha
+  } catch {
+    return 'sin-git'
+  }
+}
+const VERSION = (JSON.parse(readFileSync(resolve(HERE, 'package.json'), 'utf8')) as { version: string }).version
+
 // `vite build --mode pagina`: one self-contained HTML file, to share the prototype as a single page.
 export default defineConfig(({ mode }) => ({
+  define: { __APP_VERSION__: JSON.stringify(VERSION), __APP_BUILD__: JSON.stringify(buildOf()) },
   plugins: mode === 'pagina' ? [react(), viteSingleFile()] : [react(), offlineShell()],
   resolve: {
     alias: [

@@ -758,5 +758,11 @@
   "equipo.traerLuego": "Traer cuando haya internet",
   "equipo.dejarLuego": "Dejar mi trabajo cuando haya internet",
   "marco.nuevaVersion": "Hay una versión nueva de Servos.",
-  "marco.usarAhora": "Usar ahora"
+  "marco.usarAhora": "Usar ahora",
+  "marco.fallo": "Algo falló en esta pantalla",
+  "marco.falloAyuda": "Su trabajo está guardado en este teléfono. Vuelva al inicio para seguir.",
+  "marco.volverInicio": "Volver al inicio",
+  "marco.falloDetalle": "Detalle, para avisar del error",
+  "marco.copiar": "Copiar",
+  "marco.copiado": "Copiado"
 }

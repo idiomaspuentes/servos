@@ -100,12 +100,23 @@ const SEED: Project[] = [
 export function loadProjects(): Project[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return withNewSeedBooks(JSON.parse(raw) as Project[])
+    // A project that is not whole (written halfway, or by something else) is left out, not let to stop the app.
+    if (raw) return withNewSeedBooks((JSON.parse(raw) as Project[]).filter(isWhole))
   } catch {
     /* blocked storage: start from the example */
   }
   return SEED
 }
+
+const isWhole = (p: unknown): p is Project =>
+  typeof p === 'object' &&
+  p !== null &&
+  typeof (p as Project).id === 'string' &&
+  typeof (p as Project).name === 'string' &&
+  Array.isArray((p as Project).books) &&
+  (p as Project).books.every((b) => typeof b?.code === 'string') &&
+  typeof (p as Project).miniApps === 'object' &&
+  (p as Project).miniApps !== null
 
 /**
  * A browser that kept the example from an earlier version gets the books added to it since (Jonah, for its poem), and
