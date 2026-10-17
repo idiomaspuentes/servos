@@ -283,17 +283,22 @@ export function fingerprint(text: string): string {
 export const repoUrl = (to: Destination) => `${to.host}/${to.owner}/${to.repo}`
 
 // ——— The team's work through Door43 (design 6.10) ————————————————————————————————————————————————————————————————
-// The same package as by card or Bluetooth, left where the others can take it: each one leaves their own file (by
-// person and phone, replaced each time), and taking one in is the same gathering, so taking it twice brings nothing.
+// The same package as by card or Bluetooth (its recordings' sound in it), left where the others can take it: each one
+// leaves their own, by person and phone, and taking one in is the same gathering, so taking it twice brings nothing.
+// They are kept as the attachments of one release of a private repository beside the project's, a shelf: an attachment
+// is replaced in place, with no history, so a team leaving its work every day (and its takes, recorded again and
+// again) does not fill the repository with every version of it, as files in git would (Door43 has no Git LFS).
 
 /** The repository where the team leaves its work for one another: beside the one it publishes, and private. */
 export const workRepoOf = (to: Destination): Destination => ({ ...to, repo: `${to.repo}-servos` })
 
-const WORK = 'trabajo'
-// Left gzipped: a book aligned whole is some 20 MB as JSON and a few as gzip, and Door43 stops giving a file's content
-// through the contents API past 10 MB. One left before, not gzipped, is still read.
+/** The release whose attachments are the shelf: not a version, said so on Door43. */
+const SHELF = 'trabajo'
+// Gzipped: a book aligned whole is some 20 MB as JSON and a few as gzip.
 const PACKAGE = '.servos.json.gz'
 const OLD_PACKAGE = '.servos.json'
+/** Where an earlier Servos left the work, as files of the repository: still read, and taken away by whoever left it. */
+const OLD_FOLDER = 'trabajo'
 
 async function gzipped(text: string): Promise<Uint8Array> {
   const stream = new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'))
@@ -303,12 +308,6 @@ async function gunzipped(bytes: Uint8Array): Promise<string> {
   const stream = new Blob([new Uint8Array(bytes)]).stream().pipeThrough(new DecompressionStream('gzip'))
   return new Response(stream).text()
 }
-function toBase64(bytes: Uint8Array): string {
-  if (typeof Buffer !== 'undefined') return Buffer.from(bytes).toString('base64')
-  let s = ''
-  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
-  return btoa(s)
-}
 function fromBase64(b64: string): Uint8Array {
   if (typeof Buffer !== 'undefined') return new Uint8Array(Buffer.from(b64, 'base64'))
   const s = atob(b64)
@@ -316,7 +315,6 @@ function fromBase64(b64: string): Uint8Array {
   for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i)
   return out
 }
-
 /** A file's bytes through the raw API: no size limit there (the contents API leaves a big file's content out). */
 async function rawBytes(account: Door43Account, to: Destination, path: string): Promise<Uint8Array> {
   const url = `${to.host}/api/v1/repos/${encodeURIComponent(to.owner)}/${encodeURIComponent(to.repo)}/raw/${path.split('/').map(encodeURIComponent).join('/')}`
@@ -327,24 +325,73 @@ async function rawBytes(account: Door43Account, to: Destination, path: string): 
 const slug = (s: string) =>
   s
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '') || 'persona'
 
-/** A person's file there: theirs from this phone, replaced each time they leave their work. */
-export const workPathOf = (person: string, device: string) => `${WORK}/${slug(person)}-${device}${PACKAGE}`
+/** A person's work on the shelf: theirs from this phone, replaced each time they leave it. */
+export const workNameOf = (person: string, device: string) => `${slug(person)}-${device}${PACKAGE}`
+
+type Asset = { id: number; name: string; size: number; browser_download_url: string }
+
+/** A call to the repository's API, as this account; a failure as Door43 said it. */
+async function call<T>(account: Door43Account, to: Destination, path: string, init: RequestInit = {}): Promise<T> {
+  const url = `${to.host}/api/v1/repos/${encodeURIComponent(to.owner)}/${encodeURIComponent(to.repo)}${path}`
+  const res = await fetch(url, { ...init, headers: { Authorization: `token ${account.token}`, ...(init.headers ?? {}) } })
+  if (!res.ok) {
+    const body = await res.json().catch(() => null)
+    throw new DcsApiError(String((body as { message?: string } | null)?.message ?? `${res.status} ${path}`), res.status, body)
+  }
+  return (res.status === 204 ? undefined : await res.json()) as T
+}
+
+async function ensureRepo(account: Door43Account, to: Destination, privately: boolean) {
+  const config = configOf(to.host)
+  try {
+    await getRepo(config, to.owner, to.repo, account.token)
+  } catch (e) {
+    if (!(e instanceof DcsApiError && e.status === 404)) throw e
+    await createOrgRepo(config, to.owner, { name: to.repo, description: '', private: privately, auto_init: true, default_branch: 'master', token: account.token })
+  }
+}
+
+/** The shelf's release, or none yet. */
+async function shelfOf(account: Door43Account, to: Destination): Promise<{ id: number } | null> {
+  try {
+    return await call<{ id: number }>(account, to, `/releases/tags/${SHELF}`)
+  } catch (e) {
+    if (e instanceof DcsApiError && e.status === 404) return null
+    throw e
+  }
+}
 
 /**
- * Leaves a person's work (a package's text, gzipped) for the others, making the private repository the first time.
- * One this phone left before, not gzipped, is taken away: the others would bring the same work twice.
+ * Leaves a person's work (a package's text, its sound in it) on the shelf, gzipped, making the private repository and
+ * the shelf the first time. The new one goes up before the one it replaces goes away: there is never a moment without.
+ * What an earlier Servos left for this person and phone as a file of the repository is taken away.
  */
 export async function leaveWork(account: Door43Account, to: Destination, text: string, person: string, device: string): Promise<FileResult> {
   const at = workRepoOf(to)
-  const path = workPathOf(person, device)
-  const [result] = await publish(account, at, [{ path, base64: toBase64(await gzipped(text)) }], `Trabajo de ${person}`, { private: true })
-  if (result.state !== 'failed') {
-    const old = path.slice(0, -PACKAGE.length) + OLD_PACKAGE
+  const name = workNameOf(person, device)
+  try {
+    await ensureRepo(account, at, true)
+    const shelf =
+      (await shelfOf(account, at)) ??
+      (await call<{ id: number }>(account, at, '/releases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tag_name: SHELF, target_commitish: 'master', name: 'Trabajo del equipo', body: 'Lo deja Servos para el equipo: no es una versión.', prerelease: true }),
+      }))
+    const before = (await call<Asset[]>(account, at, `/releases/${shelf.id}/assets`)).filter((a) => a.name === name)
+    const form = new FormData()
+    form.append('attachment', new Blob([new Uint8Array(await gzipped(text))], { type: 'application/gzip' }), name)
+    await call<Asset>(account, at, `/releases/${shelf.id}/assets?name=${encodeURIComponent(name)}`, { method: 'POST', body: form })
+    for (const old of before) await call<void>(account, at, `/releases/${shelf.id}/assets/${old.id}`, { method: 'DELETE' }).catch(() => {})
+  } catch (e) {
+    return { path: name, state: 'failed', problem: problemOf(e) }
+  }
+  for (const old of [`${OLD_FOLDER}/${name}`, `${OLD_FOLDER}/${name.slice(0, -PACKAGE.length)}${OLD_PACKAGE}`]) {
     try {
       const there = await getContents(configOf(at.host), at.owner, at.repo, old, { token: account.token })
       if (!Array.isArray(there)) await deleteContents(configOf(at.host), at.owner, at.repo, old, { sha: there.sha, message: `Trabajo de ${person}`, token: account.token })
@@ -352,29 +399,38 @@ export async function leaveWork(account: Door43Account, to: Destination, text: s
       /* none there, or it stays: bringing it in twice brings nothing new */
     }
   }
-  return result
+  return { path: name, state: 'written' }
 }
 
-/** The work the others left, each file's text (this phone's own left out); none yet, when nobody left any. */
+/** The work the others left (this phone's own left out), each one's text; none yet, when nobody left any. */
 export async function workLeft(account: Door43Account, to: Destination, device: string): Promise<Array<{ path: string; text: string }>> {
-  const config = configOf(to.host)
   const at = workRepoOf(to)
-  let listed: ContentsResponse | ContentsResponse[]
-  try {
-    listed = await getContents(config, at.owner, at.repo, WORK, { token: account.token })
-  } catch (e) {
-    if (e instanceof DcsApiError && e.status === 404) return []
-    throw e
-  }
   const isPackage = (name: string) => name.endsWith(PACKAGE) || name.endsWith(OLD_PACKAGE)
   const mine = (name: string) => name.endsWith(`-${device}${PACKAGE}`) || name.endsWith(`-${device}${OLD_PACKAGE}`)
-  const theirs = (Array.isArray(listed) ? listed : []).filter((x) => x.type === 'file' && isPackage(x.name) && !mine(x.name))
   const out: Array<{ path: string; text: string }> = []
-  for (const x of theirs) {
+  const read = async (name: string, bytes: Uint8Array) => (name.endsWith(PACKAGE) ? gunzipped(bytes) : new TextDecoder().decode(bytes))
+  // On the shelf.
+  const shelf = await shelfOf(account, at)
+  if (shelf) {
+    for (const a of (await call<Asset[]>(account, at, `/releases/${shelf.id}/assets`)).filter((x) => isPackage(x.name) && !mine(x.name))) {
+      const res = await fetch(a.browser_download_url, { headers: { Authorization: `token ${account.token}` } })
+      if (!res.ok) throw new DcsApiError(`Could not bring ${a.name}`, res.status)
+      out.push({ path: a.name, text: await read(a.name, new Uint8Array(await res.arrayBuffer())) })
+    }
+  }
+  // Left by an earlier Servos as files of the repository.
+  const config = configOf(at.host)
+  let listed: ContentsResponse | ContentsResponse[] = []
+  try {
+    listed = await getContents(config, at.owner, at.repo, OLD_FOLDER, { token: account.token })
+  } catch (e) {
+    if (!(e instanceof DcsApiError && e.status === 404)) throw e
+  }
+  for (const x of (Array.isArray(listed) ? listed : []).filter((f) => f.type === 'file' && isPackage(f.name) && !mine(f.name))) {
     const got = await getContents(config, at.owner, at.repo, x.path, { token: account.token })
     if (Array.isArray(got)) continue
     const bytes = got.content ? fromBase64(got.content.replace(/\s/g, '')) : await rawBytes(account, at, x.path)
-    out.push({ path: x.path, text: x.name.endsWith(PACKAGE) ? await gunzipped(bytes) : new TextDecoder().decode(bytes) })
+    out.push({ path: x.path, text: await read(x.name, bytes) })
   }
   return out
 }

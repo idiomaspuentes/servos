@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fileOf, fingerprint, leaveWork, manifestOf, problemOf, proposedRepo, publish, signIn, workLeft, workPathOf, workRepoOf } from './door43'
+import { fileOf, fingerprint, leaveWork, manifestOf, problemOf, proposedRepo, publish, signIn, workLeft, workNameOf, workRepoOf } from './door43'
 import { DcsApiError } from '../../door43/dcs'
 
 describe('a project published to Door43', () => {
@@ -141,18 +141,27 @@ describe('el trabajo del equipo por Door43', () => {
   const to = { host: 'https://qa.door43.org', owner: 'BSOJ', repo: 'qu_reg' }
 
   /**
-   * A Door43 in memory that keeps files as bytes, lists a folder, reads raw, deletes, keeps whether a repository was
-   * made private, and leaves a big file's content out of the contents API (as Door43 does past 10 MB).
+   * A Door43 in memory: private repositories, files kept as bytes, and releases whose attachments are uploaded as a
+   * form, listed, deleted, and downloaded from `/attachments/…` only with the key (a private repository's).
    */
   function door43() {
     const repos = new Map<string, { private: boolean }>()
-    const files = new Map<string, { b64: string; sha: string; big?: boolean }>()
+    const files = new Map<string, { b64: string; sha: string }>()
+    const releases = new Map<string, { id: number; tag: string; prerelease: boolean }>()
+    const assets = new Map<number, { id: number; release: number; name: string; bytes: Uint8Array; uuid: string }>()
     let n = 0
     vi.stubGlobal('fetch', async (url: string, init: RequestInit = {}) => {
-      const path = decodeURIComponent(new URL(url).pathname.replace('/api/v1', ''))
+      const u = new URL(url)
+      const path = decodeURIComponent(u.pathname.replace('/api/v1', ''))
       const method = init.method ?? 'GET'
+      const keyed = (init.headers as Record<string, string> | undefined)?.Authorization === 'token t'
       const ok = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status })
-      let m = /^\/repos\/([^/]+)\/([^/]+)$/.exec(path)
+      let m = /^\/attachments\/(.+)$/.exec(path)
+      if (m) {
+        const a = [...assets.values()].find((x) => x.uuid === m![1])
+        return a && keyed ? new Response(new Uint8Array(a.bytes)) : new Response('Not Found', { status: 404 })
+      }
+      m = /^\/repos\/([^/]+)\/([^/]+)$/.exec(path)
       if (m) return repos.has(`${m[1]}/${m[2]}`) ? ok({ name: m[2] }) : ok({ message: 'not found' }, 404)
       m = /^\/orgs?\/([^/]+)\/repos$/.exec(path)
       if (m && method === 'POST') {
@@ -160,47 +169,66 @@ describe('el trabajo del equipo por Door43', () => {
         repos.set(`${m[1]}/${body.name}`, { private: Boolean(body.private) })
         return ok({}, 201)
       }
-      m = /^\/repos\/([^/]+)\/([^/]+)\/raw\/(.+)$/.exec(path)
-      if (m) {
-        const f = files.get(`${m[1]}/${m[2]}/${m[3]}`)
-        return f ? new Response(Buffer.from(f.b64, 'base64')) : ok({ message: 'not found' }, 404)
+      m = /^\/repos\/([^/]+)\/([^/]+)\/(.*)$/.exec(path)
+      if (!m || !repos.has(`${m[1]}/${m[2]}`)) return ok({ message: 'not found' }, 404)
+      const repo = `${m[1]}/${m[2]}`
+      const rest = m[3]
+      let r = /^releases\/tags\/(.+)$/.exec(rest)
+      if (r) {
+        const rel = releases.get(`${repo}@${r[1]}`)
+        return rel ? ok(rel) : ok({ message: 'not found' }, 404)
       }
-      m = /^\/repos\/([^/]+)\/([^/]+)\/contents\/(.+)$/.exec(path)
-      if (m) {
-        if (!repos.has(`${m[1]}/${m[2]}`)) return ok({ message: 'not found' }, 404)
-        const key = `${m[1]}/${m[2]}/${m[3]}`
+      if (rest === 'releases' && method === 'POST') {
+        const body = JSON.parse(String(init.body))
+        const rel = { id: ++n, tag: body.tag_name, prerelease: Boolean(body.prerelease) }
+        releases.set(`${repo}@${body.tag_name}`, rel)
+        return ok(rel, 201)
+      }
+      r = /^releases\/(\d+)\/assets(?:\/(\d+))?$/.exec(rest)
+      if (r) {
+        const release = Number(r[1])
+        if (method === 'GET') return ok([...assets.values()].filter((a) => a.release === release).map((a) => ({ id: a.id, name: a.name, size: a.bytes.length, browser_download_url: `${to.host}/attachments/${a.uuid}` })))
+        if (method === 'DELETE') {
+          assets.delete(Number(r[2]))
+          return new Response(null, { status: 204 })
+        }
+        const file = (init.body as FormData).get('attachment') as Blob
+        const a = { id: ++n, release, name: u.searchParams.get('name')!, bytes: new Uint8Array(await file.arrayBuffer()), uuid: `u${n}` }
+        assets.set(a.id, a)
+        return ok({ id: a.id, name: a.name, size: a.bytes.length, browser_download_url: `${to.host}/attachments/${a.uuid}` }, 201)
+      }
+      r = /^contents\/(.+)$/.exec(rest)
+      if (r) {
+        const key = `${repo}/${r[1]}`
         const f = files.get(key)
         if (method === 'GET') {
-          if (f) return ok({ name: m[3].split('/').pop(), path: m[3], sha: f.sha, size: 1, type: 'file', ...(f.big ? {} : { content: f.b64 }) })
-          const inside = [...files.keys()].filter((k) => k.startsWith(`${key}/`)).map((k) => k.slice(`${m![1]}/${m![2]}/`.length))
+          if (f) return ok({ name: r[1].split('/').pop(), path: r[1], sha: f.sha, size: 1, type: 'file', content: f.b64 })
+          const inside = [...files.keys()].filter((k) => k.startsWith(`${key}/`)).map((k) => k.slice(`${repo}/`.length))
           return inside.length ? ok(inside.map((p) => ({ name: p.split('/').pop(), path: p, sha: 'x', size: 1, type: 'file' }))) : ok({ message: 'not found' }, 404)
         }
-        const body = JSON.parse(String(init.body))
-        if (f && body.sha !== f.sha) return ok({ message: 'sha' }, 409)
         if (method === 'DELETE') {
           files.delete(key)
           return ok({ commit: { sha: 'c' } })
         }
-        files.set(key, { b64: body.content, sha: `s${++n}` })
-        return ok({ content: {}, commit: { sha: 'c', message: '' } }, 201)
       }
       return ok({}, 404)
     })
-    return { repos, files }
+    return { repos, files, releases, assets }
   }
+  const names = (assets: Map<number, { name: string }>) => [...assets.values()].map((a) => a.name)
 
-  it('cada uno deja su archivo comprimido en un repositorio privado junto al del proyecto, uno por persona y teléfono', async () => {
-    const { repos, files } = door43()
+  it('cada uno deja su trabajo comprimido como adjunto del release «trabajo» de un repositorio privado, uno por persona y teléfono', async () => {
+    const { repos, releases, assets } = door43()
     expect(workRepoOf(to).repo).toBe('qu_reg-servos')
-    expect(workPathOf('María José', 'a1b2')).toBe('trabajo/maria-jose-a1b2.servos.json.gz')
+    expect(workNameOf('María José', 'a1b2')).toBe('maria-jose-a1b2.servos.json.gz')
     expect((await leaveWork(account, to, '{"de":"Bea"}', 'Bea', 'dev-b')).state).toBe('written')
     expect(repos.get('BSOJ/qu_reg-servos')).toEqual({ private: true })
+    expect(releases.get('BSOJ/qu_reg-servos@trabajo')?.prerelease).toBe(true)
     // Gzipped: what is kept is not the text.
-    expect(Buffer.from(files.get('BSOJ/qu_reg-servos/trabajo/bea-dev-b.servos.json.gz')!.b64, 'base64').subarray(0, 2)).toEqual(Buffer.from([0x1f, 0x8b]))
-    // Left again with the same text, nothing is written; with other text, the file is replaced.
-    expect((await leaveWork(account, to, '{"de":"Bea"}', 'Bea', 'dev-b')).state).toBe('same')
-    expect((await leaveWork(account, to, '{"de":"Bea","mas":1}', 'Bea', 'dev-b')).state).toBe('written')
-    expect([...files.keys()]).toEqual(['BSOJ/qu_reg-servos/trabajo/bea-dev-b.servos.json.gz'])
+    expect([...[...assets.values()][0].bytes.subarray(0, 2)]).toEqual([0x1f, 0x8b])
+    // Left again: the attachment is replaced in place, no second one, nothing piled up.
+    await leaveWork(account, to, '{"de":"Bea","mas":1}', 'Bea', 'dev-b')
+    expect(names(assets)).toEqual(['bea-dev-b.servos.json.gz'])
   })
 
   it('al traer, llega lo de los demás y no lo que este teléfono dejó; si nadie dejó nada, nada', async () => {
@@ -212,20 +240,14 @@ describe('el trabajo del equipo por Door43', () => {
     expect((await workLeft(account, to, 'dev-a')).map((x) => x.text)).toEqual(['{"de":"Bea"}', '{"de":"Carla"}'])
   })
 
-  it('un archivo grande, que Door43 no da por la vía de contenidos, se trae por la vía raw', async () => {
-    const { files } = door43()
-    await leaveWork(account, to, '{"de":"Bea","libro":"Salmos"}', 'Bea', 'dev-b')
-    files.get('BSOJ/qu_reg-servos/trabajo/bea-dev-b.servos.json.gz')!.big = true
-    expect((await workLeft(account, to, 'dev-a')).map((x) => x.text)).toEqual(['{"de":"Bea","libro":"Salmos"}'])
-  })
-
-  it('el trabajo dejado antes sin comprimir se sigue trayendo, y quien lo dejó lo cambia por el comprimido al dejar otra vez', async () => {
-    const { files } = door43()
+  it('lo que un Servos anterior dejó como archivo del repositorio se sigue trayendo, y quien lo dejó lo quita al dejar otra vez', async () => {
+    const { files, assets } = door43()
     await leaveWork(account, to, '{}', 'Ana', 'dev-a')
     files.set('BSOJ/qu_reg-servos/trabajo/bea-dev-b.servos.json', { b64: Buffer.from('{"de":"Bea, antes"}').toString('base64'), sha: 'old' })
     expect((await workLeft(account, to, 'dev-a')).map((x) => x.text)).toEqual(['{"de":"Bea, antes"}'])
     await leaveWork(account, to, '{"de":"Bea"}', 'Bea', 'dev-b')
-    expect([...files.keys()].filter((k) => k.includes('bea'))).toEqual(['BSOJ/qu_reg-servos/trabajo/bea-dev-b.servos.json.gz'])
+    expect([...files.keys()]).toEqual([])
+    expect(names(assets)).toEqual(['ana-dev-a.servos.json.gz', 'bea-dev-b.servos.json.gz'])
     expect((await workLeft(account, to, 'dev-a')).map((x) => x.text)).toEqual(['{"de":"Bea"}'])
   })
 })

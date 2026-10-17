@@ -12,7 +12,7 @@ import { accountOf, destinationOf, forgetAccount, leaveWork, organizationsOf, pr
 import { namesTogether } from '../projects/mix'
 import { bookName, type Project } from '../projects/model'
 import { inProject } from '../projects/scope'
-import { previewBook, readShared, receiveShared, shareProject, type BookPreview, type SharedFile } from '../projects/share'
+import { previewBook, readShared, receiveShared, shareProject, withSounds, type BookPreview, type SharedFile } from '../projects/share'
 import { deviceId } from '../projects/work'
 import { Door43AccountSheet } from './Door43Account'
 
@@ -144,7 +144,8 @@ export function TeamWorkScreen({
     setBusy('dejando')
     setProblem(null)
     try {
-      const file = shareProject(project, project.books.map((b) => b.code), person)
+      // With the sound of every take: the shelf replaces it in place, so recording again does not pile up versions.
+      const file = await withSounds(shareProject(project, project.books.map((b) => b.code), person))
       const result = await leaveWork(account, to, JSON.stringify(file), person, deviceId())
       if (result.state === 'failed') setProblem(result.problem ?? 'other')
       else setLeft(true)
