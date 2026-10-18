@@ -517,6 +517,7 @@
   "recibir.traeMas": "alignments, checks and notes: {n}",
   "recibir.recibir": "Receive",
   "recibir.otroArchivo": "Choose another file",
+  "recibir.soltar": "Drop the file here to receive it",
   "recibir.hecho": "{nombre}'s work was gathered.",
   "recibir.entraron": "Verses that came in: {n} · already the same: {iguales}.",
   "recibir.paraElegirDespues": "Verses to bring together: {n}.",

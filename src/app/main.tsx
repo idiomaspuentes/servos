@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { App } from './App'
 import { keepAppOffline } from './frame/appUpdate'
 import { KeepGoing, LastResort } from './frame/Crashed'
+import { keepBrowserMenuToText, receiveOpenedFiles } from './frame/desktop'
 import { applyTheme, themeOf } from './frame/theme'
 import { moveAlignmentsIn, moveBooksToProjects, openBooks } from './projects/bookText'
 import { openLibrary } from './projects/library'
@@ -21,6 +22,10 @@ applyTheme(themeOf())
 
 // Installed, the app opens without internet: all of it is kept on the phone at the first visit.
 keepAppOffline()
+
+// In the app for computers: a file opened on the computer goes to be received, and the browser's menu stays away.
+receiveOpenedFiles()
+keepBrowserMenuToText()
 
 // The books kept on this device are opened (and the prototype's verse-by-verse text moved in) before anything shows.
 void openBooks()

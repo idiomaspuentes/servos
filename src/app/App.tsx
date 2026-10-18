@@ -36,6 +36,7 @@ import { TranslateUi } from './screens/TranslateUi'
 import { WaitingSheet } from './screens/WaitingSheet'
 import { isOnline, useWaiting, whenNotTyping } from './frame/online'
 import { switchToNewVersion, useNewVersion } from './frame/appUpdate'
+import { onArrived, useDroppedFiles } from './frame/arriving'
 import { waiting } from './projects/outbox'
 
 type Screen =
@@ -46,7 +47,8 @@ type Screen =
   | { kind: 'settings'; projectId: string }
   | { kind: 'glossary'; projectId: string; back: Screen; entry?: string }
   | { kind: 'receive'; back: Screen }
-  | { kind: 'recibir'; back: Screen; projectId?: string; book?: string }
+  /** `opened`: a file opened on the computer or dropped on the window, read at once (`n` tells one from the next). */
+  | { kind: 'recibir'; back: Screen; projectId?: string; book?: string; opened?: { text: string; n: number } }
   | { kind: 'translate' }
   | { kind: 'elegir'; projectId: string; book: string; back: Screen }
   /** `bring`: opened to bring in the team's work at once (asked without internet, and said yes to when it came). */
@@ -275,6 +277,24 @@ export function App() {
     }
   }, [screen])
 
+  // A file opened on the computer, or dropped on the window (frame/arriving.ts): «Receive» opens with it, read, over
+  // whatever was on screen, which is where its back arrow returns. It waits while nobody has said who they are.
+  const [arrived, setArrived] = useState<{ text: string; n: number } | null>(null)
+  const arrivals = useRef(0)
+  useEffect(() => onArrived((file) => setArrived({ text: file.text, n: ++arrivals.current })), [])
+  const dropping = useDroppedFiles()
+  useEffect(() => {
+    if (!arrived || !people) return
+    // What was open on top goes: what arrived is what the person is doing now.
+    setPersonMenu(false)
+    setAddProject(false)
+    setAddBookFor(null)
+    setDoor43(false)
+    setLanguage(false)
+    setScreen((now) => ({ kind: 'recibir', back: now.kind === 'recibir' ? now.back : now, opened: arrived }))
+    setArrived(null)
+  }, [arrived, people])
+
   if (!people) {
     return (
       <>
@@ -333,6 +353,12 @@ export function App() {
           <button type="button" className="chip" onClick={switchToNewVersion}>
             {t('marco.usarAhora')}
           </button>
+        </div>
+      )}
+
+      {dropping && (
+        <div className="drop-here" role="status">
+          {t('recibir.soltar')}
         </div>
       )}
 
@@ -454,9 +480,11 @@ export function App() {
       {screen.kind === 'receive' && <ReceivePack onBack={() => setScreen(screen.back)} onStudy={() => setScreen(screen.back)} />}
       {screen.kind === 'recibir' && (
         <ReceiveScreen
+          key={screen.opened?.n ?? 0}
           projects={projects}
           person={person}
           preset={screen.projectId}
+          opened={screen.opened?.text}
           // Work «to try» from the example's people: only in the example.
           examples={screen.projectId === EXAMPLE_PROJECT_ID && screen.book && project(screen.projectId) ? exampleShared(project(screen.projectId)!, chaptersFor(screen.book)) : []}
           onBack={() => setScreen(screen.back)}

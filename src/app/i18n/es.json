@@ -517,6 +517,7 @@
   "recibir.traeMas": "alineaciones, revisiones y notas: {n}",
   "recibir.recibir": "Recibir",
   "recibir.otroArchivo": "Elegir otro archivo",
+  "recibir.soltar": "Suelte el archivo aquí para recibirlo",
   "recibir.hecho": "Se juntó lo de {nombre}.",
   "recibir.entraron": "Versículos que entraron: {n} · ya estaban iguales: {iguales}.",
   "recibir.paraElegirDespues": "Versículos para juntar: {n}.",
