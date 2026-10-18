@@ -6,46 +6,23 @@
  *
  * The folder holds what `bt-synergy/packages/resource-pipeline/cli/prepare-language.ts --lang es-419 --books all`
  * writes. Skipped without the variable. The content is es-419_gl's (CC BY-SA 4.0) and unfoldingWord's originals
- * (CC BY-SA 4.0), named in each file.
+ * (CC BY-SA 4.0), named in each file. The conversion is the app's own (`src/resources/screenData.ts`).
  */
 import 'fake-indexeddb/auto'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, it } from 'vitest'
-import { resourceContentStamp } from '@bt-synergy/resource-catalog'
-import { unwrapVersioned } from '@bt-synergy/resource-pipeline/cache/versionedEnvelope'
 import { openPack } from '../resources/packs'
-import {
-  alignedPlaces,
-  booksOfText,
-  introsOf,
-  notesOfVerse,
-  originalWordsOf,
-  readChapter,
-  readChapterWords,
-  referenceCovers,
-  type ChapterWords,
-} from '../resources/reading'
-import { openResourceStores, type ResourceStores } from '../resources/store'
-import type { Places, PrototypeData } from './data'
+import { chapterData, GREEK, HEBREW, type BookSources } from '../resources/screenData'
+import { openResourceStores } from '../resources/store'
+import type { PrototypeData } from './data'
 
 const folder = process.env.SERVOS_PAQUETES
 const ORG = 'es-419_gl/es-419'
-const GLT = `${ORG}/glt`
-const GST = `${ORG}/gst`
-const TN = `${ORG}/tn`
-const TQ = `${ORG}/tq`
-const TWL = `${ORG}/twl`
-const TW = `${ORG}/tw`
-const TA = `${ORG}/ta`
-const UGNT = 'unfoldingWord/el-x-koine/ugnt'
-const UHB = 'unfoldingWord/hbo/uhb'
-
-type Original = { key: string; abbreviation: string; dir: 'ltr' | 'rtl'; lang: string }
 
 /**
  * Where each section begins, from the `\ts\*` markers of unfoldingWord's ULT (en_ult, master, read 2026-10-14): the
- * es-419 texts do not mark sections and the packs do not carry the ULT. Wired, a pack carries this table.
+ * es-419 texts do not mark sections and the packs do not carry the ULT.
  */
 const SECTION_STARTS: Record<string, number[]> = {
   'tit 1': [1, 4, 6, 8, 10, 12, 15],
@@ -57,170 +34,18 @@ const SECTION_STARTS: Record<string, number[]> = {
   'jon 4': [1, 4, 6, 8, 10],
 }
 
-async function chapterData(stores: ResourceStores, bookId: string, chapter: number, original: Original): Promise<PrototypeData> {
-  const raw = async <T,>(key: string, version: number) => unwrapVersioned<T>(await stores.cache.get(key), version)
-  const title = async (key: string) => String((await stores.catalog.get(key))?.title ?? key)
-
-  const book = (await booksOfText(stores, GLT)).find((b) => b.book === bookId)!
-  const glt = (await readChapter(stores, GLT, bookId, chapter))!
-  const gst = (await readChapter(stores, GST, bookId, chapter))!
-  const verses = glt.flatMap((p) => (p.kind === 'paragraph' ? p.verses.map((v) => v.verse) : []))
-
-  type Q = { id: string; reference: string; question: string; response: string }
-  type L = { id: string; reference: string; origWords: string; articlePath: string; tags: string }
-  const questions = (await raw<{ questions: Q[] }>(`prepared:questions:${TQ}:${bookId}:${chapter}:light`, 1))?.questions ?? []
-  const links = (await raw<{ links: L[] }>(`prepared:words-links:${TWL}:${bookId}:${chapter}:light`, 1))?.links ?? []
-
-  // Where each note and word link stands in each text: aligned places in TPL and TPS, and the original's words those
-  // places translate (a touched Hebrew word finds its notes through them).
-  const words3 = {
-    TPL: (await readChapterWords(stores, GLT, bookId, chapter))!,
-    TPS: (await readChapterWords(stores, GST, bookId, chapter))!,
-    [original.abbreviation]: (await readChapterWords(stores, original.key, bookId, chapter))!,
-  } as Record<string, ChapterWords>
-  const aligned = {
-    tn: { TPL: await alignedPlaces(stores, TN, GLT, bookId, chapter), TPS: await alignedPlaces(stores, TN, GST, bookId, chapter) },
-    twl: { TPL: await alignedPlaces(stores, TWL, GLT, bookId, chapter), TPS: await alignedPlaces(stores, TWL, GST, bookId, chapter) },
-  }
-  const originalPlace = new Map(words3[original.abbreviation].words.map((w, i) => [w.own, i]))
-  const originalWords = (await originalWordsOf(stores, original.key, bookId, chapter)) ?? []
-  const originalsOfVerse = (verse: number) =>
-    (words3[original.abbreviation].lines[verse] ?? []).flatMap((l) => l.pieces.map((p) => p.word).filter((w): w is number => w !== undefined))
-  const toOriginal = (abbr: 'TPL' | 'TPS') =>
-    words3[abbr].words.map((w) => w.originals.map((key) => originalPlace.get(key)).filter((p): p is number => p !== undefined))
-  const placesOf = (helps: 'tn' | 'twl', id: string): Places => {
-    const tpl = aligned[helps].TPL[id] ?? []
-    const tps = aligned[helps].TPS[id] ?? []
-    const originals = new Set<number>()
-    for (const [abbr, places] of [['TPL', tpl], ['TPS', tps]] as const) {
-      for (const at of places) for (const key of words3[abbr].words[at]?.originals ?? []) {
-        const place = originalPlace.get(key)
-        if (place !== undefined) originals.add(place)
-      }
-    }
-    return { TPL: tpl, TPS: tps, [original.abbreviation]: [...originals].sort((a, b) => a - b) }
-  }
-  /**
-   * The places of one of several links of the same words in a verse. The cached alignment of a word link does not know
-   * which occurrence it is, so links of the same words (יְהוָה twice in Jonah 1:3, three times in 1:14) come with the
-   * places of all of them; the k-th link takes the k-th of them in reading order. Where a text's places do not part
-   * evenly, its share is found through the original words the TPL's share translates.
-   */
-  const nthPlaces = (places: Places, nth: number, of: number, verse: number): Places => {
-    const share = (list: number[] | undefined) => {
-      const sorted = [...(list ?? [])].sort((x, y) => x - y)
-      if (!sorted.length || sorted.length % of !== 0) return null
-      const size = sorted.length / of
-      return sorted.slice(nth * size, (nth + 1) * size)
-    }
-    const tpl = share(places.TPL)
-    if (!tpl) return places
-    const originals = new Set<number>()
-    for (const at of tpl) for (const key of words3.TPL.words[at]?.originals ?? []) {
-      const place = originalPlace.get(key)
-      if (place !== undefined) originals.add(place)
-    }
-    const own = share(places[original.abbreviation])
-    // The original's share, when the TPL's leads to one word that all of them lead to (the alignment knows one): the
-    // k-th word of the verse with its Strong number, if there are as many as links.
-    if (originals.size === 1) {
-      const strong = originalWords[[...originals][0]]?.strong
-      const same = originalsOfVerse(verse).filter((p) => strong && originalWords[p]?.strong === strong)
-      if (same.length === of) {
-        originals.clear()
-        originals.add(same[nth])
-      }
-    }
-    const tpsThrough = (places.TPS ?? []).filter((at) => (words3.TPS.words[at]?.originals ?? []).some((key) => originals.has(originalPlace.get(key) ?? -1)))
-    const tps = share(places.TPS) ?? (tpsThrough.length ? tpsThrough : (places.TPS ?? []))
-    return { TPL: tpl, TPS: tps, [original.abbreviation]: originals.size ? [...originals].sort((x, y) => x - y) : (own ?? places[original.abbreviation] ?? []) }
-  }
-
-  const twStamp = resourceContentStamp(await stores.catalog.get(TW))
-  const words: PrototypeData['words'] = {}
-  for (const link of links) {
-    if (words[link.articlePath]) continue
-    const entry = link.articlePath.replace(/^bible\//, '')
-    const titleRow = await stores.cache.get(`helps-text:tw-title:${TW}@${twStamp}:${entry}`)
-    const article = await stores.cache.get(`${TW}/${link.articlePath}`)
-    words[link.articlePath] = {
-      title: unwrapVersioned<string>(titleRow, 1) ?? entry.split('/').pop()!,
-      markdown: typeof article === 'string' ? article : '',
-    }
-  }
-
-  const byVerse: PrototypeData['verses'] = []
-  const academy: PrototypeData['academy'] = {}
-  for (const verse of verses) {
-    const inGlt = await notesOfVerse(stores, { notesKey: TN, textKey: GLT, book: bookId, chapter, verse })
-    const inGst = await notesOfVerse(stores, { notesKey: TN, textKey: GST, book: bookId, chapter, verse })
-    for (const n of inGlt) {
-      const path = n.supportReference.split('/ta/man/')[1]
-      if (!path || academy[path]) continue
-      const article = await stores.cache.get(`${TA}/${path}`)
-      const markdown = typeof article === 'string' ? article : ''
-      academy[path] = { title: markdown.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? path, markdown }
-    }
-    byVerse.push({
-      verse,
-      notes: inGlt.map((n) => ({
-        id: n.id,
-        quote: n.quote,
-        glt: n.textQuote,
-        gst: inGst.find((g) => g.id === n.id)?.textQuote ?? null,
-        note: n.note,
-        academy: n.supportReference.split('/ta/man/')[1] ?? null,
-        places: placesOf('tn', n.id),
-      })),
-      questions: questions.filter((q) => referenceCovers(q.reference, chapter, verse)).map((q) => ({ id: q.id, question: q.question, response: q.response })),
-      words: links
-        .filter((l) => referenceCovers(l.reference, chapter, verse))
-        .map((l, _, here) => {
-          const places = placesOf('twl', l.id)
-          // Links to the same article given the same places are one link per occurrence, in order (see `nthPlaces`); not
-          // by their words, which differ in their accents (יְהוָ֔ה, יְהוָ֑ה).
-          const twins = here.filter((o) => o.articlePath === l.articlePath && JSON.stringify(placesOf('twl', o.id)) === JSON.stringify(places))
-          return {
-            id: l.id,
-            original: l.origWords,
-            article: l.articlePath,
-            keyTerm: l.tags.includes('keyterm'),
-            places: twins.length > 1 ? nthPlaces(places, twins.indexOf(l), twins.length, verse) : places,
-          }
-        }),
-    })
-  }
-
-  const intros = await introsOf(stores, TN, bookId, chapter)
-
-  return {
-    ...(intros.chapter ? { intro: intros.chapter } : {}),
-    ...(intros.book ? { bookIntro: intros.book } : {}),
-    source: `Recursos de ${ORG} y originales de unfoldingWord en Door43 (CC BY-SA 4.0), sacados de los paquetes de idioma el ${new Date().toISOString().slice(0, 10)}.`,
-    language: 'es-419',
-    book: { id: bookId, name: book.name, chapters: book.chapters.length },
-    chapter,
-    texts: [
-      { key: GLT, abbreviation: 'TPL', title: await title(GLT), pieces: glt, lines: words3.TPL.lines, toOriginal: toOriginal('TPL') },
-      { key: GST, abbreviation: 'TPS', title: await title(GST), pieces: gst, lines: words3.TPS.lines, toOriginal: toOriginal('TPS') },
-      {
-        key: original.key,
-        abbreviation: original.abbreviation,
-        title: await title(original.key),
-        pieces: (await readChapter(stores, original.key, bookId, chapter))!,
-        lines: words3[original.abbreviation].lines,
-        words: (await originalWordsOf(stores, original.key, bookId, chapter)) ?? undefined,
-        original: true,
-        dir: original.dir,
-        lang: original.lang,
-      },
-    ],
-    sections: SECTION_STARTS[`${bookId} ${chapter}`].map((start, i, starts) => verses.filter((v) => v >= start && v < (starts[i + 1] ?? Infinity))),
-    verses: byVerse,
-    words,
-    academy,
-  }
-}
+const sources = (original: BookSources['original']): BookSources => ({
+  language: 'es-419',
+  owner: ORG,
+  literal: `${ORG}/glt`,
+  simple: `${ORG}/gst`,
+  notes: `${ORG}/tn`,
+  questions: `${ORG}/tq`,
+  wordLinks: `${ORG}/twl`,
+  words: `${ORG}/tw`,
+  academy: `${ORG}/ta`,
+  original,
+})
 
 describe.skipIf(!folder)('datos del prototipo', () => {
   it('escribe todos los capítulos de Tito y Jonás desde los paquetes reales', async () => {
@@ -230,10 +55,8 @@ describe.skipIf(!folder)('datos del prototipo', () => {
     }
     // One file a chapter, `{book}-{chapter}.json`, without spaces: seven chapters go into the one-page prototype.
     const write = (data: PrototypeData) => writeFileSync(join(__dirname, 'data', `${data.book.id}-${data.chapter}.json`), JSON.stringify(data) + '\n')
-    const greek: Original = { key: UGNT, abbreviation: 'Griego', dir: 'ltr', lang: 'grc' }
-    const hebrew: Original = { key: UHB, abbreviation: 'Hebreo', dir: 'rtl', lang: 'hbo' }
-    for (const chapter of [1, 2, 3]) write(await chapterData(stores, 'tit', chapter, greek))
+    for (const chapter of [1, 2, 3]) write(await chapterData(stores, sources(GREEK), 'tit', chapter, { sections: SECTION_STARTS[`tit ${chapter}`] }))
     // Jonah 2 is a poem (Jonah's prayer): the editor's lines are tried on it.
-    for (const chapter of [1, 2, 3, 4]) write(await chapterData(stores, 'jon', chapter, hebrew))
+    for (const chapter of [1, 2, 3, 4]) write(await chapterData(stores, sources(HEBREW), 'jon', chapter, { sections: SECTION_STARTS[`jon ${chapter}`] }))
   }, 600_000)
 })

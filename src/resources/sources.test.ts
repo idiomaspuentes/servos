@@ -1,0 +1,99 @@
+/// <reference types="node" />
+import 'fake-indexeddb/auto'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { describe, expect, it } from 'vitest'
+import { openPack } from './packs'
+import type { ResourceKind } from './reading'
+import { GREEK, HEBREW } from './screenData'
+import { availability, languagesOnDevice, originalOf, sourcesFor, type DeviceIndex, type ResourceHere } from './sources'
+
+const resource = (key: string, kind: ResourceKind, books: string[], inRelease = books, articles = false): ResourceHere => {
+  const [owner, language, resourceId] = key.split('/')
+  return { key, owner, language, resourceId, kind, title: key, books, inRelease, articles }
+}
+
+/** es-419 as its packs leave it: Ruth with everything, Esther with its literal text only, Genesis published elsewhere. */
+const index: DeviceIndex = {
+  resources: [
+    resource('unfoldingWord/hbo/uhb', 'original', ['rut', 'est', 'jon']),
+    resource('unfoldingWord/el-x-koine/ugnt', 'original', ['tit']),
+    resource('es-419_gl/es-419/glt', 'scripture', ['rut', 'est', 'jon', 'tit'], ['gen', 'rut', 'est', 'jon', 'tit']),
+    resource('es-419_gl/es-419/gst', 'scripture', ['rut', 'jon', 'tit']),
+    resource('es-419_gl/es-419/tn', 'notes', ['rut', 'jon', 'tit'], ['rut', 'jon', 'tit', 'est']),
+    resource('es-419_gl/es-419/tq', 'questions', ['rut', 'jon', 'tit']),
+    resource('es-419_gl/es-419/twl', 'word-links', ['rut', 'jon', 'tit']),
+    resource('es-419_obt/es-419/tw', 'words', [], [], true),
+    resource('es-419_gl/es-419/tw', 'words', [], [], true),
+    resource('es-419_gl/es-419/ta', 'academy', [], [], true),
+  ],
+}
+
+describe('qué tiene cada idioma en este teléfono', () => {
+  it('los idiomas son los de los textos puente, no los de los originales', () => {
+    expect(languagesOnDevice(index)).toEqual(['es-419'])
+  })
+
+  it('un libro se lee de sus recursos: los del dueño del TPL primero, y las palabras del dueño de sus enlaces', () => {
+    expect(sourcesFor(index, 'es-419')).toEqual({
+      language: 'es-419',
+      owner: 'es-419_gl/es-419',
+      literal: 'es-419_gl/es-419/glt',
+      simple: 'es-419_gl/es-419/gst',
+      notes: 'es-419_gl/es-419/tn',
+      questions: 'es-419_gl/es-419/tq',
+      wordLinks: 'es-419_gl/es-419/twl',
+      words: 'es-419_gl/es-419/tw',
+      academy: 'es-419_gl/es-419/ta',
+    })
+    expect(sourcesFor(index, 'qu')).toBeNull()
+  })
+
+  it('el original va por testamento', () => {
+    expect(originalOf('rut')).toBe(HEBREW)
+    expect(originalOf('mal')).toBe(HEBREW)
+    expect(originalOf('MAT')).toBe(GREEK)
+    expect(originalOf('tit')).toBe(GREEK)
+  })
+
+  it('Rut se abre con todo', () => {
+    const rut = availability(index, 'es-419', 'rut')
+    expect(rut.here).toBe(true)
+    expect(rut.notOnDevice).toEqual([])
+    expect(rut.notInLanguage).toEqual([])
+    expect(rut.sources?.original).toBe(HEBREW)
+  })
+
+  it('Ester se abre con su TPL; sus notas existen pero no están aquí, y lo demás el idioma no lo publicó', () => {
+    const est = availability(index, 'es-419', 'est')
+    expect(est.here).toBe(true)
+    expect(est.notOnDevice).toEqual(['notes'])
+    expect(est.notInLanguage).toEqual(['simple', 'questions', 'wordLinks'])
+  })
+
+  it('Génesis está publicado pero no en este teléfono, y le falta además el hebreo; Marcos no existe en el idioma', () => {
+    const gen = availability(index, 'es-419', 'gen')
+    expect(gen.here).toBe(false)
+    expect(gen.notOnDevice).toEqual(['literal'])
+    expect(gen.needsOriginal).toBe(true)
+    expect(gen.sources).toBeNull()
+    expect(availability(index, 'es-419', 'mrk').notInLanguage).toContain('literal')
+  })
+})
+
+/** With the real packs (`SERVOS_PAQUETES=<folder>`): the index read from the device itself, from keys alone. */
+const folder = process.env.SERVOS_PAQUETES
+describe.skipIf(!folder)('el índice desde los paquetes reales', () => {
+  it('es-419 y los originales: los libros de cada recurso, sin leer sus filas', async () => {
+    const { deviceIndex } = await import('./sources')
+    const { openResourceStores } = await import('./store')
+    const stores = openResourceStores({ cache: 'idx-cache', catalog: 'idx-catalog' })
+    for (const file of ['originals', 'es-419']) await openPack(stores, readFileSync(join(folder!, `${file}.langpack.zip`)))
+    const real = await deviceIndex(stores)
+    const glt = real.resources.find((r) => r.key === 'es-419_gl/es-419/glt')!
+    expect(glt.books).toEqual(expect.arrayContaining(['rut', 'est', 'jon', 'tit', '3jn']))
+    expect(availability(real, 'es-419', 'rut').here).toBe(true)
+    expect(availability(real, 'es-419', 'est').notInLanguage).toContain('simple')
+    expect(availability(real, 'es-419', 'tit').sources?.original).toBe(GREEK)
+  }, 600_000)
+})
