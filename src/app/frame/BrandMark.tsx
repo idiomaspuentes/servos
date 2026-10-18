@@ -4,7 +4,8 @@
  * voice bars cut out of it). Translating, written and by voice. Every cut is as wide as the others and square-ended,
  * as Mulish's strokes are; the shape is one path with holes, so it stays one silhouette at 16 px. It takes the
  * accent's colour (moss by day, light moss by night). The app's icons (public/) are the same book, white on moss,
- * drawn by design/logo/render-icons.js from the same path: change both.
+ * drawn by design/logo/render-icons.js from the same path: change both. The browser tab's icon is this book redrawn
+ * on a 16 grid (MICRO there), so a change here is redrawn there too.
  */
 const BOOK_THAT_SPEAKS =
   'M22.7 11.5Q16.49 8.5 6.3 8.5Q3.3 8.5 3.3 11.5V33.5Q3.3 36.5 6.3 36.5Q16.49 36.5 22.7 39.5Z' +
