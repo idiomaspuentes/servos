@@ -105,5 +105,16 @@ describe.skipIf(!folder)('el índice desde los paquetes reales', () => {
     expect(availability(real, 'es-419', 'rut').here).toBe(true)
     expect(availability(real, 'es-419', 'est').notInLanguage).toContain('simple')
     expect(availability(real, 'es-419', 'tit').sources?.original).toBe(GREEK)
+    // With packs made with the lexicons and MACULA (bt-synergy's CLI with --macula): Ruth's Hebrew explained, Titus's Greek.
+    const rut = availability(real, 'es-419', 'rut')
+    if (!rut.extras.lexicon) return
+    const { readLexiconEntry, readMacula } = await import('./companions')
+    expect(rut.extras).toEqual({ lexicon: true, macula: true })
+    const entry = await readLexiconEntry(stores, rut.sources!.lexicon!, 7121)
+    expect(entry?.entries.length).toBeGreaterThan(0)
+    const macula = await readMacula(stores, rut.sources!.macula!, 'rut')
+    expect(macula.trees).not.toBeNull()
+    expect(macula.referents).not.toBeNull()
+    expect(availability(real, 'es-419', 'tit').sources).toMatchObject({ lexicon: 'es-419_gl/es-419/ugl', macula: 'Biblica/el-x-koine/macula' })
   }, 600_000)
 })
