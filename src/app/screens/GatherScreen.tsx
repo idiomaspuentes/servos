@@ -50,7 +50,7 @@ function Marked({ here, text }: { here: string; text: string }) {
 /** A piece to touch, read inline as part of its verse; a finger or Enter takes it. */
 function PieceButton({ className, pressed, onTake, children }: { className: string; pressed?: boolean; onTake(): void; children: ReactNode }) {
   const onKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
+    if ((e.key === 'Enter' || e.key === ' ') && !e.ctrlKey && !e.metaKey) {
       e.preventDefault()
       onTake()
     }

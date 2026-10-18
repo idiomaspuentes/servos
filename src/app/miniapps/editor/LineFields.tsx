@@ -59,7 +59,8 @@ export function LineFields({
   const onKey = (event: KeyboardEvent<HTMLTextAreaElement>, line: number) => {
     const box = event.currentTarget
     const { selectionStart: from, selectionEnd: to } = box
-    if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+    // Ctrl+Enter is the screen's filled button (frame/keys.ts), not a new line.
+    if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.metaKey && !event.nativeEvent.isComposing) {
       event.preventDefault()
       if (poem) apply(splitLine(lines, line, from, to))
     } else if (poem && event.key === 'Backspace' && from === 0 && to === 0 && line > 0) {

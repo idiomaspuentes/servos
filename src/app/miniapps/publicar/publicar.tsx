@@ -370,7 +370,7 @@ export function DestinationForm({
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => {
             // One left: Enter takes it.
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
               e.preventDefault()
               if (shown.length === 1) setOwner(shown[0])
             }
