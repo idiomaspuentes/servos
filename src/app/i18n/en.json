@@ -841,5 +841,11 @@
   "libroNuevo.sinTextos": "The texts for {libro} are not on this phone: you can receive its pack when you open it.",
   "libroNuevo.sinTextos.computadora": "The texts for {libro} are not on this computer: you can receive its pack when you open it.",
   "inicio.paraEmpezar": "To begin",
-  "inicio.primerProyecto": "Add your team's project"
+  "inicio.primerProyecto": "Add your team's project",
+  "paquete.abriendoPct": "Opening the pack: {pct} %",
+  "paquete.noCerrar": "Do not close the app or turn off the phone until it finishes. If it is interrupted, open the same file again and it completes.",
+  "paquete.noCerrar.computadora": "Do not close the app or turn off the computer until it finishes. If it is interrupted, open the same file again and it completes.",
+  "paquete.interrumpido": "{archivo} did not finish opening last time. Choose it again to complete it.",
+  "paquete.unPaquete": "a pack",
+  "libro.paqueteInterrumpido": "The texts for {libro} did not finish opening. Receive the pack again to complete them."
 }

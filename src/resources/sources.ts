@@ -34,6 +34,8 @@ export interface ResourceHere {
    * changed how it reads the text): its rows are there and cannot be read; its pack, made again, has to be received.
    */
   stale: boolean
+  /** Its pack's opening did not end (the app closed halfway): some rows may be missing, and its receipt is. */
+  interrupted: boolean
 }
 
 export interface DeviceIndex {
@@ -50,7 +52,7 @@ const PREPARED: Partial<Record<ResourceKind, string>> = {
 }
 
 /** Every resource of every language on this device, with its books. */
-export async function deviceIndex(stores: ResourceStores): Promise<DeviceIndex> {
+export async function deviceIndex(stores: ResourceStores, opening: ReadonlySet<string> = new Set()): Promise<DeviceIndex> {
   const resources: ResourceHere[] = []
   for (const key of await stores.catalog.getAll()) {
     const meta = await stores.catalog.get(key)
@@ -69,7 +71,8 @@ export async function deviceIndex(stores: ResourceStores): Promise<DeviceIndex> 
       }
     }
     const content = (meta as { contentMetadata?: { books?: string[]; ingredients?: Array<{ identifier?: string }> } }).contentMetadata
-    const schema = kind === 'scripture' || kind === 'original' ? readIngestReceiptMeta(await stores.cache.get(`resource:${key}`))?.ingestSchema : undefined
+    const receipt = kind === 'scripture' || kind === 'original' || opening.has(key) ? readIngestReceiptMeta(await stores.cache.get(`resource:${key}`)) : null
+    const schema = receipt?.ingestSchema
     const inRelease = content?.books ?? content?.ingredients?.map((i) => i.identifier ?? '') ?? []
     resources.push({
       key,
@@ -85,6 +88,8 @@ export async function deviceIndex(stores: ResourceStores): Promise<DeviceIndex> 
       stale:
         (typeof schema === 'string' && schema !== scriptureIngestSchema(USJ_PROCESSING_VERSION)) ||
         (type === 'scripture' && nav !== null && unwrapVersioned(await stores.cache.get(nav), SCRIPTURE_PREPARE_VERSION) === null),
+      // A pack's receipts are written last: one whose opening did not end has none for the resources it did not finish.
+      interrupted: opening.has(key) && receipt?.downloadComplete !== true,
     })
   }
   return { resources: resources.sort((a, b) => a.key.localeCompare(b.key)) }
@@ -147,6 +152,8 @@ export interface Availability {
   needsOriginal: boolean
   /** Its text or its original is here but was made for another version of the app: its pack has to be received again. */
   stale: boolean
+  /** Its text, its helps or its original did not finish opening: receiving the same pack again completes them. */
+  interrupted: boolean
   /** The book's sources, when it can be opened. */
   sources: BookSources | null
   /** What Servos reads beside them: the lexicon of its original in the language, and MACULA's sentences and referents. */
@@ -178,13 +185,16 @@ export function availability(index: DeviceIndex, language: string, book: string)
   const notOnDevice = parts.filter((p) => !has[p] && Boolean(resourceFor(p)?.inRelease.includes(code)))
   const notInLanguage = parts.filter((p) => !has[p] && !notOnDevice.includes(p))
   const stale = Boolean(resourceFor('literal')?.stale && has.literal) || Boolean(originalHere && index.resources.find((r) => r.key === original.key)?.stale)
-  const here = has.literal && originalHere && !stale
   // The lexicon of the book's original in its language (its literal text's owner's first), and MACULA for the book.
   const testament = original === GREEK ? 'greek' : 'hebrew'
   const lexicon = of
     .filter((r) => r.subject === LEXICON_SUBJECTS[testament] && r.articles)
     .sort((a, b) => Number(b.owner === chosen?.owner.split('/')[0]) - Number(a.owner === chosen?.owner.split('/')[0]))[0]
   const macula = index.resources.find((r) => r.key === MACULA[testament] && r.articles && r.inRelease.includes(code))
+  // Anything of its language, its original or MACULA that did not finish opening: a resource cut early has not even
+  // its articles yet (a lexicon), so it would not be chosen above, and the book would open without it.
+  const interrupted = [...of, ...index.resources.filter((r) => r.key === original.key || r.key === MACULA[testament])].some((r) => r.interrupted)
+  const here = has.literal && originalHere && !stale && !interrupted
   return {
     here,
     has,
@@ -192,6 +202,7 @@ export function availability(index: DeviceIndex, language: string, book: string)
     notInLanguage,
     needsOriginal: !originalHere,
     stale,
+    interrupted,
     sources: here && chosen ? { ...chosen, original, ...(lexicon ? { lexicon: lexicon.key } : {}), ...(macula ? { macula: macula.key } : {}) } : null,
     extras: { lexicon: Boolean(lexicon), macula: Boolean(macula) },
   }

@@ -16,6 +16,7 @@ import { chapterData } from '../../resources/screenData'
 import { sectionStartsOf } from '../../resources/sections'
 import { availability, deviceIndex, languagesOnDevice, sourcesFor, type Availability, type DeviceIndex } from '../../resources/sources'
 import { openResourceStores, type ResourceStores } from '../../resources/store'
+import { openingLeft } from '../../resources/packs'
 import type { Project } from './model'
 import { currentProject } from './scope'
 
@@ -64,7 +65,7 @@ export async function openLibrary(next: Project[]): Promise<void> {
   setProjects(next)
   try {
     stores = openResourceStores()
-    index = await deviceIndex(stores)
+    index = await deviceIndex(stores, new Set(openingLeft()?.keys ?? []))
   } catch {
     // A browser without IndexedDB (a private window, a page inside another): the example only.
     index = { resources: [] }
@@ -76,7 +77,7 @@ export async function openLibrary(next: Project[]): Promise<void> {
 /** After a pack was opened: what is on this device again, and its books read anew. */
 export async function refreshLibrary(): Promise<void> {
   if (!stores) stores = openResourceStores()
-  index = await deviceIndex(stores)
+  index = await deviceIndex(stores, new Set(openingLeft()?.keys ?? []))
   forgetBooks()
   states.clear()
   loads.clear()

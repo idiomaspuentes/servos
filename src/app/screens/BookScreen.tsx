@@ -262,7 +262,14 @@ export function BookScreen({
         {!chapters.length && (!state || state.state === 'missing' || state.state === 'error') && (
           <>
             <p className="notice">
-              {t(state?.state === 'missing' && state.availability?.stale ? 'libro.paqueteAnterior' : 'libro.faltaPaquete', { libro: name })}
+              {t(
+                state?.state === 'missing' && state.availability?.interrupted
+                  ? 'libro.paqueteInterrumpido'
+                  : state?.state === 'missing' && state.availability?.stale
+                    ? 'libro.paqueteAnterior'
+                    : 'libro.faltaPaquete',
+                { libro: name }
+              )}
             </p>
             <button type="button" className="button-primary" onClick={onReceive}>
               {t('libro.recibirPaquete')}

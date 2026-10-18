@@ -841,5 +841,11 @@
   "libroNuevo.sinTextos": "Os textos de {libro} não estão neste telefone: poderá receber o pacote ao abri-lo.",
   "libroNuevo.sinTextos.computadora": "Os textos de {libro} não estão neste computador: poderá receber o pacote ao abri-lo.",
   "inicio.paraEmpezar": "Para começar",
-  "inicio.primerProyecto": "Adicione o projeto da sua equipe"
+  "inicio.primerProyecto": "Adicione o projeto da sua equipe",
+  "paquete.abriendoPct": "Abrindo o pacote: {pct} %",
+  "paquete.noCerrar": "Não feche o app nem desligue o telefone até terminar. Se for interrompido, abra o mesmo arquivo de novo e ele se completa.",
+  "paquete.noCerrar.computadora": "Não feche o app nem desligue o computador até terminar. Se for interrompido, abra o mesmo arquivo de novo e ele se completa.",
+  "paquete.interrumpido": "Da última vez não terminou de abrir {archivo}. Escolha-o de novo para completá-lo.",
+  "paquete.unPaquete": "um pacote",
+  "libro.paqueteInterrumpido": "Os textos de {libro} não terminaram de abrir. Receba o pacote de novo para completá-los."
 }
