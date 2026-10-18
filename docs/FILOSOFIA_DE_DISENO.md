@@ -146,7 +146,10 @@ acción toma la forma de su papel:
   color**, con dos renglones recortados de una página y tres barras de voz recortadas de la otra, todos del mismo
   ancho y con puntas planas, como las de Mulish; se dibujó en negro sobre una retícula de 48 y se eligió mirándolo a
   16 px. En la pantalla va solo, en el musgo, junto a «Servos» (`BrandMark`); el ícono del teléfono no es la marca en
-  un cuadrado sino el libro blanco sobre un campo de musgo (`public/`, de `design/logo/render-icons.js`). Se probaron
+  un cuadrado sino el libro blanco sobre un campo de musgo (`public/`, de `design/logo/render-icons.js`). En la
+  pestaña del navegador va el libro solo, en musgo (musgo claro con el navegador oscuro), redibujado a 16 px con cada
+  borde en un píxel entero: reducido, sus cortes de un tercio de píxel se volvían manchas grises. Android pinta con los
+  colores del teléfono la silueta del mismo libro (el ícono temático). Se probaron
   un puente (parecía el ícono de wifi, luego una mesa), dos voces (una app de mensajes), la alineación (se leía «XI»),
   una S de dos mitades y ondas en lugar de barras (parecían gusanos). Se evita lo que ya es de otros: la cola de globo
   de diálogo (BibleProject) y los arcos (wifi).
