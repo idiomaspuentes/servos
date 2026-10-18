@@ -198,7 +198,7 @@ export function TranslateUi({ onBack }: { onBack(): void }) {
                 onChange={(e) => setText(target, key, e.target.value)}
                 onKeyDown={(e) => {
                   // Enter goes on, as «Next» does: a phrase of the app is one line.
-                  if (e.key === 'Enter' && !e.shiftKey) {
+                  if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
                     e.preventDefault()
                     go(next)
                   }

@@ -1,7 +1,7 @@
 /**
  * The same keys in every mini app (philosophy, principle 13): Alt+↓ and Alt+↑ go to the next and the previous verse or
- * section, also from a box being written in; Ctrl+Enter does what the filled button does; Ctrl+Z and Ctrl+Y undo and
- * redo where the screen can. Esc closes what is on top (`Sheet`). A key is never the only way to do something: each
+ * section, also from the editor's lines (kept as they are typed); Ctrl+Enter does what the filled button does, once
+ * per press; Ctrl+Z and Ctrl+Y undo and redo where the screen can. Esc closes what is on top (`Sheet`). A key is never the only way to do something: each
  * is a button too, and the button says its key when the pointer rests on it.
  */
 
@@ -25,15 +25,27 @@ export function keyOf(e: KeyboardEvent): KeyName | null {
   return null
 }
 
-/** A box being written in keeps its own undo and redo. */
 function inText(e: KeyboardEvent): boolean {
   const target = e.target as HTMLElement | null
   return Boolean(target?.closest?.('input, textarea, select, [contenteditable]'))
 }
 
 /**
+ * Whether a box being written in keeps this key for itself. Undo and redo: always, it has its own. Next and previous:
+ * but in the editor's lines, which are kept as they are typed, so leaving one loses nothing. Any other box (a
+ * reviewer's comment) keeps what it has only until it is saved: moving away would throw it away, and on a Mac
+ * Option+↑/↓ is how a box goes to the start or the end of a paragraph.
+ */
+export function boxKeeps(name: KeyName, e: KeyboardEvent): boolean {
+  if (!inText(e)) return false
+  if (name === 'undo' || name === 'redo') return true
+  if (name === 'next' || name === 'previous') return !(e.target as HTMLElement).closest?.('.line-field')
+  return false
+}
+
+/**
  * Runs `run` when `name` is pressed on this screen. While a sheet is open the keys are the sheet's: the screen behind
- * it does not move. Undo and redo are left to a box being written in.
+ * it does not move. A box being written in may keep the key (`boxKeeps`).
  */
 export function useKey(name: KeyName, run: (() => void) | null | undefined) {
   const latest = useRef(run)
@@ -41,7 +53,7 @@ export function useKey(name: KeyName, run: (() => void) | null | undefined) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (keyOf(e) !== name || !latest.current || sheetOpen()) return
-      if ((name === 'undo' || name === 'redo') && inText(e)) return
+      if (boxKeeps(name, e)) return
       e.preventDefault()
       latest.current()
     }
@@ -59,11 +71,20 @@ function filledButtons(): HTMLButtonElement[] {
   )
 }
 
+/**
+ * Whether this press is Ctrl+Enter for the filled button. Once per press: a key held down repeats, and the next filled
+ * button may be another answer («Sí, se entiende bien» for the next note), which the person did not give (principle 9).
+ * Not while a word is being composed, nor when the box or the button that has the key already did something with it.
+ */
+export function pressesPrimary(e: KeyboardEvent): boolean {
+  return keyOf(e) === 'primary' && !e.repeat && !e.isComposing && !e.defaultPrevented
+}
+
 /** Ctrl+Enter does what the one filled button of what is on top does (philosophy, principle 7: one per screen). */
 export function usePrimaryKey() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (keyOf(e) !== 'primary') return
+      if (!pressesPrimary(e)) return
       const button = filledButtons()[0]
       if (!button) return
       e.preventDefault()

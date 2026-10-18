@@ -140,12 +140,17 @@ function Center({ context }: MiniAppCenterProps) {
     if (!back) return
     setHistory({ past: history.past.slice(0, -1), future: [groups, ...history.future] })
     keep(back)
+    // What was picked may be gone or another box now, as after any change.
+    setWords([])
+    setPicked([])
   }
   const redo = () => {
     const ahead = history.future[0]
     if (!ahead) return
     setHistory({ past: [...history.past, groups], future: history.future.slice(1) })
     keep(ahead)
+    setWords([])
+    setPicked([])
   }
   // As in any desktop program (principle 13); a box being written in keeps its own.
   useKey('undo', history.past.length ? undo : null)
@@ -432,7 +437,7 @@ function Box({
         if ((e.target as HTMLElement).closest('[data-no-box]')) return
         onTap(box)
       }}
-      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onTap(box)}
+      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && !e.ctrlKey && !e.metaKey && onTap(box)}
     >
       <div ref={drag.setNodeRef} {...drag.listeners} {...drag.attributes} role={undefined} tabIndex={undefined} className="al-box__head">
         {box.targetTokens.map((tok, k) => {
