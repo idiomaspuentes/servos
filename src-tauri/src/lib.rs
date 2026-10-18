@@ -1,13 +1,14 @@
 //! Servos on a computer (design, section 11): the web app in a window of its own, kept whole inside the program so it
 //! opens without internet from the first time. Here is only what a browser cannot do: a `.servos` file opened from the
 //! computer (a double click on it, Servos open or not) is read and handed to the app, which opens «Receive» with it;
-//! and a file the app made is saved where the person chooses, in the system's save dialog. The window remembers its
-//! size and place.
+//! and a file the app made is saved where the person chooses, in the system's save dialog; a link to a page on the
+//! internet (Door43) opens in the computer's browser. The window remembers its size and place.
 
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::webview::NewWindowResponse;
+use tauri::{AppHandle, Emitter, Manager, State, Url, WebviewWindowBuilder};
 use tauri_plugin_dialog::DialogExt;
 
 /// A file opened from the computer, as the app reads it: its name and its text.
@@ -67,6 +68,12 @@ async fn save_file(app: AppHandle, name: String, text: String) -> Result<Option<
     Ok(path.file_name().map(|n| n.to_string_lossy().into_owned()))
 }
 
+/// Whether a page the app asks to open in a new window («Ver en Door43») goes to the computer's browser: a page on the
+/// internet does. Nothing opens inside Servos, which shows only itself.
+fn opens_in_browser(url: &Url) -> bool {
+    matches!(url.scheme(), "http" | "https")
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let args: Vec<String> = std::env::args_os().map(|a| a.to_string_lossy().into_owned()).collect();
@@ -88,6 +95,19 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(Waiting(Mutex::new(shared_files(&args, &cwd))))
         .invoke_handler(tauri::generate_handler![opened_files, save_file])
+        // The window is made here, not from the configuration alone, to say where its links to the internet go.
+        .setup(|app| {
+            let config = app.config().app.windows.first().cloned().ok_or("no window in tauri.conf.json")?;
+            WebviewWindowBuilder::from_config(app.handle(), &config)?
+                .on_new_window(|url, _| {
+                    if opens_in_browser(&url) {
+                        let _ = tauri_plugin_opener::open_url(url.as_str(), None::<&str>);
+                    }
+                    NewWindowResponse::Deny
+                })
+                .build()?;
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("Servos could not start");
 }
@@ -108,5 +128,15 @@ mod tests {
         assert_eq!(files[0].text, "{\"format\":\"servos-compartir\"}");
         assert_eq!(files[1].name, "falta.SERVOS");
         assert_eq!(files[1].text, "");
+    }
+
+    #[test]
+    fn only_pages_on_the_internet_go_to_the_browser() {
+        let opens = |u: &str| opens_in_browser(&Url::parse(u).unwrap());
+        assert!(opens("https://qa.door43.org/testingOrg/qu_reg"));
+        assert!(opens("http://localhost:8787/org/repo"));
+        assert!(!opens("file:///C:/Windows/System32/calc.exe"));
+        assert!(!opens("javascript:alert(1)"));
+        assert!(!opens("ms-settings:privacy"));
     }
 }

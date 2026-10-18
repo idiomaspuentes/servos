@@ -480,7 +480,8 @@ grabó el teléfono.
   - **Door43** responde a la ventana (`http://tauri.localhost`) como a la app web: su CORS acepta cualquier origen,
     así que no hace falta pasar por Rust. La ventana solo deja salir lo que la app necesita (su CSP en
     `tauri.conf.json`): Door43 y su copia de prueba, el Door43 de mentira al programar, y Google Fonts para las letras
-    de proyecto que aún no vienen dentro; las grabaciones (`blob:`) y las letras de la app, desde la app misma.
+    de proyecto que aún no vienen dentro; las grabaciones (`blob:`) y las letras de la app, desde la app misma. Un
+    enlace a una página de internet («Ver en Door43») se abre en el navegador de la computadora, nunca dentro de Servos.
   - **El instalador** (NSIS) se instala sin permisos de administrador, en español, portugués o inglés, y lleva WebView2
     entero para una computadora sin internet que no lo tenga: pesa unos 210 MB (sin WebView2 serían unos 6). Todavía
     sin firmar: Windows avisa antes de instalar.
