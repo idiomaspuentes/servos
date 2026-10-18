@@ -7,8 +7,9 @@
  * journal (design, section 6).
  */
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Panes, type Pane, useWide, useWider } from '../../frame/Panes'
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Panes, type Pane, useWide, useWider, useWidest } from '../../frame/Panes'
+import { SideBySide } from '../../frame/SideBySide'
 import { glossedPlaces, useWordHelps, type GlossaryTarget } from '../../frame/TouchWords'
 import { readGlossaryFor, saveGlossaryEntry } from '../../projects/glossary'
 import { GlossarySheet } from './GlossarySheet'
@@ -241,25 +242,52 @@ function Center({ context }: MiniAppCenterProps) {
     if (wider) helpsOpened()
   }, [wider, openKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const widest = useWidest()
+  const texts: Pane[] = data.texts.map((x) => ({
+    id: x.abbreviation,
+    label: x.original ? t(`editor.lengua.${x.lang ?? 'original'}`) : x.abbreviation,
+    content: (
+      <ChapterLines
+        text={x}
+        shown={shown}
+        at={position.verse}
+        glossed={glossed[x.abbreviation]}
+        line={writingLine?.verse === position.verse ? writingLine.line : null}
+        lit={lit(x.abbreviation)}
+        hint={hint}
+        onWord={(verse, place) => touch(x.abbreviation, verse, place)}
+        under={(verse) => card(x.abbreviation, verse)}
+      />
+    ),
+  }))
+  // From 1280 px the texts can be read side by side (principle 13): their names are switches, two at a time, three
+  // from 1600 px, where the boxes and the helps still have their room. One alone is drawn as its pane is.
+  const together: Pane = {
+    id: 'textos',
+    label: t('marco.lado.textos'),
+    content: (
+      <SideBySide
+        app="editor"
+        texts={data.texts.map((x, i) => ({ id: x.abbreviation, label: texts[i].label, text: x }))}
+        max={widest ? 3 : 2}
+        initial={textAbbreviation}
+        single={(id) => texts.find((p) => p.id === id)?.content}
+        open={shown}
+        at={position.verse}
+        line={writingLine?.verse === position.verse ? writingLine.line : null}
+        lit={lit}
+        glossed={glossed}
+        onWord={(id, verse, place) => touch(id, verse, place)}
+        under={(ids, verse) => {
+          const cards = ids.map((id) => [id, card(id, verse)] as const).filter(([, c]) => c)
+          return cards.length ? cards.map(([id, c]) => <Fragment key={id}>{c}</Fragment>) : null
+        }}
+      />
+    ),
+  }
   const panes: Pane[] = [
     { id: 'suyo', label: t('editor.panelSuyo'), content: own },
-    ...data.texts.map((x) => ({
-      id: x.abbreviation,
-      label: x.original ? t(`editor.lengua.${x.lang ?? 'original'}`) : x.abbreviation,
-      content: (
-        <ChapterLines
-          text={x}
-          shown={shown}
-          at={position.verse}
-          glossed={glossed[x.abbreviation]}
-          line={writingLine?.verse === position.verse ? writingLine.line : null}
-          lit={lit(x.abbreviation)}
-          hint={hint}
-          onWord={(verse, place) => touch(x.abbreviation, verse, place)}
-          under={(verse) => card(x.abbreviation, verse)}
-        />
-      ),
-    })),
+    ...(wider ? [together] : texts),
     { id: 'ayudas', label: t('editor.panelAyudas'), content: frame.helps(undefined, { glossary }) },
   ]
 

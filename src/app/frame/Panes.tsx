@@ -46,6 +46,8 @@ export function showInPane(box: HTMLElement | null) {
 /** Where a screen is wide enough for two panes side by side, and for a third column (the helps). */
 const WIDE = '(min-width: 900px)'
 const WIDER = '(min-width: 1280px)'
+/** Where a third text fits beside two in the editor, with its boxes and helps. */
+const WIDEST = '(min-width: 1600px)'
 
 function useMedia(query: string): boolean {
   const [on, setOn] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches)
@@ -65,6 +67,10 @@ export function useWide(): boolean {
 
 export function useWider(): boolean {
   return useMedia(WIDER)
+}
+
+export function useWidest(): boolean {
+  return useMedia(WIDEST)
 }
 
 /** How far a finger moves before it counts as a swipe, and how far (of the width) to go to the next pane. */
@@ -165,9 +171,11 @@ export function Panes({
     if (event.type === 'pointerup' && (Math.abs(s.dx) > width * ENOUGH || (fast && Math.abs(s.dx) > SLOP * 3))) go(current + (s.dx < 0 ? 1 : -1))
   }
 
+  // A pane alone beside the fixed one needs no tab: it names itself (the texts side by side, with their switches).
+  const tabs = !(kept && panes.length === 1)
   const row = (
     <div className="panes">
-      <div className="panes-tabs" role="tablist" aria-label={label} onPointerDown={holdFocus ? keepFocus : undefined}>
+      {tabs && <div className="panes-tabs" role="tablist" aria-label={label} onPointerDown={holdFocus ? keepFocus : undefined}>
         {panes.map((pane, index) => (
           <button
             key={pane.id}
@@ -182,7 +190,7 @@ export function Panes({
             {pane.label}
           </button>
         ))}
-      </div>
+      </div>}
       <div className="panes-window">
         <div
           ref={track}
@@ -203,8 +211,9 @@ export function Panes({
             <section
               key={pane.id}
               id={`pane-${pane.id}`}
-              role="tabpanel"
-              aria-labelledby={`pane-tab-${pane.id}`}
+              role={tabs ? 'tabpanel' : 'region'}
+              aria-labelledby={tabs ? `pane-tab-${pane.id}` : undefined}
+              aria-label={tabs ? undefined : pane.label}
               className="pane"
             >
               {pane.content}

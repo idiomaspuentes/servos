@@ -184,6 +184,10 @@ medida es tC4: una ventana ancha, ratón y teclado, columnas a los lados y el te
   foco dentro y, al cerrarse, lo devuelve al botón que lo abrió. Los mismos atajos en todas las mini apps: Esc cierra lo
   de encima; Alt+↓ y Alt+↑ van al versículo o la sección siguiente y anterior, también desde una caja; Ctrl+Enter hace lo
   del botón lleno; Ctrl+Z y Ctrl+Y deshacen y rehacen donde se puede. Un atajo nunca es la única forma de hacer algo.
+- **Los textos, lado a lado** (decidido el 18 de octubre, como en Taller). Desde 1280 px, al traducir y al estudiar,
+  los nombres de los textos (TPL, TPS, el original y, en el estudio, «Su traducción» donde ya hay algo escrito) se
+  encienden y se apagan con un clic: hasta dos en el editor, tres desde 1600 px, y tres en el estudio. Un versículo por
+  fila, para que no se desfasen; una palabra tocada se enciende en todos. Lo elegido se recuerda en el aparato.
 - **La letra no crece con la ventana.** El mismo tamaño que en el teléfono; lo que crece son las columnas.
 - **El teléfono no cambia.** Nada de esto toca los 375 px ni el editor con el teclado abierto (principio 12).
 

@@ -216,11 +216,14 @@ export function WordLines({
   onWord,
   writing,
   glossed,
+  numbered = true,
 }: {
   lines: WordLine[]
   verse: number
   lit: Set<number>
   onWord(place: number): void
+  /** Its verse number before the first line; not where the number has a column of its own (texts side by side). */
+  numbered?: boolean
   /** Words the glossary has an entry for: marked, so a decision is seen before it is asked for. */
   glossed?: Set<number>
   /** The line that the line being written translates, to stand out from the rest of the verse. */
@@ -230,7 +233,7 @@ export function WordLines({
     <>
       {lines.map((line, i) => (
         <p key={i} className={i === writing ? 'usfm-line is-writing-line' : 'usfm-line'} data-marker={line.marker}>
-          {i === 0 && <span className="verse-number">{verse} </span>}
+          {i === 0 && numbered && <span className="verse-number">{verse} </span>}
           {groups(line.pieces, (place, text, key) => (
             <button
               key={key}

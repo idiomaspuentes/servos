@@ -9,21 +9,24 @@
  * questions, which no word leads to. On a wide screen the text stays on the left and the note on the right.
  */
 
-import { useLayoutEffect, useRef, useState } from 'react'
+import { Fragment, useLayoutEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { ChapterLines } from '../../frame/ChapterLines'
 import { Markdown } from '../../frame/Markdown'
-import { Panes, useWide, type Pane } from '../../frame/Panes'
+import { Panes, useWide, useWider, type Pane } from '../../frame/Panes'
 import { passageOf } from '../../frame/PlacePicker'
+import { SideBySide, type SideText } from '../../frame/SideBySide'
 import { glossedPlaces, useWordHelps } from '../../frame/TouchWords'
 import { readGlossaryFor } from '../../projects/glossary'
-import { studyNoteOn, studyNotesAbout, writeStudyNote } from '../../projects/work'
+import { joinStartOf, studyNoteOn, studyNotesAbout, textOf, writeStudyNote } from '../../projects/work'
 import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type MiniAppCenterProps } from '../contract'
 import { StudyNotes, withLine } from './StudyNotes'
 
 function Center({ context }: MiniAppCenterProps) {
   const { position, data, t, marked, textAbbreviation, frame, shown, person } = context
   const wide = useWide()
+  // From 1280 px the texts can be read side by side, up to three, the team's own among them (principle 13).
+  const wider = useWider()
   const unitKey = `${position.book}.${position.chapter}.${shown.join(',')}`
   const read = () => studyNoteOn(position.book, position.chapter, shown)
   const [key, setKey] = useState(unitKey)
@@ -109,49 +112,98 @@ function Center({ context }: MiniAppCenterProps) {
   const helpsCount = notesCount + wordsCount
   const questions = data.verses.filter((v) => shown.includes(v.verse)).flatMap((v) => v.questions)
   const others = studyNotesAbout(position.book, position.chapter, shown).filter((n) => n.verses.join(',') !== shown.join(','))
-  const panes: Pane[] = [
-    ...data.texts.map(
-      (x): Pane => ({
-        id: x.abbreviation,
-        label: x.original ? t(`estudio.lengua.${x.lang ?? 'original'}`) : x.abbreviation,
-        content: (
-          <>
-          <ChapterLines
-            text={x}
-            shown={shown}
-            at={shown[0]}
-            line={null}
-            only
-            glossed={glossed[x.abbreviation]}
-            lit={lit(x.abbreviation)}
-            hint={hint}
-            onWord={(verse, place) => touch(x.abbreviation, verse, place)}
-            under={(verse) => (
-              <>
-                {card(x.abbreviation, verse)}
-                {!x.original && general(verse, x.abbreviation)}
-              </>
-            )}
-          />
-          {/* The helps reached by touching words, also all together and counted, folded under the text: whoever does
-              not know which words to touch sees that there are notes, and goes through them one at a time. */}
-          {/* The note on the section, offered where the reading ends (principle 5): not the one thing to do. */}
-          {!x.original && !wide && !note.text.trim() && (
-            <button type="button" className="button-secondary study-write" onClick={() => toNote()}>
-              ✎ {t('estudio.escribirNota')}
-            </button>
+  const texts: Pane[] = data.texts.map(
+    (x): Pane => ({
+      id: x.abbreviation,
+      label: x.original ? t(`estudio.lengua.${x.lang ?? 'original'}`) : x.abbreviation,
+      content: (
+        <>
+        <ChapterLines
+          text={x}
+          shown={shown}
+          at={shown[0]}
+          line={null}
+          only
+          glossed={glossed[x.abbreviation]}
+          lit={lit(x.abbreviation)}
+          hint={hint}
+          onWord={(verse, place) => touch(x.abbreviation, verse, place)}
+          under={(verse) => (
+            <>
+              {card(x.abbreviation, verse)}
+              {!x.original && general(verse, x.abbreviation)}
+            </>
           )}
-          {!x.original && helpsCount > 0 && (
-            // Open, the note shown lights its words in the text above, as in the editor.
+        />
+        {/* The helps reached by touching words, also all together and counted, folded under the text: whoever does
+            not know which words to touch sees that there are notes, and goes through them one at a time. */}
+        {/* The note on the section, offered where the reading ends (principle 5): not the one thing to do. */}
+        {!x.original && !wide && !note.text.trim() && (
+          <button type="button" className="button-secondary study-write" onClick={() => toNote()}>
+            ✎ {t('estudio.escribirNota')}
+          </button>
+        )}
+        {!x.original && helpsCount > 0 && (
+          // Open, the note shown lights its words in the text above, as in the editor.
+          <details className="advanced study-helps" onToggle={(e) => e.currentTarget.open && helpsOpened()}>
+            <summary>{t('estudio.ayudasAqui', { notas: notesCount, palabras: wordsCount })}</summary>
+            {frame.helps(shown, { comments: false, glossary })}
+          </details>
+        )}
+        </>
+      ),
+    })
+  )
+  // The team's own text is one more to read beside the others, where some of it is written already.
+  const book = position.book
+  const chapter = position.chapter
+  const ownWritten = shown.some((v) => textOf(book, chapter, v).trim())
+  const sideTexts: SideText[] = [
+    ...data.texts.map((x, i) => ({ id: x.abbreviation, label: texts[i].label, text: x })),
+    ...(ownWritten ? [{ id: 'suyo', label: t('marco.lado.suyo'), own: { textOf: (v: number) => textOf(book, chapter, v), startOf: (v: number) => joinStartOf(book, chapter, v) } }] : []),
+  ]
+  const together: Pane = {
+    id: 'textos',
+    label: t('marco.lado.textos'),
+    content: (
+      <SideBySide
+        app="estudio"
+        texts={sideTexts}
+        max={3}
+        initial={textAbbreviation}
+        single={(id) => texts.find((p) => p.id === id)?.content ?? null}
+        verses={shown}
+        open={shown}
+        at={shown[0]}
+        line={null}
+        lit={lit}
+        glossed={glossed}
+        onWord={(id, verse, place) => touch(id, verse, place)}
+        under={(ids, verse) => {
+          const cards = ids.map((id) => [id, card(id, verse)] as const).filter(([, c]) => c).map(([id, c]) => <Fragment key={id}>{c}</Fragment>)
+          // The notes on a whole verse, once, from the first bridge text shown.
+          const bridge = ids.find((id) => data.texts.some((x) => x.abbreviation === id && !x.original))
+          const notes = bridge ? general(verse, bridge) : null
+          return cards.length || notes ? (
+            <>
+              {cards}
+              {notes}
+            </>
+          ) : null
+        }}
+        after={
+          helpsCount > 0 && (
             <details className="advanced study-helps" onToggle={(e) => e.currentTarget.open && helpsOpened()}>
               <summary>{t('estudio.ayudasAqui', { notas: notesCount, palabras: wordsCount })}</summary>
               {frame.helps(shown, { comments: false, glossary })}
             </details>
-          )}
-          </>
-        ),
-      })
+          )
+        }
+      />
     ),
+  }
+  const panes: Pane[] = [
+    ...(wider ? [together] : texts),
     {
       id: 'nota',
       label: t('estudio.miNota'),
