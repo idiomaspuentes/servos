@@ -1,0 +1,200 @@
+// Copied from Taller (`src/domain/lexicon.ts`, github.com/idiomaspuentes/taller), up to `strongCode`: the same lexicon
+// files read the same way in both apps.
+import { inHebrewNumbering } from "./hebrewNumbering";
+
+/**
+ * What a word of the original means, read from a lexicon repository: one small file per Strong's number, in the
+ * layout Door43 lexicons use (`brief`, `long`), with, when the lexicon has them, the senses of the word and the
+ * verses each sense applies to. `scripts/build-lexicons.mjs` writes the repositories this team reads.
+ */
+
+export type LexiconSense = {
+  definition?: string;
+  glosses?: string[];
+  domain?: string;
+  /** The field of meaning the sense is filed under, when the lexicon lists the words that share it (`domains/`). */
+  domainCode?: string;
+  code?: string;
+  comments?: string;
+  etymology?: string;
+  /** "en" when the lexicon has not translated this sense yet. */
+  lang?: string;
+  definitionLang?: string;
+  /** Verses the sense applies to, by book: "1:7,9;2:3". Absent when the word has one sense only. */
+  refs?: Record<string, string>;
+};
+
+export type LexiconEntry = {
+  strong: string;
+  lemma: string;
+  aramaic?: boolean;
+  pos?: string[];
+  senses: LexiconSense[];
+  notes?: string[];
+  /** Set on an entry that does not come from the lexicon's main source. */
+  source?: string;
+  /** "pending" while nobody has reviewed the translation of the entry. */
+  review?: string;
+};
+
+export type LexiconFile = { brief: string; long: string; entries: LexiconEntry[] };
+
+export type StrongPart = { kind: "greek" | "hebrew"; number: number; letter: string };
+
+/**
+ * The lexicon entries a word's Strong's attribute points to. The texts write it in their own way:
+ * the UGNT adds a digit (`G52280` is entry 5228), the UHB prefixes the particles joined to the word
+ * (`c:d:H0776`) and tells homonyms apart with a letter (`H1254a`).
+ */
+export function strongParts(strong: string | undefined): StrongPart[] {
+  const out: StrongPart[] = [];
+  for (const part of String(strong ?? "").split(":")) {
+    const greek = /^G(\d+)\d$/.exec(part.trim());
+    if (greek) {
+      out.push({ kind: "greek", number: Number(greek[1]), letter: "" });
+      continue;
+    }
+    const hebrew = /^H(\d+)([a-z])?$/.exec(part.trim());
+    if (hebrew && Number(hebrew[1])) out.push({ kind: "hebrew", number: Number(hebrew[1]), letter: hebrew[2] ?? "" });
+  }
+  return out;
+}
+
+const text = (value: unknown): string => (typeof value === "string" ? value.trim() : "");
+
+/**
+ * What a lexicon has not translated yet is marked in it with the placeholder its tool leaves, «[Glosses - es]» for
+ * the glosses and «NEW NOTE es» for a note: shown, the word read «[Glosses - es]» as its meaning. It is taken as not
+ * there.
+ */
+const PLACEHOLDER = /^\[[^\]]*-\s*[a-z]{2,3}(?:-\d{3})?\]$|^NEW NOTE\b/i;
+const filled = (value: unknown): string => {
+  const found = text(value);
+  return PLACEHOLDER.test(found) ? "" : found;
+};
+/** A text with the placeholders it ends or is made of taken out: «pueblo, nación: [Glosses - es]» is «pueblo, nación». */
+const withoutPlaceholders = (value: unknown): string =>
+  text(value)
+    .replace(/[:;,]?\s*\[[^\]]*-\s*[a-z]{2,3}(?:-\d{3})?\]/gi, "")
+    .trim();
+
+/** A lexicon file as read, made safe to show. A plain Door43 lexicon (only `brief` and `long`) has no entries. */
+export function normalizeLexiconFile(raw: unknown): LexiconFile | null {
+  if (!raw || typeof raw !== "object") return null;
+  const row = raw as Record<string, unknown>;
+  const entries: LexiconEntry[] = [];
+  for (const item of Array.isArray(row.entries) ? row.entries : []) {
+    if (!item || typeof item !== "object") continue;
+    const e = item as Record<string, unknown>;
+    const senses: LexiconSense[] = [];
+    for (const s of Array.isArray(e.senses) ? e.senses : []) {
+      if (!s || typeof s !== "object") continue;
+      const sense = s as Record<string, unknown>;
+      const glosses = Array.isArray(sense.glosses) ? sense.glosses.map(filled).filter(Boolean) : [];
+      const definition = filled(sense.definition);
+      if (!definition && !glosses.length) continue;
+      const refs: Record<string, string> = {};
+      if (sense.refs && typeof sense.refs === "object") for (const [book, packed] of Object.entries(sense.refs as Record<string, unknown>)) if (text(packed)) refs[book] = text(packed);
+      senses.push({
+        ...(definition ? { definition } : {}),
+        ...(glosses.length ? { glosses } : {}),
+        ...(text(sense.domain) ? { domain: text(sense.domain) } : {}),
+        ...(/^[\w.-]+$/.test(text(sense.domainCode)) ? { domainCode: text(sense.domainCode) } : {}),
+        ...(text(sense.code) ? { code: text(sense.code) } : {}),
+        ...(text(sense.comments) ? { comments: text(sense.comments) } : {}),
+        ...(text(sense.etymology) ? { etymology: text(sense.etymology) } : {}),
+        ...(text(sense.lang) ? { lang: text(sense.lang) } : {}),
+        ...(text(sense.definitionLang) ? { definitionLang: text(sense.definitionLang) } : {}),
+        ...(Object.keys(refs).length ? { refs } : {}),
+      });
+    }
+    if (!senses.length) continue;
+    entries.push({
+      strong: text(e.strong),
+      lemma: text(e.lemma),
+      ...(e.aramaic === true ? { aramaic: true } : {}),
+      ...(Array.isArray(e.pos) && e.pos.map(text).filter(Boolean).length ? { pos: e.pos.map(text).filter(Boolean) } : {}),
+      senses,
+      ...(Array.isArray(e.notes) && e.notes.map(filled).filter(Boolean).length ? { notes: e.notes.map(filled).filter(Boolean) } : {}),
+      ...(text(e.source) ? { source: text(e.source) } : {}),
+      ...(text(e.review) ? { review: text(e.review) } : {}),
+    });
+  }
+  const brief = withoutPlaceholders(row.brief);
+  const long = withoutPlaceholders(row.long);
+  return brief || long || entries.length ? { brief, long, entries } : null;
+}
+
+/** A word of a field of meaning: enough to name it and to open its entry. */
+export type FieldWord = { strong: string; lemma: string; gloss: string };
+
+/** The words that share a field of meaning, as the lexicon lists them. */
+export type LexiconField = { name: string; words: FieldWord[] };
+
+export function normalizeLexiconField(raw: unknown): LexiconField | null {
+  if (!raw || typeof raw !== "object") return null;
+  const row = raw as Record<string, unknown>;
+  const words: FieldWord[] = [];
+  for (const item of Array.isArray(row.words) ? row.words : []) {
+    if (!item || typeof item !== "object") continue;
+    const word = item as Record<string, unknown>;
+    if (text(word.strong) && text(word.lemma)) words.push({ strong: text(word.strong), lemma: text(word.lemma), gloss: text(word.gloss) });
+  }
+  return words.length ? { name: text(row.name), words } : null;
+}
+
+/** The other words of a field: every one but the word in hand, whichever of its homonyms it is. */
+export function otherWordsOfField(field: LexiconField, strong: string): FieldWord[] {
+  const mine = new Set(strongParts(strong).map((part) => `${part.kind}:${part.number}`));
+  return field.words.filter((word) => !strongParts(word.strong.startsWith("G") ? `${word.strong}0` : word.strong).some((part) => mine.has(`${part.kind}:${part.number}`)));
+}
+
+/** Whether a packed list of verses ("1:7,9;2:3") has this one. */
+export function refsInclude(packed: string | undefined, chapter: number, verse: number): boolean {
+  for (const part of String(packed ?? "").split(";")) {
+    const [c, verses] = part.split(":");
+    if (Number(c) === chapter && verses?.split(",").some((v) => Number(v) === verse)) return true;
+  }
+  return false;
+}
+
+export type SensesOfWord = {
+  /** The entries of the file that are this word: the homonym the text points to, or all of them. */
+  entries: LexiconEntry[];
+  /** The senses the lexicon gives for the verse in hand; every sense when it gives none for it. */
+  here: LexiconSense[];
+  /** The other senses of the word. */
+  other: LexiconSense[];
+  /** `here` was chosen by the verse, not for lack of a better guide. */
+  byVerse: boolean;
+};
+
+/**
+ * The senses of a word in a verse. The lexicon says which verses each sense applies to, so the sense of the verse
+ * in hand comes first; with nothing for the verse (a word with one sense) every sense is shown, in the lexicon's
+ * order.
+ *
+ * The Hebrew lexicon lists those verses as the Hebrew Bible numbers them, and our texts number some otherwise:
+ * the verse in hand is looked up as it is numbered there. It was looked up as numbered here, and in Jonah 2:5
+ * («algas», which is 2:6 there) the word was given its other sense, «Mar de Juncos».
+ */
+export function sensesOfWord(file: LexiconFile, at: { book: string; chapter: number; verse: number }, letter = ""): SensesOfWord {
+  const exact = letter ? file.entries.filter((e) => e.strong.toLowerCase().endsWith(letter.toLowerCase())) : [];
+  const entries = exact.length ? exact : file.entries;
+  const all = entries.flatMap((e) => e.senses);
+  const where = entries.some((e) => /^H/i.test(e.strong)) ? inHebrewNumbering(at.book, at) : at;
+  const here = all.filter((s) => refsInclude(s.refs?.[at.book], where.chapter, where.verse));
+  if (!here.length) return { entries, here: all, other: [], byVerse: false };
+  return { entries, here, other: all.filter((s) => !here.includes(s)), byVerse: true };
+}
+
+/** The gloss to put beside a word in a tight place: the first gloss of the sense of the verse. */
+export function glossOfWord(file: LexiconFile, at: { book: string; chapter: number; verse: number }, letter = ""): string {
+  const { here } = sensesOfWord(file, at, letter);
+  return here[0]?.glosses?.[0] ?? file.brief.split(",")[0]?.trim() ?? "";
+}
+
+/** How a Strong's number is written for a person: G5228, H0776, H1254a. */
+export function strongCode(part: StrongPart): string {
+  return part.kind === "greek" ? `G${part.number}` : `H${String(part.number).padStart(4, "0")}${part.letter}`;
+}

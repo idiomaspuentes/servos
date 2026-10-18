@@ -3,7 +3,7 @@
  * text as it is read, so changing only the format or the alignment of a verse changes nothing here. Built on the
  * verse merge taken from Taller (`src/usfm`).
  */
-import { listVerseSpans, normalizeVerseText } from "../usfm/usfmEdit";
+import { applyVerseEdits, listVerseSpans, normalizeVerseText } from "../usfm/usfmEdit";
 import { patchTrunkByVerse } from "../usfm/usfmTrunkPatch";
 import { verseSlotsOf } from "../usfm/usfmVerseMerge";
 import { textKey } from "./textKey";
@@ -52,4 +52,14 @@ export function usfmOfRange(usfm: string, range: Place): string {
  */
 export function putRange(book: string, source: string, range: Place): string {
   return patchTrunkByVerse(book, [source], { ancestor: book, scope: range }).usfm;
+}
+
+/**
+ * Puts the verses of `range` from `source` into `book`, an empty verse too: what a verse emptied on purpose brings
+ * (`putRange` takes nothing from an empty verse, as Taller's patch does: there an empty verse is one not written yet).
+ */
+export function putRangeAsIs(book: string, source: string, range: Place): string {
+  const empty = placesOf(source).filter((p) => p.chapter === range.chapter && p.from >= range.from && p.to <= range.to && !p.text);
+  const filled = putRange(book, source, range);
+  return empty.length ? applyVerseEdits(filled, range.chapter, empty.map((p) => ({ from: p.from, to: p.to, text: "" }))) : filled;
 }

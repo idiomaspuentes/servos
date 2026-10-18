@@ -1,0 +1,247 @@
+/* On a computer, a computer app (philosophy, principle 13). What a wide window, a mouse and a keyboard change, kept apart
+   from the phone's sheet (styles.css) so it reads as one thing: the layout rules are inside a width query and the hover
+   rules inside a pointer query, so the phone at 375 px never meets them; the focus ring shows only to a keyboard.
+   From 900 px, two columns; from 1280 px, the helps' column too. */
+
+/* A sheet is a box in the middle of the window, as tall as what it holds and never cut by the window's foot; a menu
+   («Más», the person's) opens under its button at the top right, without a shade, as a desktop menu does: a click
+   outside it or Esc closes it. */
+@keyframes box-in { from { opacity: 0; transform: translateY(0.5rem); } }
+@keyframes menu-in { from { opacity: 0; transform: translateY(-0.35rem); } }
+@media (min-width: 900px) {
+  .sheet-backdrop { align-items: center; padding: 2rem; }
+  .sheet { max-width: 40rem; max-height: min(85vh, 52rem); border-radius: 16px; animation: box-in 180ms var(--ease); }
+  .sheet-body { padding-block-end: 1.25rem; }
+  .sheet-backdrop.is-menu {
+    align-items: flex-start; justify-content: flex-end; background: none; animation: none;
+    padding: calc(env(safe-area-inset-top, 0px) + var(--touch) + 0.5rem + 1px) 0.75rem 1rem;
+  }
+  .sheet.is-menu {
+    width: 25rem; max-height: 100%; border-radius: 14px; animation: menu-in 140ms var(--ease);
+    box-shadow: var(--shadow-card), 0 0 0 1px var(--line);
+  }
+  /* Its rows take a tint under the pointer, inset from the edge; what is not a row lines up with their text */
+  .sheet.is-menu .sheet-body { padding: 0.35rem 0.5rem 0.75rem; }
+  .sheet.is-menu .menu-row { padding-inline: 0.75rem; border-block-end: 0; border-radius: var(--radius); }
+  .sheet.is-menu .menu-choice { padding-inline: 0.75rem; border-block: 1px solid var(--hair); margin-block: 0.25rem; }
+  .sheet.is-menu .sheet-body > :not(.menu-row, .menu-choice) { margin-inline: 0.75rem; }
+}
+
+/* With a mouse the menu needs no «Cerrar»: a click outside or Esc closes it. A wide touch screen (a tablet) keeps it, as
+   its shade is gone and a tap on nothing is not something anyone sees to do. */
+@media (min-width: 900px) and (hover: hover) and (pointer: fine) {
+  .sheet.is-menu .sheet-head { display: none; }
+}
+
+/* Buttons at their own size: as wide as what they say, at the start of what is read, not from edge to edge. In a grid
+   (two choices side by side) each still fills its cell. */
+@media (min-width: 900px) {
+  .button-primary, .button-secondary, .main-fill > .button-primary, .study-next {
+    width: fit-content; min-width: 12rem; max-width: 100%; padding-inline: 1.5rem;
+  }
+  .main-fill > .button-primary, .study-next { align-self: flex-start; }
+  :is(.glossary-actions, .translate-steps, .choice-row) > :is(.button-primary, .button-secondary) { width: auto; min-width: 0; }
+  /* «Yes» and its alternative side by side at the foot of what is compared */
+  .passage .review-next { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+  .align-actions { justify-content: flex-start; }
+  .align-actions > button { flex: none; min-width: 8rem; }
+  /* The one big button to record: round and its own size, not a bar across the window */
+  .voice-button { align-self: flex-start; width: fit-content; min-width: 14rem; min-height: 3.5rem; padding-inline: 2rem; font-size: 1.1rem; }
+}
+
+/* The editor's helps in a column of their own at the right, as translationCore 4 has them: from 1280 px always, on a
+   narrower computer window when the person puts them there (Panes `sideOpen`). */
+@media (min-width: 900px) {
+  .screen-fill:has(.panes-split.has-side) { max-width: 1760px; }
+  .panes-split.has-side { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(20rem, 0.9fr); }
+  .panes-split.has-side > .pane-fixed { border-inline-end: 1px solid var(--line); }
+  /* Named as the tabs beside it are, on a line of the same height */
+  .pane-side > .pane-side-title {
+    min-height: var(--touch); display: flex; align-items: center; margin: -0.75rem -1rem 0.75rem; padding-inline: 1rem;
+    border-block-end: 1px solid var(--hair); font-size: 0.95rem; font-weight: 800; color: var(--text);
+  }
+}
+
+/* From 1280 px, the columns translationCore 4 has: in the reviewers the groups at the left, always in sight, then the
+   one being checked. */
+@media (min-width: 1280px) {
+  .pane-side-title { margin: 0; font-size: 0.95rem; font-weight: 800; color: var(--text); }
+
+  .screen-fill:has(.review-with-groups) { max-width: 74rem; }
+  .main-fill > .review-with-groups { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: 19rem minmax(0, 1fr); }
+  /* As tall as what it holds, the way on right after what is read (not at the window's foot), and no taller than the
+     window: then what is read scrolls */
+  .review-with-groups > .review { min-height: 0; align-self: start; max-height: 100%; }
+  .review-side {
+    min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin;
+    padding: 0.5rem 0.75rem 1.5rem; border-inline-end: 1px solid var(--line);
+  }
+  .review-side > .pane-side-title { min-height: var(--touch); display: flex; align-items: center; padding-inline: 0.5rem; }
+  .review-filter-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+}
+
+/* Texts side by side (SideBySide.tsx), on a computer (the editor from 900 px, the study from 1280): their names are
+   switches, on (✓, raised) or one more to put beside (+, dashed); the chapter goes one row per verse, the verses open as
+   one band across. The texts' area takes the room the columns need: in the study the note keeps its own. */
+@media (min-width: 900px) {
+  .side-by-side { display: flex; flex-direction: column; gap: 0.5rem; }
+  /* The switches stick to the very top of their pane: under its padding the rows would show through as they scroll */
+  .pane:has(> .side-by-side) { padding-block-start: 0; }
+  .side-switches {
+    position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: 0.35rem;
+    margin: 0 -1rem; padding: 0.35rem 1rem; background: var(--bg); border-block-end: 1px solid var(--hair);
+  }
+  .side-switch {
+    display: inline-flex; align-items: center; gap: 0.35rem; width: auto; min-height: var(--touch); padding: 0.2rem 0.95rem;
+    border: 1px dashed color-mix(in srgb, var(--accent) 55%, transparent); border-radius: 999px; background: none;
+    color: var(--text-soft); font-size: 0.95rem; font-weight: 800;
+  }
+  .side-switch::before { content: '+'; color: var(--accent); }
+  .side-switch.is-on { border: 1px solid var(--line); background: var(--pill); color: var(--text); box-shadow: var(--shadow-raised); }
+  .side-switch.is-on::before { content: '✓'; }
+  .side-hint { margin: 0; font-size: 0.85rem; color: var(--text-soft); }
+
+  .side-rows { display: flex; flex-direction: column; font-family: var(--serif); }
+  .side-row {
+    display: grid; grid-template-columns: 1.75rem repeat(var(--side-n, 2), minmax(0, 1fr)); column-gap: 1.25rem;
+    align-items: start; padding: 0.45rem 0.5rem; border-block-start: 1px solid var(--hair);
+  }
+  /* The texts' names over their columns, in sight under the switches while the chapter scrolls */
+  .side-row.is-head {
+    position: sticky; top: calc(var(--touch) + 0.7rem + 1px); z-index: 1; padding-block: 0.35rem; border-block-start: 0;
+    background: var(--bg); font-family: var(--font); font-size: 0.9rem; font-weight: 800;
+  }
+  .side-head { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .side-row.is-here { background: color-mix(in srgb, var(--accent-soft) 65%, transparent); box-shadow: inset 3px 0 0 var(--accent); }
+  .side-verse:has(> .side-row.is-here) + .side-verse > .side-row.is-here { border-block-start-color: transparent; }
+  .side-num { font-family: var(--font); font-size: 0.85rem; font-weight: 700; line-height: 1.9; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .side-cell { min-width: 0; overflow-wrap: anywhere; font-size: 1.05rem; line-height: 1.6; }
+  .side-row:not(.is-here) .side-cell { color: var(--text-soft); }
+  .side-cell.is-original { font-family: 'SBL Hebrew', 'Ezra SIL', 'Gentium Plus', 'Noto Serif Hebrew', 'Noto Serif', serif; font-size: 1.2rem; line-height: 1.8; }
+  .side-cell[dir='rtl'] { text-align: right; }
+  .side-cell.is-own { font-family: var(--project-font, var(--font)); white-space: pre-line; }
+  .side-cell.is-empty { font-family: var(--font); font-size: 0.85rem; color: var(--text-soft); }
+  .side-row.is-under { display: block; padding-block: 0 0.5rem; padding-inline-start: calc(1.75rem + 1.25rem + 0.5rem); border-block-start: 0; font-family: var(--font); }
+  /* The study reads a section alone, larger, as one text alone is read there: every row is the section, so no band */
+  .study .side-row.is-here { background: none; box-shadow: none; }
+  .study .side-verse:has(> .side-row.is-here) + .side-verse > .side-row.is-here { border-block-start-color: var(--hair); }
+  .study .side-cell { font-size: 1.1rem; line-height: 1.7; }
+  .study .side-cell.is-original { font-size: 1.25rem; }
+
+  /* The study: the texts in the row of panes, the note fixed beside them */
+  .panes-split:not(.has-side):has(> .panes .side-by-side[data-n='2']) { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+  .panes-split:not(.has-side):has(> .panes .side-by-side[data-n='3']) { grid-template-columns: minmax(0, 2.7fr) minmax(0, 1fr); }
+  .screen-fill:has(.side-by-side:not([data-n='1'])) { max-width: 1760px; }
+}
+
+/* The editor on a computer (from 900 px): each verse a row, the texts on and then its box, as desktop translation tools
+   have it; the helps in their column from 1280 px, or where the person puts them below. The rows take the room of their
+   texts and their box. The box is the phone's (its fields, a poem's lines set in, the choice between two versions),
+   standing at its verse's height. */
+@media (min-width: 900px) {
+  .screen-fill:has(.side-rows.has-box) { max-width: 1760px; }
+  .panes-split:not(.has-side):not(:has(> .panes)) { grid-template-columns: minmax(0, 1fr); }
+  .panes-split.has-side:not(:has(> .panes)) { grid-template-columns: minmax(0, 2.15fr) minmax(19.5rem, 0.9fr); }
+  .panes-split.has-side:not(:has(> .panes)):has(.side-by-side[data-n='2']) { grid-template-columns: minmax(0, 3.15fr) minmax(19.5rem, 0.9fr); }
+  .panes-split.has-side:not(:has(> .panes)):has(.side-by-side[data-n='3']) { grid-template-columns: minmax(0, 4.15fr) minmax(19.5rem, 0.85fr); }
+
+  .side-rows.has-box .side-row { grid-template-columns: 2rem repeat(var(--side-n, 2), minmax(0, 1fr)) minmax(0, 1.15fr); }
+  .side-rows.has-box .side-row.is-under { padding-inline-start: calc(2rem + 1.25rem + 0.5rem); }
+  /* «10–11» goes on two lines rather than into the text */
+  .side-rows.has-box .side-num { overflow-wrap: anywhere; }
+  .side-cell .verse-number { font-family: var(--font); font-weight: 700; color: var(--accent); }
+  .side-cell.side-box { display: flex; flex-direction: column; gap: 0.35rem; font-family: var(--font); font-size: 1rem; line-height: 1.5; overflow-wrap: normal; }
+  .side-box .edit-joined { margin: 0; }
+  /* The box fills its row, as tall as the verses beside it: a cell of the table, not a field floating in it. A poem's
+     lines share that height, each about as tall as the line of the text it translates. */
+  .side-rows.has-box .side-cell.side-box { align-self: stretch; }
+  .side-box > .edit-verse-body { flex: 1 1 auto; }
+  .side-box .line-fields { flex: 1 1 auto; display: flex; flex-direction: column; }
+  .side-box .line-fields > .usfm-line { flex: 1 1 auto; display: flex; }
+  .side-box .line-field { flex: 1 1 auto; }
+  .side-box .line-add { align-self: flex-start; }
+  /* As a cell of the table, not the phone's field: the letter and the line of the texts beside it, its first line on
+     the same line as theirs (as much margin taken as padding and edge given), a fine edge and no ground until it is
+     written in, so the band shows through; written in, its ground and the accent edge, as everywhere. */
+  .side-box .line-field {
+    padding: 0.3rem 0.6rem; border: 1px solid color-mix(in srgb, var(--text) 18%, transparent); border-radius: 6px;
+    background: transparent; box-shadow: none; color: var(--text); font-size: 1.05rem; line-height: 1.6;
+  }
+  .side-box .line-fields { margin-block-start: calc(-0.3rem - 1px); }
+  .side-box .line-field:is(:focus, :focus-visible) { background: var(--surface); border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  /* A box reached with Tab or ↓ comes into sight below the names that stay over the columns */
+  .side-box :is(.line-field, button) { scroll-margin-block: calc(var(--touch) * 2 + 1.5rem) 1rem; }
+  /* What is written in a row not open, quiet; a click goes there to write it */
+  .side-write {
+    display: block; width: 100%; margin: 0; padding: 0.5rem 0.75rem; border: 1px dashed transparent; background: none;
+    text-align: start; color: var(--text-soft); font-family: var(--project-font, var(--font)); font-size: 1rem; line-height: 1.5;
+    white-space: pre-line; overflow-wrap: anywhere;
+  }
+  .side-write.is-empty { font-family: var(--font); font-size: 0.9rem; }
+  .side-write-go { display: none; font-weight: 700; color: var(--accent); }
+  .side-write-go::after { content: ' →'; }
+  /* The helps' switch, apart from the texts' at the end of their line */
+  .side-switch.is-aside { margin-inline-start: auto; }
+}
+
+/* Home, the book and the welcome use the width: from 1280 px home's moss field («go on where you left off») has a column
+   of its own at the left, in sight while the projects scroll beside it, and the books are a wider grid; the book's
+   first mini app and its others go side by side. The welcome stands in the middle of the window. */
+/* Up to just under 1280: with Windows scaling a window can be 1279.5 px wide, and neither 1279 nor 1280 would hold */
+@media (max-width: 1279.98px) {
+  .home-projects { display: contents; }
+}
+@media (min-width: 900px) {
+  .screen.welcome { display: flex; flex-direction: column; justify-content: center; }
+  .welcome .main { padding-block: 2rem; }
+  .book-steps { width: fit-content; max-width: 100%; }
+  .step-note { text-align: start; }
+}
+@media (min-width: 1280px) {
+  .screen:has(> .main > .book-resume.is-field) { max-width: 76rem; }
+  .main:has(> .book-resume.is-field) { display: grid; grid-template-columns: 22rem minmax(0, 1fr); align-items: start; gap: 2rem; padding-block-start: 1.5rem; }
+  .main > .book-resume.is-field { position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--touch) + 2rem + 1px); }
+  .home-projects { grid-column: 2; display: flex; flex-direction: column; gap: 0.75rem; min-width: 0; }
+  .home-projects > h1 { margin-block-start: 0; }
+  .book-tiles { grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); }
+
+  .screen:has(.book-steps) { max-width: 64rem; }
+  .main > :is(.tool-cards, .suggestion, .book-choose) { max-width: 34rem; }
+  .tool-columns { display: grid; grid-template-columns: minmax(0, 34rem) minmax(0, 1fr); align-items: start; gap: 1rem 1.5rem; }
+}
+
+/* With a mouse, what acts shows it: everything that can be done takes a tone under the pointer (styles.css gives it to
+   the cards and rows; these are the rest: the quiet buttons of the header and the sheets, the arrows, the position, the
+   switches, the words to place or to mark, the versions to choose). */
+@media (hover: hover) and (pointer: fine) {
+  .button-quiet:not(:disabled):hover, .position-label:hover { background-color: color-mix(in srgb, var(--text) 7%, transparent); }
+  .pager-arrow:not(:disabled):hover { background-color: color-mix(in srgb, var(--accent) 22%, var(--accent-soft)); }
+  :is(.helps-tab:not([aria-selected='true']), .book-step:not([aria-selected='true']), .choice-row > .choice:not(.is-on),
+    .unit-switch-option:not([aria-checked='true']), .review-quote-switch button:not([aria-checked='true'])):hover {
+    color: var(--text); background-color: color-mix(in srgb, var(--pill) 55%, transparent);
+  }
+  .panes-tab:not([aria-selected='true']):hover { border-block-end-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+  :is(.al-word:not([data-selected]), .picker-word:not(.is-picked), .version:not(.is-on), .review-place):hover {
+    border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); background-color: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  }
+  .al-box:not([data-selected]):hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); }
+  :is(.review-group:not(.is-current), .review-stepper button:not(:disabled, [aria-current]), .glossary-use, .line-add, .translate-where):hover {
+    background-color: color-mix(in srgb, var(--accent) 6%, transparent);
+  }
+  .glossary-entry:hover { background-color: color-mix(in srgb, var(--accent) 4%, var(--surface)); }
+  .mix-piece:not(.is-chosen, .is-cutting):hover { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent); }
+  .decision:not(:disabled):hover { border-color: currentColor; }
+  .side-switch:not(:disabled, .is-on):hover { color: var(--text); background-color: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .side-write:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 55%, transparent); background-color: color-mix(in srgb, var(--accent) 6%, transparent); }
+  .side-write.is-empty:hover .side-write-dash { display: none; }
+  .side-write.is-empty:hover .side-write-go { display: inline; }
+  .side-box .line-field:not(:focus):hover { border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+}
+
+/* With the keyboard, the focus is always in sight: on the moss field of home its ring is the field's light, not moss on
+   moss. */
+.book-resume.is-field :focus-visible { outline-color: var(--on-field); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet, .sheet.is-menu { animation: none; }
+}

@@ -1,0 +1,1250 @@
+/* Phone first (375 px), 44 px touch targets, logical properties so a right-to-left language needs no other sheet. */
+
+:root {
+  /* Paper, ink and moss (18 October 2026): the warm paper of a printed Bible for the ground, a near-black ink for the
+     text, a deep moss green for going on and for the mark (no one else in Bible translation has it as a main colour:
+     the sector is blue, red and orange), a warm gold for what is marked. «Done» is blue, «danger» a crimson: the three
+     stay apart for someone who does not tell red from green. Text reads at 7:1 or more, the moss at 5.4:1. */
+  --bg: #f7f2e8;
+  --surface: #fefcf7;
+  --surface-soft: #ede7db;
+  --text: #182125;
+  --text-soft: #454e54;
+  --line: #ddd7ca;
+  --accent: #3b6f30;
+  --accent-text: #ffffff;
+  --accent-soft: #e2ebdc;
+  --mark: #f2cf8f;
+  --warn-bg: #faf0dc;
+  --warn-text: #8a5b12;
+  --danger: #990145;
+  --done: #1f689d;
+  --done-soft: #e1ecf5;
+  --radius: 10px;
+  --touch: 44px;
+  /* Three tones, as tC4: the ground; a card on it, lifted by tone and a soft shadow, not drawn round; inside a card,
+     nothing in its own box, only hairlines. A pill switch runs on a sunken track, the chosen one raised. Shadows take
+     the paper's brown, not grey. */
+  --hair: rgba(70, 50, 20, 0.12);
+  --shadow-card: 0 1px 2px rgba(70, 50, 20, 0.08), 0 3px 10px rgba(70, 50, 20, 0.07);
+  --shadow-raised: 0 1px 2px rgba(70, 50, 20, 0.2);
+  --track: #e9e3d6;
+  --pill: #fefcf7;
+  /* A box to write in, when it is not the one being written: the card's paper on the light ground; a faint field on the dark */
+  --field: #fefcf7;
+  /* A field of moss: the one place where going on is the whole block (home's «go on where you left off»), a step
+     darker than the buttons' moss so the gold above it (5.4:1) and its soft line (5.7:1) read */
+  --field-ink: #2f5a26;
+  --on-field: #f7f2e8;
+  --on-field-soft: rgba(247, 242, 232, 0.84);
+  --field-kicker: #f2cf8f;
+  --field-button: #f7f2e8;
+  --field-button-text: #2f5a26;
+  /* translationCore 4's letters (fonts.css): Charis SIL for the scripture, drawn for long reading of Latin and Cyrillic
+     scripts; Mulish for the interface (tC4's stand-in for unfoldingWord's Avenir), heavy in headings and buttons. */
+  --serif: 'Charis SIL', 'PT Serif', Georgia, 'Times New Roman', serif;
+  --font: 'Mulish', 'Avenir Next', 'Avenir', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* Movement: short, easing out, so what is touched answers at once. */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --quick: 140ms;
+  color-scheme: light;
+}
+
+/* Ink night: at night the ink becomes the ground, a near-black with a cool tint (never pure black), and the paper
+   becomes the light of the text, soft, never white. Depth comes from a lighter step, not from shadows or glows; the
+   moss, lighter and softer, still goes on, the gold still marks. The viewer's theme wins either way: an explicit
+   data-theme (light, dark or sun), else the system's. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light'], [data-theme='sun']) {
+    --bg: #0c1316;
+    --surface: #151c20;
+    --surface-soft: #1f262b;
+    --text: #e9e4da;
+    --text-soft: #bbb7ae;
+    --line: #2c3439;
+    --accent: #98cf8b;
+    --accent-text: #0c1316;
+    --accent-soft: #1b2b1d;
+    --mark: #61481b;
+    --warn-bg: #3a2c12;
+    --warn-text: #f5d79e;
+    --danger: #fa89a5;
+    --done: #86c5fa;
+    --done-soft: #13283a;
+    --hair: rgba(233, 228, 218, 0.09);
+    --shadow-card: none;
+    --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.55);
+    --track: #070c0f;
+    --pill: #1f262b;
+    --field: rgba(21, 28, 32, 0.7);
+    --field-ink: #1f3a22;
+    --on-field: #e9e4da;
+    --on-field-soft: rgba(233, 228, 218, 0.8);
+    --field-kicker: #e2b55c;
+    --field-button: #98cf8b;
+    --field-button-text: #0c1316;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --bg: #0c1316;
+  --surface: #151c20;
+  --surface-soft: #1f262b;
+  --text: #e9e4da;
+  --text-soft: #bbb7ae;
+  --line: #2c3439;
+  --accent: #98cf8b;
+  --accent-text: #0c1316;
+  --accent-soft: #1b2b1d;
+  --mark: #61481b;
+  --warn-bg: #3a2c12;
+  --warn-text: #f5d79e;
+  --danger: #fa89a5;
+  --done: #86c5fa;
+  --done-soft: #13283a;
+  --hair: rgba(233, 228, 218, 0.09);
+  --shadow-card: none;
+  --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.55);
+  --track: #070c0f;
+  --pill: #1f262b;
+  --field: rgba(21, 28, 32, 0.7);
+  --field-ink: #1f3a22;
+  --on-field: #e9e4da;
+  --on-field-soft: rgba(233, 228, 218, 0.8);
+  --field-kicker: #e2b55c;
+  --field-button: #98cf8b;
+  --field-button-text: #0c1316;
+  color-scheme: dark;
+}
+
+/* Sun (18 October 2026): for reading outdoors on a cheap phone, where glare takes every scheme down to about 3-5:1.
+   White ground and a near-black ink at 18:1; grey text at 12:1 and lines at 7:1, since tints and tone steps vanish in
+   the sun: cards and tiles are drawn with a line instead (the card shadow becomes an edge), the chosen pill gets a dark
+   ring. The moss is darker to stay at 7:1, and so are the states, each at 7.5:1 or more; done, danger, warning and the
+   moss were chosen to stay apart under protanopia, deuteranopia and tritanopia (CIEDE2000 8.5 or more between any
+   two, where the day's palette has 5.2), which is why danger leans to plum. Heavier letters and a larger scripture are
+   at the end of this sheet. */
+:root[data-theme='sun'] {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-soft: #ececef;
+  --text: #15141a;
+  --text-soft: #34333b;
+  --line: #55545d;
+  --accent: #2e612e;
+  --accent-text: #ffffff;
+  --accent-soft: #e9f2e7;
+  --mark: #ffd34d;
+  --warn-bg: #fff0e0;
+  --warn-text: #8f3000;
+  --danger: #9c167b;
+  --done: #0950b3;
+  --done-soft: #e8effb;
+  --hair: #77767f;
+  --shadow-card: 0 0 0 1.5px #55545d;
+  --shadow-raised: 0 0 0 1.5px #15141a;
+  --track: #e6e6ea;
+  --pill: #ffffff;
+  --field: #ffffff;
+  --field-ink: #244b24;
+  --on-field: #ffffff;
+  --on-field-soft: rgba(255, 255, 255, 0.92);
+  --field-kicker: #ffd34d;
+  --field-button: #ffffff;
+  --field-button-text: #1f421f;
+  /* What cannot be touched yet, and a box's hint: grey, but still read (6.4:1 on white) */
+  --text-disabled: #5f5e66;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+/* On body, not :root: a host page may set body's font itself (the published-page skeleton sets 14 px). */
+body {
+  margin: 0; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 17px; line-height: 1.5;
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  /* A touch is answered by each control (below); the phone's own flash, kept faint and in the app's colour */
+  -webkit-tap-highlight-color: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+/* Headings by size and weight, not by grey: heavier and a little tighter than the text, never one word alone on a line */
+h1 { font-size: 1.75rem; line-height: 1.2; letter-spacing: -0.015em; margin-block: 0.25rem 1rem; font-weight: 900; text-wrap: balance; }
+h2 { font-size: 1.15rem; line-height: 1.3; letter-spacing: -0.006em; margin: 0; font-weight: 850; text-wrap: balance; }
+h3 { font-size: 1rem; margin-block: 1.25rem 0.5rem; font-weight: 800; text-wrap: balance; }
+h4 { font-size: 0.95rem; margin-block: 1rem 0.25rem; font-weight: 800; }
+p { margin-block: 0 0.75rem; text-wrap: pretty; }
+button, input, select, textarea { font: inherit; color: inherit; }
+
+/* dvh: the phone's browser bar coming and going does not make the screen jump */
+.screen { max-width: 640px; margin-inline: auto; min-height: 100vh; min-height: 100dvh; background: var(--bg); }
+.main { padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+.quiet { color: var(--text-soft); font-size: 0.9rem; }
+.stack { display: flex; flex-direction: column; gap: 1rem; }
+
+/* Header: «‹», what this is, who is working and whether it is saved, «Más». The sides are as wide as each other, so the
+   title stays in the middle whatever going back is called; going back and «More» are quiet, in the text's colour: blue
+   is for going on. */
+.header {
+  display: grid; grid-template-columns: minmax(var(--touch), 1fr) auto minmax(var(--touch), 1fr); align-items: center; gap: 0.5rem;
+  padding: 0.25rem 0.75rem; border-block-end: 1px solid var(--line); background: var(--surface);
+  position: sticky; inset-block-start: env(safe-area-inset-top, 0px); z-index: 2;
+}
+.header > :first-child { justify-self: start; }
+.header > :last-child { justify-self: end; }
+.header .header-back, .header .header-more { width: auto; max-width: 100%; min-width: var(--touch); padding-inline: 0.25rem; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.header .header-back.is-icon { padding: 0; font-size: 1.7rem; line-height: 1; }
+.header-title { display: flex; flex-direction: column; min-width: 0; text-align: center; }
+.header-app { font-weight: 600; overflow-wrap: anywhere; }
+.header-person {
+  border: 0; background: none; color: var(--text-soft); font-size: 0.85rem; padding: 0; min-height: 0;
+  overflow-wrap: anywhere; cursor: pointer;
+}
+.header-brand { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 750; font-size: 1.1rem; padding-inline: 0.25rem; letter-spacing: -0.01em; }
+/* The book that speaks, alone and in the accent, about 1.3 times the name's capital height */
+.brand-mark { flex: none; width: 1.45rem; height: auto; aspect-ratio: 42 / 32; color: var(--accent); }
+.header-person-chip { grid-column: 3; }
+
+/* Buttons */
+button, .file-button {
+  min-height: var(--touch); border-radius: var(--radius); border: 1px solid var(--line);
+  background: var(--surface); padding: 0.5rem 0.9rem; cursor: pointer;
+}
+button:disabled { opacity: 0.45; cursor: default; }
+.button-primary {
+  background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600;
+  width: 100%; text-align: center; display: block;
+}
+.button-secondary { width: 100%; background: none; border-color: color-mix(in srgb, var(--text-soft) 35%, transparent); }
+.button-quiet { border-color: transparent; background: none; color: var(--text); }
+.file-button { position: relative; overflow: hidden; }
+.file-button input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* Position line: «Tito 1:3 · 3 de 16 ‹ ›» */
+.position { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.5rem; padding: 0.35rem 0.75rem calc(0.35rem + env(safe-area-inset-bottom, 0px)); background: var(--surface-soft); }
+.position-done { min-height: var(--touch); padding-inline: 1rem; border: 0; border-radius: var(--radius); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.position-label { border: 0; background: none; min-height: var(--touch); }
+.position-arrow { font-size: 1.3rem; }
+
+/* The verse: the center of the screen */
+.center { display: flex; flex-direction: column; gap: 0.25rem; }
+.center-label { margin: 0; color: var(--text-soft); font-size: 0.85rem; }
+.verse { margin: 0; overflow-wrap: anywhere; }
+.verse-large { font-size: 1.3rem; line-height: 1.55; }
+.verse-small { font-size: 1.05rem; padding: 0.5rem 0.75rem; background: var(--surface); border-radius: var(--radius); border: 1px solid var(--line); }
+.verse-number { font-size: 0.75em; color: var(--text-soft); vertical-align: super; }
+mark { background: var(--mark); color: inherit; border-radius: 3px; padding-inline: 1px; }
+
+/* Fields */
+.field { display: flex; flex-direction: column; gap: 0.25rem; }
+.field-label { font-size: 0.85rem; color: var(--text-soft); }
+input, select, textarea {
+  min-height: var(--touch); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 0.5rem 0.75rem; background: var(--surface); width: 100%;
+}
+textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
+.field-problem { color: var(--danger); font-size: 0.85rem; margin: 0; }
+.check { display: flex; gap: 0.5rem; align-items: center; min-height: var(--touch); }
+.check input { width: auto; min-height: 0; }
+
+/* Helps: under the verse, one at a time */
+.helps { border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-card); }
+/* Every tab stays in sight, however long the phrase in the person's language: they share the width and wrap. */
+/* The helps' kinds: a pill switch on a track, as tC4's mode switch (not a second strip of tabs inside the panes'); one
+   row, never two (it scrolls if it must) */
+.helps-tabs { display: flex; gap: 3px; padding: 3px; margin-block-end: 0.5rem; max-width: 100%; width: max-content; overflow-x: auto; scrollbar-width: none; border-radius: 999px; background: var(--track); }
+.helps-tab { flex: 0 0 auto; white-space: nowrap; min-height: var(--touch); padding-inline: 0.55rem; border: 0; border-radius: 999px; background: none; color: var(--text-soft); font-size: 0.85rem; font-weight: 600; line-height: 1.25; }
+/* A tab with nothing in it for these verses: still there (it says 0), but quieter */
+.helps-tab[data-empty]:not([aria-selected='true']) { opacity: 0.55; }
+.helps-tab[aria-selected='true'] { background: var(--pill); color: var(--text); font-weight: 700; box-shadow: var(--shadow-raised); }
+.helps-card { padding: 0.75rem 1rem; }
+.help-verse { margin: 0 0 0.25rem; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-soft); }
+.help-quote { font-weight: 600; font-size: 1.05rem; margin-block-end: 0.25rem; }
+.help-original { color: var(--text-soft); font-size: 0.9rem; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+/* How the text is read (the qere): the content of its card, in the size and ink of the text itself. */
+.help-reading { margin: 0; font-family: var(--serif); font-size: 1.5rem; line-height: 1.5; color: var(--text); }
+.help-question { font-weight: 600; }
+.helps-steps { display: flex; justify-content: space-between; align-items: center; gap: 0.25rem; border-block-start: 1px solid var(--line); margin-block-start: 0.75rem; padding-block-start: 0.25rem; }
+/* A badge says a state: tinted, no border, a word like «Agreed»; never a verb (a chip is the action) */
+.badge { font-size: 0.75rem; background: var(--accent-soft); color: var(--accent); border: 0; border-radius: 6px; padding: 0.1rem 0.45rem; margin-inline-start: 0.5rem; font-weight: 600; }
+.notice { background: var(--warn-bg); color: var(--warn-text); padding: 0.75rem; border-radius: var(--radius); }
+/* What is normal (saved, copied, left for later) is said plainly, without the colour kept for what went wrong */
+.status { margin: 0; padding: 0.6rem 0.75rem; border-radius: var(--radius); background: var(--surface-soft); color: var(--text); }
+.markdown ul { padding-inline-start: 1.25rem; margin-block: 0 0.75rem; }
+
+/* Sheets */
+.sheet-backdrop { position: fixed; inset: 0; background: rgb(0 0 0 / 0.45); display: flex; align-items: flex-end; justify-content: center; z-index: 10; }
+.sheet {
+  width: 100%; max-width: 640px; max-height: 88vh; max-height: 88dvh; background: var(--surface); border-start-start-radius: 16px; border-start-end-radius: 16px;
+  display: flex; flex-direction: column;
+}
+.sheet-head { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.5rem 0.5rem 0.5rem 1rem; border-block-end: 1px solid var(--line); }
+/* min-height 0: a long article scrolls inside the sheet from its first line, instead of growing past it */
+.sheet-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0.75rem 1rem calc(1.5rem + env(safe-area-inset-bottom, 0px)); }
+.menu-row { display: flex; flex-direction: column; align-items: flex-start; width: 100%; text-align: start; border: 0; border-block-end: 1px solid var(--line); border-radius: 0; background: none; padding-block: 0.75rem; }
+.menu-row-label { font-weight: 600; }
+.menu-row-description { color: var(--text-soft); font-size: 0.9rem; }
+.menu-heading { color: var(--text-soft); font-size: 0.85rem; text-transform: none; }
+.verse-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--touch), 1fr)); gap: 0.5rem; }
+.verse-grid.is-sections { grid-template-columns: repeat(auto-fill, minmax(5rem, 1fr)); }
+.verse-cell { position: relative; }
+/* Done: a quiet fill; begun: a mark at its foot. The current place keeps the accent fill. */
+.verse-cell.is-done:not(.is-current) { background: var(--done-soft); }
+.verse-cell.is-some:not(.is-current) { box-shadow: inset 0 -3px 0 var(--accent-soft); }
+.verse-cell-by { position: absolute; inset-block-start: 2px; inset-inline-end: 4px; font-size: 0.65rem; color: var(--text-soft); }
+.verse-cell.is-current .verse-cell-by { color: inherit; }
+
+/* Where to go: the chapters, then the verses or sections of one */
+.picker-heading { margin-block: 0.5rem; font-size: 0.95rem; }
+.chapter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr)); gap: 0.5rem; }
+.chapter-cell { display: flex; flex-direction: column; align-items: center; gap: 0.1rem; min-height: 3.5rem; padding: 0.35rem; }
+.chapter-cell.is-done { background: var(--done-soft); }
+.chapter-cell.is-done .chapter-cell-done { color: var(--done); font-weight: 600; }
+.chapter-cell.is-open { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.chapter-cell[aria-current='true'] .chapter-cell-number { color: var(--accent); }
+.chapter-cell-number { font-size: 1.1rem; font-weight: 600; }
+.chapter-cell-done, .chapter-cell-people { font-size: 0.75rem; color: var(--text-soft); line-height: 1.2; overflow-wrap: anywhere; text-align: center; }
+
+/* The book's chapters, how far each has gone and who did it */
+.chapters { display: flex; flex-direction: column; gap: 0.5rem; }
+.chapter-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.chapter-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.25rem 0.75rem; width: 100%; text-align: start; padding: 0.6rem 0.75rem; }
+.chapter-row-name { font-weight: 600; }
+.chapter-row-bar { height: 6px; border-radius: 3px; background: var(--surface-soft); overflow: hidden; }
+.chapter-row-bar > span { display: block; height: 100%; background: var(--accent); }
+.chapter-row-count { font-size: 0.85rem; color: var(--text-soft); font-variant-numeric: tabular-nums; }
+.chapter-row-people, .chapter-row-choices { grid-column: 1 / -1; font-size: 0.85rem; color: var(--text-soft); }
+.chapter-row-choices { color: var(--warn-text); }
+
+/* The arrows went on into another chapter: said in passing, floating under the position line, gone by itself */
+.position-crossed { margin: 0; height: 0; position: relative; z-index: 3; display: flex; justify-content: center; pointer-events: none; }
+.position-crossed > span { position: absolute; inset-block-start: 0.4rem; padding: 0.3rem 0.9rem; border-radius: 999px; background: var(--text); color: var(--bg); font-size: 0.9rem; box-shadow: 0 2px 8px rgb(0 0 0 / 0.25); }
+.verse-cell.is-current, .person.is-current { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.people { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.chapter-paragraph sup { color: var(--text-soft); }
+
+/* Catalog */
+.catalog { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+.catalog-card { display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; width: 100%; text-align: start; padding: 0.9rem 1rem; }
+.catalog-name { font-weight: 600; font-size: 1.1rem; }
+.catalog-description { color: var(--text-soft); }
+.catalog-missing { color: var(--warn-text); background: var(--warn-bg); border-radius: 6px; padding: 0.1rem 0.4rem; font-size: 0.85rem; }
+.resources summary { min-height: var(--touch); display: flex; align-items: center; cursor: pointer; font-weight: 600; }
+/* A part of the app to translate: its name, and how far it has gone */
+.translate-group summary { min-height: var(--touch); display: grid; grid-template-columns: minmax(0, 1fr) 4rem auto; align-items: center; gap: 0.6rem; cursor: pointer; padding-block: 0.25rem; }
+.translate-group-name { font-weight: 600; }
+.translate-group-count { font-size: 0.85rem; color: var(--text-soft); font-variant-numeric: tabular-nums; }
+.translate-progress { margin: 0; }
+.picker-legend { margin: -0.25rem 0 0.25rem; font-size: 0.85rem; }
+.edit-joined { margin: 0 0 0.35rem; font-size: 0.85rem; font-weight: 600; color: var(--accent); }
+/* The settings' one button stays in sight at the foot while the mini apps are chosen */
+.settings-save { position: sticky; bottom: 0; z-index: 2; margin-inline: -1rem; padding: 0.5rem 1rem calc(0.5rem + env(safe-area-inset-bottom, 0px)); background: var(--bg); border-block-start: 1px solid var(--line); }
+/* The long-phrases test, on: floating over every screen, with its way out */
+.test-mode-bar { position: fixed; inset-inline: 0; bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)); z-index: 40; width: max-content; max-width: calc(100% - 2rem); margin-inline: auto; display: flex; align-items: center; gap: 0.6rem; padding: 0.3rem 0.4rem 0.3rem 0.9rem; border-radius: 999px; background: var(--text); color: var(--bg); box-shadow: 0 4px 14px rgb(0 0 0 / 0.3); font-size: 0.9rem; font-weight: 600; }
+.test-mode-bar button { width: auto; min-height: var(--touch); padding-inline: 0.9rem; border: 0; border-radius: 999px; background: var(--accent); color: var(--accent-text); font-weight: 700; }
+/* Choosing a language by searching it: a few large rows to touch, the one chosen with «Change» */
+.language-search { gap: 0.4rem; }
+.language-results { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.language-result { display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem; width: 100%; min-height: var(--touch); padding: 0.4rem 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--text); text-align: start; }
+.language-result-name { font-weight: 600; }
+.language-result-also { font-size: 0.85rem; overflow-wrap: anywhere; }
+.language-chosen { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-height: var(--touch); padding: 0.25rem 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.language-chosen .button-quiet, .language-by-hand { width: auto; align-self: flex-start; }
+/* Translating the app a phrase at a time: where it is seen, the original, the box, and on */
+.translate-card { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.translate-where { align-self: flex-start; width: auto; min-height: var(--touch); padding: 0; border: 0; background: none; text-align: start; }
+.translate-original-text { margin: -0.25rem 0 0.25rem; font-size: 1.15rem; line-height: 1.45; }
+.translate-box { min-height: 3.5rem; field-sizing: content; resize: none; font-size: 1.1rem; }
+.translate-marks { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+.translate-steps { display: grid; grid-template-columns: 1fr 2fr; gap: 0.5rem; }
+.resources ul { padding-inline-start: 1.25rem; }
+.pack-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.pack-list li { display: flex; flex-direction: column; }
+
+/* Interface translator */
+.translate-group { border-block-end: 1px solid var(--line); }
+.translate-row { padding-block: 0.75rem; border-block-start: 1px dashed var(--line); display: flex; flex-direction: column; gap: 0.35rem; }
+.translate-original { margin: 0; display: flex; flex-direction: column; }
+
+/* Home: «Continue», projects and their books (translationCore 4's Home) */
+/* A card is lifted by tone and a soft shadow, not drawn round (three tones, principle 12) */
+.project-card { background: var(--surface); border-radius: 14px; box-shadow: var(--shadow-card); padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+.project-card h2 { text-wrap: balance; }
+.project-card p { margin: 0; }
+.book-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: 0.5rem; }
+.book-tile { display: flex; flex-direction: column; align-items: stretch; gap: 0.2rem; text-align: start; border-color: transparent; background: var(--surface-soft); }
+.book-tile-name { font-weight: 600; }
+.book-tile-phase { font-size: 0.85rem; color: var(--text-soft); font-variant-numeric: tabular-nums; }
+/* A project's card: its name with its settings beside it, its books, and one more tile to add a book */
+.project-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+.project-settings { flex: none; width: auto; min-height: var(--touch); padding: 0.2rem 0.85rem; border: 1px solid var(--line); border-radius: 999px; background: none; color: var(--text-soft); font-size: 0.9rem; }
+/* Adding, always dashed and in the accent: a tile among the books, a card after the projects */
+.add-tile { flex-direction: row; align-items: center; justify-content: center; gap: 0.4rem; min-height: 3.5rem; border: 1px dashed var(--accent); background: none; color: var(--accent); font-weight: 600; text-wrap: balance; }
+.add-tile-plus { font-size: 1.3rem; line-height: 1; font-weight: 600; }
+.add-card { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; width: 100%; padding: 0.9rem 1rem; border: 1px dashed var(--accent); border-radius: var(--radius); background: none; color: var(--accent); text-align: center; }
+.add-card-title { font-weight: 600; }
+/* Sharing and receiving */
+.share { display: flex; flex-direction: column; gap: 0.6rem; }
+.settings-share { display: flex; flex-direction: column; gap: 0.5rem; }
+.settings-share .button-secondary { align-self: flex-start; width: auto; }
+.receive-books { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.receive-books li { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.6rem 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.receive-examples { display: flex; flex-direction: column; gap: 0.25rem; border-block-start: 1px solid var(--line); padding-block-start: 0.75rem; }
+
+/* New Bible */
+.field-row { display: grid; grid-template-columns: minmax(0, 1fr) 6.5rem; gap: 0.75rem; }
+fieldset.field { border: 0; padding: 0; margin: 0; }
+.choice-row { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 3px; border-radius: 14px; background: var(--track); }
+.choice-row > .choice { border: 0; border-radius: 11px; background: none; color: var(--text-soft); font-weight: 600; }
+.choice-row > .choice.is-on { background: var(--pill); color: var(--text); box-shadow: var(--shadow-raised); }
+.choice.is-on, .option.is-on, .book-chip.is-on { border-color: var(--accent); background: var(--accent-soft); color: var(--text); box-shadow: inset 0 0 0 1px var(--accent); }
+.option { display: flex; flex-direction: column; align-items: flex-start; text-align: start; gap: 0.15rem; width: 100%; }
+.option-title { font-weight: 600; }
+/* A fold is a row: its name, what it holds quietly after, and ▾ at the right, turning when open */
+.advanced summary { min-height: var(--touch); display: flex; align-items: center; gap: 0.4rem; box-sizing: border-box; padding: 0.6rem 0.25rem; line-height: 1.35; color: var(--text); font-weight: 600; cursor: pointer; list-style: none; border-block: 1px solid var(--line); }
+.advanced summary .quiet { margin-inline-start: 0.35rem; }
+.advanced summary::-webkit-details-marker { display: none; }
+/* A fold says it opens: an arrow after its name, turned when open */
+.advanced summary::after { content: '▾'; margin-inline-start: auto; color: var(--text-soft); font-size: 1rem; transition: transform 0.15s; }
+.advanced summary .quiet { font-weight: 400; }
+.advanced[open] > summary { border-block-end-color: transparent; }
+.advanced[open] > summary::after { transform: rotate(180deg); }
+
+/* Add a book */
+.book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); gap: 0.4rem; }
+.book-chip { font-size: 0.9rem; text-align: start; padding-inline: 0.6rem; }
+/* A book whose texts are on this device: it can be started at once. */
+.book-chip.has-texts { font-weight: 700; }
+.book-chip.has-texts::before { content: '●'; color: var(--accent); font-size: 0.6em; margin-inline-end: 0.4em; vertical-align: 0.15em; }
+.book-chip.is-in { display: flex; align-items: center; min-height: var(--touch); border-radius: var(--radius); padding-inline: 0.6rem; font-size: 0.9rem; color: var(--text-soft); background: var(--surface-soft); }
+.back-link { align-self: flex-start; padding-inline: 0; }
+.sheet-foot { position: sticky; inset-block-end: 0; background: var(--surface); padding-block: 0.75rem 0; }
+
+/* A book's steps */
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.app-row { display: flex; flex-direction: column; align-items: flex-start; text-align: start; gap: 0.15rem; width: 100%; }
+.app-row-name { font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; }
+.app-row-progress { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.75rem; width: 100%; font-size: 0.85rem; color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+/* The book, as tC4's «Continue →» and its choosing of a review tool: where to go on, the steps, a card per mini app */
+.header-more { justify-self: end; width: auto; }
+.book-resume { display: flex; flex-direction: column; gap: 0.2rem; padding: 0.75rem; border-radius: var(--radius); background: var(--accent-soft); }
+.book-resume-kicker { font-size: 0.8rem; font-weight: 600; color: var(--accent); }
+.book-resume-what { font-weight: 600; margin-block-end: 0.4rem; }
+.book-resume-project { margin: -0.4rem 0 0.4rem; font-size: 0.85rem; }
+/* The steps: a pill switch on a track, in one row that slides, the one shown brought into sight */
+.book-steps { display: flex; gap: 3px; padding: 3px; overflow-x: auto; scrollbar-width: none; border-radius: 999px; background: var(--track); }
+.book-steps::-webkit-scrollbar { display: none; }
+/* An end with steps out of sight fades: the row is seen to go on */
+.book-steps[data-more-end] { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent); }
+.book-steps[data-more-start] { -webkit-mask-image: linear-gradient(to right, transparent, #000 3rem); mask-image: linear-gradient(to right, transparent, #000 3rem); }
+.book-steps[data-more-start][data-more-end] { -webkit-mask-image: linear-gradient(to right, transparent, #000 3rem, #000 calc(100% - 3rem), transparent); mask-image: linear-gradient(to right, transparent, #000 3rem, #000 calc(100% - 3rem), transparent); }
+.book-step { flex: none; display: inline-flex; align-items: center; gap: 0.35rem; width: auto; min-height: var(--touch); padding: 0.25rem 0.85rem; border: 0; border-radius: 999px; background: none; color: var(--text-soft); font-size: 0.9rem; font-weight: 600; }
+.book-step.is-current { color: var(--text); }
+.book-step.is-current::before { content: ''; width: 0.55rem; height: 0.55rem; border-radius: 999px; background: var(--accent); }
+.book-step[aria-selected='true'] { background: var(--pill); color: var(--text); font-weight: 700; box-shadow: var(--shadow-raised); }
+/* How far a step has gone, said quietly: blue is for going on (the filled button, the bar) */
+.book-step-state { font-size: 0.8rem; font-variant-numeric: tabular-nums; color: var(--text-soft); }
+.book-step-state.is-done { color: var(--done); font-weight: 700; }
+.tool-cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+.tool-card { border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-card); }
+.tool-card-main { display: flex; flex-direction: column; align-items: stretch; gap: 0.25rem; padding: 0.75rem 0.8rem; color: var(--text); }
+.tool-card-name { font-size: 1.1rem; font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; }
+.tool-card-go { margin-block-start: 0.5rem; }
+/* The step's other mini apps: one row each, quiet, under the card */
+.tool-card > .row-button { padding-inline: 0.8rem; }
+.tool-cards > li:not(.tool-card) > .row-button { padding-inline: 0.8rem; }
+.tool-cards > li:not(.tool-card):last-child > .row-button { border-block-end: 1px solid var(--hair); }
+.tool-soon { display: flex; align-items: center; justify-content: space-between; min-height: var(--touch); padding-inline: 0.8rem; color: var(--text-soft); }
+.tool-progress { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.75rem; margin-block-start: 0.25rem; font-size: 0.85rem; font-weight: 600; color: var(--text-soft); font-variant-numeric: tabular-nums; }
+.progress-bar { height: 6px; border-radius: 3px; background: var(--surface-soft); overflow: hidden; }
+.progress-bar > span { display: block; height: 100%; background: var(--accent); }
+/* Done is green: the whole bar, a step with its ✓, a check answered right, a verse aligned */
+.progress-bar[data-full] > span { background: var(--done); }
+.tool-chapters { list-style: none; margin: 0; padding: 0 0.5rem 0.5rem; display: flex; flex-direction: column; gap: 0.15rem; border-block-start: 1px solid var(--line); padding-block-start: 0.35rem; }
+.tool-chapter { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr) auto; align-items: center; gap: 0.15rem 0.75rem; width: 100%; min-height: var(--touch); padding: 0.25rem 0.35rem; border: 0; border-radius: var(--radius); background: none; color: var(--text); text-align: start; font-size: 0.9rem; }
+.tool-chapter:active { background: var(--accent-soft); }
+.tool-chapter-count { font-size: 0.85rem; color: var(--text-soft); font-variant-numeric: tabular-nums; }
+.tool-chapter-people, .tool-chapter-choices { grid-column: 1 / -1; font-size: 0.8rem; color: var(--text-soft); }
+.tool-chapter-choices { color: var(--warn-text); }
+.book-pass { align-self: center; width: auto; }
+
+/* Checking with the notes */
+.translation { font-size: 1.15rem; }
+.decisions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.4rem; }
+.decision { padding-inline: 0.3rem; line-height: 1.25; overflow-wrap: anywhere; }
+.decision.is-bien { background: var(--accent-soft); border-color: var(--accent); }
+.decision.is-cambiar { background: var(--warn-bg); color: var(--warn-text); border-color: var(--warn-text); }
+.decision.is-pendiente { background: var(--surface-soft); border-color: var(--text-soft); }
+
+/* Project settings */
+.settings-phase { border: 1px solid var(--line); border-radius: var(--radius); padding: 0.25rem 1rem 0.5rem; margin: 0; background: var(--surface); }
+.settings-phase legend { font-weight: 600; padding-inline: 0.25rem; }
+.check-two-lines { align-items: flex-start; padding-block: 0.5rem; }
+.check-two-lines > span { display: flex; flex-direction: column; }
+.check-two-lines input { margin-block-start: 0.3rem; }
+
+/* A mini app that fills: the screen is the part the keyboard leaves, the center takes what header and button leave */
+.screen-fill { position: fixed; inset-inline: 0; top: 0; height: 100%; min-height: 0; display: flex; flex-direction: column; }
+.main-fill { flex: 1; min-height: 0; padding: 0 0 0.5rem; gap: 0.5rem; }
+.main-fill > .button-primary { margin-inline: 1rem; width: auto; }
+
+/* Panes: one in sight on a phone, a finger slides to the next */
+.panes { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.panes-tabs { display: flex; overflow-x: auto; scrollbar-width: none; border-block-end: 1px solid var(--line); padding-inline: 0.25rem; }
+.panes-tab { flex: 0 0 auto; min-height: var(--touch); min-width: var(--touch); border: 0; border-radius: 0; background: none; color: var(--text-soft); border-block-end: 3px solid transparent; padding-inline: 0.5rem; }
+.panes-tab[aria-selected='true'] { color: var(--text); border-block-end-color: var(--accent); font-weight: 600; }
+/* The window clips and cannot be scrolled; the row inside it is moved by a transform (see Panes.tsx). */
+.panes-window { flex: 1; min-height: 0; overflow: hidden; overflow: clip; }
+.panes-track { height: 100%; display: flex; transition: transform 0.25s ease; }
+/* A finger moving sideways is the swipe's, read in Panes.tsx; the browser keeps the vertical scroll and the pinch.
+   On everything inside, not only the row: touch-action holds only up to the nearest box that scrolls, and each pane
+   (and the boxes' area) scrolls, so a swipe begun inside one was taken by the browser and cancelled. */
+.panes-track, .panes-track * { touch-action: pan-y pinch-zoom; }
+.pane { position: relative; flex: 0 0 100%; min-width: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0.75rem 1rem; }
+@media (prefers-reduced-motion: reduce) { .panes-track { transition: none; } }
+/* The panes divide what is seen: tabs with a line under the one open, at every width, as tC4's helps panel (chips are
+   for filters); on a phone a swipe moves between them as well. The foot keeps one band: the position line. */
+.panes-tabs { gap: 0.15rem; padding-inline: 0.35rem; border-block-end: 1px solid var(--hair); }
+.panes-tab { min-height: var(--touch); padding-inline: 0.5rem; font-weight: 700; font-size: 0.95rem; }
+.panes-tab[aria-selected='true'] { color: var(--text); border-block-end-color: var(--accent); }
+
+/* Wide: what is read on the left, what is written on the right */
+.panes-split { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.panes-split > .panes { border-inline-end: 1px solid var(--line); }
+.pane-fixed { height: 100%; }
+.panes-split .edit-where { display: none; }
+@media (min-width: 900px) { .screen-fill { max-width: 1200px; } }
+/* A mini app of one column (the reviewers, the aligner) is as wide as that column, its header over it, not spread to the window's edges */
+@media (min-width: 900px) {
+  .screen-fill:has(> * .review) { max-width: 48rem; }
+  .screen-fill:has(> * .align) { max-width: 62rem; }
+  /* The passage review compares side by side: the translation and its source */
+  .screen-fill:has(> * .passage) { max-width: 74rem; }
+  .passage .review-scroll, .passage .review-next { max-width: 72rem; }
+}
+
+/* Wide: the header and the position line go across the window, whatever the width of what is under them, so «‹» and
+   «Más» stay in one place from screen to screen; the position's arrows sit beside the place, not at the window's ends;
+   and in a mini app of one column the way on comes right after what is read, not at the window's foot (a thumb is not
+   reaching for it there). */
+@media (min-width: 900px) {
+  html { overflow-x: clip; }
+  .screen > .header, .screen > .position { margin-inline: calc(50% - 50vw); padding-inline: 1.5rem; }
+  .screen > .position { display: flex; justify-content: center; gap: 1rem; }
+  .main-fill > .review, .main-fill > .align { flex: 0 1 auto; }
+  .review-scroll, .align-boxes { flex: 0 1 auto; }
+}
+
+/* A line of the text as it is set: a poem's line has a rule at its start and is set in by its depth (as in Taller) */
+.usfm-line {
+  --indent: 0rem; --bar: 0px; --pad: 0rem;
+  --line-rule: color-mix(in srgb, var(--text) 45%, transparent);
+  margin: 0; overflow-wrap: anywhere;
+  padding-inline-start: calc(var(--indent) + var(--bar) + var(--pad));
+  background: linear-gradient(var(--line-rule), var(--line-rule)) no-repeat var(--indent) 50% / var(--bar) calc(100% - 0.4rem);
+}
+.usfm-line:is([data-marker^='q']):not([data-marker='qa'], [data-marker='qc'], [data-marker='qr'], [data-marker='qd']) { --bar: 2px; --pad: 0.5rem; }
+.usfm-line:is([data-marker='q2'], [data-marker='qm2']) { --indent: 1rem; }
+.usfm-line:is([data-marker='q3'], [data-marker='qm3']) { --indent: 2rem; }
+.usfm-line:is([data-marker='pi'], [data-marker='pi1'], [data-marker='mi']) { --indent: 1rem; }
+[dir='rtl'] .usfm-line { background: none; }
+
+/* The editor's own pane */
+.edit-pane { height: 100%; display: flex; flex-direction: column; gap: 0.75rem; }
+/* The boxes scroll inside the pane, so the one being written stays right above the keyboard. */
+.edit-fields { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 0.5rem; }
+.edit-where { margin: 0; font-size: 0.85rem; color: var(--text-soft); flex: none; }
+/* The boxes are what scrolls: the pane gives them its padding, so their scroll bar is at the screen's edge, as the
+   other panes' is, not inside the margin */
+.pane:has(> .edit-pane) { overflow-y: hidden; padding: 0; }
+.edit-fields { padding: 0.75rem 1rem; }
+.edit-pane > :not(.edit-fields) { padding-inline: 1rem; }
+
+/* Writing on a phone: the header and the filled button step aside for the keyboard */
+.screen-fill.is-writing .header, .screen-fill.is-writing .main-fill > .button-primary, .screen-fill.is-writing .edit-hint { display: none; }
+.screen-fill.is-writing .main-fill { padding-block-end: 0; }
+.edit-hint { margin: 0; font-size: 0.85rem; color: var(--text-soft); }
+
+/* A verse or a section at a time: two choices side by side, the chosen one filled in quietly */
+.unit-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 3px; border-radius: 999px; background: var(--track); margin-block-end: 0.5rem; }
+.unit-switch-option { min-height: var(--touch); border: 0; border-radius: 999px; background: none; color: var(--text-soft); font-weight: 600; }
+.unit-switch-option[aria-checked='true'] { background: var(--pill); color: var(--text); font-weight: 700; box-shadow: var(--shadow-raised); }
+/* With the keyboard up, where the text to translate is goes too, once the person has been there: the first time the
+   cursor waits in a box (it does as soon as the editor opens) they are still to learn it (editor.tsx, `textSeen`) */
+.screen-fill.is-writing .edit-where:not(.is-first) { display: none; }
+
+/* A section: each verse's fields after its number, as the verse stands in the text */
+.edit-verse.in-section { display: grid; grid-template-columns: 1.75rem minmax(0, 1fr); align-items: start; gap: 0.35rem; }
+.edit-verse-body { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
+/* Another person's version of the verse, received while this computer had its own: both stay until someone chooses */
+/* Two versions of a verse: two cards to touch, what tells them apart lit, the one kept outlined */
+.versions { display: flex; flex-direction: column; gap: 0.5rem; }
+.versions-ask { margin: 0; font-weight: 600; }
+.versions-place { margin: 0; font-size: 1.1rem; }
+.versions-source-toggle { align-self: flex-start; padding-inline: 0; }
+.versions-source { padding: 0.5rem 0.75rem; border-inline-start: 3px solid var(--line); color: var(--text-soft); }
+.versions-after { margin: 0; font-size: 0.85rem; }
+.version { display: flex; flex-direction: column; align-items: stretch; gap: 0.35rem; width: 100%; padding: 0.65rem 0.75rem; text-align: start; font-weight: 400; border: 1px solid var(--line); background: var(--surface); color: var(--text); }
+.version.is-on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
+.version-who { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; font-weight: 600; color: var(--text-soft); }
+.version-dot { width: 1rem; height: 1rem; flex: none; border-radius: 50%; border: 2px solid var(--text-soft); }
+.version.is-on .version-dot { border-color: var(--accent); background: radial-gradient(var(--accent) 0 40%, transparent 45%); }
+.version-text { white-space: pre-line; line-height: 1.5; font-size: 1.05rem; }
+.book-choose { display: flex; flex-direction: column; gap: 0.2rem; padding: 0.75rem; border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-card); }
+.book-choose strong { font-size: 0.95rem; }
+.book-choose .button-secondary { margin-block-start: 0.4rem; }
+/* The verse's number, as the bridge texts show theirs, on the line of the box's first line of text */
+.edit-verse-number { padding-block-start: 0.85rem; font-size: 0.95rem; font-weight: 600; line-height: 1.5; color: var(--text-soft); text-align: end; font-variant-numeric: tabular-nums; }
+.line-fields { display: grid; gap: 0.375rem; }
+.line-field { resize: none; field-sizing: content; min-height: var(--touch); border-color: transparent; background: var(--field); box-shadow: 0 0 0 1px var(--hair); }
+/* The box being written in: one accent edge, not the page's thick focus ring around its own border */
+.line-field:focus-visible, .line-field:focus { outline: none; border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 1px var(--accent); }
+/* What to write is said in the box with the cursor only: the empty boxes around it stay quiet (decided with Abel,
+   18 October), their verse's number beside them and the language in the line above */
+.line-field:not(:focus)::placeholder { color: transparent; }
+/* What the team writes, in the project's font */
+.line-field, .version-text, .review-mine-verse, .picker-word, .al-word, .al-chip__word { font-family: var(--project-font, var(--font)); }
+.line-add { justify-self: start; min-height: var(--touch); border: 0; background: none; color: var(--text-soft); padding-inline: 0.25rem; }
+.line-add::before { content: '+ '; }
+
+/* A text of the chapter in a pane */
+/* No gap between verses: the space is inside each, so the verses being translated read as one band */
+.chapter-lines { display: flex; flex-direction: column; }
+.chapter-lines-title { margin: 0 0 0.25rem; font-size: 0.85rem; color: var(--text-soft); }
+.chapter-verse { padding: 0.375rem 0.5rem; color: var(--text-soft); }
+/* The verses being translated: one band for them all, a line at its left, not a card each */
+.chapter-verse.is-current { background: color-mix(in srgb, var(--accent-soft) 65%, transparent); color: var(--text); border-radius: 0; border-inline-start: 3px solid var(--accent); }
+/* The line the person is translating: apart from the rest of its verse, a mark at its start and a deeper ground.
+   background-color only, so a poem line keeps its rule (drawn as a background image). */
+.usfm-line.is-writing-line { background-color: color-mix(in srgb, var(--accent) 22%, transparent); box-shadow: inset 3px 0 0 var(--accent); border-radius: 4px; }
+/* Its ground reaches out to the verse's band (`.chapter-verse`, 0.5rem in), so its mark joins the band's line, thicker
+   where the person writes, instead of being drawn over the verse's number; the text stays where it was (as much
+   margin taken as padding given), and a poem's rule with it. */
+.usfm-line.is-writing-line {
+  margin-inline-start: -0.5rem; padding-inline-start: calc(var(--indent) + var(--bar) + var(--pad) + 0.5rem);
+  background-position: calc(var(--indent) + 0.5rem) 50%;
+}
+[dir='rtl'] .usfm-line.is-writing-line { box-shadow: inset -3px 0 0 var(--accent); }
+/* A section read alone: larger, no lit ground, the words to touch are all there is */
+.chapter-lines.is-alone { font-size: 1.15rem; line-height: 1.7; }
+.chapter-lines.is-alone .chapter-verse.is-current { background: none; border-inline-start: 0; padding-inline: 0; }
+.word-help-note { justify-self: start; padding-inline: 0; }
+/* The lexicon: the lemma, a short meaning, the senses of this verse */
+.lexicon-lemma { font-size: 1.15rem; margin: 0; }
+.lexicon-sense { margin-block: 0.35rem; }
+.lexicon-glosses { margin: 0; font-weight: 600; }
+.lexicon-definition { margin: 0.1rem 0 0; color: var(--text-soft); font-size: 0.95rem; }
+.lexicon-credit { margin-block-start: 0.5rem; font-size: 0.75rem; }
+.is-original { font-family: 'SBL Hebrew', 'Ezra SIL', 'Gentium Plus', 'Noto Serif Hebrew', 'Noto Serif', 'Times New Roman', serif; font-size: 1.25rem; line-height: 1.8; }
+
+/* A word to touch: reads as text, answers to a finger */
+.word { display: inline; border: 0; background: none; padding: 0.1em 0; margin: 0; min-height: 0; font: inherit; color: inherit; cursor: pointer; border-radius: 3px; text-align: inherit; }
+.word:hover { background: var(--surface-soft); }
+.word.is-lit { background: var(--mark); }
+/* A word the glossary has an entry for: a decision is there to read */
+/* The masora's circle over a ketiv: the text has a note on how it is read. */
+.word-noted { font-size: 0.7em; vertical-align: super; line-height: 0; color: var(--accent); padding-inline-start: 0.05em; }
+.word.has-gloss { text-decoration: underline dotted var(--accent) 2px; text-underline-offset: 0.25em; }
+.word-group { white-space: nowrap; }
+.word:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* The helps of a touched word, under its verse */
+.word-help { margin-block: 0.5rem; padding: 0.5rem 0.75rem 0.75rem; border: 1px solid var(--line); border-inline-start: 3px solid var(--accent); border-radius: var(--radius); background: var(--surface); font-family: var(--font); font-size: 1rem; line-height: 1.5; }
+.word-help-head { display: flex; align-items: center; gap: 0.5rem; }
+.help-bridge { font-size: 1.1rem; }
+.word-help-word { font-weight: 600; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.word-help-close { min-width: var(--touch); padding-inline: 0.5rem; font-size: 0.95rem; }
+.word-help-kind { margin: 0; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-soft); display: flex; gap: 0.5rem; align-items: center; }
+
+/* The team's note on what is studied: a box that grows with what is written */
+.study-notes { display: flex; flex-direction: column; gap: 0.5rem; }
+.study-note-field { min-height: 8rem; field-sizing: content; resize: none; }
+.study-note-by { margin: 0; font-size: 0.85rem; }
+.study-other-notes { display: flex; flex-direction: column; gap: 0.5rem; border-block-start: 1px solid var(--line); padding-block-start: 0.5rem; }
+.study-other-notes h3 { margin: 0; font-size: 0.9rem; }
+.study-other-note { padding: 0.5rem 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.study-other-text { margin: 0; white-space: pre-line; }
+
+/* An introduction in the study, read whole across the screen */
+.study-intro { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0.75rem 1rem 1.5rem; max-width: 46rem; margin-inline: auto; width: 100%; }
+.study-intro h3:first-child { margin-block-start: 0.25rem; }
+
+/* The study: the texts and the note as panes, one button leading on */
+.study { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.study-next { flex: none; margin-inline: 1rem; width: auto; }
+.study-prompts { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+/* A chip acts on the thing it is stuck to: a border, a verb (and its sign) */
+.chip { min-height: var(--touch); padding: 0.25rem 0.85rem; border: 1px solid color-mix(in srgb, var(--text-soft) 55%, transparent); border-radius: 999px; background: var(--surface); color: var(--text); font-size: 0.9rem; width: auto; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+.chip:active { background: var(--accent-soft); }
+.chip-question { text-align: start; border-style: dashed; }
+.study-answers, .general-notes { font-size: 0.95rem; }
+/* Folded, as a row that unfolds (principle 12): the text's colour and ▾, not a loose blue link */
+.study-answers summary, .general-notes summary { min-height: var(--touch); display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; color: var(--text); font-weight: 600; cursor: pointer; list-style: none; }
+.study-answers summary::-webkit-details-marker, .general-notes summary::-webkit-details-marker { display: none; }
+.study-answers summary::after, .general-notes summary::after { content: '▾'; font-size: 1rem; transition: transform 0.15s; }
+.study-answers[open] > summary::after, .general-notes[open] > summary::after { transform: rotate(180deg); }
+.general-notes { margin-block: 0.25rem 0.5rem; padding-inline: 0.75rem; border-inline-start: 3px solid var(--line); font-family: var(--font); font-size: 1rem; line-height: 1.5; }
+
+/* The glossary: adding a word from the editor, and the project's list */
+.glossary-form { display: flex; flex-direction: column; gap: 0.75rem; }
+.glossary-word { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.5rem; margin: 0; font-size: 1.15rem; font-weight: 600; }
+.glossary-offered { display: flex; flex-direction: column; gap: 0.35rem; }
+.glossary-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.glossary-entry { display: flex; flex-direction: column; align-items: stretch; gap: 0.15rem; width: 100%; padding: 0.6rem 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--text); text-align: start; font-weight: 400; }
+.glossary-rendering { font-family: var(--project-font, var(--font)); }
+.glossary-state { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 0; }
+.glossary-lemma { margin-inline-start: auto; font-size: 1.2rem; }
+.badge-done { background: var(--done-soft); color: var(--done); }
+.glossary-uses { display: flex; flex-direction: column; gap: 0.4rem; border-block-start: 1px solid var(--line); padding-block-start: 0.75rem; }
+.glossary-uses h3 { margin: 0; font-size: 1rem; }
+.glossary-use-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.glossary-use { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.75rem; width: 100%; text-align: start; font-weight: 400; background: none; color: var(--text); border: 0; border-block-start: 1px solid var(--hair); border-radius: 0; }
+.glossary-use-place { font-weight: 600; font-variant-numeric: tabular-nums; }
+.glossary-use-state { color: var(--text-soft); font-size: 0.9rem; }
+.glossary-use.is-uses .glossary-use-state { color: var(--done); }
+.glossary-use.is-other { box-shadow: inset 3px 0 0 var(--warn-text); }
+.glossary-use.is-other .glossary-use-state { color: var(--warn-text); font-weight: 600; }
+.glossary-entry-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 1.1rem; }
+.glossary-share { display: flex; flex-direction: column; gap: 0.5rem; border-block-start: 1px solid var(--line); padding-block-start: 0.75rem; }
+.glossary-share h2 { margin-block-start: 0.5rem; }
+.glossary-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.glossary-paste { display: flex; flex-direction: column; gap: 0.5rem; }
+
+/* Checking with the notes: one note at a time, read from the top down to its answer */
+.review { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.review-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.5rem max(1rem, calc((100% - 46rem) / 2 + 1rem)); border-block-end: 1px solid var(--line); }
+/* What the list shows, chosen in a sheet: the bar's shape (the arrows' corners, no edge), in a neutral fill: it chooses, it does not go on */
+.review-filter { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border: 0; border-radius: var(--radius); background: var(--surface-soft); font-weight: 600; }
+.review-steps { flex: none; display: flex; align-items: center; gap: 0.6rem; font-variant-numeric: tabular-nums; }
+.review-steps .button-quiet { min-width: var(--touch); padding: 0; font-size: 1.4rem; }
+.review-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0.75rem 1rem 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; max-width: 46rem; margin-inline: auto; width: 100%; }
+/* The phrase a note is about, before the note: in one text at a time, chosen by the small tabs above it */
+.review-quote { overflow: hidden; overflow: clip; touch-action: pan-y; user-select: none; -webkit-user-select: none; display: flex; flex-direction: column; gap: 0.4rem; padding: 0.5rem 0.75rem 0.75rem; border-inline-start: 3px solid var(--accent); border-radius: var(--radius); background: var(--surface); }
+.review-quote-switch { display: flex; gap: 3px; padding: 3px; width: max-content; max-width: 100%; overflow-x: auto; scrollbar-width: none; border-radius: 999px; background: var(--track); }
+.review-quote-switch button { flex: none; min-height: var(--touch); min-width: var(--touch); padding: 0.15rem 0.7rem; border: 0; border-radius: 999px; background: none; color: var(--text-soft); font-size: 0.85rem; font-weight: 600; }
+.review-quote-switch button[aria-checked='true'] { background: var(--pill); color: var(--text); font-weight: 700; box-shadow: var(--shadow-raised); }
+.review-quote-text { margin: 0; font-size: 1.15rem; font-weight: 600; line-height: 1.45; }
+.review-quote-text.is-original { font-weight: 400; font-size: 1.3rem; }
+.review-quote-text.is-verse { font-weight: 400; font-size: 1.05rem; line-height: 1.55; }
+.review-quote-text.is-verse.is-original { font-size: 1.2rem; }
+.review-quote-text.is-verse .quiet { margin: 0.25rem 0 0; }
+/* The phrase follows the finger, and the next text slides in from the side it went to */
+.review-quote-text { transition: transform 0.2s ease, opacity 0.2s ease; }
+.review-quote-text.is-entering-next { animation: quote-from-end 0.22s ease-out; }
+.review-quote-text.is-entering-back { animation: quote-from-start 0.22s ease-out; }
+@keyframes quote-from-end { from { transform: translateX(40%); opacity: 0; } }
+@keyframes quote-from-start { from { transform: translateX(-40%); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .review-quote-text, .review-quote-text[class*='is-entering'] { animation: none; transition: none; } }
+
+/* A note's three steps, numbered at the top: where the person is, and the ones done to go back to */
+.review-stepper { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.25rem; }
+.review-stepper button { width: 100%; min-height: var(--touch); display: flex; flex-direction: column; align-items: center; gap: 0.15rem; padding: 0.25rem; border: 0; border-block-end: 3px solid var(--line); border-radius: 0; background: none; color: var(--text-soft); font-size: 0.8rem; line-height: 1.2; text-align: center; }
+.review-stepper button:disabled { opacity: 0.55; }
+.review-stepper-n { display: inline-grid; place-items: center; width: 1.5rem; height: 1.5rem; border-radius: 999px; border: 1px solid var(--line); font-weight: 600; font-size: 0.8rem; }
+.review-stepper .is-done { color: var(--text); }
+.review-stepper .is-done .review-stepper-n { background: var(--done-soft); border-color: var(--done); }
+.review-stepper [aria-current='step'] { color: var(--text); font-weight: 600; border-block-end-color: var(--accent); }
+.review-stepper [aria-current='step'] .review-stepper-n { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.review-instruction { margin: 0; font-size: 1.1rem; font-weight: 600; text-wrap: balance; }
+.review-reminder { margin: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.25rem 0.5rem; }
+.review-reminder .button-quiet { width: auto; min-height: var(--touch); padding-inline: 0; }
+.review-mine-verse { margin: 0; font-size: 1.15rem; line-height: 1.6; }
+.review-again { display: flex; flex-direction: column; gap: 0.5rem; border-block-start: 1px solid var(--line); padding-block-start: 0.75rem; }
+.review-again h3 { margin: 0; font-size: 1rem; }
+.review-again-figure { margin: 0; font-weight: 600; }
+/* Aligning: the draft's words in a bank above, one box for each word of the source below, as Taller draws them */
+.align { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.4rem; padding: 0.5rem 1rem 0; max-width: 60rem; margin-inline: auto; width: 100%; }
+.align-top { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.align-left { flex: none; font-size: 0.85rem; font-weight: 600; color: var(--text-soft); font-variant-numeric: tabular-nums; }
+.align-left.is-done { color: var(--done); }
+.align-bank-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-block-end: -0.25rem; }
+.align-bank-head .button-quiet { width: auto; min-height: var(--touch); padding-inline: 0.25rem; }
+.align-bank[data-over] { box-shadow: 0 0 0 2px var(--accent); }
+/* What is carried, under the finger; and where it came from, faint, until it is put down */
+.al-word--ghost { display: inline-block; background: var(--accent-soft); border-color: var(--accent); box-shadow: 0 4px 12px rgb(0 0 0 / 0.25); }
+.al-word[data-dragging], .al-chip[data-dragging], .al-box[data-dragging] { opacity: 0.4; }
+.al-box[data-over] { box-shadow: 0 0 0 2px var(--accent); background: var(--accent-soft); }
+.al-chip__word { touch-action: manipulation; cursor: grab; }
+.al-box__head { cursor: grab; }
+/* A finger resting on what can be carried starts carrying it, not the phone's copy menu or a text selection */
+.al-word, .al-chip__word, .al-box__head { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.align-bank { flex: none; max-height: 30%; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-wrap: wrap; gap: 0.35rem; padding: 0.5rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.align-hint { flex: none; margin: 0; font-size: 0.9rem; color: var(--text-soft); text-wrap: balance; }
+.align-boxes { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-wrap: wrap; align-content: flex-start; align-items: flex-start; gap: 0.4rem; padding-block-end: 0.5rem; }
+.align-actions { flex: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; padding-block: 0.25rem; border-block-start: 1px solid var(--line); }
+.align-actions > button { flex: 1 1 auto; width: auto; min-height: var(--touch); }
+.align-empty { display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem 0; }
+.al-word { min-height: var(--touch); min-width: var(--touch); padding: 0.2rem 0.7rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); color: var(--text); font-size: 1.05rem; touch-action: manipulation; }
+.al-word[data-selected] { background: var(--accent-soft); border-color: var(--accent); font-weight: 600; }
+/* A word placed reads on, dashed and checked, so the verse can still be read in the bank */
+.al-word[data-aligned] { color: var(--text-soft); border-style: dashed; }
+.al-word[data-aligned]::after { content: ' ✓'; color: var(--done); }
+.al-box { display: flex; flex-direction: column; min-width: 5.5rem; max-width: 100%; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); cursor: pointer; touch-action: manipulation; }
+.al-box[data-merged] { min-width: 8.5rem; }
+.al-box[data-selected] { box-shadow: 0 0 0 2px var(--accent); }
+.al-box[data-placing] { border-color: var(--accent); }
+.al-box[data-placing]:active { background: var(--accent-soft); }
+.al-box__head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; padding: 0.2rem 0.4rem; border-block-end: 1px solid var(--line); }
+.al-ref { display: inline-flex; flex-direction: column; gap: 0.05rem; }
+.al-ref__word { font-size: 1.05rem; font-weight: 600; line-height: 1.25; }
+/* Not `.is-original`: that one sets the whole box in Hebrew type, the TPL's words under each word too */
+.al-box[data-original] .al-ref__word { font-family: 'SBL Hebrew', 'Ezra SIL', 'Gentium Plus', 'Noto Serif Hebrew', 'Noto Serif', serif; font-size: 1.3rem; font-weight: 400; }
+.al-ref__gloss { font-size: 0.75rem; font-weight: 600; color: var(--accent); line-height: 1.2; max-width: 9rem; }
+.al-box__body { display: flex; flex-wrap: wrap; gap: 0.2rem; min-height: 2.4rem; padding: 0.25rem; align-content: flex-start; }
+.al-box__empty { display: grid; place-items: center; width: 100%; min-height: 1.9rem; border: 1px dashed var(--line); border-radius: 6px; color: var(--text-soft); }
+.al-chip { display: inline-flex; align-items: center; padding-inline-start: 0.45rem; min-height: 2.1rem; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); font-size: 0.95rem; }
+.al-chip__word { font-weight: 600; }
+.al-chip__x { min-width: 2rem; min-height: 2.1rem; padding: 0; border: 0; background: none; color: var(--text-soft); font-size: 1.1rem; line-height: 1; }
+/* An empty box, while no word is in hand: one slim line with a «+», so the boxes with words stand out */
+.al-box[data-compact] { min-height: var(--touch); justify-content: center; border-style: dashed; border-color: var(--accent); }
+.al-box[data-compact] .al-box__head { border-block-end: 0; }
+.al-box__plus { display: grid; place-items: center; width: 1.25rem; height: 1.25rem; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 700; line-height: 1; }
+.al-box[data-compact][data-selected] { border-style: solid; }
+
+/* How a word was translated across the book: each rendering, and the places it was used, to go to */
+.review-renderings { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.review-renderings li { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.5rem 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.review-renderings strong { font-size: 1.1rem; }
+.review-renderings .review-unchecked { border-style: dashed; background: none; }
+.review-places { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.review-place { min-height: var(--touch); min-width: 3rem; padding: 0.15rem 0.6rem; border: 1px solid var(--line); border-radius: 999px; background: var(--bg); color: var(--accent); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+/* The verse being checked, among the places: said, not a button, as it is where one already is */
+.review-here { display: inline-flex; align-items: center; min-height: var(--touch); padding-inline: 0.2rem; color: var(--text-soft); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.review-not-yet { display: flex; flex-direction: column; gap: 0.4rem; }
+.review-not-yet .quiet { margin: 0; }
+.review-glossary { margin: 0; display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: baseline; }
+.review-again-article { align-self: flex-start; width: auto; min-height: var(--touch); padding-inline: 0; }
+.review-next { flex: none; display: flex; flex-direction: column; gap: 0.25rem; padding: 0.5rem 1rem; max-width: 46rem; margin-inline: auto; width: 100%; }
+.review-next .review-hint { text-align: center; font-size: 0.85rem; }
+.review-note { font-size: 1.05rem; line-height: 1.55; }
+.review-note > :first-child { margin-block-start: 0; }
+.review-note > :last-child { margin-block-end: 0; }
+.review-article { align-self: flex-start; width: auto; }
+.review-ref, .review-mine, .review-answer { display: flex; flex-direction: column; gap: 0.5rem; border-block-start: 1px solid var(--line); padding-block-start: 0.75rem; }
+.review-ref .unit-switch { grid-auto-flow: column; grid-auto-columns: 1fr; grid-template-columns: none; margin: 0; }
+.review-later .unit-switch { margin: 0; }
+.review-ref-text { font-size: 1.15rem; line-height: 1.6; }
+.review-mine h3, .review-answer h3 { margin: 0; font-size: 1rem; }
+/* Words to mark with a touch, or with a finger slid over them (WordPicker.tsx). The page still scrolls under a finger
+   that goes up or down first; the words are not picked as text, nor called out by a long press, while a stroke passes. */
+.word-picker { margin: 0; display: flex; flex-wrap: wrap; gap: 0.25rem; font-size: 1.15rem; touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.picker-word { min-height: var(--touch); padding: 0.2rem 0.55rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--text); font: inherit; touch-action: pan-y; }
+.picker-word.is-picked { background: var(--mark); border-color: var(--text-soft); }
+.review-done { margin: 0; padding: 0.6rem 0.75rem; border-radius: var(--radius); background: var(--done-soft); color: var(--text); font-weight: 600; }
+.review-hint { margin: 0; }
+.review-later { display: flex; flex-direction: column; gap: 0.5rem; }
+.review-empty { padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+.review-groups { display: flex; flex-direction: column; gap: 0.25rem; }
+.review-category { display: flex; flex-direction: column; gap: 0.25rem; border-block-start: 1px solid var(--line); padding-block-start: 0.5rem; margin-block-start: 0.25rem; }
+.review-category .review-group + .review-group { padding-inline-start: 1.25rem; font-weight: 400; }
+.review-group { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; min-height: var(--touch); border: 0; border-radius: var(--radius); background: none; color: var(--text); text-align: start; font-weight: 600; padding-inline: 0.5rem; }
+.review-group.is-current { background: var(--accent-soft); }
+.review-group .quiet { flex: none; font-variant-numeric: tabular-nums; }
+/* On a phone the notes' bar (the group, and from note to note) is at the foot, under the thumb, right above the
+   position line; on a wide screen it stays at the top. */
+@media (max-width: 899.98px) {
+  .review-scroll { order: 1; }
+  .review-next { order: 2; }
+  .review-head { order: 3; border-block-end: 0; border-block-start: 1px solid var(--line); background: var(--surface); }
+  .review > .review-empty { order: 1; flex: 1; }
+  .main-fill:has(> .review) { padding-block-end: 0; }
+}
+/* While writing why a note is left for later, the keyboard has the foot: the comment stays in sight. */
+.screen-fill.is-writing .review-head { display: none; }
+
+/* On a phone the position line, with its arrows, is at the foot of a mini app's screen, under the thumb (right above
+   the keyboard while writing); the notice of a new chapter floats above it. On a wide screen it stays at the top. */
+@media (max-width: 899.98px) {
+  .screen-app { display: flex; flex-direction: column; }
+  .screen-app > .main { order: 1; flex: 1; }
+  .screen-app > .position-crossed { order: 2; }
+  .screen-app > .position {
+    order: 3; position: sticky; inset-block-end: 0; z-index: 2;
+    border-block-start: 1px solid var(--line); padding-block-end: calc(0.35rem + env(safe-area-inset-bottom, 0px));
+  }
+  .screen-app > .position-crossed > span { inset-block-start: auto; inset-block-end: 0.4rem; }
+}
+
+/* A word of the original: its facts, and whom it points to */
+.word-facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.15rem 0.75rem; margin: 0.25rem 0; }
+.word-facts > div { display: contents; }
+.word-facts dt { color: var(--text-soft); font-size: 0.85rem; }
+.word-facts dd { margin: 0; }
+.word-referents ul { margin: 0 0 0.25rem; padding-inline-start: 1.1rem; }
+
+/* How the sentence is built: the tree on its side, the words in a column at the far edge */
+.diagram { margin-block-end: 1rem; }
+.diagram-side { position: relative; width: 100%; }
+.diagram-side svg { position: absolute; inset: 0; }
+.diagram-side[dir='rtl'] svg { transform: scaleX(-1); }
+.diagram-side line { stroke: var(--line); stroke-width: 1.5; }
+.diagram-node {
+  --edge: var(--text-soft);
+  position: absolute; box-sizing: border-box; height: 22px; padding: 0 0.45rem; border: 1.5px solid var(--edge); border-radius: 999px;
+  background: var(--surface); color: var(--edge); font-size: 0.62rem; font-weight: 700; letter-spacing: 0.04em; line-height: 19px;
+  text-transform: uppercase; white-space: nowrap; unicode-bidi: plaintext;
+}
+.diagram-node[data-role='v'] { --edge: var(--accent); }
+.diagram-node[data-role='o'], .diagram-node[data-role='o2'], .diagram-node[data-role='io'] { --edge: var(--warn-text); }
+.diagram-node[data-clause] { border-width: 2px; background: var(--surface-soft); color: var(--text); }
+.diagram-node[data-kind='as'], .diagram-node[data-kind='describes'] { border-style: dashed; }
+.diagram-leaf { position: absolute; display: grid; align-content: center; }
+.diagram-word { display: grid; justify-items: center; gap: 0.05rem; padding: 0.2rem; border: 1px solid transparent; border-radius: 6px; text-align: center; overflow: hidden; }
+.diagram-word[data-here] { border-color: var(--accent); background: var(--accent-soft); }
+.diagram-original { font-size: 1.1rem; line-height: 1.4; }
+.diagram-gloss, .diagram-morph, .diagram-aligned { max-width: 100%; font-size: 0.7rem; line-height: 1.2; color: var(--text-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; }
+.diagram-morph { font-style: italic; }
+.diagram-aligned { color: var(--text); }
+
+/* The first time: what the app is, its language, and who works */
+/* Its groups apart (what it is · the language · the name and «Start» · the example), each one close inside */
+.welcome .main { padding-block: 3rem 2rem; gap: 1.75rem; }
+.welcome-brand { display: flex; flex-direction: column; gap: 0.75rem; }
+.welcome-brand .brand-mark { width: 3.75rem; }
+.welcome-title { margin: 0; font-size: 3.1rem; line-height: 1; font-weight: 900; letter-spacing: -0.025em; }
+.welcome-what { margin: 0; font-size: 1.15rem; color: var(--text-soft); max-width: 26rem; }
+.welcome .field { gap: 0.5rem; }
+.welcome-name { display: flex; flex-direction: column; gap: 0.75rem; }
+.welcome-example { display: flex; flex-direction: column; gap: 0.5rem; padding-block-start: 1.5rem; border-block-start: 1px solid var(--hair); }
+.welcome-example p { margin: 0; }
+.person-add { display: flex; flex-direction: column; gap: 0.5rem; margin-block-start: 0.5rem; }
+
+/* The study's helps all together, folded under the section's text */
+.study-helps { margin-block-start: 1rem; border-block-start: 1px solid var(--line); padding-block-start: 0.25rem; font-size: 1rem; }
+
+.translate-share { display: flex; flex-direction: column; gap: 0.5rem; margin-block-start: 0.5rem; padding-block-start: 0.75rem; border-block-start: 1px solid var(--line); }
+.translate-share h2 { margin: 0; font-size: 1rem; }
+
+.usfm-found { display: flex; flex-direction: column; gap: 0.4rem; padding: 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+
+/* A sheet with something unsaved asks before closing, at its top, under its title */
+.sheet-ask { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem 1rem; border-block-end: 1px solid var(--line); background: var(--surface-soft); }
+.sheet-ask p { margin: 0; font-weight: 600; }
+.sheet-ask-close { color: var(--danger); }
+
+.book-name-ask { align-self: flex-start; padding-inline: 0; text-align: start; }
+
+/* Publishing to Door43: where, what goes (book by book, what changed since), and the one way to upload */
+.publish { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; padding: 1rem; max-width: 46rem; margin-inline: auto; width: 100%; }
+.publish p { margin: 0; }
+.publish-heading { margin: 0.25rem 0 0; font-size: 1rem; }
+.publish-where { display: flex; flex-direction: column; gap: 0.2rem; padding: 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.publish-books { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.publish-book { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.6rem 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.publish-book-name { font-weight: 600; font-family: var(--project-font, var(--font)); }
+.publish-book-state { font-size: 0.9rem; color: var(--text-soft); }
+.publish-book.is-igual .publish-book-state { color: var(--done); }
+.publish-book.is-cambio .publish-book-state, .publish-book.is-nunca .publish-book-state { color: var(--accent); font-weight: 600; }
+.publish-version { display: flex; flex-direction: column; gap: 0.4rem; }
+.publish-go { margin-block-start: auto; }
+.door43-hosts { grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr)); }
+
+/* Reviewing a passage: four questions, the translation in the centre, the source a touch away */
+.passage-steps { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.review-stepper .has-notes .review-stepper-n { background: var(--warn-bg); border-color: var(--warn-text); color: var(--warn-text); }
+.passage-question h2 { margin: 0; font-size: 1.15rem; text-wrap: balance; }
+.passage-question p { margin: 0.25rem 0 0; }
+.passage-text { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.passage-verse { display: flex; gap: 0.4rem; align-items: baseline; font-size: 1.1rem; line-height: 1.6; }
+.passage-verse .verse-number { flex: none; font-size: 0.75rem; color: var(--text-soft); }
+.passage-verse-text { font-family: var(--project-font, var(--font)); white-space: pre-line; }
+.passage-source { display: flex; flex-direction: column; gap: 0.4rem; }
+.passage-source-hint { margin: 0; font-size: 0.85rem; }
+.passage-improve { display: flex; flex-direction: column; gap: 0.5rem; }
+.passage-notes { display: flex; flex-direction: column; gap: 0.5rem; }
+.passage-notes h3 { margin: 0.25rem 0 0; font-size: 1rem; }
+.observation { display: flex; flex-direction: column; gap: 0.3rem; padding: 0.6rem 0.75rem; border: 1px solid var(--line); border-inline-start: 3px solid var(--warn-text); border-radius: var(--radius); background: var(--surface); }
+.observation.is-resuelta { border-inline-start-color: var(--done); opacity: 0.8; }
+.observation p { margin: 0; }
+.observation-words { font-family: var(--project-font, var(--font)); }
+.verse-observations { display: flex; flex-direction: column; gap: 0.4rem; margin-block-start: 0.5rem; }
+
+.version-unit { display: flex; gap: 0.4rem; align-items: baseline; }
+.version-unit .verse-number { flex: none; font-size: 0.75rem; color: var(--text-soft); }
+
+/* Translating aloud: what to say, one big button to record, the recording to hear */
+.voice-source { display: flex; flex-direction: column; gap: 0.4rem; padding: 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); font-size: 1.05rem; line-height: 1.6; }
+.voice-record { display: flex; flex-direction: column; gap: 0.6rem; align-items: stretch; }
+.voice-button { display: flex; align-items: center; justify-content: center; gap: 0.6rem; min-height: 4.5rem; border: 0; border-radius: 999px; background: var(--accent); color: var(--accent-text); font-size: 1.2rem; font-weight: 700; }
+.voice-button.is-recording { background: var(--danger); color: #fff; font-variant-numeric: tabular-nums; }
+.voice-dot { width: 1rem; height: 1rem; border-radius: 50%; background: currentColor; }
+.voice-button.is-recording .voice-dot { border-radius: 3px; animation: voice-pulse 1s ease-in-out infinite; }
+@keyframes voice-pulse { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .voice-button.is-recording .voice-dot { animation: none; } }
+.voice-audio { width: 100%; }
+.voice-takes { list-style: none; margin: 0.4rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+.voice-takes li { display: flex; flex-direction: column; gap: 0.2rem; }
+.voice-written { display: flex; flex-direction: column; gap: 0.25rem; border-block-start: 1px solid var(--line); padding-block-start: 0.6rem; }
+.voice-written-text { margin: 0; font-family: var(--project-font, var(--font)); white-space: pre-line; }
+.voice-written .chip { align-self: flex-start; }
+.passage-compare { display: flex; flex-direction: column; gap: 0.75rem; }
+@media (min-width: 900px) {
+  .passage-compare { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+}
+
+/* Principle 12: a row opens more (› a sheet, ▾ here); a suggestion is a neutral card; the arrows of a list are
+   tinted circles; a destructive action is outlined in red */
+.row-button { display: flex; align-items: center; gap: 0.5rem; width: 100%; min-height: var(--touch); padding: 0.55rem 0.25rem; border: 0; border-block-start: 1px solid var(--hair); border-radius: 0; background: none; color: var(--text); font-weight: 600; text-align: start; }
+.row-button-label { flex: 1; min-width: 0; }
+.row-button-meta { color: var(--text-soft); font-weight: 400; font-size: 0.9rem; }
+.row-button::after { content: '›'; color: var(--text-soft); font-size: 1.25rem; line-height: 1; }
+.row-button.is-fold::after { content: '▾'; font-size: 1rem; transition: transform 0.15s; }
+.row-button.is-fold[aria-expanded='true']::after { transform: rotate(180deg); }
+.suggestion { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-card); }
+.suggestion p { margin: 0; font-weight: 600; }
+.pager-arrow { width: var(--touch); height: var(--touch); min-height: var(--touch); padding: 0; display: inline-grid; place-items: center; border: 0; border-radius: var(--radius); background: var(--accent-soft); color: var(--accent); font-size: 1.5rem; font-weight: 600; line-height: 1; }
+.button-danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 55%, transparent); }
+.step-note { margin: 0; text-align: center; font-size: 0.85rem; }
+.publish-where-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.publish-where-head .chip { flex: none; white-space: nowrap; }
+.helps-steps { display: flex; align-items: center; justify-content: center; gap: 0.9rem; }
+.word-help-actions { margin-block-start: 0.25rem; }
+.review-more-places { min-height: var(--touch); }
+.study-write { margin-block-start: 1rem; }
+/* Scroll bars thin where text scrolls, not to compete with the text */
+.pane, .edit-fields, .review-scroll, .publish, .sheet-body, .study-intro { scrollbar-width: thin; }
+
+/* Cards on the ground, all alike (principle 12, three tones): lifted by tone and a soft shadow, no drawn edge; a card
+   that says a state keeps its coloured edge at the start. */
+.project-card, .translate-card, .receive-books li, .settings-phase, .glossary-entry, .review-renderings li, .usfm-found,
+.publish-where, .publish-book, .passage-text, .voice-source, .study-other-note {
+  border: 0; border-radius: 14px; box-shadow: var(--shadow-card);
+}
+.observation, .word-help { border-block: 0; border-inline-end: 0; box-shadow: var(--shadow-card); }
+
+/* A reviewer's first step reads in one order: the phrase (the biggest), what the note says, the way on. The rest is
+   said small and quiet: the kind and name of the note, the lead-in, which text the phrase is shown in (under it), and
+   the steps, which say where one is without looking like tabs. */
+.word-help-kind { flex-wrap: wrap; row-gap: 0; text-wrap: balance; }
+.review-lead { margin: 0; font-size: 0.9rem; color: var(--text-soft); }
+.review-quote .review-quote-switch { order: 2; }
+.review-quote .review-quote-text { font-size: 1.3rem; }
+.review-quote .review-quote-text.is-verse { font-size: 1.1rem; }
+.review-stepper button { flex-direction: row; justify-content: center; gap: 0.3rem; border-block-end: 0; }
+.review-stepper-n { width: auto; height: auto; border: 0; border-radius: 0; background: none; }
+.review-stepper .is-done .review-stepper-n { background: none; color: var(--done); }
+.review-stepper [aria-current='step'] { border-block-end: 0; }
+.review-stepper [aria-current='step'] .review-stepper-n { background: none; color: var(--accent); }
+.review-stepper .has-notes .review-stepper-n { background: none; color: var(--warn-text); }
+
+/* A choice made in place in a menu (light or dark): its name, and the pills under it */
+.menu-choice { display: flex; flex-direction: column; gap: 0.4rem; padding: 0.6rem 0.9rem 0.75rem; border-block-end: 1px solid var(--line); }
+.choice-row.is-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.choice-row.is-four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.book-where { margin: -0.25rem 0 0; font-size: 0.85rem; padding-inline: 0.25rem; }
+
+/* Bringing versions together (design 6.10): each one's section read through in tabs, the versions of a verse as the
+   cards of «two versions», and a mix made by touching pieces that read inline as their verse. The one piece chosen
+   in the mix is outlined; the piece the app proposes for it, dashed: two things, two looks. The foot keeps its arrows
+   under the thumb. */
+.gather { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+.gather > .main { flex: 1; }
+.gather-foot { position: sticky; inset-block-end: 0; z-index: 1; }
+.gather-foot-label { text-align: center; font-size: 0.9rem; }
+.gather-hint { margin: 0; }
+.gather-label { font-size: 0.85rem; font-weight: 600; color: var(--text-soft); }
+.gather-notice { display: flex; align-items: center; gap: 0.6rem; }
+.gather-notice-text { flex: 1; min-width: 0; font-size: 0.95rem; }
+.gather-done { color: var(--done); font-weight: 700; }
+.gather-card { flex-shrink: 0; border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-card); overflow: hidden; }
+.gather-reading { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.6rem 0.9rem 0.9rem; }
+.gather-caption { margin: 0; font-size: 0.85rem; color: var(--text-soft); }
+.gather-verse { margin: 0; font-size: 1.1rem; line-height: 1.6; white-space: pre-line; overflow-wrap: anywhere; font-family: var(--project-font, var(--font)); }
+.mix-flow { font-size: 1.1rem; line-height: 2.55; overflow-wrap: anywhere; font-family: var(--project-font, var(--font)); }
+.mix-box { flex-shrink: 0; padding: 0.3rem 0.6rem; border-radius: var(--radius); border: 1px solid var(--accent); background: var(--surface); }
+.gather-pieces { padding: 0.3rem 0.75rem 0.6rem; }
+.mix-piece { padding: 0.4rem 0.15rem; border-radius: 6px; cursor: pointer; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.mix-piece:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+.mix-piece.is-mine { background: var(--surface-soft); }
+.mix-piece.is-chosen { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); }
+.mix-piece.is-source { background: color-mix(in srgb, var(--surface-soft) 45%, var(--surface)); box-shadow: inset 0 0 0 1px var(--line); }
+.mix-piece.is-used { background: none; box-shadow: none; color: var(--text-soft); }
+.mix-piece.is-match { background: var(--surface); box-shadow: none; outline: 2px dashed var(--accent); outline-offset: -2px; color: var(--text); }
+.gather-typing > .main { display: flex; flex-direction: column; }
+.gather-typing-field { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.gather-typing-field textarea {
+  flex: 1; min-height: 8rem; padding: 0.6rem 0.75rem; border-radius: var(--radius); border: 1px solid var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent); background: var(--surface); color: var(--text); resize: none;
+  font-family: var(--project-font, var(--font)); font-size: 1.1rem; line-height: 1.55;
+}
+
+/* Where a project lives on Door43: the organizations as rows of one card, each with its dot (an account may belong to
+   many: rows, not a box each); the repository's name in a line with its chip, since few change it. */
+.destination-help { margin: -0.4rem 0 0; }
+.destination-orgs { display: flex; flex-direction: column; border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-card); overflow: hidden; }
+.destination-org { display: flex; align-items: center; gap: 0.7rem; width: 100%; min-height: var(--touch); padding: 0.55rem 0.9rem; border: 0; border-radius: 0; border-block-start: 1px solid var(--hair); background: none; color: var(--text); text-align: start; font-weight: 500; overflow-wrap: anywhere; }
+.destination-org:first-child { border-block-start: 0; }
+.destination-org[aria-checked='true'] { font-weight: 700; background: color-mix(in srgb, var(--accent-soft) 70%, transparent); }
+.destination-dot { width: 1.1rem; height: 1.1rem; flex: none; border-radius: 50%; border: 2px solid var(--text-soft); }
+.destination-org[aria-checked='true'] .destination-dot { border-color: var(--accent); background: radial-gradient(var(--accent) 0 40%, transparent 45%); }
+.destination-repo { display: flex; align-items: center; gap: 0.6rem; }
+.destination-repo-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+/* Many organizations: a search over them, and the list in its own box (about six rows, the next one cut so it is seen
+   that it goes on), so the repository and the button after it stay in sight. */
+.destination-search { width: 100%; min-height: var(--touch); padding: 0.5rem 0.8rem; border-radius: var(--radius); border: 1px solid var(--line); background: var(--field); color: var(--text); }
+.destination-orgs.is-scrolled { max-height: 17.5rem; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.destination-org strong { color: var(--accent); }
+.destination-none { margin: 0; padding: 0.75rem 0.9rem; }
+.team-problem { display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+/* Cutting a piece of the mix: its words as small tinted pieces to touch, the first dimmed (nothing to cut before it). */
+.mix-piece.is-cutting { cursor: default; }
+.mix-word { padding: 0.35rem 0.2rem; border-radius: 5px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--accent); cursor: pointer; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.mix-word.is-first { background: none; box-shadow: none; color: var(--text-soft); cursor: default; }
+
+/* What waited for internet (design 6.11): what goes as rows of one card, each with what it does, where, and when it was
+   asked; a chip to take it back. Then the one button that sends it. */
+.waiting { display: flex; flex-direction: column; gap: 1.5rem; }
+.waiting > p { margin: 0; }
+.waiting-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-card); overflow: hidden; }
+.waiting-item { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.75rem 0.9rem; border-block-start: 1px solid var(--hair); }
+.waiting-item:first-child { border-block-start: 0; }
+.waiting-what { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.25rem; overflow-wrap: anywhere; }
+.waiting-what .quiet { font-size: 0.9rem; }
+.waiting-item .chip { flex: none; }
+.waiting-problem { color: var(--danger); font-size: 0.9rem; }
+.waiting-done { font-weight: 600; }
+.waiting-actions { display: flex; flex-direction: column; gap: 0.5rem; }
+/* On its screen: what waits, with its chip to take it back. */
+.waiting-here { display: flex; align-items: center; gap: 0.75rem; }
+.waiting-here > span { flex: 1; min-width: 0; }
+.waiting-here .chip { flex: none; }
+
+/* A new version of the app, kept and waiting: said on home, above everything, out of the way of the thumb's work. */
+.app-update {
+  position: fixed; inset-inline: 1rem; bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); z-index: 5;
+  max-width: 36rem; margin-inline: auto; display: flex; align-items: center; gap: 0.75rem;
+  background: var(--surface); box-shadow: var(--shadow-card);
+}
+.app-update > span { flex: 1; min-width: 0; }
+.app-update .chip { flex: none; }
+/* The notice floats over home's end: room is left under it, so nothing stays hidden. */
+body:has(.app-update) .main { padding-block-end: 6rem; }
+
+/* Which Servos this is, at the end of the person's menu. */
+.menu-version { margin: 1.5rem 0 0; text-align: center; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+/* A screen that failed: what happened, that the work is kept, and the way back; the detail folded, to copy. */
+.crashed { display: flex; flex-direction: column; gap: 1.5rem; padding-block: 2rem; }
+.crashed h1 { margin: 0; font-size: 1.4rem; text-wrap: balance; }
+.crashed p { margin: 0; }
+.crashed-detail { display: flex; flex-direction: column; gap: 0.75rem; }
+.crashed-detail pre { margin: 0.75rem 0; padding: 0.75rem; border-radius: var(--radius); background: var(--surface-soft); font-size: 0.8rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* What is touched answers at once (2026-10-17): buttons and cards give a little under the finger, rows take a tint, and
+   a pointer that can hover shows what it is over. Short and easing out; nothing moves for whoever asked for less
+   motion. Never the panes' row nor the boxes being written: the editor moves those itself (Panes.tsx). */
+button, .file-button, summary, input, select, textarea {
+  transition: background-color var(--quick) var(--ease), border-color var(--quick) var(--ease), color var(--quick) var(--ease),
+    box-shadow var(--quick) var(--ease), transform 90ms var(--ease), opacity var(--quick) var(--ease);
+}
+:is(.button-primary, .button-secondary, .chip, .choice, .book-tile, .add-tile, .add-card, .project-settings, .person,
+  .header-person-chip, .position-arrow, .position-done, .decision, .option, .book-chip, .language-result, .catalog-card,
+  .chapter-cell, .verse-cell, .file-button):not(:disabled):active { transform: scale(0.97); }
+:is(.row-button, .menu-row, .destination-org, .tool-chapter, .chapter-row):not(:disabled):active { background-color: var(--accent-soft); }
+@media (hover: hover) and (pointer: fine) {
+  .button-primary:not(:disabled):hover { background-color: color-mix(in srgb, var(--accent) 88%, var(--bg)); border-color: color-mix(in srgb, var(--accent) 88%, var(--bg)); }
+  :is(.button-secondary, .chip, .project-settings, .person:not(.is-current), .header-person-chip, .language-result, .catalog-card, .option:not(.is-on), .book-chip:not(.is-on), .file-button):not(:disabled):hover {
+    background-color: color-mix(in srgb, var(--accent) 6%, var(--surface)); border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+  }
+  :is(.book-tile, .chapter-cell, .verse-cell:not(.is-current)):not(:disabled):hover { background-color: color-mix(in srgb, var(--accent) 9%, var(--surface-soft)); }
+  :is(.add-tile, .add-card):hover { background-color: var(--accent-soft); }
+  :is(.row-button, .menu-row, .destination-org, .tool-chapter, .chapter-row):not(:disabled):hover { background-color: color-mix(in srgb, var(--accent) 5%, transparent); }
+  :is(.panes-tab, .book-step, .helps-tab, .choice-row > .choice):not([aria-selected='true'], [aria-checked='true'], .is-on):hover { color: var(--text); }
+}
+
+/* A sheet comes up from the bottom, as it is drawn: a short slide, its shade fading in behind it */
+@keyframes sheet-up { from { transform: translateY(1.5rem); opacity: 0; } }
+@keyframes shade-in { from { opacity: 0; } }
+.sheet-backdrop { animation: shade-in 180ms var(--ease); }
+.sheet { animation: sheet-up 240ms var(--ease); }
+@media (prefers-reduced-motion: reduce) {
+  .sheet, .sheet-backdrop { animation: none; }
+  button, .file-button, summary, input, select, textarea { transition: none; }
+  :is(.button-primary, .button-secondary, .chip, .choice, .book-tile, .add-tile, .add-card, .project-settings, .person,
+    .header-person-chip, .position-arrow, .position-done, .decision, .option, .book-chip, .language-result, .catalog-card,
+    .chapter-cell, .verse-cell, .file-button):active { transform: none; }
+}
+
+/* As translationCore 4: the scripture in Charis SIL, its verse numbers in the accent as a printed Bible's; the
+   interface in Mulish, heavy in what names and what acts (headings 850-900, buttons, tabs and names 800). What the team
+   writes is in the project's font. */
+.chapter-lines { font-family: var(--serif); }
+:is(.button-primary, .button-secondary, .header-app, .header-brand, .book-tile-name, .tool-card-name, .book-resume-what, .panes-tab, .book-step, .helps-tab) { font-weight: 800; }
+:is(.chapter-lines, .verse) .verse-number { color: var(--accent); font-weight: 700; }
+
+/* Home's «go on where you left off» as a field of moss: the first thing touched, and home's own anchor */
+.book-resume.is-field { gap: 0.25rem; padding: 1.1rem 1rem 1rem; border-radius: 16px; background: var(--field-ink); color: var(--on-field); }
+.book-resume.is-field .book-resume-kicker { color: var(--field-kicker); font-size: 0.85rem; }
+.book-resume.is-field .book-resume-what { font-size: 1.35rem; line-height: 1.25; font-weight: 650; }
+.book-resume.is-field .book-resume-project { color: var(--on-field-soft); margin-block: -0.15rem 0.75rem; }
+.book-resume.is-field .button-primary { background: var(--field-button); border-color: var(--field-button); color: var(--field-button-text); }
+@media (hover: hover) and (pointer: fine) {
+  .book-resume.is-field .button-primary:not(:disabled):hover { background: color-mix(in srgb, var(--field-button) 88%, var(--field-ink)); border-color: color-mix(in srgb, var(--field-button) 88%, var(--field-ink)); }
+}
+
+/* Sun: what its tokens cannot say alone (top of this sheet). Mulish a step heavier, 500 for the text and 600 for the
+   small grey lines; the scripture a step larger instead, as Charis SIL has no weight between 400 and 700. The tiles
+   that were a tint are drawn with a line, the outlined buttons and chips with the dark line, a notice with its own
+   edge, the box being written with a thicker moss edge, and a box's hint in a grey that still reads. */
+:root[data-theme='sun'] body { font-weight: 500; -webkit-font-smoothing: auto; }
+:root[data-theme='sun'] :is(.quiet, .field-label, .menu-row-description, .center-label, .edit-where, .edit-hint,
+  .book-tile-phase, .chapter-row-count, .tool-chapter-count, .row-button-meta, .catalog-description, .help-original,
+  .header-person, .book-step-state, .lexicon-definition, .book-resume-project) { font-weight: 600; }
+:root[data-theme='sun'] .chapter-lines { font-size: 1.1rem; }
+:root[data-theme='sun'] .chapter-lines.is-alone { font-size: 1.25rem; }
+:root[data-theme='sun'] .verse-large { font-size: 1.4rem; }
+:root[data-theme='sun'] .book-tile { background: var(--surface); border-color: var(--line); }
+:root[data-theme='sun'] :is(.button-secondary, .chip, .project-settings) { border-color: var(--line); }
+:root[data-theme='sun'] .notice { box-shadow: inset 0 0 0 1.5px var(--warn-text); }
+:root[data-theme='sun'] :is(.line-field:focus, .line-field:focus-visible) { box-shadow: 0 0 0 2px var(--accent); }
+:root[data-theme='sun'] .position { background: var(--surface); }
+:root[data-theme='sun'] ::placeholder { color: var(--text-disabled); opacity: 1; }
+
+/* Sun, the other screens: a state that was only a tint or a faded tone is said with a line, a weight or a mark, as
+   the sun takes the tint first. Done is a blue edge (and ✓ where no word says it); begun, a moss bar at the foot;
+   where one is, a moss line and heavier letters; a word or piece picked, a dark edge; a button that cannot be touched
+   yet, dashed, with its words still readable (they often say what to do first). */
+:root[data-theme='sun'] .verse-cell.is-done:not(.is-current) { background: var(--surface); border-color: var(--done); box-shadow: inset 0 0 0 1px var(--done); color: var(--done); font-weight: 800; }
+:root[data-theme='sun'] .verse-cell.is-done:not(.is-current)::before {
+  content: '✓'; content: '✓' / ''; position: absolute; inset-block-start: 2px; inset-inline-start: 4px; font-size: 0.65rem;
+}
+:root[data-theme='sun'] .verse-cell.is-some:not(.is-current) { box-shadow: inset 0 -3px 0 var(--accent); }
+:root[data-theme='sun'] .chapter-cell.is-done { background: var(--surface); }
+:root[data-theme='sun'] .chapter-cell.is-done:not(.is-open) { border-color: var(--done); box-shadow: inset 0 0 0 1px var(--done); }
+:root[data-theme='sun'] .chapter-cell.is-done .chapter-cell-done { font-weight: 800; }
+:root[data-theme='sun'] .chapter-cell.is-open { box-shadow: inset 0 0 0 2px var(--accent); }
+:root[data-theme='sun'] .chapter-cell[aria-current='true'] .chapter-cell-number { text-decoration: underline 2px; text-underline-offset: 3px; }
+/* A bar's track is drawn, so how much is left still shows; a chapter all done says so in heavier blue */
+:root[data-theme='sun'] :is(.progress-bar, .chapter-row-bar) { background: var(--surface); box-shadow: inset 0 0 0 1px var(--hair); }
+:root[data-theme='sun'] .tool-chapter:has(.progress-bar[data-full]) .tool-chapter-count,
+:root[data-theme='sun'] .tool-progress:has(.progress-bar[data-full]) > span:last-child { color: var(--done); font-weight: 800; }
+:root[data-theme='sun'] .review-group.is-current { box-shadow: inset 3px 0 0 var(--accent); font-weight: 800; }
+:root[data-theme='sun'] [dir='rtl'] .review-group.is-current { box-shadow: inset -3px 0 0 var(--accent); }
+/* A reviewer's steps: the one open underlined in moss; a step done shows ✓ for its number, as the passage's do */
+:root[data-theme='sun'] .review-stepper [aria-current='step'] { font-weight: 800; box-shadow: inset 0 -3px 0 var(--accent); }
+:root[data-theme='sun'] .review-stepper:not(.passage-steps) .is-done .review-stepper-n { font-size: 0; }
+:root[data-theme='sun'] .review-stepper:not(.passage-steps) .is-done .review-stepper-n::before { content: '✓'; content: '✓' / ''; font-size: 0.8rem; }
+:root[data-theme='sun'] .review-stepper button:disabled { opacity: 1; color: var(--text-disabled); }
+:root[data-theme='sun'] .review-filter { border: 1px solid var(--line); }
+:root[data-theme='sun'] .picker-word.is-picked { border-color: var(--text); box-shadow: inset 0 0 0 1.5px var(--text); }
+:root[data-theme='sun'] .al-word[data-selected] { box-shadow: inset 0 0 0 1px var(--accent); font-weight: 800; }
+:root[data-theme='sun'] :is(.option.is-on, .book-chip.is-on) { box-shadow: inset 0 0 0 2px var(--accent); }
+:root[data-theme='sun'] :is(.option.is-on .option-title, .book-chip.is-on) { font-weight: 800; }
+/* The mix: each piece drawn, so where one ends and the next begins still shows */
+:root[data-theme='sun'] .mix-piece.is-mine { box-shadow: inset 0 0 0 1px var(--hair); }
+:root[data-theme='sun'] .review-renderings .review-unchecked { box-shadow: none; border: 1.5px dashed var(--line); }
+/* A block that was a tint (what is done, what arrives) gets its own edge, as the notice does */
+:root[data-theme='sun'] .review-done { box-shadow: inset 0 0 0 1.5px var(--done); }
+:root[data-theme='sun'] .book-resume:not(.is-field) { box-shadow: inset 0 0 0 1.5px var(--accent); }
+/* The card's edge passes behind a phase's name, not through it */
+:root[data-theme='sun'] .settings-phase legend { background: var(--surface); padding-inline: 0.4rem; }
+:root[data-theme='sun'] :is(.button-primary, .button-secondary, .chip):disabled { opacity: 1; background: var(--surface); color: var(--text-disabled); border: 1.5px dashed var(--hair); }
+:root[data-theme='sun'] .menu-row:disabled { opacity: 1; color: var(--text-disabled); }
+:root[data-theme='sun'] .menu-row:disabled .menu-row-description { color: inherit; }
+/* Sun keeps the tint under the mouse (principle 13): the lines above, later and as specific as the hover rules, would
+   hide it on a tile, a done cell and an outlined button. */
+@media (hover: hover) and (pointer: fine) {
+  :root[data-theme='sun'] :is(.book-tile, .chapter-cell, .verse-cell:not(.is-current)):not(:disabled):hover {
+    background-color: color-mix(in srgb, var(--accent) 9%, var(--surface-soft));
+  }
+  :root[data-theme='sun'] :is(.button-secondary, .chip, .project-settings):not(:disabled):hover { border-color: var(--accent); }
+}

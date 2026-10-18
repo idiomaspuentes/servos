@@ -1,0 +1,95 @@
+/// <reference types="vitest/config" />
+import { execSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
+import { readdirSync, readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import react from '@vitejs/plugin-react'
+import { defineConfig, type Plugin } from 'vite'
+import { viteSingleFile } from 'vite-plugin-singlefile'
+import { configDefaults } from 'vitest/config'
+
+/**
+ * bt-synergy lives next to this repository (`../bt-synergy`, branch `feat/language-pack` or later), as usfm-ast lives
+ * next to Taller. Its packages are used from their sources, the way tc-study uses them, so Servos and tc-study read and
+ * write resources with the very same code. Their types are declared in `src/resources/btSynergy.d.ts`.
+ */
+const BT = resolve(dirname(fileURLToPath(import.meta.url)), '../bt-synergy/packages')
+
+/**
+ * usfm-ast lives next to it too (`../usfm-ast`, as for Taller): the alignment is Taller's, its box model and the way
+ * it keeps links when a verse's text changes. Only those files are read: `@usfm-tools/editor-core` is a small door
+ * (`src/alignment/editorCore.ts`) to them, not the whole editor, which brings git and an XML parser with it.
+ */
+const USFM_AST = resolve(dirname(fileURLToPath(import.meta.url)), '../usfm-ast/packages')
+const HERE = dirname(fileURLToPath(import.meta.url))
+
+/**
+ * The app kept whole on the phone (`offline/sw.template.js`): the service worker is written with every file this
+ * build made, and a name for the build drawn from them, so a new build is a new worker the phone notices.
+ */
+function offlineShell(): Plugin {
+  const publicDir = resolve(HERE, 'public')
+  return {
+    name: 'servos-offline-shell',
+    apply: 'build',
+    enforce: 'post',
+    generateBundle(_, bundle) {
+      const built = Object.keys(bundle).filter((f) => !f.endsWith('.map') && f !== 'index.html' && f !== 'sw.js')
+      const kept = readdirSync(publicDir)
+      const files = ['./', ...built, ...kept].map((f) => (f === './' ? f : `./${f}`))
+      const hash = createHash('sha1')
+      for (const f of built.sort()) hash.update(f)
+      for (const f of kept.sort()) hash.update(f).update(readFileSync(resolve(publicDir, f)))
+      const build = hash.digest('hex').slice(0, 12)
+      const source = readFileSync(resolve(HERE, 'offline/sw.template.js'), 'utf8')
+        .replace('__BUILD__', build)
+        .replace('__FILES__', JSON.stringify(files, null, 2))
+      this.emitFile({ type: 'asset', fileName: 'sw.js', source })
+    },
+  }
+}
+
+/** The commit the app is built from, with a mark when there were changes not yet committed. */
+function buildOf(): string {
+  try {
+    const sha = execSync('git rev-parse --short HEAD', { cwd: HERE }).toString().trim()
+    const dirty = execSync('git status --porcelain --untracked-files=no', { cwd: HERE }).toString().trim() !== ''
+    return dirty ? `${sha}+` : sha
+  } catch {
+    return 'sin-git'
+  }
+}
+const VERSION = (JSON.parse(readFileSync(resolve(HERE, 'package.json'), 'utf8')) as { version: string }).version
+
+// `vite build --mode pagina`: one self-contained HTML file, to share the prototype as a single page.
+export default defineConfig(({ mode }) => ({
+  define: { __APP_VERSION__: JSON.stringify(VERSION), __APP_BUILD__: JSON.stringify(buildOf()) },
+  plugins: mode === 'pagina' ? [react(), viteSingleFile()] : [react(), offlineShell()],
+  // The single page carries its letters inside it (it has no files beside it).
+  build: mode === 'pagina' ? { assetsInlineLimit: 1_000_000 } : undefined,
+  resolve: {
+    alias: [
+      { find: /^@bt-synergy\/catalog-manager\/core$/, replacement: `${BT}/catalog-manager/src/core.ts` },
+      { find: /^@bt-synergy\/([^/]+)\/(.+)$/, replacement: `${BT}/$1/src/$2` },
+      { find: /^@bt-synergy\/([^/]+)$/, replacement: `${BT}/$1/src/index.ts` },
+      { find: /^@usfm-ast\/alignment-box-model$/, replacement: `${USFM_AST}/usfm-editor-app/src/hooks/useAlignmentBoxModel.ts` },
+      { find: /^@usfm-tools\/editor-core$/, replacement: `${HERE}/src/alignment/editorCore.ts` },
+      { find: /^@usfm-tools\/types$/, replacement: `${USFM_AST}/shared-types/src/index.ts` },
+      { find: /^@usfm-tools\/usj-core$/, replacement: `${USFM_AST}/usfm-usj-core/src/index.ts` },
+      { find: /^usfm-ast\/(.+)$/, replacement: `${USFM_AST}/$1` },
+    ],
+    // Some bt-synergy packages keep old compiled `.js` files beside their `.ts` sources (cache-adapter-indexeddb);
+    // the sources must win.
+    extensions: ['.ts', '.tsx', '.mts', '.mjs', '.js', '.jsx', '.json'],
+  },
+  // Other sessions' working copies (.claude/worktrees) are not this app: watched or scanned, they hung Taller's dev
+  // servers (its commit a6874a0).
+  server: { fs: { allow: ['.', BT, USFM_AST] }, watch: { ignored: ['**/.claude/**'] } },
+  optimizeDeps: { entries: ['index.html'] },
+  test: {
+    environment: 'node',
+    // Other sessions' working copies have their own tests (one of them writes files).
+    exclude: [...configDefaults.exclude, '**/.claude/**'],
+  },
+}))

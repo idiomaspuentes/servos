@@ -2,6 +2,7 @@
  * The data of a book being translated, as it travels in a work package: the USFM, the diary of every change to a
  * verse, and the conflicts found on this device that nobody has decided yet.
  */
+import type { AlignmentLayer } from "./alignment";
 
 /** A person of an installation: the name they typed and the id the app gave that device. Shown by name only. */
 export type Person = { name: string; device: string };
@@ -32,6 +33,11 @@ export type Entry = {
   kind: "edit" | "decision";
   /** For a decision: the keys of the versions that were compared. The same pair is not asked again. */
   over?: string[];
+  /**
+   * For a decision: the decisions of that place it was made knowing (by id), which it replaces. Two decisions made
+   * apart, neither knowing the other, that keep different texts are asked again.
+   */
+  after?: string[];
 };
 
 /** Two versions of a place that both changed from the same text: a person decides. */
@@ -58,6 +64,8 @@ export type BookState = {
   usfm: string;
   journal: Entry[];
   pending: Conflict[];
+  /** The alignment of its verses, a layer apart with its own diary (`alignment.ts`); a book not aligned has none. */
+  alignment?: AlignmentLayer;
 };
 
 export const personKey = (person: Person): PersonKey => `${person.name.trim()}@${person.device.trim()}`;

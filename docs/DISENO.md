@@ -25,7 +25,7 @@ mandan sobre todo lo demás:
 - **Solo los choques reales llegan a una persona.** Lo que se puede unir solo, se une solo (sección 6).
 - **Una decisión de mezcla se toma una vez.** Queda registrada y no vuelve a preguntarse (sección 6.4).
 - **Una sola cosa obvia por pantalla.** Pensada primero para el teléfono, para gente poco habituada a la
-  tecnología. La misma regla que Taller.
+  tecnología. La misma regla que Taller. Cómo se diseña cada pantalla: [`FILOSOFIA_DE_DISENO.md`](FILOSOFIA_DE_DISENO.md).
 - **Preparada para lo que viene sin construirlo antes de tiempo:** traducción oral (sección 10), más idiomas de
   interfaz, más mini apps.
 
@@ -55,10 +55,11 @@ nuevas sin tocar las demás.
 | Mini app | Qué hace | Lo que reusa de Taller o de `usfm-ast` |
 |---|---|---|
 | **Estudio** | Leer el libro con sus recursos antes de traducir: textos puente, notas, preguntas, palabras, academia | La lectura de ayudas pegadas al versículo de Taller |
-| **Editor** | Escribir el borrador, versículo por versículo, con los textos puente al lado | El editor de USFM de `usfm-ast`; las reglas de escritura del USFM de Taller (poesía, notas) |
-| **Revisor de desafíos** | Comprobar que cada desafío de traducción quedó bien resuelto: fiel, claro, natural y preciso, entendiendo la nota, el TPL y el TPS | La interfaz casi idéntica a la de Taller; cambian las preguntas de comprobación de ese paso |
-| **Revisor de palabras clave** | Comprobar cómo se tradujo cada palabra clave en todo el libro | El revisor de palabras de Taller |
-| **Alineador** | Alinear el texto con el original o con otro idioma (TPL, TPS, español, portugués…) | El alineador de `usfm-ast` / `usfm-editor` |
+| **Traducir por escrito** (el editor) | Escribir el borrador, por sección o por versículo, con los textos puente al lado | El editor de USFM de `usfm-ast`; las reglas de escritura del USFM de Taller (poesía, notas) |
+| **Revisar con las notas** | Comprobar que cada frase difícil (las notas que enlazan a la Academia) quedó traducida como explica su nota y se entiende bien. Tres pasos por nota: leer la nota, marcar en el borrador las palabras que lo dicen, responder (bien, mejorarla ahora en el editor, mejorarla después). Por versículo, o por categoría y figura | La revisión de translationCore 3 y 4 y la Afinación de Taller (texto de referencia cambiable, marcar palabras con el dedo) |
+| **Revisar con las palabras** | Comprobar cada uso de una palabra (términos clave, otros términos, nombres) con los mismos tres pasos, y en el tercero cómo se tradujo en los demás lugares del libro: donde significa lo mismo, igual; donde significa otra cosa, según su sentido. Palabra por palabra, o por versículo | «Revisar palabras clave» de Taller; los dos revisores comparten `miniapps/checking` |
+| **Revisar el pasaje** | Leer cada sección entera y pesarla con cuatro preguntas, una a la vez: ¿es fiel (dice lo mismo que la fuente), clara (se entiende a la primera), natural (suena como habla la gente), precisa (nombres, números, lugares, términos)? «Sí» pasa a la siguiente; «hay algo que mejorar» marca las palabras con el dedo y abre el editor o lo anota para después: la nota se ve bajo su versículo en el editor hasta que alguien la da por mejorada. Una respuesta vale mientras el texto no cambie | Los pasos y el marcado con el dedo de los otros revisores |
+| **Alinear la traducción** | Unir cada palabra del borrador con la palabra de la fuente que traduce: el TPL por omisión, o el TPS, o el original (con las palabras del TPL debajo de cada palabra hebrea o griega). Cada fuente guarda su propia alineación, y los enlaces siguen a las palabras cuando el texto cambia | Las cajas y el banco de palabras de Taller, sobre el modelo de cajas de `usfm-ast` (`@usfm-ast/alignment-box-model`) |
 | **Publicar** | Preparar una publicación, aunque sea parcial, sin internet | Sección 8 |
 
 En el revisor de desafíos de Taller el propósito es que el TPL o el TPS se mantenga dentro de sus propias reglas.
@@ -75,6 +76,10 @@ la misma; las preguntas no.
   quien lo hizo.
 - Cuando haya internet, una persona puede vincular su nombre con su cuenta de Door43 para subir su trabajo
   (sección 8).
+- **La primera vez** que se abre la app pregunta solo lo necesario: el idioma de la app y «¿Cómo se llama?», con un
+  botón, «Empezar». Quien solo quiere conocerla entra al ejemplo. Otras personas que usan el mismo teléfono se
+  agregan desde el menú de la persona. Quién usa el teléfono y quién trabaja ahora se guardan (en el prototipo:
+  `servos.prototipo.personas`), para que cada cambio lleve el nombre correcto también después de cerrar la app.
 
 ## 6. Versiones y choques
 
@@ -113,6 +118,19 @@ Lo tomamos de Taller (`src/domain/usfmVerseMerge.ts`, `usfmTrunkPatch.ts`, docum
 | Solo un lado cambió el versículo desde lo que ya se tenía | Entra ese cambio |
 | Los dos cambiaron el mismo versículo, distinto | **Choque real**: decide una persona |
 | Un puente contra versículos sueltos, con texto en los dos | **Choque de estructura**: decide una persona |
+
+**Unidos de otra manera** (en el prototipo): si aquí los versículos están separados (1, 2) y la otra copia los trae
+unidos (1–2), o al revés, con texto en los dos lados, no se compara versículo por versículo (un texto dicho para 1–2
+no es una versión del 1): se guarda un choque de estructura para el tramo entero, y la persona elige cuál forma
+queda, con su texto, en «Dos versiones» o en el editor, donde la elección ocupa el lugar de las cajas. Si aquí no hay
+nada escrito en el tramo, entra la forma recibida sin preguntar.
+
+**Cómo decide la persona** (en el prototipo): las dos versiones, enteras, una debajo de la otra, cada una con lo
+que la otra no tiene resaltado (palabra por palabra; una coma también cuenta); se toca la que se queda y el único
+botón lleno la guarda. La que queda se corrige después como cualquier otra, en el editor. Se llega por tres lados:
+al terminar de recibir («Elegir entre las dos versiones»), desde el libro (una tarjeta dice cuántos versículos
+esperan) y en el editor, donde la elección ocupa el lugar de la caja hasta que se decide. Un versículo se puede dejar
+para después; sigue esperando y el libro lo sigue contando.
 
 ### 6.3 El diario: qué cambió, quién, desde dónde
 
@@ -198,6 +216,13 @@ sabe hasta dónde incorporó a cada persona, y las decisiones viajan dentro de l
 - Dos alineaciones distintas del mismo texto con la misma referencia (decidido el 14 de octubre): si las hizo la
   misma persona, queda la más reciente; si las hicieron personas distintas, es un choque de alineación y se decide
   como los de texto.
+- **Hecho** (16 de octubre de 2026): la capa está en el corazón (`src/core/alignment.ts`) y dentro de cada libro; el
+  choque de alineación se elige en el alineador («Bea alineó este versículo de otra manera. ¿Cuál queda?»).
+- **La alineación alimenta el glosario** (idea del 15 de octubre, para la mini app de revisión «Alineación»): al
+  alinear un versículo con el original, la palabra con que se tradujo cada palabra del hebreo o del griego se anota
+  en el glosario del proyecto (en el archivo de esa palabra, sección 7), con el versículo como ejemplo. Lo que el
+  equipo decidió a mano queda como está; lo que sale de alinear se agrega como otra forma usada, para que el revisor
+  vea de un vistazo si una palabra se tradujo siempre igual o de varias maneras.
 
 ### 6.9 Dónde se guarda
 
@@ -205,6 +230,73 @@ sabe hasta dónde incorporó a cada persona, y las decisiones viajan dentro de l
 - El diario y el registro de lo incorporado, en archivos propios junto al libro.
 - **Git (`isomorphic-git`)** como respaldo y como formato para subir a Door43. Git guarda; la mezcla la decide
   Servos.
+
+### 6.10 Todos traducen lo mismo: juntar las versiones
+
+Acordado el 16 de octubre. Algunos equipos no se reparten el trabajo: todos traducen lo mismo (el capítulo 1, por
+ejemplo) y después juntan lo mejor de cada uno, eligiendo una versión o haciendo una mezcla de todas.
+
+- **Un solo formato, varias vías.** El trabajo de cada quien llega como el paquete de siempre: por USB, tarjeta o
+  Bluetooth, o por Door43, que es un buzón más (cada quien sube su paquete al repositorio del proyecto). Git no junta
+  el USFM: lo junta Servos, versículo por versículo, venga de donde venga.
+- **Donde sea.** Se puede juntar entre todos frente a una computadora, una persona que recibe el trabajo de todos, o
+  cada quien en la suya. Una decisión es una línea del diario: viaja con el libro y cierra la elección en todos los
+  aparatos. Si dos personas juntan por separado el mismo versículo y dejan textos distintos, no gana una en silencio:
+  se vuelve a elegir entre lo que dejó cada una. Una decisión tomada sabiendo de otra la reemplaza.
+- **Todas a la vez, una decisión.** De un versículo se ven todas sus versiones juntas, cada una con quienes la
+  escribieron (dos que escribieron lo mismo son una versión, «Ana y Dani»). Una sola decisión, sea una versión o una
+  mezcla, cierra todas y no se vuelve a preguntar a nadie.
+- **La pantalla va por sección; los datos, por versículo.** Se traduce por secciones y la fluidez se juzga leyendo el
+  pasaje entero; guardado por versículo, la mezcla puede ser fina y lo demás se sigue juntando solo. La pantalla
+  «Juntar»: (1) leer la sección de cada uno de corrido, con lo que cambia resaltado; (2) quedarse con la de alguien
+  para toda la sección, de un toque; (3) bajar versículo por versículo, solo donde difieren, para elegir uno o hacer
+  una mezcla.
+- **En el teléfono, se elige tocando.** Elegir una versión o armar la mezcla no pide teclado: se tocan las frases de
+  cada versión que se quedan. El teclado es solo para retocar la mezcla ya armada, y mientras está arriba se ve solo
+  la mezcla, como en el editor.
+- **El equipo dice cómo trabaja**, por libro o capítulo: «repartido» (cada quien su parte) o «todos traducen lo
+  mismo». En el segundo, las versiones distintas no son choques: al recibir se dice «llegó la versión de Bea del
+  capítulo 1», el libro muestra lo que falta juntar, y una sección cuenta como hecha cuando se juntó.
+
+Hecho: el corazón (`decideAll`, `versionsAt`, `gather`), las dos decisiones por separado y la pantalla «Juntar»
+(`GatherScreen`, sobre el boceto acordado): la sección de cada uno en pestañas, sin resaltar, y «Quedarse con la de
+Bea en 1:1–3»; versículo por versículo, todas las versiones a la vez con lo que cambia resaltado; la mezcla en trozos
+que se leen como su versículo (cortados en sus signos, y un tramo de más de siete palabras otra vez, en cualquier
+idioma), con la propuesta de la app punteada; «Retocar» con solo la mezcla a la vista; y «Deshacer» lo último
+mientras nada más se escribió. Y el modo de trabajo: en «Más» del libro, «Cómo trabaja el equipo» (Por partes ·
+Todos lo mismo), que viaja con el libro; con «Todos lo mismo», al recibir se dice «Llegó la versión de Bea» y la
+tarjeta del libro cuenta secciones para juntar y de quiénes llegaron versiones. En los dos modos, un versículo con
+versiones esperando no cuenta como traducido hasta que se junta. Y Door43 como vía: en «Más» del libro, «El trabajo
+del equipo en Door43» deja el paquete de cada uno, con el sonido de sus tomas, en un repositorio privado junto al
+del proyecto (`{repo}-servos`), como adjunto de su *release* «trabajo» (uno por persona y teléfono, que se reemplaza
+sin dejar historia: git guardaría cada toma regrabada para siempre), y trae el de los demás para recibirlo como uno
+que llegó por tarjeta: se ve antes qué trae cada uno, y traer lo mismo otra vez no trae nada nuevo. Probado contra
+el mock y en QA. Las tomas se graban a 32 kbps.
+
+### 6.11 Lo que espera internet
+
+Acordado el 17 de octubre. Casi siempre se trabaja sin internet, así que lo que necesita Door43 se pide igual y
+espera en el teléfono: subir el proyecto, marcar una versión, dejar el trabajo para el equipo y traer el de los demás.
+
+- **Se pide sin internet.** Los botones lo dicen («Subir cuando haya internet», «Dejar mi trabajo cuando haya
+  internet»), y la pantalla muestra lo que espera, con «Quitar» para no enviarlo. Si el teléfono dice que hay internet
+  pero Door43 no responde (una red sin salida), lo intentado queda esperando igual, y se dice.
+- **Una vez cada cosa.** Pedir lo mismo dos veces lo deja una vez. Marcar una versión sube antes, así que ocupa el
+  lugar de una subida que esperaba; hecho después con internet desde su pantalla, lo que esperaba hacer lo mismo se
+  quita.
+- **Cuando vuelve internet, se pregunta.** Al volver la conexión, o al abrir la app con ella, sube una hoja, «Ya hay
+  internet», con lo que espera de la persona que usa el teléfono: qué va, a dónde (el repositorio del proyecto o el
+  del trabajo del equipo), con cuántas grabaciones, cuándo se pidió y si el libro cambió desde entonces. Un botón lo
+  envía todo; cada cosa se puede quitar; «Ahora no» espera hasta la próxima vez que vuelva la conexión. No sube
+  mientras se escribe: espera a que se suelte el campo.
+- **Va como está al enviarse**, no como estaba al pedirse: se sube el trabajo más reciente, y la hoja avisa si
+  cambió. El número de la versión lo dice Door43 al momento (si no responde, no se adivina).
+- **Lo de cada persona va con su cuenta**, y solo a ella se le pregunta. Lo que no se pudo enviar sigue esperando con
+  su problema; sin conexión a mitad de camino, lo demás no se intenta.
+- **Traer** no envía nada: al decir que sí se abre el trabajo del equipo, que trae lo de los demás para verlo antes
+  de recibirlo.
+
+Hecho en el prototipo (`outbox.ts`, `WaitingSheet`), probado con un Door43 de mentira en la página y en las pruebas.
 
 ## 7. Los paquetes
 
@@ -234,7 +326,45 @@ sabe hasta dónde incorporó a cada persona, y las decisiones viajan dentro de l
   `bt-synergy/docs/LANGUAGE_PACKS_PLAN.md`.
 - Falta sacar de la app tc-study a paquetes compartidos el código que construye y muestra las citas y los títulos
   (`apps/tc-study/src/features/helps`), para que Servos pueda reconstruirlos si un paquete viene sin ellos.
-- **Por decidir:** el formato del paquete de trabajo (el libro y su diario).
+- **El léxico viaja en el paquete de idioma** (decidido el 15 de octubre): los léxicos que usa Taller en Door43
+  (`es-419_uhl` para hebreo y arameo, `es-419_ugl` para griego; un archivo por número Strong, `content/7121.json`).
+  Al tocar una palabra, el léxico es la última ayuda, con el sentido que da para ese versículo primero (la numeración
+  hebrea de algunos versículos se convierte como en Taller).
+- **El glosario del proyecto es un archivo por palabra** (decidido el 15 de octubre), como los léxicos: en Door43,
+  el repositorio `<idioma>_tg` con `content/H7121.json` = `{ "strong", "entries" }`; una expresión vive en el archivo
+  de su primera palabra. Cada capítulo lee solo los archivos de sus palabras, y dos traductores que agregan palabras
+  distintas no tocan el mismo archivo. Entre computadoras viaja, por defecto, solo lo cambiado desde la última vez.
+  Las entradas conservan las columnas del glosario de Taller, y se recibe su TSV; para que las dos apps compartan
+  el repositorio, Taller tendría que pasar a este formato.
+- **El paquete de trabajo** (decidido el 15 de octubre). En la app se llama **«Compartir»** y **«Recibir»**, sin
+  nombre técnico; el archivo termina en `.servos`.
+  - **Qué lleva:** un índice (qué proyecto, de quién, cuándo, qué libros) y, por cada libro, el texto (con los
+    versículos unidos, como `\v 1-2`), su diario, y lo que va pegado a cada versículo con la huella del texto sobre
+    el que se hizo: la alineación con cada fuente, las revisiones con notas y con palabras, las notas de estudio y las
+    grabaciones. Del proyecto: el glosario, los ajustes y las mini apps de cada paso.
+  - **El formato** (decidido el 16 de octubre, versión 2): un JSON con `format: "servos-compartir"`, `version: 2`,
+    quién y cuándo, el proyecto, el glosario y, por libro, `state`: el USFM y el diario del corazón (`src/core`). Los
+    choques sin decidir viajan también (desde el 16 de octubre): quien recibe el libro los ve donde tiene una de las
+    dos versiones, desde su lado, y una decisión tomada en cualquier aparato los cierra en todos.
+    Un archivo de la versión 1 (versículos sueltos) se sigue leyendo: se vuelve una copia del libro, cada versículo
+    como cambio de quien lo escribió, y se junta igual; lo mismo un archivo USFM que se agrega.
+  - **Va todo, sin preguntar** capa por capa. El diario hace que traer lo mismo dos veces no duplique nada.
+  - **Compartir:** desde un libro («Más › Compartir este libro») o desde los ajustes del proyecto («Compartir el
+    proyecto», con los libros marcados; todos de entrada). Se puede mandar parte de un libro («Jonás 1:1–10»).
+  - **Recibir** («Agregar un proyecto › Recibir», o desde el libro), en tres pasos, sin aplicar nada antes del último:
+    qué trae (de quién, cuándo, qué libros y el glosario); dónde va (si el proyecto ya está en el aparato, se junta
+    con él; si no, se elige: **agregarlo como proyecto nuevo o juntarlo con uno propio del mismo idioma**, el caso de
+    6.5); y qué libros, cada uno con lo que cambia aquí («12 versículos nuevos · 40 iguales · 3 escritos distinto,
+    para elegir»; «libro nuevo para usted»).
+  - **Al juntar, cada capa sigue a su texto** (6.2 y 6.8). El texto, con la mezcla del corazón: lo que solo tiene
+    un lado entra; un cambio que este aparato ya había incorporado (o más viejo) no vuelve; una elección ya hecha se
+    aplica sin preguntar; lo que dos personas cambiaron por separado desde el mismo texto queda como dos versiones
+    para elegir (o, si unieron versículos de otra manera, como un tramo para elegir entero); la alineación entra si se hizo sobre el texto que queda, y si no
+    queda por revisar, nunca borrada; de dos revisiones de una nota, de una palabra o de una pregunta de un pasaje
+    queda la dada sobre el texto que queda (de dos sobre el mismo, la más reciente); lo visto para mejorar se junta, y
+    lo marcado mejorado sigue mejorado; el glosario se junta palabra por palabra (una traducción
+    distinta queda como otra forma); dos notas de estudio distintas sobre los mismos versículos quedan las dos, cada
+    una con su autor.
 - Al importar, la app dice qué trae y qué cambia antes de aplicarlo.
 - Un paquete de recursos más nuevo puede reemplazar a uno anterior; el trabajo hecho no se toca, pero la app avisa
   qué notas o textos cambiaron en los versículos ya traducidos.
@@ -248,7 +378,35 @@ Como en `usfm-editor`:
 - **Con internet**, la publicación pendiente se sube a Door43: el libro, su historia y la versión.
 - Quien sube necesita su cuenta de Door43; ahí se vincula su nombre de Servos con esa cuenta.
 
-**Por decidir:** a qué organización y repositorio de Door43 va cada proyecto, y quién lo crea la primera vez.
+**Decidido (15 de octubre de 2026), y hecho en el prototipo** (mini app «Publicar en Door43», paso Publicación):
+
+- **Un repositorio por proyecto**, en una **organización del equipo** en Door43, elegida una vez por quien coordina
+  (se propone `{idioma}_reg`). Es un Resource Container (`rc0.2`, `type: bundle`, `format: text/usfm3`): cada libro
+  como `NN-LIBRO.usfm` (numeración de USFM: Génesis 01 … Malaquías 39, Mateo 41 …) y un `manifest.yaml` que los nombra
+  con el nombre que el equipo dio a cada libro. El repositorio se crea al publicar la primera vez.
+- **Se sube todo lo traducido**, cada vez; Door43 guarda la historia de cada subida. Un archivo igual al que ya está
+  no se vuelve a escribir, y uno que cambió se actualiza con el `sha` que tiene allá: si alguien subió en el medio,
+  se dice, no se pisa. Una **versión con número** (`v1`, `v2`…, un *release*) se marca aparte, cuando el equipo da por
+  bueno lo que está en Door43; se puede marcar sin volver a subir cuando lo del teléfono ya está allá sin cambios.
+  Las grabaciones no van a git (Door43 no tiene LFS, y git guardaría cada toma para siempre): la que cuenta de cada
+  versículo va adjunta a la versión, un `audio-LIBRO.zip` por libro. Probado en QA el 17 de octubre.
+- **La alineación con el original va en el USFM**, donde la hay: cada palabra como `\w`, los grupos en
+  `\zaln-s`/`\zaln-e` con Strong, lema y morfología, como los escriben las herramientas de unfoldingWord.
+- **La cuenta**: cada persona vincula la suya una vez en el teléfono (menú de la persona › Cuenta de Door43). La
+  contraseña se cambia por una llave (*token*) en una sola petición y no se guarda; también se puede pegar una llave
+  hecha en Door43. Se ofrece Door43 y su copia de prueba (QA); al programar, un Door43 de mentira en la computadora
+  (el de Taller, `npm run mock:door43`).
+- **Sin internet** no se pierde nada: el trabajo está en el teléfono, y la pantalla dice libro por libro si cambió
+  desde la última subida. Subir y marcar una versión se piden igual, y esperan a que haya internet y a que la persona
+  diga que sí (6.11). Falta todavía subir el diario («su historia») junto con los libros.
+- El cliente de Door43 es el de Taller (`packages/dcs-client`), copiado en `src/door43/dcs`.
+
+**USFM, de ida y vuelta** (prototipo): un libro empezado en otra app se trae desde su archivo USFM («Agregar un
+libro › Desde un archivo USFM»). Se lee el texto de cada versículo (sin alineación ni notas al pie), un puente como
+versículos unidos, y se junta como un libro compartido: antes de escribir nada dice qué trae y qué cambia, y lo
+escrito distinto queda como dos versiones para elegir. Al revés, «Más › Guardar el libro en USFM» escribe el
+borrador con la forma del texto puente (sus párrafos, la poesía línea por línea, los versículos unidos como
+` 1-2`), para Paratext, translationCore o Door43 a mano.
 
 ## 9. La interfaz se traduce dentro de la app
 
@@ -261,6 +419,13 @@ Como en `usfm-editor`:
   - qué frases nuevas le faltan;
   - qué frases quedaron **invalidadas** porque el texto original cambió, mostrando el antes y el después.
 - La comprobación de claves y marcadores que Taller hace con `verify:config` se repite aquí.
+- Una frase que en la computadora se dice de otro modo («haga clic», «esta computadora») tiene al lado su forma de
+  computadora, `{clave}.computadora`, en los tres idiomas. La app la usa donde hay ratón o panel táctil, o en la app de
+  escritorio (`src/app/i18n/device.ts`); el traductor de la interfaz la muestra como una frase más, diciendo si es la
+  del teléfono o la de la computadora. Donde una sola forma dice bien en los dos («Elija un libro.»), hay una sola.
+- Hecho en el prototipo: «Traducir la app › Pasar esta traducción a otro teléfono» la guarda como archivo o como
+  texto, y «Idioma de la app › Recibir una traducción» la junta en otro teléfono: entran las frases nuevas y las que
+  ese teléfono tradujo distinto se quedan como estaban.
 
 ## 10. Preparada para la traducción oral
 
@@ -271,18 +436,41 @@ No es parte de la primera etapa, pero el diseño no debe cerrarle la puerta:
 - Los paquetes pueden llevar archivos de audio.
 - La lista de mini apps admite una de grabación.
 
+Hecho en el prototipo, «Traducir de viva voz» (paso Traducción): por sección mientras la persona no elija otra cosa
+(un pasaje se dice mejor de corrido), o por versículo; arriba lo que se va a decir (el TPL, el TPS a un toque); un botón
+grande para grabar y, ya grabado, la grabación para oírla, «Grabar otra vez» y el camino al siguiente. Una toma de una
+sección cuenta para cada uno de sus versículos. Ninguna toma se pierde: cuenta la última, o la que se elija entre las
+anteriores, y cada una lleva quién la grabó, cuándo, cuánto dura y qué versículos dice. El sonido se guarda en
+IndexedDB; lo demás, por el primer versículo de lo grabado. Si está escrito se ve debajo, con el camino al editor. El
+editor también abre por sección mientras la persona no elija. «Compartir» lleva todas las tomas con su sonido, y al
+recibir se juntan toma por toma, sin perder ninguna, quedando la que contaba aquí. «Publicar en Door43» sube, de cada
+lugar, la toma que cuenta, como `audio/JON/001/001-003.webm` (libro, capítulo, versículo o pasaje), en el formato que
+grabó el teléfono.
+
 ## 11. Arquitectura
 
 - **Una base de código web** (React + Vite + TypeScript, como Taller) empaquetada como:
   - **Tauri** para computadoras (Windows primero, luego Mac y Linux);
   - **Capacitor** para teléfonos (Android primero, luego iPhone);
-  - **PWA** como extra, para quien tenga internet al instalar.
+  - **PWA** como extra, para quien tenga internet al instalar. **Hecha primero** (17 de octubre), para probar en
+    teléfonos de verdad sin esperar a los instaladores: con la primera visita se guarda **toda** la app en el teléfono
+    (no solo lo ya visto), porque un equipo puede abrirla una vez con internet y trabajar semanas sin él; desde
+    entonces abre sin conexión, sin esperar a la red aunque sea lenta. Door43 nunca se guarda ahí: se le pregunta en
+    vivo, y lo que espera internet espera en la app (6.11). Una versión nueva se baja entera por detrás y se usa
+    cuando la persona toca «Usar ahora» en Inicio, o la próxima vez que abre la app: nunca cambia en medio del
+    trabajo. Se pide al navegador que no borre lo guardado para hacer lugar. La compilación escribe el *service
+    worker* con la lista de sus archivos (`offline/sw.template.js`, `vite.config.ts`).
 - **Almacenamiento** por la capa de `platform-adapters` de `usfm-ast`, que ya abstrae la web, Tauri y Capacitor.
 - **Del lado de `usfm-ast`:** el analizador y el editor de USFM, el alineador y la lectura de formatos. Los
   sistemas de choques de `usfm-ast` no se usan.
-- **De Taller:** la mezcla por versículo, el solucionador de choques y la lectura de ayudas. **Por decidir:** si se
-  sacan a un paquete compartido que usen las dos apps, o si Servos los copia y los adapta. Compartirlos evita que
-  diverjan, pero ata los ritmos de las dos apps.
+- **De Taller:** la mezcla por versículo, el solucionador de choques y la lectura de ayudas. **Decidido (16 de
+  octubre de 2026):** por ahora Servos los copia y los adapta (`src/usfm`), hasta que el corazón esté probado en las
+  pantallas; después se piensa en sacarlos a un paquete compartido, que evita que diverjan pero ata los ritmos de las
+  dos apps.
+- **Una sola puerta al texto del libro** (`src/app/projects/bookText.ts`): los versículos, quién escribió cada uno,
+  las uniones, las versiones que esperan una elección y los choques de estructura se leen y se escriben solo por ahí
+  (una prueba lo vigila). Detrás de esa puerta el prototipo guarda versículo por versículo; el cableado pone ahí el
+  libro en USFM con su diario (`src/core`).
 
 ## 12. Por dónde empezar
 
@@ -293,7 +481,7 @@ Propuesta de etapas, para conversar:
    que todo lo demás necesita.
 2. **Personas, proyectos y paquetes:** entrar sin internet, crear un proyecto, importar un paquete de recursos,
    exportar e importar un paquete de trabajo.
-3. **Estudio y Editor**, en teléfono y computadora.
+3. **Estudio y Traducir por escrito**, en teléfono y computadora.
 4. **El solucionador de choques**, sobre el corazón de la etapa 1.
 5. **Revisor de desafíos y de palabras clave.**
 6. **Alineador.**
@@ -305,7 +493,6 @@ Propuesta de etapas, para conversar:
 
 - El orden de las fases, y si cada equipo arma el suyo (sección 3).
 - PIN opcional por persona (sección 5).
-- El formato del paquete de trabajo (sección 7).
 - A dónde va cada proyecto en Door43 (sección 8).
 - Paquete compartido con Taller o copia adaptada (sección 11).
 - El nombre de dominio `servos.bible` todavía no está apartado.
