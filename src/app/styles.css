@@ -32,8 +32,9 @@
   --pill: #fefcf7;
   /* A box to write in, when it is not the one being written: the card's paper on the light ground; a faint field on the dark */
   --field: #fefcf7;
-  /* A field of moss: the one place where going on is the whole block (home's «go on where you left off») */
-  --field-ink: #3b6f30;
+  /* A field of moss: the one place where going on is the whole block (home's «go on where you left off»), a step
+     darker than the buttons' moss so the gold above it (5.4:1) and its soft line (5.7:1) read */
+  --field-ink: #2f5a26;
   --on-field: #f7f2e8;
   --on-field-soft: rgba(247, 242, 232, 0.84);
   --field-kicker: #f2cf8f;
@@ -152,6 +153,8 @@
   --field-kicker: #ffd34d;
   --field-button: #ffffff;
   --field-button-text: #1f421f;
+  /* What cannot be touched yet, and a box's hint: grey, but still read (6.4:1 on white) */
+  --text-disabled: #5f5e66;
   color-scheme: light;
 }
 
@@ -827,7 +830,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .review-group .quiet { flex: none; font-variant-numeric: tabular-nums; }
 /* On a phone the notes' bar (the group, and from note to note) is at the foot, under the thumb, right above the
    position line; on a wide screen it stays at the top. */
-@media (max-width: 899px) {
+@media (max-width: 899.98px) {
   .review-scroll { order: 1; }
   .review-next { order: 2; }
   .review-head { order: 3; border-block-end: 0; border-block-start: 1px solid var(--line); background: var(--surface); }
@@ -839,7 +842,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 
 /* On a phone the position line, with its arrows, is at the foot of a mini app's screen, under the thumb (right above
    the keyboard while writing); the notice of a new chapter floats above it. On a wide screen it stays at the top. */
-@media (max-width: 899px) {
+@media (max-width: 899.98px) {
   .screen-app { display: flex; flex-direction: column; }
   .screen-app > .main { order: 1; flex: 1; }
   .screen-app > .position-crossed { order: 2; }
@@ -1156,7 +1159,7 @@ button, .file-button, summary, input, select, textarea {
 :is(.button-primary, .button-secondary, .header-app, .header-brand, .book-tile-name, .tool-card-name, .book-resume-what, .panes-tab, .book-step, .helps-tab) { font-weight: 800; }
 :is(.chapter-lines, .verse) .verse-number { color: var(--accent); font-weight: 700; }
 
-/* Home's «go on where you left off» as a field of ink: the first thing touched, and home's own anchor */
+/* Home's «go on where you left off» as a field of moss: the first thing touched, and home's own anchor */
 .book-resume.is-field { gap: 0.25rem; padding: 1.1rem 1rem 1rem; border-radius: 16px; background: var(--field-ink); color: var(--on-field); }
 .book-resume.is-field .book-resume-kicker { color: var(--field-kicker); font-size: 0.85rem; }
 .book-resume.is-field .book-resume-what { font-size: 1.35rem; line-height: 1.25; font-weight: 650; }
@@ -1182,7 +1185,7 @@ button, .file-button, summary, input, select, textarea {
 :root[data-theme='sun'] .notice { box-shadow: inset 0 0 0 1.5px var(--warn-text); }
 :root[data-theme='sun'] :is(.line-field:focus, .line-field:focus-visible) { box-shadow: 0 0 0 2px var(--accent); }
 :root[data-theme='sun'] .position { background: var(--surface); }
-:root[data-theme='sun'] ::placeholder { color: #5f5e66; opacity: 1; }
+:root[data-theme='sun'] ::placeholder { color: var(--text-disabled); opacity: 1; }
 
 /* Sun, the other screens: a state that was only a tint or a faded tone is said with a line, a weight or a mark, as
    the sun takes the tint first. Done is a blue edge (and ✓ where no word says it); begun, a moss bar at the foot;
@@ -1208,7 +1211,7 @@ button, .file-button, summary, input, select, textarea {
 :root[data-theme='sun'] .review-stepper [aria-current='step'] { font-weight: 800; box-shadow: inset 0 -3px 0 var(--accent); }
 :root[data-theme='sun'] .review-stepper:not(.passage-steps) .is-done .review-stepper-n { font-size: 0; }
 :root[data-theme='sun'] .review-stepper:not(.passage-steps) .is-done .review-stepper-n::before { content: '✓'; content: '✓' / ''; font-size: 0.8rem; }
-:root[data-theme='sun'] .review-stepper button:disabled { opacity: 1; color: #5f5e66; }
+:root[data-theme='sun'] .review-stepper button:disabled { opacity: 1; color: var(--text-disabled); }
 :root[data-theme='sun'] .review-filter { border: 1px solid var(--line); }
 :root[data-theme='sun'] .picker-word.is-picked { border-color: var(--text); box-shadow: inset 0 0 0 1.5px var(--text); }
 :root[data-theme='sun'] .al-word[data-selected] { box-shadow: inset 0 0 0 1px var(--accent); font-weight: 800; }
@@ -1222,6 +1225,14 @@ button, .file-button, summary, input, select, textarea {
 :root[data-theme='sun'] .book-resume:not(.is-field) { box-shadow: inset 0 0 0 1.5px var(--accent); }
 /* The card's edge passes behind a phase's name, not through it */
 :root[data-theme='sun'] .settings-phase legend { background: var(--surface); padding-inline: 0.4rem; }
-:root[data-theme='sun'] :is(.button-primary, .button-secondary, .chip):disabled { opacity: 1; background: var(--surface); color: #5f5e66; border: 1.5px dashed var(--hair); }
-:root[data-theme='sun'] .menu-row:disabled { opacity: 1; color: #5f5e66; }
+:root[data-theme='sun'] :is(.button-primary, .button-secondary, .chip):disabled { opacity: 1; background: var(--surface); color: var(--text-disabled); border: 1.5px dashed var(--hair); }
+:root[data-theme='sun'] .menu-row:disabled { opacity: 1; color: var(--text-disabled); }
 :root[data-theme='sun'] .menu-row:disabled .menu-row-description { color: inherit; }
+/* Sun keeps the tint under the mouse (principle 13): the lines above, later and as specific as the hover rules, would
+   hide it on a tile, a done cell and an outlined button. */
+@media (hover: hover) and (pointer: fine) {
+  :root[data-theme='sun'] :is(.book-tile, .chapter-cell, .verse-cell:not(.is-current)):not(:disabled):hover {
+    background-color: color-mix(in srgb, var(--accent) 9%, var(--surface-soft));
+  }
+  :root[data-theme='sun'] :is(.button-secondary, .chip, .project-settings):not(:disabled):hover { border-color: var(--accent); }
+}

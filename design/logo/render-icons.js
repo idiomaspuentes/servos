@@ -10,7 +10,8 @@
 // same book redrawn on a 16 grid with every edge on a whole pixel. Change it with the book.
 //
 // Writes, in public/:
-//   icon-512.png, icon-192.png, favicon-64.png  in their rounded square, corners see-through;
+//   icon-512.png, icon-192.png, favicon-64.png  in their rounded square, corners see-through (favicon-64 is not
+//                                                linked: a browser that takes a PNG would put the square in the tab);
 //   icon-maskable-512.png, apple-touch-icon.png  full bleed: the launcher or the phone cuts its own shape;
 //   icon-monochrome-512.png                      Android's themed icon: the book alone in one colour on nothing, the
 //                                                cuts as holes, as small as the maskable one; the launcher paints it;

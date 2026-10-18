@@ -20,12 +20,17 @@
     width: 25rem; max-height: 100%; border-radius: 14px; animation: menu-in 140ms var(--ease);
     box-shadow: var(--shadow-card), 0 0 0 1px var(--line);
   }
-  .sheet.is-menu .sheet-head { display: none; }
   /* Its rows take a tint under the pointer, inset from the edge; what is not a row lines up with their text */
   .sheet.is-menu .sheet-body { padding: 0.35rem 0.5rem 0.75rem; }
   .sheet.is-menu .menu-row { padding-inline: 0.75rem; border-block-end: 0; border-radius: var(--radius); }
   .sheet.is-menu .menu-choice { padding-inline: 0.75rem; border-block: 1px solid var(--hair); margin-block: 0.25rem; }
   .sheet.is-menu .sheet-body > :not(.menu-row, .menu-choice) { margin-inline: 0.75rem; }
+}
+
+/* With a mouse the menu needs no «Cerrar»: a click outside or Esc closes it. A wide touch screen (a tablet) keeps it, as
+   its shade is gone and a tap on nothing is not something anyone sees to do. */
+@media (min-width: 900px) and (hover: hover) and (pointer: fine) {
+  .sheet.is-menu .sheet-head { display: none; }
 }
 
 /* Buttons at their own size: as wide as what they say, at the start of what is read, not from edge to edge. In a grid
@@ -73,7 +78,8 @@
 /* Home, the book and the welcome use the width: from 1280 px home's moss field («go on where you left off») has a column
    of its own at the left, in sight while the projects scroll beside it, and the books are a wider grid; the book's
    first mini app and its others go side by side. The welcome stands in the middle of the window. */
-@media (max-width: 1279px) {
+/* Up to just under 1280: with Windows scaling a window can be 1279.5 px wide, and neither 1279 nor 1280 would hold */
+@media (max-width: 1279.98px) {
   .home-projects { display: contents; }
 }
 @media (min-width: 900px) {
