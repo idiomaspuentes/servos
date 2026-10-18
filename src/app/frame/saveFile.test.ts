@@ -28,3 +28,33 @@ describe('saving a file in the app for computers', () => {
     expect(await saveFile('Jonás.servos', '{}')).toEqual({ state: 'failed', name: 'Jonás.servos' })
   })
 })
+
+const { writeFile, share } = vi.hoisted(() => ({ writeFile: vi.fn(), share: vi.fn() }))
+vi.mock('@capacitor/filesystem', () => ({ Filesystem: { writeFile }, Directory: { Cache: 'CACHE' }, Encoding: { UTF8: 'utf8' } }))
+vi.mock('@capacitor/share', () => ({ Share: { share } }))
+
+describe('saving a file in the app for phones', () => {
+  beforeEach(() => {
+    writeFile.mockReset().mockResolvedValue({ uri: 'file:///cache/compartir/Jonás.servos' })
+    share.mockReset()
+    vi.stubGlobal('window', { Capacitor: { isNativePlatform: () => true } })
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('hands the file, under the name the app gave it, to the phone\'s share sheet', async () => {
+    share.mockResolvedValue({})
+    expect(await saveFile('Jonás.servos', '{}')).toEqual({ state: 'shared', name: 'Jonás.servos' })
+    expect(writeFile).toHaveBeenCalledWith(expect.objectContaining({ path: 'compartir/Jonás.servos', data: '{}' }))
+    expect(share).toHaveBeenCalledWith({ files: ['file:///cache/compartir/Jonás.servos'], title: 'Jonás.servos' })
+  })
+
+  it('takes the sheet left without choosing as no answer, not as a failure', async () => {
+    share.mockRejectedValue(new Error('Share canceled'))
+    expect(await saveFile('JON.usfm', '\id JON', 'text/plain')).toEqual({ state: 'declined', name: 'JON.usfm' })
+  })
+
+  it('says it could not when the file could not be written', async () => {
+    writeFile.mockRejectedValue(new Error('No space left'))
+    expect(await saveFile('Jonás.servos', '{}')).toEqual({ state: 'failed', name: 'Jonás.servos' })
+  })
+})

@@ -413,7 +413,7 @@ export function BookScreen({
               description={t('libro.usfmAyuda')}
               onClick={async () => {
                 const saved = await saveFile(`${book.code.toUpperCase()}.usfm`, bookUsfm(book.code, project.name, chapters, 'TPL', book.name, true), 'text/plain')
-                setSaidMore(saved.state === 'saved' ? t('compartir.guardado', { archivo: saved.name }) : saved.state === 'declined' ? null : t('compartir.noGuardado'))
+                setSaidMore(saved.state === 'saved' ? t('compartir.guardado', { archivo: saved.name }) : saved.state === 'failed' ? t('compartir.noGuardado') : null)
               }}
             />
           )}

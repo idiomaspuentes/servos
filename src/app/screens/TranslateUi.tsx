@@ -252,7 +252,7 @@ export function TranslateUi({ onBack }: { onBack(): void }) {
                 className="button-secondary"
                 onClick={async () => {
                   const saved = await saveFile(`servos-interfaz-${target}.json`, JSON.stringify(packageOf(target)))
-                  setShared(saved.state === 'saved' ? t('compartir.guardado', { archivo: saved.name }) : saved.state === 'declined' ? null : t('compartir.noGuardado'))
+                  setShared(saved.state === 'saved' ? t('compartir.guardado', { archivo: saved.name }) : saved.state === 'failed' ? t('compartir.noGuardado') : null)
                 }}
               >
                 {t('interfaz.guardarArchivo')}
