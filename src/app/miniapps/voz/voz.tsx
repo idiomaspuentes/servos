@@ -212,6 +212,7 @@ export const editorVoz: MiniApp = {
       corregirEscrito: 'Corregir lo escrito',
       siguiente: 'Siguiente',
       sinPermiso: 'El teléfono no dio permiso para usar el micrófono. Permítalo en los ajustes del navegador o de la app.',
+      'sinPermiso.computadora': 'La computadora no dio permiso para usar el micrófono. Permítalo en los ajustes del navegador o de la app.',
       noSePuede: 'Este aparato, o esta página, no deja grabar.',
     },
     pt: {
@@ -231,6 +232,7 @@ export const editorVoz: MiniApp = {
       corregirEscrito: 'Corrigir o escrito',
       siguiente: 'Próximo',
       sinPermiso: 'O telefone não deu permissão para usar o microfone. Permita nas configurações do navegador ou do app.',
+      'sinPermiso.computadora': 'O computador não deu permissão para usar o microfone. Permita nas configurações do navegador ou do app.',
       noSePuede: 'Este aparelho, ou esta página, não deixa gravar.',
     },
     en: {
@@ -250,6 +252,7 @@ export const editorVoz: MiniApp = {
       corregirEscrito: 'Correct what is written',
       siguiente: 'Next',
       sinPermiso: 'The phone did not allow the microphone. Allow it in the browser or app settings.',
+      'sinPermiso.computadora': 'The computer did not allow the microphone. Allow it in the browser or app settings.',
       noSePuede: 'This device, or this page, does not allow recording.',
     },
   },
