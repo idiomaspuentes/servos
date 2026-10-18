@@ -46,10 +46,16 @@ export function Sheet({
   onClose,
   children,
   dirty = false,
+  menu = false,
 }: {
   title: string
   onClose(): void
   children: ReactNode
+  /**
+   * A menu of a screen («Más», the person's): on a phone a sheet like any other; on a wide window it opens under its
+   * button at the top right, as a desktop menu does, while a sheet is a box in the middle (philosophy, principle 13).
+   */
+  menu?: boolean
   /**
    * Something written in it and not saved: closing it (its button, outside it, Escape, the phone's back button) asks
    * first, so what was written is not lost by a slip of the finger (philosophy, principle 9).
@@ -88,9 +94,9 @@ export function Sheet({
     return () => window.removeEventListener('keydown', onKey)
   }, [])
   return createPortal(
-    <div className="sheet-backdrop" onClick={close} onPointerDown={(e) => e.stopPropagation()}>
+    <div className={menu ? 'sheet-backdrop is-menu' : 'sheet-backdrop'} onClick={close} onPointerDown={(e) => e.stopPropagation()}>
       <div
-        className="sheet"
+        className={menu ? 'sheet is-menu' : 'sheet'}
         role="dialog"
         aria-modal="true"
         aria-label={title}

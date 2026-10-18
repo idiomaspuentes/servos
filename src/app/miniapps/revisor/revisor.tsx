@@ -91,6 +91,12 @@ function Center({ context }: MiniAppCenterProps) {
     redraw((n) => n + 1)
   }
 
+  const somethingToImprove = (
+    <button type="button" className="button-secondary" onClick={() => setMarking(true)}>
+      {t('revisor.hayAlgo')}
+    </button>
+  )
+
   if (!texts.some((x) => x.trim())) {
     return (
       <div className="review">
@@ -207,11 +213,8 @@ function Center({ context }: MiniAppCenterProps) {
             </button>
           </section>
         )}
-        {!marking && criterion && (
-          <button type="button" className="button-secondary" onClick={() => setMarking(true)}>
-            {t('revisor.hayAlgo')}
-          </button>
-        )}
+        {/* On a wide window it goes beside «Yes», at the foot (principle 13); on a phone, under what is compared. */}
+        {!marking && criterion && !wide && somethingToImprove}
 
         {observations.length > 0 && (
           <section className="passage-notes" aria-label={t('revisor.paraMejorar')}>
@@ -240,6 +243,7 @@ function Center({ context }: MiniAppCenterProps) {
             {t(`revisor.si.${criterion}`)}
           </button>
         ) : null}
+        {!marking && criterion && wide && somethingToImprove}
         {marking && !picked && <p className="quiet review-hint">{t('revisor.primeroMarque')}</p>}
       </div>
     </div>

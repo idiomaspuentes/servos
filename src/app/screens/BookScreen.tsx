@@ -352,6 +352,7 @@ export function BookScreen({
       {more && (
         <Sheet
           title={t('libro.mas')}
+          menu
           onClose={() => {
             setMore(false)
             setSaidMore(null)

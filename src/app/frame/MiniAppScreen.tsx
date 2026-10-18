@@ -300,7 +300,7 @@ export function MiniAppScreen({
       )}
 
       {more && (
-        <Sheet title={t('marco.mas')} onClose={() => setMore(false)}>
+        <Sheet title={t('marco.mas')} onClose={() => setMore(false)} menu>
           {offered.map((action) => (
             <MenuRow
               key={action.label}
