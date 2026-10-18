@@ -246,9 +246,9 @@ export function BookScreen({
       </header>
       <main className="main">
         {!chapters.length && state?.state === 'loading' && (
-          // Being read from this device: said as it goes, a chapter at a time.
+          // Being read from this device: said as it goes, the chapter being read of how many.
           <p className="status" role="status">
-            {state.total ? t('libro.preparandoCapitulo', { libro: name, n: state.done, total: state.total }) : t('libro.preparando', { libro: name })}
+            {state.total ? t('libro.preparandoCapitulo', { libro: name, n: Math.min(state.done + 1, state.total), total: state.total }) : t('libro.preparando', { libro: name })}
           </p>
         )}
         {!chapters.length && state?.state === 'error' && (
