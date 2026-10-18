@@ -248,7 +248,8 @@ function Center({ context }: MiniAppCenterProps) {
             markers={markers}
             poem={poem}
             label={t('editor.suVersiculo', { v: unitLabel(unit) })}
-            placeholder={(line) => (poem ? t('editor.renglon', { n: line }) : t('editor.cajaVersiculo', { v: unitLabel(unit), idioma: context.project.languageName }))}
+            // Said only in the box with the cursor (styles.css): the verse's number is beside it, the language above.
+            placeholder={(line) => (poem ? t('editor.renglon', { n: line }) : t('editor.escribaEn', { idioma: context.project.languageName }))}
             addLabel={t('editor.otroRenglon')}
             onChange={(value) => write(v, value)}
             onEdge={(toward) => edge(unit, toward)}
@@ -466,7 +467,7 @@ export const editor: MiniApp = {
       descripcion: 'Escribir cada pasaje en su idioma, con el texto puente al lado',
       textoPuente: 'Texto puente: {texto}',
       comoEmpezar: 'Escriba cada versículo en {idioma}. Lo que va a traducir está en el {texto}: deslice a la izquierda o toque «{texto}» arriba.',
-      cajaVersiculo: 'Versículo {v} en {idioma}',
+      escribaEn: 'Escriba en {idioma}',
       escribirAqui: 'Escribir el {v}',
       glosario: 'Glosario',
       glosarioSinOriginal: '«{palabra}» no está alineada con el original: no se sabe de qué palabra es.',
@@ -501,7 +502,7 @@ export const editor: MiniApp = {
       descripcion: 'Escrever cada passagem no seu idioma, com o texto ponte ao lado',
       textoPuente: 'Texto ponte: {texto}',
       comoEmpezar: 'Escreva cada versículo em {idioma}. O que vai traduzir está no {texto}: deslize para a esquerda ou toque «{texto}» acima.',
-      cajaVersiculo: 'Versículo {v} em {idioma}',
+      escribaEn: 'Escreva em {idioma}',
       escribirAqui: 'Escrever o {v}',
       glosario: 'Glossário',
       glosarioSinOriginal: '«{palabra}» não está alinhada com o original: não se sabe de que palavra é.',
@@ -536,7 +537,7 @@ export const editor: MiniApp = {
       descripcion: 'Write each passage in your language, with the bridge text beside it',
       textoPuente: 'Bridge text: {texto}',
       comoEmpezar: 'Write each verse in {idioma}. What you will translate is in the {texto}: swipe left or touch «{texto}» above.',
-      cajaVersiculo: 'Verse {v} in {idioma}',
+      escribaEn: 'Write in {idioma}',
       escribirAqui: 'Write verse {v}',
       glosario: 'Glossary',
       glosarioSinOriginal: '«{palabra}» is not aligned to the original: which word it stands for is unknown.',

@@ -550,6 +550,9 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .line-field { resize: none; field-sizing: content; min-height: var(--touch); border-color: transparent; background: var(--field); box-shadow: 0 0 0 1px var(--hair); }
 /* The box being written in: one accent edge, not the page's thick focus ring around its own border */
 .line-field:focus-visible, .line-field:focus { outline: none; border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 1px var(--accent); }
+/* What to write is said in the box with the cursor only: the empty boxes around it stay quiet (decided with Abel,
+   18 October), their verse's number beside them and the language in the line above */
+.line-field:not(:focus)::placeholder { color: transparent; }
 /* What the team writes, in the project's font */
 .line-field, .version-text, .review-mine-verse, .picker-word, .al-word, .al-chip__word { font-family: var(--project-font, var(--font)); }
 .line-add { justify-self: start; min-height: var(--touch); border: 0; background: none; color: var(--text-soft); padding-inline: 0.25rem; }
