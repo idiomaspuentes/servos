@@ -16,15 +16,21 @@ export interface PackSummary {
   kind: NonNullable<PackManifest['kind']>
   language: string
   books: string[]
-  resources: Array<{ key: string; title: string; isOriginal: boolean; books: string[] }>
+  resources: Array<{ key: string; title: string; subject: string; isOriginal: boolean; books: string[] }>
   /** Originals the pack's quotes were built against. */
   needs: Array<{ key: string; stamp: string }>
   createdAt: string
+  /**
+   * Its texts were processed by another version of the code than this app reads with: opening it is refused
+   * (`importLanguagePack`), so it is said before, in the app's words.
+   */
+  otherVersion: boolean
 }
 
 /** What a pack brings, without opening its rows. Throws with a message for people when the file is not a pack. */
 export async function describePack(bytes: Uint8Array | ArrayBuffer): Promise<PackSummary> {
   const manifest = await readPackManifest(bytes)
+  const made = manifest.versions?.sot?.usjProcessing
   return {
     kind: manifest.kind ?? 'language',
     language: manifest.language,
@@ -32,11 +38,13 @@ export async function describePack(bytes: Uint8Array | ArrayBuffer): Promise<Pac
     resources: manifest.resources.map((r) => ({
       key: r.key,
       title: r.title ?? r.key,
+      subject: r.subject ?? '',
       isOriginal: r.role === 'original',
       books: r.books ?? [],
     })),
     needs: manifest.requires ?? [],
     createdAt: manifest.createdAt,
+    otherVersion: Boolean(made && made !== RESOURCE_VERSIONS.sot?.usjProcessing),
   }
 }
 

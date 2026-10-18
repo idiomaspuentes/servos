@@ -8,6 +8,10 @@
 declare module '@bt-synergy/resource-catalog' {
   /** `{tag}#{published_at}`, sanitized; `nostamp` when the row has neither. */
   export function resourceContentStamp(metadata: unknown): string
+  /** `usj:{version}`: what a scripture's receipt says it was processed with. */
+  export function scriptureIngestSchema(usjProcessingVersion: string): string
+  /** The metadata of a `resource:{key}` receipt row, or null. */
+  export function readIngestReceiptMeta(entry: unknown): Record<string, unknown> | null
 }
 
 declare module '@bt-synergy/usj-processor' {

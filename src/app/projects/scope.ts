@@ -15,6 +15,9 @@ export const setProject = (id: string | null) => {
   current = id
 }
 
+/** The project the app is in, or null outside any. */
+export const currentProject = (): string | null => current
+
 /** Runs something in a project, and comes back to the one the app was in. */
 export function inProject<T>(id: string, run: () => T): T {
   const was = current

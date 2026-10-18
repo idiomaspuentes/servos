@@ -3,7 +3,7 @@
  * their frame, receiving a pack, and the interface translator.
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { chapterOf, chaptersOf } from '../prototype/data'
 import { usePrimaryKey } from './frame/keys'
 import { MiniAppScreen } from './frame/MiniAppScreen'
@@ -12,6 +12,7 @@ import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type Position } from './miniap
 import { miniApp } from './miniapps/registry'
 import { loadProjects, saveProjects, titleOf, type Phase, type Project } from './projects/model'
 import { inProject, setProject } from './projects/scope'
+import { bookState, languageOf, libraryVersion, loadBook, setProjects as setLibraryProjects, subscribeLibrary } from './projects/library'
 import { placeLabel, stepPercent } from './projects/progress'
 import { keepLastApp, keepPlace, lastAppOf, placeOf } from './projects/work'
 import { AddBookSheet } from './screens/AddBook'
@@ -68,6 +69,8 @@ export function App() {
   // Ctrl+Enter does what the filled button of what is on top does, on every screen (principle 13).
   usePrimaryKey()
   const [projects, setProjectsState] = useState<Project[]>(loadProjects)
+  // The books read from this device (projects/library.ts): a book read, or a pack opened, draws the screens again.
+  const read = useSyncExternalStore(subscribeLibrary, libraryVersion)
   const [screen, setScreen] = useState<Screen>({ kind: 'home' })
   // The project the screen belongs to is the one whose work is read and written (scope.ts); home belongs to none.
   setProject('projectId' in screen ? (screen.projectId ?? null) : null)
@@ -143,6 +146,7 @@ export function App() {
   const setProjects = (next: Project[]) => {
     setProjectsState(next)
     saveProjects(next)
+    setLibraryProjects(next)
   }
   const setResume = (r: Resume) => {
     setResumeState(r)
@@ -156,7 +160,16 @@ export function App() {
   const openBook = (projectId: string, book: string) => {
     setResume({ projectId, book })
     setScreen({ kind: 'book', projectId, book })
+    // The book opened is read before the others still waiting.
+    void loadBook(book, languageOf(projectId))
   }
+  // A mini app whose book is not read (still being read, or read anew after a pack was opened): its book, which says
+  // how it stands, instead of an empty screen.
+  useEffect(() => {
+    if (screen.kind === 'app' && !inProject(screen.projectId, () => chaptersOf(screen.book).length)) {
+      setScreen({ kind: 'book', projectId: screen.projectId, book: screen.book })
+    }
+  }, [screen, read])
   const setPhase = (projectId: string, book: string, phase: Phase) =>
     setProjects(projects.map((p) => (p.id !== projectId ? p : { ...p, books: p.books.map((b) => (b.code === book ? { ...b, phase } : b)) })))
 
@@ -289,7 +302,7 @@ export function App() {
             return b ? inProject(p.id, () => stepPercent(p, code, b.phase)) : null
           }}
           onResume={(r) => {
-            if (!resumeApp || !project(r.projectId)) return openBook(r.projectId, r.book)
+            if (!resumeApp || !project(r.projectId) || !inProject(r.projectId, () => chaptersOf(r.book).length)) return openBook(r.projectId, r.book)
             inProject(r.projectId, () => openAt(r.book, resumeApp))
             setScreen({ kind: 'app', projectId: r.projectId, book: r.book, id: resumeApp.id })
           }}
@@ -327,6 +340,7 @@ export function App() {
           project={project(bookScreen.projectId)!}
           book={project(bookScreen.projectId)!.books.find((b) => b.code === bookScreen.book)!}
           chapters={chaptersFor(bookScreen.book)}
+          state={bookState(bookScreen.book)}
           onBack={home}
           lastApp={lastAppOf(person, bookScreen.book)}
           placeFor={(app) => placeOf(person, bookScreen.book, app)}

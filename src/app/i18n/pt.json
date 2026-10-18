@@ -55,7 +55,6 @@
   "paquete.trae": "Este pacote traz",
   "paquete.libros": "Livros: {libros}",
   "paquete.todoElIdioma": "O idioma inteiro",
-  "paquete.necesita": "Para marcar no texto as palavras das notas, também é preciso: {que}",
   "paquete.yaEsta": "Já está neste telefone",
   "paquete.yaEsta.computadora": "Já está neste computador",
   "paquete.abrir": "Abrir o pacote",
@@ -804,5 +803,17 @@
   "marco.volverInicio": "Voltar ao início",
   "marco.falloDetalle": "Detalhe, para avisar do erro",
   "marco.copiar": "Copiar",
-  "marco.copiado": "Copiado"
+  "marco.copiado": "Copiado",
+  "libro.preparando": "Preparando os textos de {libro}…",
+  "libro.preparandoCapitulo": "Preparando os textos de {libro}: capítulo {n} de {total}.",
+  "libro.noSeLeyo": "Não foi possível ler os textos de {libro} deste telefone: {error}",
+  "libro.paqueteAnterior": "Os textos de {libro} deste telefone vêm de um pacote feito para uma versão anterior do Servos. Receba o pacote de {libro} de novo.",
+  "paquete.necesitaOriginales": "Para ler estes livros, também precisa do pacote dos textos originais.",
+  "paquete.otraVersion": "Este pacote foi feito para outra versão do Servos e não pode ser aberto. Peça um novo a quem o deu.",
+  "paquete.losOriginales": "os textos originais",
+  "paquete.lexicoGriego": "Léxico do grego",
+  "paquete.lexicoHebreo": "Léxico do hebraico",
+  "paquete.listoOriginales": "Pronto. Os textos originais em hebraico e grego já estão neste telefone.",
+  "paquete.listoFaltanOriginales": "Pronto. Para ler {libros}, receba também o pacote dos textos originais.",
+  "paquete.listoAyudas": "Pronto. As ajudas deste pacote já estão neste telefone."
 }
