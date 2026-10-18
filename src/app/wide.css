@@ -52,7 +52,6 @@
 /* The editor's helps in a column of their own at the right, as translationCore 4 has them: from 1280 px always, on a
    narrower computer window when the person puts them there (Panes `sideOpen`). */
 @media (min-width: 900px) {
-  .screen-fill:has(.panes-split.has-side) { max-width: 1760px; }
   .panes-split.has-side { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(20rem, 0.9fr); }
   .panes-split.has-side > .pane-fixed { border-inline-end: 1px solid var(--line); }
   /* Named as the tabs beside it are, on a line of the same height */
@@ -67,8 +66,7 @@
 @media (min-width: 1280px) {
   .pane-side-title { margin: 0; font-size: 0.95rem; font-weight: 800; color: var(--text); }
 
-  .screen-fill:has(.review-with-groups) { max-width: 74rem; }
-  .main-fill > .review-with-groups { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: 19rem minmax(0, 1fr); }
+  .main-fill > .review-with-groups { width: 100%; max-width: 74rem; margin-inline: auto; flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: 19rem minmax(0, 1fr); }
   /* As tall as what it holds, the way on right after what is read (not at the window's foot), and no taller than the
      window: then what is read scrolls */
   .review-with-groups > .review { min-height: 0; align-self: start; max-height: 100%; }
@@ -131,7 +129,6 @@
   /* The study: the texts in the row of panes, the note fixed beside them */
   .panes-split:not(.has-side):has(> .panes .side-by-side[data-n='2']) { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
   .panes-split:not(.has-side):has(> .panes .side-by-side[data-n='3']) { grid-template-columns: minmax(0, 2.7fr) minmax(0, 1fr); }
-  .screen-fill:has(.side-by-side:not([data-n='1'])) { max-width: 1760px; }
 }
 
 /* The editor on a computer (from 900 px): each verse a row, the texts on and then its box, as desktop translation tools
@@ -139,7 +136,6 @@
    texts and their box. The box is the phone's (its fields, a poem's lines set in, the choice between two versions),
    standing at its verse's height. */
 @media (min-width: 900px) {
-  .screen-fill:has(.side-rows.has-box) { max-width: 1760px; }
   .panes-split:not(.has-side):not(:has(> .panes)) { grid-template-columns: minmax(0, 1fr); }
   .panes-split.has-side:not(:has(> .panes)) { grid-template-columns: minmax(0, 2.15fr) minmax(19.5rem, 0.9fr); }
   .panes-split.has-side:not(:has(> .panes)):has(.side-by-side[data-n='2']) { grid-template-columns: minmax(0, 3.15fr) minmax(19.5rem, 0.9fr); }

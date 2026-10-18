@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use tauri::webview::NewWindowResponse;
-use tauri::{AppHandle, Emitter, Manager, State, Url, WebviewWindowBuilder};
+use tauri::{AppHandle, Emitter, LogicalSize, Manager, State, Url, WebviewWindowBuilder};
 use tauri_plugin_dialog::DialogExt;
 
 /// A file opened from the computer, as the app reads it: its name and its text.
@@ -98,7 +98,7 @@ pub fn run() {
         // The window is made here, not from the configuration alone, to say where its links to the internet go.
         .setup(|app| {
             let config = app.config().app.windows.first().cloned().ok_or("no window in tauri.conf.json")?;
-            WebviewWindowBuilder::from_config(app.handle(), &config)?
+            let window = WebviewWindowBuilder::from_config(app.handle(), &config)?
                 .on_new_window(|url, _| {
                     if opens_in_browser(&url) {
                         let _ = tauri_plugin_opener::open_url(url.as_str(), None::<&str>);
@@ -106,6 +106,13 @@ pub fn run() {
                     NewWindowResponse::Deny
                 })
                 .build()?;
+            // The size it had last time comes back with it, even one smaller than its least (saved by an earlier
+            // Servos, or on a screen with another scaling): below that the app lays itself out for a phone.
+            let least = LogicalSize::new(config.min_width.unwrap_or(0.0), config.min_height.unwrap_or(0.0));
+            let now = window.inner_size()?.to_logical::<f64>(window.scale_factor()?);
+            if now.width < least.width || now.height < least.height {
+                window.set_size(LogicalSize::new(now.width.max(least.width), now.height.max(least.height)))?;
+            }
             Ok(())
         })
         .run(tauri::generate_context!())

@@ -189,6 +189,9 @@ medida es tC4: una ventana ancha, ratón y teclado, columnas a los lados y el te
   su botón.
 - **Anchos de lectura, no de ventana.** Un renglón de texto no pasa de unos 70 caracteres; un formulario, de unos 40rem.
   Lo que sobra a los lados es margen o una columna que sirve, nunca un botón ni una caja estirados.
+- **La pantalla es toda la ventana** (Abel, 18 de octubre). La pantalla y su barra de arriba van siempre de borde a
+  borde, a cualquier ancho: nunca una franja en medio con la ventana vacía a los lados. Lo que se lee tiene su columna
+  dentro de la pantalla, y lo que se desplaza llega al borde de la ventana, con su barra ahí.
 - **Botones de su tamaño.** En la ventana ancha un botón mide lo que dice; el lleno va al final de lo que se lee, con la
   alternativa a su lado.
 - **Con ratón, lo que actúa lo muestra.** Todo lo que se puede hacer cambia de tono al pasar el ratón y pone la mano; lo
@@ -238,6 +241,7 @@ ventana de computadora a 1280 × 800, 1440 × 900 y 1920 × 1080, y angosta, de 
 - [ ] Al terminar, ¿a dónde lleva la app?
 - [ ] ¿Se ve bien en los tres idiomas?
 - [ ] En la ventana ancha, ¿hay algo estirado de borde a borde (un botón, una caja, un renglón de más de 70 caracteres)?
+- [ ] ¿La pantalla y su barra de arriba van de borde a borde de la ventana, y la barra de desplazamiento está en el borde?
 - [ ] ¿Hay un espacio vacío grande que una columna podría usar, o una hoja que debería ser columna o cuadro?
 - [ ] ¿Las hojas y los menús se abren en medio o bajo su botón, y se ven enteros?
 - [ ] Con el ratón, ¿todo lo que actúa cambia al pasar por encima? ¿Los signos solos dicen su nombre?
