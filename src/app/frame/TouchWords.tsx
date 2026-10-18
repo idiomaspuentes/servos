@@ -364,7 +364,7 @@ export function WordHelpCard({
               {help.text}
             </p>
           ) : (
-            <p className="help-original" dir={original?.dir} lang={original?.lang}>
+            <p className="help-reading" dir={original?.dir} lang={original?.lang}>
               {help.text}
             </p>
           )}
