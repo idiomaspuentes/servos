@@ -70,6 +70,31 @@
   .review-filter-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
 }
 
+/* Home, the book and the welcome use the width: from 1280 px home's moss field («go on where you left off») has a column
+   of its own at the left, in sight while the projects scroll beside it, and the books are a wider grid; the book's
+   first mini app and its others go side by side. The welcome stands in the middle of the window. */
+@media (max-width: 1279px) {
+  .home-projects { display: contents; }
+}
+@media (min-width: 900px) {
+  .screen.welcome { display: flex; flex-direction: column; justify-content: center; }
+  .welcome .main { padding-block: 2rem; }
+  .book-steps { width: fit-content; max-width: 100%; }
+  .step-note { text-align: start; }
+}
+@media (min-width: 1280px) {
+  .screen:has(> .main > .book-resume.is-field) { max-width: 76rem; }
+  .main:has(> .book-resume.is-field) { display: grid; grid-template-columns: 22rem minmax(0, 1fr); align-items: start; gap: 2rem; padding-block-start: 1.5rem; }
+  .main > .book-resume.is-field { position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--touch) + 2rem + 1px); }
+  .home-projects { grid-column: 2; display: flex; flex-direction: column; gap: 0.75rem; min-width: 0; }
+  .home-projects > h1 { margin-block-start: 0; }
+  .book-tiles { grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); }
+
+  .screen:has(.book-steps) { max-width: 64rem; }
+  .main > :is(.tool-cards, .suggestion, .book-choose) { max-width: 34rem; }
+  .tool-columns { display: grid; grid-template-columns: minmax(0, 34rem) minmax(0, 1fr); align-items: start; gap: 1rem 1.5rem; }
+}
+
 /* With a mouse, what acts shows it: everything that can be done takes a tone under the pointer (styles.css gives it to
    the cards and rows; these are the rest: the quiet buttons of the header and the sheets, the arrows, the position, the
    switches, the words to place or to mark, the versions to choose). */

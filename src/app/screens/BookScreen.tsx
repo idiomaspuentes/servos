@@ -14,6 +14,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PrototypeData } from '../../prototype/data'
 import { RowButton, Suggestion } from '../frame/Actions'
+import { useWider } from '../frame/Panes'
 import { MenuRow, Sheet } from '../frame/Sheet'
 import { useT } from '../i18n/i18n'
 import type { MiniApp } from '../miniapps/contract'
@@ -125,6 +126,8 @@ export function BookScreen({
   const shownApps = appsOf(shown)
   // The one card of the step shown: the mini app last worked in, or else the step's first that can be opened.
   const lead = shownApps.find((a) => a === current) ?? shownApps.find((a) => !a.comingSoon)
+  // From 1280 px the step's first mini app and its others side by side (principle 13); narrower, one under the other.
+  const wider = useWider()
   // Moving the book on is offered at the foot once its step is nearly done (or cannot be measured); before, in «More».
   const atPct = stepPct(book.phase)
   const moveOnInSight = atPct === null || atPct >= 90
@@ -290,28 +293,37 @@ export function BookScreen({
         {/* Looking at another step than the book's: where the book is, said once, quietly (its step may be out of sight). */}
         {shownAt !== at && <p className="quiet book-where">{t('libro.estaEn', { paso: t(`pasos.${book.phase}`) })}</p>}
         {shownApps.length === 0 && <p className="quiet">{t('libro.ningunaApp')}</p>}
-        <ul className="tool-cards">
-          {lead && leadCard(lead)}
-          {/* The step's other mini apps: a row each, with how far it has gone; opened, the row becomes the card. */}
-          {shownApps
-            .filter((app) => app !== lead)
-            .map((app) =>
-              app.comingSoon ? (
-                <li key={app.id} className="tool-soon">
-                  <span>{t(`${app.id}.nombre`)}</span>
-                  <span className="badge">{t('catalogo.pronto')}</span>
-                </li>
-              ) : (
-                <li key={app.id}>
-                  <RowButton
-                    label={t(`${app.id}.nombre`)}
-                    meta={app.done && totalVerses > 0 ? `${pct(doneOf(app), totalVerses)} %` : undefined}
-                    onClick={() => chapters.length && onOpen(app)}
-                  />
-                </li>
-              )
-            )}
-        </ul>
+        {(() => {
+          const others = shownApps.filter((app) => app !== lead)
+          // The step's other mini apps: a row each, with how far it has gone; opened, the row becomes the card.
+          const rows = others.map((app) =>
+            app.comingSoon ? (
+              <li key={app.id} className="tool-soon">
+                <span>{t(`${app.id}.nombre`)}</span>
+                <span className="badge">{t('catalogo.pronto')}</span>
+              </li>
+            ) : (
+              <li key={app.id}>
+                <RowButton
+                  label={t(`${app.id}.nombre`)}
+                  meta={app.done && totalVerses > 0 ? `${pct(doneOf(app), totalVerses)} %` : undefined}
+                  onClick={() => chapters.length && onOpen(app)}
+                />
+              </li>
+            )
+          )
+          return wider && lead && others.length ? (
+            <div className="tool-columns">
+              <ul className="tool-cards">{leadCard(lead)}</ul>
+              <ul className="tool-cards">{rows}</ul>
+            </div>
+          ) : (
+            <ul className="tool-cards">
+              {lead && leadCard(lead)}
+              {rows}
+            </ul>
+          )
+        })()}
 
         {/* Moving the book on, said plainly at the foot of its step once it is nearly done; or back, or ahead, from another. */}
         {shownAt === at && nextPhase && moveOnInSight && (
