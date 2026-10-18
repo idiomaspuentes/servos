@@ -6,6 +6,8 @@
  */
 
 import { readIngestReceiptMeta, scriptureIngestSchema } from '@bt-synergy/resource-catalog'
+import { unwrapVersioned } from '@bt-synergy/resource-pipeline/cache/versionedEnvelope'
+import { SCRIPTURE_PREPARE_VERSION } from '@bt-synergy/resource-pipeline/scripture/scripturePreparer'
 import { USJ_PROCESSING_VERSION } from '@bt-synergy/usj-processor'
 import { LEXICON_SUBJECTS, MACULA } from './companions'
 import { BIBLE_ORDER, inBibleOrder, kindOf, type ResourceKind } from './reading'
@@ -56,11 +58,14 @@ export async function deviceIndex(stores: ResourceStores): Promise<DeviceIndex> 
     const kind = kindOf(meta.subject)
     const type = PREPARED[kind]
     const books = new Set<string>()
+    // A text's table of chapters, to know by one small row which version prepared its chapters.
+    let nav: string | null = null
     if (type) {
       const prefix = `prepared:${type}:${key}:`
       for (const k of await keysUnder(stores, prefix)) {
-        const book = k.slice(prefix.length).split(':')[0]
+        const [book, unit] = k.slice(prefix.length).split(':')
         if (book) books.add(book.toLowerCase())
+        if (unit === 'nav') nav ??= k
       }
     }
     const content = (meta as { contentMetadata?: { books?: string[]; ingredients?: Array<{ identifier?: string }> } }).contentMetadata
@@ -77,7 +82,9 @@ export async function deviceIndex(stores: ResourceStores): Promise<DeviceIndex> 
       books: inBibleOrder(books),
       inRelease: inBibleOrder(inRelease.map((b) => b.toLowerCase()).filter((b) => BIBLE_ORDER.includes(b))),
       articles: kind === 'scripture' || kind === 'original' || PREPARED[kind] ? false : (await keysUnder(stores, `${key}/`, 1)).length > 0,
-      stale: typeof schema === 'string' && schema !== scriptureIngestSchema(USJ_PROCESSING_VERSION),
+      stale:
+        (typeof schema === 'string' && schema !== scriptureIngestSchema(USJ_PROCESSING_VERSION)) ||
+        (type === 'scripture' && nav !== null && unwrapVersioned(await stores.cache.get(nav), SCRIPTURE_PREPARE_VERSION) === null),
     })
   }
   return { resources: resources.sort((a, b) => a.key.localeCompare(b.key)) }

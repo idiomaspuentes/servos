@@ -10,6 +10,7 @@ import type { PackVersions } from '@bt-synergy/language-pack'
 import { HELPS_ALIGN_VERSION } from '@bt-synergy/resource-pipeline/helps/helpsAlignCache'
 import { HELPS_TEXT_VERSION } from '@bt-synergy/resource-pipeline/helps/helpsCacheKeys'
 import { HELPS_QUOTE_VERSION } from '@bt-synergy/resource-pipeline/helps/helpsQuoteCache'
+import { SCRIPTURE_PREPARE_VERSION } from '@bt-synergy/resource-pipeline/scripture/scripturePreparer'
 
 export interface ResourceStores {
   cache: IndexedDBCacheAdapter
@@ -53,9 +54,14 @@ export async function keysUnder(stores: ResourceStores, prefix: string, limit?: 
   }
 }
 
-/** The processing versions of the code Servos reads with; a pack made with other source versions is refused. */
+/**
+ * The processing versions of the code Servos reads with; a pack made with other source versions is refused. Servos
+ * reads the prepared chapters without making them (tc-study can make them again from the source), so their version
+ * counts too.
+ */
 export const RESOURCE_VERSIONS: PackVersions = {
   sot: { usjProcessing: USJ_PROCESSING_VERSION },
+  prepared: { scripturePrepare: SCRIPTURE_PREPARE_VERSION },
   quote: { helpsQuote: HELPS_QUOTE_VERSION },
   align: { helpsAlign: HELPS_ALIGN_VERSION },
   text: { helpsText: HELPS_TEXT_VERSION },

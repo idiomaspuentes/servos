@@ -116,6 +116,9 @@ export function bookIsHere(book: string, language: string): boolean {
   return state === 'example' || state === 'loading' || state === 'ready'
 }
 
+/** Whether a resource's copy on this device was made for an earlier version of the app (a pack has to replace it). */
+export const staleOnDevice = (key: string): boolean => Boolean(index?.resources.some((r) => r.key === key && r.stale))
+
 /** Whether a resource (a text, the originals, articles) is on this device. */
 export const onDevice = (key: string): boolean => Boolean(index?.resources.some((r) => r.key === key && (r.books.length > 0 || r.articles)))
 

@@ -7,7 +7,7 @@ import { useState } from 'react'
 import { LEXICON_SUBJECTS } from '../../resources/companions'
 import { describePack, openPack, type PackSummary } from '../../resources/packs'
 import { openResourceStores } from '../../resources/store'
-import { availabilityOf, onDevice, refreshLibrary } from '../projects/library'
+import { availabilityOf, onDevice, refreshLibrary, staleOnDevice } from '../projects/library'
 import { bookName } from '../projects/model'
 import { useT } from '../i18n/i18n'
 
@@ -104,7 +104,8 @@ export function ReceivePack({ onBack, onStudy }: { onBack(): void; onStudy(): vo
                   const { bytes, summary } = step
                   setStep({ kind: 'opening', summary })
                   try {
-                    await openPack(openResourceStores(), bytes)
+                    // A text made for an earlier version is replaced, not kept beside the pack's.
+                    await openPack(openResourceStores(), bytes, { replace: summary.resources.some((r) => staleOnDevice(r.key)) })
                     await refreshLibrary()
                     const brought = booksOf(summary)
                     setStep({
