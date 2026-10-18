@@ -522,7 +522,9 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .unit-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 3px; border-radius: 999px; background: var(--track); margin-block-end: 0.5rem; }
 .unit-switch-option { min-height: var(--touch); border: 0; border-radius: 999px; background: none; color: var(--text-soft); font-weight: 600; }
 .unit-switch-option[aria-checked='true'] { background: var(--pill); color: var(--text); font-weight: 700; box-shadow: var(--shadow-raised); }
-.screen-fill.is-writing .edit-where { display: none; }
+/* With the keyboard up, where the text to translate is goes too, once the person has been there: the first time the
+   cursor waits in a box (it does as soon as the editor opens) they are still to learn it (editor.tsx, `textSeen`) */
+.screen-fill.is-writing .edit-where:not(.is-first) { display: none; }
 
 /* A section: each verse's fields after its number, as the verse stands in the text */
 .edit-verse.in-section { display: grid; grid-template-columns: 1.75rem minmax(0, 1fr); align-items: start; gap: 0.35rem; }

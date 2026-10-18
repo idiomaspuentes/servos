@@ -59,6 +59,26 @@ function unitsOf(book: string, chapter: number, verses: number[]): number[][] {
 }
 const unitLabel = (unit: number[]) => (unit.length > 1 ? `${unit[0]}–${unit[unit.length - 1]}` : String(unit[0]))
 
+/**
+ * Whether the person has gone once to a text to translate from (on a phone a pane of its own, a swipe away): until
+ * then the line that says where it is stays in sight with the keyboard up too. Kept on this device.
+ */
+const textSeenKey = 'servos.prototipo.editor.vioTexto'
+function readTextSeen(): boolean {
+  try {
+    return localStorage.getItem(textSeenKey) === 'si'
+  } catch {
+    return false
+  }
+}
+function keepTextSeen() {
+  try {
+    localStorage.setItem(textSeenKey, 'si')
+  } catch {
+    /* a private window keeps nothing: the line shows again next time */
+  }
+}
+
 /** Whether the helps were put beside the rows on a window narrower than 1280 px: kept on this device, as the texts are. */
 const helpsKey = 'servos.prototipo.lado.editor.ayudas'
 function readHelpsOn(): boolean {
@@ -168,6 +188,7 @@ function Center({ context }: MiniAppCenterProps) {
   })
   const hint = t('editor.toquePalabra')
   const wide = useWide()
+  const [textSeen, setTextSeen] = useState(readTextSeen)
 
   const write = (verse: number, value: string) => {
     setDrafts((now) => ({ ...now, [verse]: value }))
@@ -258,7 +279,7 @@ function Center({ context }: MiniAppCenterProps) {
       {/* While the section has nothing written, what to write and where the text to translate is (on a phone it is
           another pane, a swipe away). It goes as soon as something is written. */}
       {!wide && units.every((u) => !(drafts[u[0]] ?? '').trim()) && (
-        <p className="edit-where">{t('editor.comoEmpezar', { idioma: context.project.languageName, texto: bridge.abbreviation })}</p>
+        <p className={textSeen ? 'edit-where' : 'edit-where is-first'}>{t('editor.comoEmpezar', { idioma: context.project.languageName, texto: bridge.abbreviation })}</p>
       )}
       <div className="edit-fields">
         {units.map((unit) => (
@@ -376,6 +397,10 @@ function Center({ context }: MiniAppCenterProps) {
         sideOpen={helpsOn}
         onPane={(id) => {
           if (id === 'ayudas') helpsOpened()
+          if (!textSeen && data.texts.some((x) => x.abbreviation === id)) {
+            setTextSeen(true)
+            keepTextSeen()
+          }
         }}
       />
       {adding && (
