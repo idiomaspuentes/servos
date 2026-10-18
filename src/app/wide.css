@@ -147,6 +147,23 @@
   .side-cell .verse-number { font-family: var(--font); font-weight: 700; color: var(--accent); }
   .side-cell.side-box { display: flex; flex-direction: column; gap: 0.35rem; font-family: var(--font); font-size: 1rem; line-height: 1.5; overflow-wrap: normal; }
   .side-box .edit-joined { margin: 0; }
+  /* The box fills its row, as tall as the verses beside it: a cell of the table, not a field floating in it. A poem's
+     lines share that height, each about as tall as the line of the text it translates. */
+  .side-rows.has-box .side-cell.side-box { align-self: stretch; }
+  .side-box > .edit-verse-body { flex: 1 1 auto; }
+  .side-box .line-fields { flex: 1 1 auto; display: flex; flex-direction: column; }
+  .side-box .line-fields > .usfm-line { flex: 1 1 auto; display: flex; }
+  .side-box .line-field { flex: 1 1 auto; }
+  .side-box .line-add { align-self: flex-start; }
+  /* As a cell of the table, not the phone's field: the letter and the line of the texts beside it, its first line on
+     the same line as theirs (as much margin taken as padding and edge given), a fine edge and no ground until it is
+     written in, so the band shows through; written in, its ground and the accent edge, as everywhere. */
+  .side-box .line-field {
+    padding: 0.3rem 0.6rem; border: 1px solid color-mix(in srgb, var(--text) 18%, transparent); border-radius: 6px;
+    background: transparent; box-shadow: none; color: var(--text); font-size: 1.05rem; line-height: 1.6;
+  }
+  .side-box .line-fields { margin-block-start: calc(-0.3rem - 1px); }
+  .side-box .line-field:is(:focus, :focus-visible) { background: var(--surface); border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
   /* A box reached with Tab or ↓ comes into sight below the names that stay over the columns */
   .side-box :is(.line-field, button) { scroll-margin-block: calc(var(--touch) * 2 + 1.5rem) 1rem; }
   /* What is written in a row not open, quiet; a click goes there to write it */
@@ -212,6 +229,7 @@
   .side-write:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 55%, transparent); background-color: color-mix(in srgb, var(--accent) 6%, transparent); }
   .side-write.is-empty:hover .side-write-dash { display: none; }
   .side-write.is-empty:hover .side-write-go { display: inline; }
+  .side-box .line-field:not(:focus):hover { border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
 }
 
 /* With the keyboard, the focus is always in sight: on the moss field of home its ring is the field's light, not moss on
