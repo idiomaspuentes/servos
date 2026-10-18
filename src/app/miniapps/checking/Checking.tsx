@@ -12,6 +12,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ComponentType, type ReactNode } from 'react'
 import { chapterOf, type Places, type PrototypeData, type PrototypeText } from '../../../prototype/data'
 import { useT } from '../../i18n/i18n'
+import { KEYS, useKey } from '../../frame/keys'
 import { Sheet } from '../../frame/Sheet'
 import { WordLines, wordsOf } from '../../frame/TouchWords'
 import { WordPicker } from '../../frame/WordPicker'
@@ -158,6 +159,9 @@ export function checkingCenter<I extends Checkable>(kind: CheckKind<I>) {
       setCurrentId(c.id)
       if (c.chapter !== position.chapter || c.verse !== position.verse) goTo({ book, chapter: c.chapter, verse: c.verse })
     }
+    // From one note (or word) to the next by the keyboard: here they are what the position line is elsewhere.
+    useKey('previous', previous ? () => go(previous) : null)
+    useKey('next', following ? () => go(following) : null)
     // Opened on a verse with nothing to check (where the person left the translation), it starts at the next one.
     useEffect(() => {
       if (!item) go(inVerses.find(atOrAfter) ?? list[0])
@@ -182,11 +186,11 @@ export function checkingCenter<I extends Checkable>(kind: CheckKind<I>) {
           {filterLabel} ▾
         </button>
         <div className="review-steps">
-          <button type="button" className="pager-arrow" disabled={!previous} onClick={() => go(previous)} aria-label={t(k('anterior'))}>
+          <button type="button" className="pager-arrow" disabled={!previous} onClick={() => go(previous)} aria-label={t(k('anterior'))} title={t('marco.conAtajo', { accion: t(k('anterior')), atajo: KEYS.previous })}>
             ‹
           </button>
           <span className="quiet">{item ? t(k('notaN'), { n: at + 1, total: list.length }) : list.length}</span>
-          <button type="button" className="pager-arrow" disabled={!following} onClick={() => go(following)} aria-label={t(k('siguiente'))}>
+          <button type="button" className="pager-arrow" disabled={!following} onClick={() => go(following)} aria-label={t(k('siguiente'))} title={t('marco.conAtajo', { accion: t(k('siguiente')), atajo: KEYS.next })}>
             ›
           </button>
         </div>

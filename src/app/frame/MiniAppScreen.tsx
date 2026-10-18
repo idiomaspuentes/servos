@@ -10,6 +10,7 @@ import { useT } from '../i18n/i18n'
 import { useProjectFont } from './fonts'
 import type { MiniApp, MiniAppContext, Position, Unit } from '../miniapps/contract'
 import { HelpsPanel } from './HelpsPanel'
+import { KEYS, useKey } from './keys'
 import { keepFocus } from './Panes'
 import { PlacePicker, passageOf, stopsOf } from './PlacePicker'
 import { MenuRow, Sheet } from './Sheet'
@@ -156,6 +157,12 @@ export function MiniAppScreen({
   const following = () => (at < stops.length - 1 ? goStop(at + 1) : after !== null && cross(after, false))
   const atStart = at <= 0 && before === null
   const atEnd = at >= stops.length - 1 && after === null
+  // The position line's arrows by the keyboard, also from a box being written in (principle 13).
+  const lined = app.positionLine !== false
+  useKey('previous', lined && !atStart ? previous : null)
+  useKey('next', lined && !atEnd ? following : null)
+  const previousLabel = t(unit === 'section' ? 'marco.seccionAnterior' : 'marco.anterior')
+  const nextLabel = t(unit === 'section' ? 'marco.seccionSiguiente' : 'marco.siguiente')
 
   const context: MiniAppContext = {
     bookTitle: title,
@@ -240,7 +247,7 @@ export function MiniAppScreen({
 
       {app.positionLine !== false && (
         <nav className="position" aria-label={passage}>
-          <button type="button" className="pager-arrow position-arrow" aria-label={t(unit === 'section' ? 'marco.seccionAnterior' : 'marco.anterior')} disabled={atStart} onPointerDown={keep} onClick={previous}>
+          <button type="button" className="pager-arrow position-arrow" aria-label={previousLabel} title={t('marco.conAtajo', { accion: previousLabel, atajo: KEYS.previous })} disabled={atStart} onPointerDown={keep} onClick={previous}>
             ‹
           </button>
           <button type="button" className="position-label" onClick={() => setVerseList(true)}>
@@ -254,7 +261,7 @@ export function MiniAppScreen({
               {t('marco.listo')}
             </button>
           ) : (
-            <button type="button" className="pager-arrow position-arrow" aria-label={t(unit === 'section' ? 'marco.seccionSiguiente' : 'marco.siguiente')} disabled={atEnd} onPointerDown={keep} onClick={following}>
+            <button type="button" className="pager-arrow position-arrow" aria-label={nextLabel} title={t('marco.conAtajo', { accion: nextLabel, atajo: KEYS.next })} disabled={atEnd} onPointerDown={keep} onClick={following}>
               ›
             </button>
           )}

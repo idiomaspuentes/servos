@@ -10,6 +10,7 @@
   "marco.siguiente": "Next verse",
   "marco.seccionAnterior": "Previous section",
   "marco.seccionSiguiente": "Next section",
+  "marco.conAtajo": "{accion} ({atajo})",
   "marco.listaVersiculos": "Verses of {libro} {capitulo}",
   "marco.listaVersiculosAyuda": "Tap a verse to go to it.",
   "marco.listaSecciones": "Sections of {libro} {capitulo}",

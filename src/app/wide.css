@@ -1,6 +1,7 @@
-/* On a computer, a computer app (philosophy, principle 13). What a wide window changes, kept apart from the phone's
-   sheet (styles.css) so it reads as one thing: every rule here is inside a width or a pointer query, and the phone at
-   375 px never meets it. From 900 px, two columns; from 1280 px, the helps' column too. */
+/* On a computer, a computer app (philosophy, principle 13). What a wide window, a mouse and a keyboard change, kept apart
+   from the phone's sheet (styles.css) so it reads as one thing: the layout rules are inside a width query and the hover
+   rules inside a pointer query, so the phone at 375 px never meets them; the focus ring shows only to a keyboard.
+   From 900 px, two columns; from 1280 px, the helps' column too. */
 
 /* A sheet is a box in the middle of the window, as tall as what it holds and never cut by the window's foot; a menu
    («Más», the person's) opens under its button at the top right, without a shade, as a desktop menu does: a click
@@ -42,6 +43,33 @@
   /* The one big button to record: round and its own size, not a bar across the window */
   .voice-button { align-self: flex-start; width: fit-content; min-width: 14rem; min-height: 3.5rem; padding-inline: 2rem; font-size: 1.1rem; }
 }
+
+/* With a mouse, what acts shows it: everything that can be done takes a tone under the pointer (styles.css gives it to
+   the cards and rows; these are the rest: the quiet buttons of the header and the sheets, the arrows, the position, the
+   switches, the words to place or to mark, the versions to choose). */
+@media (hover: hover) and (pointer: fine) {
+  .button-quiet:not(:disabled):hover, .position-label:hover { background-color: color-mix(in srgb, var(--text) 7%, transparent); }
+  .pager-arrow:not(:disabled):hover { background-color: color-mix(in srgb, var(--accent) 22%, var(--accent-soft)); }
+  :is(.helps-tab:not([aria-selected='true']), .book-step:not([aria-selected='true']), .choice-row > .choice:not(.is-on),
+    .unit-switch-option:not([aria-checked='true']), .review-quote-switch button:not([aria-checked='true'])):hover {
+    color: var(--text); background-color: color-mix(in srgb, var(--pill) 55%, transparent);
+  }
+  .panes-tab:not([aria-selected='true']):hover { border-block-end-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+  :is(.al-word:not([data-selected]), .picker-word:not(.is-picked), .version:not(.is-on), .review-place):hover {
+    border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); background-color: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  }
+  .al-box:not([data-selected]):hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); }
+  :is(.review-group:not(.is-current), .review-stepper button:not(:disabled, [aria-current]), .glossary-use, .line-add, .translate-where):hover {
+    background-color: color-mix(in srgb, var(--accent) 6%, transparent);
+  }
+  .glossary-entry:hover { background-color: color-mix(in srgb, var(--accent) 4%, var(--surface)); }
+  .mix-piece:not(.is-chosen, .is-cutting):hover { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent); }
+  .decision:not(:disabled):hover { border-color: currentColor; }
+}
+
+/* With the keyboard, the focus is always in sight: on the moss field of home its ring is the field's light, not moss on
+   moss. */
+.book-resume.is-field :focus-visible { outline-color: var(--on-field); }
 
 @media (prefers-reduced-motion: reduce) {
   .sheet, .sheet.is-menu { animation: none; }
