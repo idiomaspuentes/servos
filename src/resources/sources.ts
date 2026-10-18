@@ -5,6 +5,7 @@
  * (philosophy, principle 8). Read from keys alone, never from the rows, which weigh megabytes.
  */
 
+import { LEXICON_SUBJECTS, MACULA } from './companions'
 import { BIBLE_ORDER, inBibleOrder, kindOf, type ResourceKind } from './reading'
 import { GREEK, HEBREW, type BookSources, type Original } from './screenData'
 import { keysUnder, type ResourceStores } from './store'
@@ -15,6 +16,8 @@ export interface ResourceHere {
   language: string
   resourceId: string
   kind: ResourceKind
+  /** The catalog's subject: what tells the lexicons and MACULA apart, which are of no tc-study kind. */
+  subject: string
   title: string
   /** Books prepared on this device (lowercase, Bible order). Empty for resources kept by article (words, academy). */
   books: string[]
@@ -61,10 +64,11 @@ export async function deviceIndex(stores: ResourceStores): Promise<DeviceIndex> 
       language: String(meta.language ?? key.split('/')[1] ?? ''),
       resourceId: String(meta.resourceId ?? key.split('/').pop()),
       kind,
+      subject: String(meta.subject ?? ''),
       title: String(meta.title ?? key),
       books: inBibleOrder(books),
       inRelease: inBibleOrder(inRelease.map((b) => b.toLowerCase()).filter((b) => BIBLE_ORDER.includes(b))),
-      articles: kind === 'words' || kind === 'academy' ? (await keysUnder(stores, `${key}/`)).length > 0 : false,
+      articles: kind === 'scripture' || kind === 'original' || PREPARED[kind] ? false : (await keysUnder(stores, `${key}/`)).length > 0,
     })
   }
   return { resources: resources.sort((a, b) => a.key.localeCompare(b.key)) }
@@ -127,6 +131,8 @@ export interface Availability {
   needsOriginal: boolean
   /** The book's sources, when it can be opened. */
   sources: BookSources | null
+  /** What Servos reads beside them: the lexicon of its original in the language, and MACULA's sentences and referents. */
+  extras: { lexicon: boolean; macula: boolean }
 }
 
 /** Whether a book of a language can be opened here, what is missing, and why. */
@@ -154,12 +160,19 @@ export function availability(index: DeviceIndex, language: string, book: string)
   const notOnDevice = parts.filter((p) => !has[p] && Boolean(resourceFor(p)?.inRelease.includes(code)))
   const notInLanguage = parts.filter((p) => !has[p] && !notOnDevice.includes(p))
   const here = has.literal && originalHere
+  // The lexicon of the book's original in its language (its literal text's owner's first), and MACULA for the book.
+  const testament = original === GREEK ? 'greek' : 'hebrew'
+  const lexicon = of
+    .filter((r) => r.subject === LEXICON_SUBJECTS[testament] && r.articles)
+    .sort((a, b) => Number(b.owner === chosen?.owner.split('/')[0]) - Number(a.owner === chosen?.owner.split('/')[0]))[0]
+  const macula = index.resources.find((r) => r.key === MACULA[testament] && r.articles && r.inRelease.includes(code))
   return {
     here,
     has,
     notOnDevice,
     notInLanguage,
     needsOriginal: !originalHere,
-    sources: here && chosen ? { ...chosen, original } : null,
+    sources: here && chosen ? { ...chosen, original, ...(lexicon ? { lexicon: lexicon.key } : {}), ...(macula ? { macula: macula.key } : {}) } : null,
+    extras: { lexicon: Boolean(lexicon), macula: Boolean(macula) },
   }
 }

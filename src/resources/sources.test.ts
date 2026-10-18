@@ -8,9 +8,9 @@ import type { ResourceKind } from './reading'
 import { GREEK, HEBREW } from './screenData'
 import { availability, languagesOnDevice, originalOf, sourcesFor, type DeviceIndex, type ResourceHere } from './sources'
 
-const resource = (key: string, kind: ResourceKind, books: string[], inRelease = books, articles = false): ResourceHere => {
+const resource = (key: string, kind: ResourceKind, books: string[], inRelease = books, articles = false, subject = ''): ResourceHere => {
   const [owner, language, resourceId] = key.split('/')
-  return { key, owner, language, resourceId, kind, title: key, books, inRelease, articles }
+  return { key, owner, language, resourceId, kind, subject, title: key, books, inRelease, articles }
 }
 
 /** es-419 as its packs leave it: Ruth with everything, Esther with its literal text only, Genesis published elsewhere. */
@@ -26,6 +26,8 @@ const index: DeviceIndex = {
     resource('es-419_obt/es-419/tw', 'words', [], [], true),
     resource('es-419_gl/es-419/tw', 'words', [], [], true),
     resource('es-419_gl/es-419/ta', 'academy', [], [], true),
+    resource('es-419_gl/es-419/uhl', 'other', [], [], true, 'Hebrew Lexicon'),
+    resource('Biblica/hbo/macula', 'other', [], ['rut', 'est', 'jon'], true, 'Original Language Syntax'),
   ],
 }
 
@@ -62,6 +64,14 @@ describe('qué tiene cada idioma en este teléfono', () => {
     expect(rut.notOnDevice).toEqual([])
     expect(rut.notInLanguage).toEqual([])
     expect(rut.sources?.original).toBe(HEBREW)
+  })
+
+  it('el léxico va por el original del libro, en su idioma; MACULA, por libro', () => {
+    expect(availability(index, 'es-419', 'rut').sources).toMatchObject({ lexicon: 'es-419_gl/es-419/uhl', macula: 'Biblica/hbo/macula' })
+    // Titus: the Greek lexicon and MACULA's Greek are not on this device; it opens all the same.
+    const tit = availability(index, 'es-419', 'tit')
+    expect(tit.here).toBe(true)
+    expect(tit.extras).toEqual({ lexicon: false, macula: false })
   })
 
   it('Ester se abre con su TPL; sus notas existen pero no están aquí, y lo demás el idioma no lo publicó', () => {

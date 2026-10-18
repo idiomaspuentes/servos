@@ -51,6 +51,9 @@ export interface BookSources {
   words?: string
   academy?: string
   original: Original
+  /** Beside tc-study's: the lexicon of the book's original, in the language (its Strong numbers' entries), and what MACULA says of it. */
+  lexicon?: string
+  macula?: string
 }
 
 /** Where each section begins in a chapter, when a table says so (else the literal text's paragraphs are the sections). */
