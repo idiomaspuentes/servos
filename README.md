@@ -17,4 +17,22 @@ Pensada para zonas sin internet:
 
 Estado: en diseño. Ver [`docs/DISENO.md`](docs/DISENO.md).
 
+## Programar
+
+`../bt-synergy` y `../usfm-ast` tienen que estar al lado de este repositorio (ver `vite.config.ts`).
+
+- `npm run dev`: la app web en `http://localhost:5190`.
+- `npm test` y `npm run typecheck`.
+- `npm run build`: la app web, con su *service worker*, en `dist/`.
+
+### La app para Windows (Tauri)
+
+Hace falta [Rust](https://rustup.rs) y, en Windows, las herramientas de compilación de C++ de Visual Studio.
+
+- `npm run escritorio`: la app en su ventana, sobre `npm run dev`.
+- `npm run escritorio:compilar`: el instalador, en `src-tauri/target/release/bundle/nsis/`. La app web va dentro del
+  programa (`vite build --mode escritorio`, en `dist-escritorio/`, sin *service worker*); el instalador lleva
+  WebView2 para instalarse sin internet. No está firmado: Windows avisa «Windows protegió su PC», y se instala con
+  «Más información › Ejecutar de todas formas».
+
 Dominio previsto: `servos.bible` (todavía no apartado).

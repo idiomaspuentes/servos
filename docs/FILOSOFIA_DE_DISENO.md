@@ -213,6 +213,8 @@ medida es tC4: una ventana ancha, ratón y teclado, columnas a los lados y el te
   escribirlo. Tab va de caja en caja (las palabras, con el ratón); ↓ y ↑ pasan de una caja a la de abajo o arriba.
   Desde 1280 px las ayudas tienen su columna; más angosta la ventana, «Ayudas» es un interruptor más: encendido, toman
   una columna a la derecha y en las filas cabe un texto (un clic en otro lo pone en su lugar); apagado, caben dos.
+- **Los archivos, como en la computadora** (18 de octubre). Un trabajo compartido se abre con doble clic o soltándolo
+  en la ventana, y lo que la app guarda se guarda con «Guardar como», donde la persona elige; no hay descargas.
 - **La letra no crece con la ventana.** El mismo tamaño que en el teléfono; lo que crece son las columnas.
 - **El teléfono no cambia.** Nada de esto toca los 375 px ni el editor con el teclado abierto (principio 12).
 
