@@ -50,7 +50,6 @@
   "paquete.trae": "This pack brings",
   "paquete.libros": "Books: {libros}",
   "paquete.todoElIdioma": "The whole language",
-  "paquete.necesita": "To mark the words of the notes in the text it also needs: {que}",
   "paquete.yaEsta": "Already on this phone",
   "paquete.abrir": "Open the pack",
   "paquete.abriendo": "Opening the pack…",
@@ -768,5 +767,13 @@
   "libro.preparando": "Preparing the texts of {libro}…",
   "libro.preparandoCapitulo": "Preparing the texts of {libro}: chapter {n} of {total}.",
   "libro.noSeLeyo": "The texts of {libro} could not be read from this phone: {error}",
-  "libro.paqueteAnterior": "The texts for {libro} on this phone come from a pack made for an earlier version of Servos. Receive the {libro} pack again."
+  "libro.paqueteAnterior": "The texts for {libro} on this phone come from a pack made for an earlier version of Servos. Receive the {libro} pack again.",
+  "paquete.necesitaOriginales": "To read these books you also need the pack of the original texts.",
+  "paquete.otraVersion": "This pack was made for another version of Servos and cannot be opened. Ask whoever gave it to you for a new one.",
+  "paquete.losOriginales": "the original texts",
+  "paquete.lexicoGriego": "Greek lexicon",
+  "paquete.lexicoHebreo": "Hebrew lexicon",
+  "paquete.listoOriginales": "Done. The original texts in Hebrew and Greek are now on this phone.",
+  "paquete.listoFaltanOriginales": "Done. To read {libros}, also receive the pack of the original texts.",
+  "paquete.listoAyudas": "Done. The helps in this pack are now on this phone."
 }

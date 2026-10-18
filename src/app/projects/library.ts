@@ -88,6 +88,9 @@ async function readAll() {
   for (const p of projects) for (const b of p.books) await loadBook(b.code, p.helpsLanguage).catch(() => {})
 }
 
+/** Whether a resource (a text, the originals, articles) is on this device. */
+export const onDevice = (key: string): boolean => Boolean(index?.resources.some((r) => r.key === key && (r.books.length > 0 || r.articles)))
+
 /** What this device has of a book in a language, and why not, when it can tell. */
 export const availabilityOf = (book: string, language: string): Availability | null => (index ? availability(index, language, book) : null)
 
