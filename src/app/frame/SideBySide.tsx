@@ -76,11 +76,12 @@ export function SideBySide({
   under,
   after,
   writing,
+  aside,
 }: {
   /** The mini app, whose choice is kept apart from the others'. */
   app: string
   texts: SideText[]
-  /** The most texts that fit side by side in this window. */
+  /** The most texts that fit side by side in this window; with one, a click puts another in its place. */
   max: number
   /** The text the person reads, always among those shown. */
   initial?: string
@@ -103,13 +104,19 @@ export function SideBySide({
   after?: ReactNode
   /** The boxes where the team writes, at the end of each row (the editor). */
   writing?: SideWriting
+  /**
+   * A column beside the rows that is put on and off with a switch of its own, after the texts' (the editor's helps,
+   * on a window narrower than 1280 px: on, it takes the room of a text).
+   */
+  aside?: { label: string; on: boolean; onChange(on: boolean): void }
 }) {
   const t = useT()
   const order = texts.map((x) => x.id)
   const [chosen, setChosen] = useState<string[] | null>(null)
   const shownIds = shownAtStart(chosen ?? readKept(app), order, initial, max)
   const shown = texts.filter((x) => shownIds.includes(x.id))
-  const full = shownIds.length >= max
+  // With room for one, a text is not put beside but in place of the other: never full.
+  const full = max > 1 && shownIds.length >= max
   const touch = (id: string) => {
     const next = toggleShown(shownIds, id, order, max)
     setChosen(next)
@@ -129,20 +136,40 @@ export function SideBySide({
             aria-pressed={on}
             disabled={!on && full}
             // The last one on stays (a touch leaves it): it is not offered as something to take away.
-            title={!on && full ? t('marco.lado.lleno', { n: max }) : lone ? undefined : on ? t('marco.lado.quitar', { texto: x.label }) : t('marco.lado.poner', { texto: x.label })}
+            title={
+              !on && full
+                ? t('marco.lado.lleno', { n: max })
+                : lone
+                  ? undefined
+                  : on
+                    ? t('marco.lado.quitar', { texto: x.label })
+                    : t(max === 1 ? 'marco.lado.cambiar' : 'marco.lado.poner', { texto: x.label })
+            }
             onClick={() => touch(x.id)}
           >
             {x.label}
           </button>
         )
       })}
+      {aside && (
+        <button
+          type="button"
+          className={aside.on ? 'side-switch is-aside is-on' : 'side-switch is-aside'}
+          aria-pressed={aside.on}
+          title={t(aside.on ? 'marco.lado.quitar' : 'marco.lado.poner', { texto: aside.label })}
+          onClick={() => aside.onChange(!aside.on)}
+        >
+          {aside.label}
+        </button>
+      )}
     </div>
   )
 
   // One text alone is drawn as the mini app draws it, when it has a way to (the team's own text has none: a row each).
   // Where the team writes, always rows: the box stays at the end of its verse's row.
   const alone = shown.length === 1 && !writing ? single?.(shown[0].id) : null
-  const lone = <p className="side-hint">{t('marco.lado.ayuda', { n: max })}</p>
+  // With one text on: that another fits beside it, or, with the column beside on, that putting it away makes room.
+  const lone = <p className="side-hint">{max === 1 && aside?.on ? t('marco.lado.conAyudas') : t('marco.lado.ayuda', { n: max })}</p>
   return (
     <div className="side-by-side" data-n={shown.length}>
       {switches}

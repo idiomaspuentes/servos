@@ -11,8 +11,9 @@
  * On a wide screen one pane (`fixed`, the boxes) stays in sight on the right and the others share the left, so the
  * text being read and the one being written are side by side. On a wider one (from 1280 px) another (`side`, the
  * helps) has a column of its own after them, as translationCore 4 keeps its helps at the right (philosophy,
- * principle 13); there the fixed pane may be all there is beside it (the editor's rows, each with its box). On a phone
- * the tabs are at the foot, under the thumb (and right above the keyboard while writing).
+ * principle 13), or on a narrower wide window when the person puts it there (`sideOpen`); the fixed pane may then be
+ * all there is beside it (the editor's rows, each with its box). On a phone the tabs are at the foot, under the thumb
+ * (and right above the keyboard while writing).
  */
 
 import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react'
@@ -84,6 +85,7 @@ export function Panes({
   onPane,
   fixed,
   side,
+  sideOpen = false,
   open,
   holdFocus = true,
 }: {
@@ -93,6 +95,8 @@ export function Panes({
   fixed?: string
   /** A pane with a column of its own, after the others, on a window of 1280 px or more (the editor's helps). */
   side?: string
+  /** That column on a narrower wide window too, when the person put it there (the editor's helps switch). */
+  sideOpen?: boolean
   /**
    * Whether moving between panes keeps the focus in the box being written in (the editor: the keyboard stays up while
    * the person looks at the text). Not where writing is the lesser part (the study's note).
@@ -104,7 +108,7 @@ export function Panes({
   const wide = useWide()
   const wider = useWider()
   const kept = wide ? all.find((p) => p.id === fixed) : undefined
-  const aside = kept && wider ? all.find((p) => p.id === side) : undefined
+  const aside = kept && (wider || sideOpen) ? all.find((p) => p.id === side) : undefined
   const panes = all.filter((p) => p !== kept && p !== aside)
   const track = useRef<HTMLDivElement>(null)
   const [current, setCurrent] = useState(0)

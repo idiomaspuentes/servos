@@ -16,6 +16,8 @@
   "marco.lado.lleno": "Up to {n} at a time: take one away to add another.",
   "marco.lado.poner": "Put {texto} beside it",
   "marco.lado.quitar": "Take {texto} away",
+  "marco.lado.cambiar": "Read {texto} instead",
+  "marco.lado.conAyudas": "With the Helps beside, one text fits: put them away to read two side by side.",
   "marco.lado.versiculo": "Verse",
   "marco.lado.falta": "This text does not have this verse.",
   "marco.lado.junto": "Said together with verse {n}.",

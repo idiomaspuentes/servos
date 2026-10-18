@@ -16,6 +16,8 @@
   "marco.lado.lleno": "Hasta {n} a la vez: quite uno para poner otro.",
   "marco.lado.poner": "Poner {texto} al lado",
   "marco.lado.quitar": "Quitar {texto}",
+  "marco.lado.cambiar": "Leer {texto} en su lugar",
+  "marco.lado.conAyudas": "Con las Ayudas al lado cabe un texto: quítelas para leer dos lado a lado.",
   "marco.lado.versiculo": "Versículo",
   "marco.lado.falta": "Este texto no tiene este versículo.",
   "marco.lado.junto": "Dicho junto con el versículo {n}.",

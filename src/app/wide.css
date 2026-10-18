@@ -44,18 +44,23 @@
   .voice-button { align-self: flex-start; width: fit-content; min-width: 14rem; min-height: 3.5rem; padding-inline: 2rem; font-size: 1.1rem; }
 }
 
-/* From 1280 px, the columns translationCore 4 has: in the editor the text, the boxes and the helps side by side; in
-   the reviewers the groups at the left, always in sight, then the one being checked. */
-@media (min-width: 1280px) {
+/* The editor's helps in a column of their own at the right, as translationCore 4 has them: from 1280 px always, on a
+   narrower computer window when the person puts them there (Panes `sideOpen`). */
+@media (min-width: 900px) {
   .screen-fill:has(.panes-split.has-side) { max-width: 1760px; }
   .panes-split.has-side { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(20rem, 0.9fr); }
   .panes-split.has-side > .pane-fixed { border-inline-end: 1px solid var(--line); }
-  .pane-side-title { margin: 0; font-size: 0.95rem; font-weight: 800; color: var(--text); }
   /* Named as the tabs beside it are, on a line of the same height */
   .pane-side > .pane-side-title {
     min-height: var(--touch); display: flex; align-items: center; margin: -0.75rem -1rem 0.75rem; padding-inline: 1rem;
-    border-block-end: 1px solid var(--hair);
+    border-block-end: 1px solid var(--hair); font-size: 0.95rem; font-weight: 800; color: var(--text);
   }
+}
+
+/* From 1280 px, the columns translationCore 4 has: in the reviewers the groups at the left, always in sight, then the
+   one being checked. */
+@media (min-width: 1280px) {
+  .pane-side-title { margin: 0; font-size: 0.95rem; font-weight: 800; color: var(--text); }
 
   .screen-fill:has(.review-with-groups) { max-width: 74rem; }
   .main-fill > .review-with-groups { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: 19rem minmax(0, 1fr); }
@@ -70,10 +75,10 @@
   .review-filter-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
 }
 
-/* Texts side by side (SideBySide.tsx), from 1280 px: their names are switches, on (✓, raised) or one more to put beside
-   (+, dashed); the chapter goes one row per verse, the verses open as one band across. The texts' area takes the room
-   the columns need: in the study the note keeps its own. */
-@media (min-width: 1280px) {
+/* Texts side by side (SideBySide.tsx), on a computer (the editor from 900 px, the study from 1280): their names are
+   switches, on (✓, raised) or one more to put beside (+, dashed); the chapter goes one row per verse, the verses open as
+   one band across. The texts' area takes the room the columns need: in the study the note keeps its own. */
+@media (min-width: 900px) {
   .side-by-side { display: flex; flex-direction: column; gap: 0.5rem; }
   /* The switches stick to the very top of their pane: under its padding the rows would show through as they scroll */
   .pane:has(> .side-by-side) { padding-block-start: 0; }
@@ -118,15 +123,19 @@
   .study .side-cell { font-size: 1.1rem; line-height: 1.7; }
   .study .side-cell.is-original { font-size: 1.25rem; }
 
-  .panes-split:not(.has-side):has(.side-by-side[data-n='2']) { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
-  .panes-split:not(.has-side):has(.side-by-side[data-n='3']) { grid-template-columns: minmax(0, 2.7fr) minmax(0, 1fr); }
+  /* The study: the texts in the row of panes, the note fixed beside them */
+  .panes-split:not(.has-side):has(> .panes .side-by-side[data-n='2']) { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+  .panes-split:not(.has-side):has(> .panes .side-by-side[data-n='3']) { grid-template-columns: minmax(0, 2.7fr) minmax(0, 1fr); }
   .screen-fill:has(.side-by-side:not([data-n='1'])) { max-width: 1760px; }
 }
 
-/* The editor from 1280 px: each verse a row, the texts on and then its box, as desktop translation tools have it; the
-   helps keep their column. The rows take the room of their texts and their box. The box is the one of the narrower
-   window (its fields, a poem's lines set in, the choice between two versions), standing at its verse's height. */
-@media (min-width: 1280px) {
+/* The editor on a computer (from 900 px): each verse a row, the texts on and then its box, as desktop translation tools
+   have it; the helps in their column from 1280 px, or where the person puts them below. The rows take the room of their
+   texts and their box. The box is the phone's (its fields, a poem's lines set in, the choice between two versions),
+   standing at its verse's height. */
+@media (min-width: 900px) {
+  .screen-fill:has(.side-rows.has-box) { max-width: 1760px; }
+  .panes-split:not(.has-side):not(:has(> .panes)) { grid-template-columns: minmax(0, 1fr); }
   .panes-split.has-side:not(:has(> .panes)) { grid-template-columns: minmax(0, 2.15fr) minmax(19.5rem, 0.9fr); }
   .panes-split.has-side:not(:has(> .panes)):has(.side-by-side[data-n='2']) { grid-template-columns: minmax(0, 3.15fr) minmax(19.5rem, 0.9fr); }
   .panes-split.has-side:not(:has(> .panes)):has(.side-by-side[data-n='3']) { grid-template-columns: minmax(0, 4.15fr) minmax(19.5rem, 0.85fr); }
@@ -149,6 +158,8 @@
   .side-write.is-empty { font-family: var(--font); font-size: 0.9rem; }
   .side-write-go { display: none; font-weight: 700; color: var(--accent); }
   .side-write-go::after { content: ' →'; }
+  /* The helps' switch, apart from the texts' at the end of their line */
+  .side-switch.is-aside { margin-inline-start: auto; }
 }
 
 /* Home, the book and the welcome use the width: from 1280 px home's moss field («go on where you left off») has a column

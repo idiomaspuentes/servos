@@ -184,16 +184,19 @@ medida es tC4: una ventana ancha, ratón y teclado, columnas a los lados y el te
   foco dentro y, al cerrarse, lo devuelve al botón que lo abrió. Los mismos atajos en todas las mini apps: Esc cierra lo
   de encima; Alt+↓ y Alt+↑ van al versículo o la sección siguiente y anterior, también desde una caja; Ctrl+Enter hace lo
   del botón lleno; Ctrl+Z y Ctrl+Y deshacen y rehacen donde se puede. Un atajo nunca es la única forma de hacer algo.
-- **Los textos, lado a lado** (decidido el 18 de octubre, como en Taller). Desde 1280 px, al traducir y al estudiar,
-  los nombres de los textos (TPL, TPS, el original y, en el estudio, «Su traducción» donde ya hay algo escrito) se
-  encienden y se apagan con un clic: hasta dos en el editor, tres desde 1600 px, y tres en el estudio. Un versículo por
-  fila, para que no se desfasen; una palabra tocada se enciende en todos. Lo elegido se recuerda en el aparato.
-- **En el editor, cada versículo con su caja** (decidido el 18 de octubre). Desde 1280 px la fila termina en la caja
-  donde el equipo escribe ese versículo, como en las herramientas de traducción de escritorio; siempre en filas, también
-  con un solo texto, para que la caja no cambie de lugar al encender otro. Un poema lleva sus campos uno bajo otro en la
-  celda, y el renglón que se escribe se enciende en cada texto; los versículos unidos son una fila con una caja. Las
-  cajas son las de la sección abierta; en las otras filas se lee lo escrito, y un clic lleva a escribirlo. Tab va de
-  caja en caja (las palabras, con el ratón); ↓ y ↑ pasan de una caja a la de abajo o arriba.
+- **Los textos, lado a lado** (decidido el 18 de octubre, como en Taller). Al traducir desde 900 px y al estudiar desde
+  1280 px, los nombres de los textos (TPL, TPS, el original y, en el estudio, «Su traducción» donde ya hay algo
+  escrito) se encienden y se apagan con un clic: hasta dos en el editor, tres desde 1600 px, y tres en el estudio. Un
+  versículo por fila, para que no se desfasen; una palabra tocada se enciende en todos. Lo elegido se recuerda en el
+  aparato.
+- **En el editor, cada versículo con su caja** (decidido el 18 de octubre). En la computadora, desde 900 px, la fila
+  termina en la caja donde el equipo escribe ese versículo, como en las herramientas de traducción de escritorio;
+  siempre en filas, también con un solo texto, para que la caja no cambie de lugar al encender otro. Un poema lleva sus
+  campos uno bajo otro en la celda, y el renglón que se escribe se enciende en cada texto; los versículos unidos son una
+  fila con una caja. Las cajas son las de la sección abierta; en las otras filas se lee lo escrito, y un clic lleva a
+  escribirlo. Tab va de caja en caja (las palabras, con el ratón); ↓ y ↑ pasan de una caja a la de abajo o arriba.
+  Desde 1280 px las ayudas tienen su columna; más angosta la ventana, «Ayudas» es un interruptor más: encendido, toman
+  una columna a la derecha y en las filas cabe un texto (un clic en otro lo pone en su lugar); apagado, caben dos.
 - **La letra no crece con la ventana.** El mismo tamaño que en el teléfono; lo que crece son las columnas.
 - **El teléfono no cambia.** Nada de esto toca los 375 px ni el editor con el teclado abierto (principio 12).
 

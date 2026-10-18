@@ -23,6 +23,16 @@ describe('texts side by side', () => {
     expect(shownAtStart('roto', [], undefined, 3)).toEqual([])
   })
 
+  it('where one fits, puts the touched one in its place and keeps it', () => {
+    expect(toggleShown(['TPL'], 'TPS', order, 1)).toEqual(['TPS'])
+    expect(toggleShown(['TPS'], 'TPS', order, 1)).toEqual(['TPS'])
+    expect(shownAtStart(['TPS'], order, 'TPL', 1)).toEqual(['TPS'])
+    expect(shownAtStart(['TPL', 'TPS'], order, 'TPS', 1)).toEqual(['TPS'])
+    expect(shownAtStart(null, order, 'TPL', 1)).toEqual(['TPL'])
+    // Room for two again: the one chosen beside the text read
+    expect(shownAtStart(['TPS'], order, 'TPL', 2)).toEqual(['TPL', 'TPS'])
+  })
+
   it('keeps no more than fit when the window narrows, the text read first', () => {
     expect(shownAtStart(['TPL', 'TPS', 'Hebreo'], order, 'Hebreo', 2)).toEqual(['TPL', 'Hebreo'])
     expect(shownAtStart(['TPL', 'TPS', 'Hebreo'], order, undefined, 2)).toEqual(['TPL', 'TPS'])

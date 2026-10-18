@@ -6,10 +6,12 @@
  */
 
 /** Which texts are shown after `id` is touched: added, or taken away when it was shown. They keep the order the
- * screen lists them in; one always stays, and past `max` the touch does nothing (the person takes one away first). */
+ * screen lists them in; one always stays, and past `max` the touch does nothing (the person takes one away first).
+ * Where only one fits (the editor with its helps on a window narrower than 1280 px), the touched one takes its place. */
 export function toggleShown(shown: string[], id: string, order: string[], max: number): string[] {
   const on = shown.includes(id)
   if (on && shown.length === 1) return shown
+  if (!on && max === 1) return [id]
   if (!on && shown.length >= max) return shown
   const next = on ? shown.filter((x) => x !== id) : [...shown, id]
   return order.filter((x) => next.includes(x))
@@ -23,6 +25,8 @@ export function toggleShown(shown: string[], id: string, order: string[], max: n
 export function shownAtStart(kept: unknown, order: string[], initial: string | undefined, max: number): string[] {
   const first = initial && order.includes(initial) ? initial : undefined
   let valid = Array.isArray(kept) ? order.filter((id) => (kept as unknown[]).includes(id)) : []
+  // One at a time: the one chosen, or the text read when it was among several.
+  if (max === 1 && valid.length) return [first && valid.includes(first) ? first : valid[0]]
   if (first && valid.length && !valid.includes(first)) valid = order.filter((id) => [...valid.slice(0, max - 1), first].includes(id))
   if (valid.length > max) {
     // The text read stays; of the others, the first ones listed.

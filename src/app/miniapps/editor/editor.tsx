@@ -6,8 +6,9 @@
  * verse (`TouchWords`). In the prototype a draft is kept in this browser only; wired, every change goes to the
  * journal (design, section 6).
  *
- * From 1280 px each verse is a row: the texts on, then its box, as desktop translation tools have it (philosophy,
- * principle 13). The box is the same in both shapes (`boxOf`); only where it stands changes.
+ * On a computer (from 900 px) each verse is a row: the texts on, then its box, as desktop translation tools have it
+ * (philosophy, principle 13). The box is the same in both shapes (`boxOf`); only where it stands changes. The helps
+ * have their column from 1280 px; on a narrower window they are a switch, and on they take the room of a text.
  */
 
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type FocusEvent } from 'react'
@@ -58,6 +59,23 @@ function unitsOf(book: string, chapter: number, verses: number[]): number[][] {
 }
 const unitLabel = (unit: number[]) => (unit.length > 1 ? `${unit[0]}–${unit[unit.length - 1]}` : String(unit[0]))
 
+/** Whether the helps were put beside the rows on a window narrower than 1280 px: kept on this device, as the texts are. */
+const helpsKey = 'servos.prototipo.lado.editor.ayudas'
+function readHelpsOn(): boolean {
+  try {
+    return localStorage.getItem(helpsKey) === 'si'
+  } catch {
+    return false
+  }
+}
+function keepHelpsOn(on: boolean) {
+  try {
+    localStorage.setItem(helpsKey, on ? 'si' : 'no')
+  } catch {
+    /* a private window keeps nothing: the screen opens as the first time */
+  }
+}
+
 function Center({ context }: MiniAppCenterProps) {
   const { position, marked, t, data, textAbbreviation, frame, goTo } = context
   // The verses open, with those joined to them: a verse joined to the one before opens their box.
@@ -79,7 +97,7 @@ function Center({ context }: MiniAppCenterProps) {
   }
 
   // Going on to another verse or section while writing: the cursor goes to its first line, and the keyboard stays up.
-  // A click on a row not open (from 1280 px) asks for the box of that row.
+  // A click on a row not open (on a computer) asks for the box of that row.
   const writing = useRef(false)
   const stopWriting = useRef<number>()
   const asked = useRef<number | null>(null)
@@ -267,12 +285,15 @@ function Center({ context }: MiniAppCenterProps) {
     </div>
   )
 
-  // From 1280 px the helps are a column of their own, in sight beside the text (principle 13): the note read there lights
-  // its words in the text, as once the helps pane is opened on a narrower screen.
+  // From 1280 px the helps are a column of their own, in sight beside the text (principle 13); on a narrower computer
+  // window, where the person puts them. In sight, the note read there lights its words in the text, as once the helps
+  // pane is opened on a phone.
   const wider = useWider()
+  const [helpsOn, setHelpsOn] = useState(readHelpsOn)
+  const helpsInSight = wide && (wider || helpsOn)
   useEffect(() => {
-    if (wider) helpsOpened()
-  }, [wider, openKey]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (helpsInSight) helpsOpened()
+  }, [helpsInSight, openKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const widest = useWidest()
   const labelOf = (x: (typeof data.texts)[number]) => (x.original ? t(`editor.lengua.${x.lang ?? 'original'}`) : x.abbreviation)
@@ -293,9 +314,10 @@ function Center({ context }: MiniAppCenterProps) {
       />
     ),
   }))
-  // From 1280 px each verse is a row (principle 13): the texts on, their names switches, two at a time, three from
-  // 1600 px, and the verse's box at the end of its row; the helps keep their column. Always rows, with one text on
-  // too, so the box being written in stays where it is when another text is put beside.
+  // On a computer (from 900 px) each verse is a row (principle 13): the texts on, their names switches, two at a time,
+  // three from 1600 px, and the verse's box at the end of its row. From 1280 px the helps keep their column; below, they
+  // are one more switch, and on they take the room of one text. Always rows, with one text on too, so the box being
+  // written in stays where it is when another text is put beside.
   const rows: Pane = {
     id: 'textos',
     label: t('marco.lado.textos'),
@@ -303,7 +325,19 @@ function Center({ context }: MiniAppCenterProps) {
       <SideBySide
         app="editor"
         texts={data.texts.map((x) => ({ id: x.abbreviation, label: labelOf(x), text: x }))}
-        max={widest ? 3 : 2}
+        max={widest ? 3 : wider || !helpsOn ? 2 : 1}
+        aside={
+          wider
+            ? undefined
+            : {
+                label: t('editor.panelAyudas'),
+                on: helpsOn,
+                onChange: (on) => {
+                  setHelpsOn(on)
+                  keepHelpsOn(on)
+                },
+              }
+        }
         initial={textAbbreviation}
         open={shown}
         at={position.verse}
@@ -336,15 +370,20 @@ function Center({ context }: MiniAppCenterProps) {
     ),
   }
   const helps: Pane = { id: 'ayudas', label: t('editor.panelAyudas'), content: frame.helps(undefined, { glossary }) }
-  const panes: Pane[] = wider ? [rows, helps] : [{ id: 'suyo', label: t('editor.panelSuyo'), content: own }, ...texts, helps]
+  const panes: Pane[] = wide
+    ? helpsInSight
+      ? [rows, helps]
+      : [rows]
+    : [{ id: 'suyo', label: t('editor.panelSuyo'), content: own }, ...texts, helps]
 
   return (
     <>
       <Panes
         panes={panes}
         label={t('editor.paneles')}
-        fixed={wider ? 'textos' : 'suyo'}
+        fixed={wide ? 'textos' : 'suyo'}
         side="ayudas"
+        sideOpen={helpsOn}
         onPane={(id) => {
           if (id === 'ayudas') helpsOpened()
         }}
