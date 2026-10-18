@@ -807,13 +807,17 @@
   "libro.preparando": "Preparando os textos de {libro}…",
   "libro.preparandoCapitulo": "Preparando os textos de {libro}: capítulo {n} de {total}.",
   "libro.noSeLeyo": "Não foi possível ler os textos de {libro} deste telefone: {error}",
+  "libro.noSeLeyo.computadora": "Não foi possível ler os textos de {libro} deste computador: {error}",
   "libro.paqueteAnterior": "Os textos de {libro} deste telefone vêm de um pacote feito para uma versão anterior do Servos. Receba o pacote de {libro} de novo.",
+  "libro.paqueteAnterior.computadora": "Os textos de {libro} deste computador vêm de um pacote feito para uma versão anterior do Servos. Receba o pacote de {libro} de novo.",
   "paquete.necesitaOriginales": "Para ler estes livros, também precisa do pacote dos textos originais.",
   "paquete.otraVersion": "Este pacote foi feito para outra versão do Servos e não pode ser aberto. Peça um novo a quem o deu.",
   "paquete.losOriginales": "os textos originais",
   "paquete.lexicoGriego": "Léxico do grego",
   "paquete.lexicoHebreo": "Léxico do hebraico",
   "paquete.listoOriginales": "Pronto. Os textos originais em hebraico e grego já estão neste telefone.",
+  "paquete.listoOriginales.computadora": "Pronto. Os textos originais em hebraico e grego já estão neste computador.",
   "paquete.listoFaltanOriginales": "Pronto. Para ler {libros}, receba também o pacote dos textos originais.",
-  "paquete.listoAyudas": "Pronto. As ajudas deste pacote já estão neste telefone."
+  "paquete.listoAyudas": "Pronto. As ajudas deste pacote já estão neste telefone.",
+  "paquete.listoAyudas.computadora": "Pronto. As ajudas deste pacote já estão neste computador."
 }
