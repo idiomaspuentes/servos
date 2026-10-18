@@ -67,6 +67,11 @@ export function fakeDoor43(host = 'https://qa.door43.org') {
       assets.set(a.id, a)
       return ok({ id: a.id, name: a.name, size: a.bytes.length, browser_download_url: `${host}/attachments/${a.uuid}` }, 201)
     }
+    if (/^contents\/?$/.test(rest) && method === 'GET') {
+      // The repository's top: its files, not those in folders.
+      const top = [...files.keys()].filter((k) => k.startsWith(`${repo}/`)).map((k) => k.slice(`${repo}/`.length)).filter((p) => !p.includes('/'))
+      return ok(top.map((p) => ({ name: p, path: p, sha: files.get(`${repo}/${p}`)!.sha, size: 1, type: 'file' })))
+    }
     r = /^contents\/(.+)$/.exec(rest)
     if (r) {
       const key = `${repo}/${r[1]}`
