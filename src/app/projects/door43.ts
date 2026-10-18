@@ -203,6 +203,59 @@ export function manifestOf(
   return lines.join('\n') + '\n'
 }
 
+/**
+ * The books already in the project's repository, each with the name its manifest gives it (when it names it): none
+ * when there is no repository yet. Several people publish, each from a device with only some books, so a manifest
+ * written from one device has to keep naming the books the others uploaded (found on QA: Ana's upload of Titus left
+ * out the Jonah that Bea had uploaded). Not reaching Door43 fails, rather than write a manifest missing books.
+ */
+export async function booksThere(account: Door43Account, to: Destination): Promise<Array<{ code: string; title?: string }>> {
+  const config = configOf(to.host)
+  let listed: ContentsResponse | ContentsResponse[]
+  try {
+    listed = await getContents(config, to.owner, to.repo, '', { token: account.token })
+  } catch (e) {
+    if (e instanceof DcsApiError && e.status === 404) return []
+    throw e
+  }
+  const codes = (Array.isArray(listed) ? listed : [])
+    .filter((f) => f.type === 'file')
+    .map((f) => ({ name: f.name, code: /^(?:\d\d-)?([0-9a-z]{3})\.usfm$/i.exec(f.name)?.[1].toLowerCase() }))
+    .filter((f): f is { name: string; code: string } => Boolean(f.code) && fileOf(f.code!) === f.name)
+    .map((f) => f.code)
+  if (!codes.length) return []
+  let titles = new Map<string, string>()
+  try {
+    const got = await getContents(config, to.owner, to.repo, 'manifest.yaml', { token: account.token })
+    if (!Array.isArray(got) && got.content) titles = titlesOf(decodeBase64(got.content))
+  } catch (e) {
+    if (!(e instanceof DcsApiError && e.status === 404)) throw e
+  }
+  return codes.map((code) => ({ code, title: titles.get(code) }))
+}
+
+/** The name a manifest gives each of its books (`projects:`, by `identifier`), as Servos and tC write it. */
+export function titlesOf(yaml: string): Map<string, string> {
+  const unquote = (s: string) => {
+    const v = s.trim()
+    if (v.startsWith("'") && v.endsWith("'")) return v.slice(1, -1).replace(/''/g, "'")
+    if (v.startsWith('"') && v.endsWith('"')) return v.slice(1, -1).replace(/\\"/g, '"')
+    return v
+  }
+  const out = new Map<string, string>()
+  const projects = yaml.split(/^projects:\s*$/m)[1]
+  if (!projects) return out
+  // Each entry starts at its `- `, as indented as the first one (a deeper `- ` is a list inside it); its keys follow.
+  const indent = /^( *)-(?:\s|$)/m.exec(projects)?.[1] ?? ''
+  for (const entry of projects.split(new RegExp(`^${indent}-(?:[ \\t]+|$)`, 'm')).slice(1)) {
+    const field = (key: string) => new RegExp(`^\\s*${key}:\\s*(.+)$`, 'm').exec(entry)?.[1]
+    const code = field('identifier')
+    const title = field('title')
+    if (code && title) out.set(unquote(code).toLowerCase(), unquote(title))
+  }
+  return out
+}
+
 /** What happened to a file uploaded: written, the same as on Door43 already, or not uploaded (and why). */
 export type FileResult = { path: string; state: 'written' | 'same' | 'failed'; problem?: Problem }
 
