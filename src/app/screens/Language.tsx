@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { BASE_LANGUAGES, PSEUDO_LANGUAGE, baseText, useI18n } from '../i18n/i18n'
+import { wantsQa } from '../projects/door43'
 import { readInterfacePackage } from '../i18n/interfacePackage'
 import { MenuRow, Sheet } from '../frame/Sheet'
 
@@ -71,8 +72,13 @@ export function Language({ onClose }: { onClose(): void }) {
           {said}
         </p>
       )}
-      <h3 className="menu-heading">{t('idioma.prueba')}</h3>
-      <MenuRow label={`${t('idioma.prueba')}${language === PSEUDO_LANGUAGE ? ' ✓' : ''}`} description={t('idioma.pruebaAyuda')} onClick={() => choose(PSEUDO_LANGUAGE)} />
+      {/* For whoever tries the app (building it, or a device opened with ?server=qa), not for a team. */}
+      {(import.meta.env.DEV || wantsQa() || language === PSEUDO_LANGUAGE) && (
+        <>
+          <h3 className="menu-heading">{t('idioma.prueba')}</h3>
+          <MenuRow label={`${t('idioma.prueba')}${language === PSEUDO_LANGUAGE ? ' ✓' : ''}`} description={t('idioma.pruebaAyuda')} onClick={() => choose(PSEUDO_LANGUAGE)} />
+        </>
+      )}
     </Sheet>
   )
 }
