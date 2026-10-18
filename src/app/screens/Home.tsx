@@ -68,55 +68,59 @@ export function Home({
             </button>
           </section>
         )}
-        <h1>{t('inicio.tusProyectos')}</h1>
-        {projects.length === 0 && <p className="quiet">{t('inicio.sinProyectos')}</p>}
-        {projects.map((p) => (
-          <article key={p.id} className="project-card">
-            <div className="project-card-head">
-              <div>
-                <h2>{p.name}</h2>
-                <p className="quiet">
-                  {p.languageName} ({p.languageCode}) · {p.books.length === 1 ? t('inicio.unLibro') : t('inicio.libros', { n: p.books.length })}
-                </p>
+        {/* On a wide window the projects are a column of their own, beside the field (principle 13); on a phone this box
+            is not drawn and they follow it, as before (wide.css). */}
+        <div className="home-projects">
+          <h1>{t('inicio.tusProyectos')}</h1>
+          {projects.length === 0 && <p className="quiet">{t('inicio.sinProyectos')}</p>}
+          {projects.map((p) => (
+            <article key={p.id} className="project-card">
+              <div className="project-card-head">
+                <div>
+                  <h2>{p.name}</h2>
+                  <p className="quiet">
+                    {p.languageName} ({p.languageCode}) · {p.books.length === 1 ? t('inicio.unLibro') : t('inicio.libros', { n: p.books.length })}
+                  </p>
+                </div>
+                <button type="button" className="project-settings" onClick={() => onSettings(p.id)}>
+                  {t('inicio.ajustes')}
+                </button>
               </div>
-              <button type="button" className="project-settings" onClick={() => onSettings(p.id)}>
-                {t('inicio.ajustes')}
-              </button>
-            </div>
-            <div className="book-tiles">
-              {p.books.map((b) => {
-                const pct = progressOf(p, b.code)
-                return (
-                  <button key={b.code} type="button" className="book-tile" onClick={() => onBook(p.id, b.code)}>
-                    <span className="book-tile-name">{titleOf(p, b.code)}</span>
-                    <span className="book-tile-phase">
-                      {t(`pasos.${b.phase}Corto`)}
-                      {pct !== null && ` · ${pct} %`}
-                    </span>
-                    {pct !== null && (
-                      <span className="progress-bar" aria-hidden="true" data-full={pct >= 100 || undefined}>
-                        <span style={{ width: `${pct}%` }} />
+              <div className="book-tiles">
+                {p.books.map((b) => {
+                  const pct = progressOf(p, b.code)
+                  return (
+                    <button key={b.code} type="button" className="book-tile" onClick={() => onBook(p.id, b.code)}>
+                      <span className="book-tile-name">{titleOf(p, b.code)}</span>
+                      <span className="book-tile-phase">
+                        {t(`pasos.${b.phase}Corto`)}
+                        {pct !== null && ` · ${pct} %`}
                       </span>
-                    )}
-                  </button>
-                )
-              })}
-              <button type="button" className="book-tile add-tile" onClick={() => onAddBook(p.id)}>
-                <span className="add-tile-plus" aria-hidden="true">
-                  +
-                </span>
-                <span>{t('inicio.agregarLibro')}</span>
-              </button>
-            </div>
-          </article>
-        ))}
-        <button type="button" className="add-card" onClick={onAddProject}>
-          <span className="add-tile-plus" aria-hidden="true">
-            +
-          </span>
-          <span className="add-card-title">{t('inicio.agregarProyecto')}</span>
-          <span className="quiet">{t('inicio.agregarProyectoAyuda')}</span>
-        </button>
+                      {pct !== null && (
+                        <span className="progress-bar" aria-hidden="true" data-full={pct >= 100 || undefined}>
+                          <span style={{ width: `${pct}%` }} />
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+                <button type="button" className="book-tile add-tile" onClick={() => onAddBook(p.id)}>
+                  <span className="add-tile-plus" aria-hidden="true">
+                    +
+                  </span>
+                  <span>{t('inicio.agregarLibro')}</span>
+                </button>
+              </div>
+            </article>
+          ))}
+          <button type="button" className="add-card" onClick={onAddProject}>
+            <span className="add-tile-plus" aria-hidden="true">
+              +
+            </span>
+            <span className="add-card-title">{t('inicio.agregarProyecto')}</span>
+            <span className="quiet">{t('inicio.agregarProyectoAyuda')}</span>
+          </button>
+        </div>
       </main>
     </div>
   )

@@ -185,11 +185,11 @@ export function GatherScreen({
   )
   const foot = (label: string, prev: (() => void) | null, next: (() => void) | null, prevLabel: string, nextLabel: string) => (
     <nav className="position gather-foot" aria-label={label}>
-      <button type="button" className="pager-arrow" aria-label={prevLabel} disabled={!prev} onClick={() => prev?.()}>
+      <button type="button" className="pager-arrow" aria-label={prevLabel} title={prevLabel} disabled={!prev} onClick={() => prev?.()}>
         ‹
       </button>
       <span className="gather-foot-label">{label}</span>
-      <button type="button" className="pager-arrow" aria-label={nextLabel} disabled={!next} onClick={() => next?.()}>
+      <button type="button" className="pager-arrow" aria-label={nextLabel} title={nextLabel} disabled={!next} onClick={() => next?.()}>
         ›
       </button>
     </nav>

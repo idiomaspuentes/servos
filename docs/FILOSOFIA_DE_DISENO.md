@@ -25,7 +25,7 @@ En el teléfono, el versículo con que se trabaja y la caja donde se escribe lle
 
 - Al escribir, el texto puente queda pegado a la caja: el versículo abierto muestra su TPL o su TPS, la caja y lo que conviene mirar en ese versículo.
 - En el teléfono no queda nada fijo que no haga falta. Con el teclado abierto quedan unos 400 px.
-- En la computadora (Tauri), lo que en el teléfono es una hoja o una pestaña puede ser una columna a un lado, como en tC4: los libros a la izquierda, las ayudas a la derecha y el texto en medio.
+- En la computadora (Tauri), lo que en el teléfono es una hoja o una pestaña puede ser una columna a un lado, como en tC4: los libros a la izquierda, las ayudas a la derecha y el texto en medio (principio 13).
 
 ### 3. Lo demás, cerca y en capas
 
@@ -170,9 +170,39 @@ acción toma la forma de su papel:
   desliza de una a otra (o se toca la pestaña) sin quitarle el foco a la caja, así el teclado no se cierra. Es lo que
   hace posible traducir cómodo en un teléfono; ningún cambio de diseño lo toca (`Panes.tsx`).
 
+### 13. En la computadora, una app de computadora
+
+*18 de octubre de 2026.* En una computadora (Tauri, Windows primero) Servos se ve y se usa como una aplicación de
+escritorio, como en el teléfono se ve y se usa como una app de teléfono: no es un teléfono estirado a lo ancho. La
+medida es tC4: una ventana ancha, ratón y teclado, columnas a los lados y el texto en medio.
+
+- **Manda el ancho de la ventana, no el aparato.** Hasta 900 px es el teléfono: una columna, hojas que suben, la línea
+  de posición abajo. Desde 900 px, dos columnas: lo que se lee y lo que se escribe. Desde 1280 px, también la columna de
+  las ayudas, como en tC4. Una ventana angosta en la computadora se ve como el teléfono, y está bien.
+- **Lo que en el teléfono es una hoja, en la ventana ancha es una columna o un cuadro.** La lista de un revisor va en una
+  columna a la izquierda; las ayudas, a la derecha. Lo que sigue siendo una hoja (compartir, un artículo, elegir un
+  libro) se abre como un cuadro en medio de la ventana, nunca pegado al pie. «Más» y el menú de la persona se abren bajo
+  su botón.
+- **Anchos de lectura, no de ventana.** Un renglón de texto no pasa de unos 70 caracteres; un formulario, de unos 40rem.
+  Lo que sobra a los lados es margen o una columna que sirve, nunca un botón ni una caja estirados.
+- **Botones de su tamaño.** En la ventana ancha un botón mide lo que dice; el lleno va al final de lo que se lee, con la
+  alternativa a su lado.
+- **Con ratón, lo que actúa lo muestra.** Todo lo que se puede hacer cambia de tono al pasar el ratón y pone la mano; lo
+  que es solo un signo (‹ ›) dice su nombre y su atajo al dejar el ratón encima. Lo que se arrastra con el dedo se
+  arrastra con el ratón, y lo que se toca se hace con un clic. Los textos dicen «haga clic» y «esta computadora» en la
+  computadora, y «toque» y «este teléfono» en el teléfono.
+- **Con teclado se llega a todo.** Tab recorre la pantalla en el orden en que se lee (la cabecera, la línea de posición,
+  el centro, el botón lleno), con el foco siempre a la vista, también sobre el musgo. Una hoja o un menú abierto guarda el
+  foco dentro y, al cerrarse, lo devuelve al botón que lo abrió. Los mismos atajos en todas las mini apps: Esc cierra lo
+  de encima; Alt+↓ y Alt+↑ van al versículo o la sección siguiente y anterior, también desde una caja; Ctrl+Enter hace lo
+  del botón lleno; Ctrl+Z y Ctrl+Y deshacen y rehacen donde se puede. Un atajo nunca es la única forma de hacer algo.
+- **La letra no crece con la ventana.** El mismo tamaño que en el teléfono; lo que crece son las columnas.
+- **El teléfono no cambia.** Nada de esto toca los 375 px ni el editor con el teclado abierto (principio 12).
+
 ## Cómo comprobarlo
 
-Antes de dar por hecha una pantalla, se recorre a 375 px como lo haría alguien poco hábil con la tecnología, y se anotan los números:
+Antes de dar por hecha una pantalla, se recorre a 375 px como lo haría alguien poco hábil con la tecnología, y en una
+ventana de computadora a 1280 × 800, 1440 × 900 y 1920 × 1080, y angosta, de unos 900 px; y se anotan los números:
 
 - [ ] ¿Qué es lo principal, y se ve sin bajar?
 - [ ] ¿Cuántos controles hay a la vista sin tocar nada? (12 o menos)
@@ -187,4 +217,13 @@ Antes de dar por hecha una pantalla, se recorre a 375 px como lo haría alguien 
 - [ ] ¿Se ve quién está trabajando, y si lo hecho está solo en el aparato o también en Door43?
 - [ ] ¿Funciona igual con el modo avión puesto?
 - [ ] Al terminar, ¿a dónde lleva la app?
-- [ ] ¿Se ve bien en los tres idiomas y en una computadora?
+- [ ] ¿Se ve bien en los tres idiomas?
+- [ ] En la ventana ancha, ¿hay algo estirado de borde a borde (un botón, una caja, un renglón de más de 70 caracteres)?
+- [ ] ¿Hay un espacio vacío grande que una columna podría usar, o una hoja que debería ser columna o cuadro?
+- [ ] ¿Las hojas y los menús se abren en medio o bajo su botón, y se ven enteros?
+- [ ] Con el ratón, ¿todo lo que actúa cambia al pasar por encima? ¿Los signos solos dicen su nombre?
+- [ ] Solo con el teclado, ¿se llega a todo con Tab, en orden y viendo el foco? ¿Esc cierra y devuelve el foco adonde
+  estaba? ¿Funcionan Alt+↓, Alt+↑ y Ctrl+Enter?
+- [ ] ¿Algún texto dice «toque», «deslice el dedo» o «este teléfono» en la computadora?
+- [ ] A 900 px, ¿se ve como el teléfono o como dos columnas, sin nada cortado ni encimado?
+- [ ] Después de un cambio para la computadora, ¿se ve igual que antes a 375 px?

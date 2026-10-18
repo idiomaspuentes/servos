@@ -37,6 +37,7 @@ import {
 } from '@usfm-ast/alignment-box-model'
 import type { AlignmentGroup } from '@usfm-tools/types'
 import { chapterOf } from '../../../prototype/data'
+import { KEYS, useKey } from '../../frame/keys'
 import { placesOfOriginals, wordAt } from '../../frame/TouchWords'
 import { alignmentConflictAt, alignmentFor, chooseAlignment, draftTokens, readAlignment, sourceWords, writeAlignment } from '../../projects/alignment'
 import { joinedVerses, textOf } from '../../projects/work'
@@ -146,6 +147,9 @@ function Center({ context }: MiniAppCenterProps) {
     setHistory({ past: [...history.past, groups], future: history.future.slice(1) })
     keep(ahead)
   }
+  // As in any desktop program (principle 13); a box being written in keeps its own.
+  useKey('undo', history.past.length ? undo : null)
+  useKey('redo', history.future.length ? redo : null)
 
   const put = (boxId: string, indices: number[]) => indices.length && change(addSourcesToBox(original, draft, groups, boxId, indices))
   const tapWord = (i: number) => {
@@ -322,10 +326,10 @@ function Center({ context }: MiniAppCenterProps) {
             </>
           ) : (
             <>
-              <button type="button" className="chip" disabled={!history.past.length} onClick={undo}>
+              <button type="button" className="chip" disabled={!history.past.length} onClick={undo} title={t('marco.conAtajo', { accion: t('alineador.deshacer'), atajo: KEYS.undo })}>
                 ↶ {t('alineador.deshacer')}
               </button>
-              <button type="button" className="chip" disabled={!history.future.length} onClick={redo}>
+              <button type="button" className="chip" disabled={!history.future.length} onClick={redo} title={t('marco.conAtajo', { accion: t('alineador.rehacer'), atajo: KEYS.redo })}>
                 {t('alineador.rehacer')} ↷
               </button>
             </>

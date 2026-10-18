@@ -36,7 +36,7 @@ export function PersonMenu({
   const [name, setName] = useState('')
   const [theme, setThemeState] = useState<Theme>(themeOf)
   return (
-    <Sheet title={t('persona.menu', { nombre: person })} onClose={onClose} dirty={adding && name.trim() !== ''}>
+    <Sheet title={t('persona.menu', { nombre: person })} onClose={onClose} dirty={adding && name.trim() !== ''} menu>
       <MenuRow label={t('persona.recibir')} description={t('persona.recibirAyuda')} onClick={onReceive} />
       <MenuRow label={t('persona.idioma')} description={t('persona.idiomaAyuda')} onClick={onLanguage} />
       {/* Light, dark or sun, on this phone: four at once, two by two, chosen in place (principle 12, pills on a track);

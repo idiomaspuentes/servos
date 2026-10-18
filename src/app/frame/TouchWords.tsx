@@ -438,11 +438,11 @@ export function WordHelpCard({
 
       {count > 1 && (
         <div className="helps-steps">
-          <button type="button" className="pager-arrow" aria-label={t('ayudas.anterior')} disabled={touched.index === 0} onClick={() => onIndex(touched.index - 1)}>
+          <button type="button" className="pager-arrow" aria-label={t('ayudas.anterior')} title={t('ayudas.anterior')} disabled={touched.index === 0} onClick={() => onIndex(touched.index - 1)}>
             ‹
           </button>
           <span className="quiet">{t('ayudas.cuenta', { i: touched.index + 1, n: count })}</span>
-          <button type="button" className="pager-arrow" aria-label={t('ayudas.siguiente')} disabled={touched.index === count - 1} onClick={() => onIndex(touched.index + 1)}>
+          <button type="button" className="pager-arrow" aria-label={t('ayudas.siguiente')} title={t('ayudas.siguiente')} disabled={touched.index === count - 1} onClick={() => onIndex(touched.index + 1)}>
             ›
           </button>
         </div>

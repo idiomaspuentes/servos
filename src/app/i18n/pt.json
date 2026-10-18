@@ -10,6 +10,7 @@
   "marco.siguiente": "Próximo versículo",
   "marco.seccionAnterior": "Seção anterior",
   "marco.seccionSiguiente": "Próxima seção",
+  "marco.conAtajo": "{accion} ({atajo})",
   "marco.listaVersiculos": "Versículos de {libro} {capitulo}",
   "marco.listaVersiculosAyuda": "Toque num versículo para ir até ele.",
   "marco.listaSecciones": "Seções de {libro} {capitulo}",
