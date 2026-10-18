@@ -716,6 +716,8 @@
   "persona.tema.sistema": "Like the phone",
   "persona.tema.claro": "Light",
   "persona.tema.oscuro": "Dark",
+  "persona.tema.sol": "Sunlight",
+  "persona.aparienciaAyuda": "Sunlight: more contrast and heavier letters, for reading outdoors.",
   "libro.estaEn": "The book is in {paso}.",
   "recibir.alineacionesElegir": "Verses aligned two ways, to choose while aligning: {n}.",
   "versiones.borrado": "Deleted it: the verse is left empty.",

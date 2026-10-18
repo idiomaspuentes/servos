@@ -39,13 +39,14 @@ export function PersonMenu({
     <Sheet title={t('persona.menu', { nombre: person })} onClose={onClose} dirty={adding && name.trim() !== ''}>
       <MenuRow label={t('persona.recibir')} description={t('persona.recibirAyuda')} onClick={onReceive} />
       <MenuRow label={t('persona.idioma')} description={t('persona.idiomaAyuda')} onClick={onLanguage} />
-      {/* Light or dark, on this phone: three at once, chosen in place (principle 12, pills on a track). */}
+      {/* Light, dark or sun, on this phone: four at once, two by two, chosen in place (principle 12, pills on a track);
+          the line under them says what sun is for. */}
       <div className="menu-choice">
         <span className="menu-row-label" id="apariencia">
           {t('persona.apariencia')}
         </span>
-        <div className="choice-row is-three" role="radiogroup" aria-labelledby="apariencia">
-          {(['sistema', 'claro', 'oscuro'] as const).map((x) => (
+        <div className="choice-row is-four" role="radiogroup" aria-labelledby="apariencia" aria-describedby="apariencia-ayuda">
+          {(['sistema', 'claro', 'oscuro', 'sol'] as const).map((x) => (
             <button
               key={x}
               type="button"
@@ -61,6 +62,9 @@ export function PersonMenu({
             </button>
           ))}
         </div>
+        <span className="menu-row-description" id="apariencia-ayuda">
+          {t('persona.aparienciaAyuda')}
+        </span>
       </div>
       <MenuRow label={t('persona.traducir')} description={t('persona.traducirAyuda')} onClick={onTranslate} />
       <MenuRow
