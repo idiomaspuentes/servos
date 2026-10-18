@@ -15,7 +15,7 @@ import { verbHint } from '../../original/morphology'
 import { clauseKind, isClause, leavesOf, LINK, sentenceFits, sentenceShape, sentencesAt, type TreeLeaf, type TreeNode } from '../../original/syntaxTree'
 import { layoutSideways } from '../../original/treeLayout'
 import { useT } from '../i18n/i18n'
-import { originalText, wordsOfVerse } from './OriginalWord'
+import { maculaCount, maculaPlace, originalText } from './OriginalWord'
 import { Sheet } from './Sheet'
 import { placesOfOriginals, wordAt } from './TouchWords'
 
@@ -49,7 +49,7 @@ export function SentenceDiagram({ data, verse, place, onClose }: { data: Prototy
   const file = treesOf(data.book.id)
   const sentences = file
     ? sentencesAt(file, { chapter: data.chapter, verse }).filter((s) =>
-        sentenceFits(file, s, (p) => (p.chapter === data.chapter ? wordsOfVerse(data, p.verse).length : undefined))
+        sentenceFits(file, s, (p) => (p.chapter === data.chapter ? maculaCount(data, p.verse) : undefined))
       )
     : []
 
@@ -61,7 +61,7 @@ export function SentenceDiagram({ data, verse, place, onClose }: { data: Prototy
     if (kind === 'describes') return t('st.treeSub')
     return kind === 'joined' && nth ? t('st.partN', { n: nth }) : t('st.clause')
   }
-  const leafPlace = (leaf: TreeLeaf) => (leaf.chapter === data.chapter ? wordsOfVerse(data, leaf.verse)[leaf.word - 1] : undefined)
+  const leafPlace = (leaf: TreeLeaf) => (leaf.chapter === data.chapter ? maculaPlace(data, leaf.verse, leaf.word) : undefined)
 
   return (
     <Sheet title={t('st.title')} onClose={onClose}>

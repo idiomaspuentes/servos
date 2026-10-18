@@ -44,6 +44,11 @@ export interface PrototypeText {
   toOriginal?: number[][]
   /** For the original, each word's lemma and Strong number, by the word's place: what a glossary entry hangs from. */
   words?: Array<{ lemma: string; strong: string; morph?: string }>
+  /**
+   * For the original, the words of each verse that stand in notes and are not shown (the Hebrew's qere, after its
+   * ketiv), numbered as MACULA numbers a verse's words: from 1, those of notes included (`maculaPlace`).
+   */
+  inNotes?: Record<number, number[]>
   /** The Greek or Hebrew the bridge texts translate. */
   original?: boolean
   dir?: 'ltr' | 'rtl'

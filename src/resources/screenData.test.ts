@@ -82,6 +82,8 @@ describe.skipIf(!folder)('un capítulo desde los paquetes reales', () => {
     expect(line.at(-1)).toBe('ועמדי')
     expect(line).toContain('יעשה')
     expect(line).not.toContain('יעש')
+    // MACULA counts the qere: its word 11, after the ketiv (10), is in a note.
+    expect(hebrew.inNotes).toEqual({ 8: [11] })
     // The lemma and Strong number of every word, which the lexicon and the glossary go by.
     expect(hebrew.words?.length).toBe(Object.values(hebrew.lines).flat().flatMap((l) => l.pieces).filter((p) => p.word !== undefined).length)
   }, 600_000)

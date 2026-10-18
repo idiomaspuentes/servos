@@ -17,6 +17,22 @@ export function wordsOfVerse(data: PrototypeData, verse: number): number[] {
   return (original?.lines[verse] ?? []).flatMap((l) => l.pieces.map((p) => p.word).filter((w): w is number => w !== undefined))
 }
 
+/**
+ * The place of the word MACULA numbers `word` in a verse, which counts the words of notes too (the Hebrew's qere): a
+ * qere, not shown, is read on the ketiv shown before it. Undefined when the verse has no such word.
+ */
+export function maculaPlace(data: PrototypeData, verse: number, word: number): number | undefined {
+  const shown = wordsOfVerse(data, verse)
+  const noted = new Set(data.texts.find((x) => x.original)?.inNotes?.[verse] ?? [])
+  let at = -1
+  for (let n = 1; n <= word; n++) if (!noted.has(n)) at++
+  return at < 0 ? undefined : shown[at]
+}
+
+/** How many words MACULA counts in a verse: those shown and those of its notes. */
+export const maculaCount = (data: PrototypeData, verse: number): number =>
+  wordsOfVerse(data, verse).length + (data.texts.find((x) => x.original)?.inNotes?.[verse]?.length ?? 0)
+
 /** The text of a word of the original, at its place. */
 export function originalText(data: PrototypeData, place: number): string {
   const original = data.texts.find((x) => x.original)

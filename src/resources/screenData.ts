@@ -113,7 +113,8 @@ export async function chapterData(
     twl: { TPL: await alignedIn(sources.wordLinks, literal), TPS: await alignedIn(sources.wordLinks, simpleWords ? simple : undefined) },
   }
   const originalPlace = new Map(originalOwn.words.map((w, i) => [w.own, i]))
-  const originalWords = (await originalWordsOf(stores, original.key, bookId, chapter)) ?? []
+  const originalRead = await originalWordsOf(stores, original.key, bookId, chapter)
+  const originalWords = originalRead?.words ?? []
   const originalsOfVerse = (verse: number) =>
     (originalOwn.lines[verse] ?? []).flatMap((l) => l.pieces.map((p) => p.word).filter((w): w is number => w !== undefined))
   const toOriginal = (abbr: 'TPL' | 'TPS') =>
@@ -234,6 +235,7 @@ export async function chapterData(
     pieces: (await readChapter(stores, original.key, bookId, chapter))!,
     lines: originalOwn.lines,
     words: originalWords.length ? originalWords : undefined,
+    ...(originalRead && Object.keys(originalRead.inNotes).length ? { inNotes: originalRead.inNotes } : {}),
     original: true,
     dir: original.dir,
     lang: original.lang,
