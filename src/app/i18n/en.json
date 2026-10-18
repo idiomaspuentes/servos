@@ -767,5 +767,6 @@
   "marco.copiado": "Copied",
   "libro.preparando": "Preparing the texts of {libro}…",
   "libro.preparandoCapitulo": "Preparing the texts of {libro}: chapter {n} of {total}.",
-  "libro.noSeLeyo": "The texts of {libro} could not be read from this phone: {error}"
+  "libro.noSeLeyo": "The texts of {libro} could not be read from this phone: {error}",
+  "libro.paqueteAnterior": "The texts for {libro} on this phone come from a pack made for an earlier version of Servos. Receive the {libro} pack again."
 }

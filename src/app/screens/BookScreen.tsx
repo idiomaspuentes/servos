@@ -131,7 +131,8 @@ export function BookScreen({
   const lead = shownApps.find((a) => a === current) ?? shownApps.find((a) => !a.comingSoon)
   // Moving the book on is offered at the foot once its step is nearly done (or cannot be measured); before, in «More».
   const atPct = stepPct(book.phase)
-  const moveOnInSight = atPct === null || atPct >= 90
+  // Not while the book has no texts on this device: nothing of it can be done yet, nor finished.
+  const moveOnInSight = chapters.length > 0 && (atPct === null || atPct >= 90)
   const nextPhase = at < PHASES.length - 1 ? PHASES[at + 1] : null
   const moveOnLabel = nextPhase ? `${t('libro.terminadoPasar', { paso: t(`pasos.${book.phase}`), siguiente: t(`pasos.${nextPhase}`) })} →` : ''
 
@@ -178,7 +179,7 @@ export function BookScreen({
     const used = placeFor(app.id)
     // A mini app that does not go by verses (publishing) has no verse to say.
     const place = app.positionLine === false ? null : used
-    const allDone = done !== null && !next
+    const allDone = done !== null && chapters.length > 0 && !next
     const go = allDone ? 'libro.ver' : used ? 'libro.continuar' : 'libro.empezar'
     const open = byChapter === app.id
     return (
@@ -193,9 +194,12 @@ export function BookScreen({
               <span>{t('libro.avance', { hechos: done, total: totalVerses, pct: pct(done, totalVerses) })}</span>
             </span>
           )}
-          <button type="button" className="button-primary tool-card-go" disabled={!chapters.length} onClick={() => onOpen(app)}>
-            {t(go)} →
-          </button>
+          {/* Without the book's texts, receiving them is the one thing to do: no second filled button, even disabled. */}
+          {chapters.length > 0 && (
+            <button type="button" className="button-primary tool-card-go" onClick={() => onOpen(app)}>
+              {t(go)} →
+            </button>
+          )}
         </div>
         {done !== null && chapters.length > 0 && (
           <RowButton kind="fold" label={t('libro.porCapitulo')} expanded={open} onClick={() => setByChapter(open ? null : app.id)} />
@@ -254,7 +258,9 @@ export function BookScreen({
         )}
         {!chapters.length && (!state || state.state === 'missing' || state.state === 'error') && (
           <>
-            <p className="notice">{t('libro.faltaPaquete', { libro: name })}</p>
+            <p className="notice">
+              {t(state?.state === 'missing' && state.availability?.stale ? 'libro.paqueteAnterior' : 'libro.faltaPaquete', { libro: name })}
+            </p>
             <button type="button" className="button-primary" onClick={onReceive}>
               {t('libro.recibirPaquete')}
             </button>

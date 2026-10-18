@@ -767,5 +767,6 @@
   "marco.copiado": "Copiado",
   "libro.preparando": "Preparando os textos de {libro}…",
   "libro.preparandoCapitulo": "Preparando os textos de {libro}: capítulo {n} de {total}.",
-  "libro.noSeLeyo": "Não foi possível ler os textos de {libro} deste telefone: {error}"
+  "libro.noSeLeyo": "Não foi possível ler os textos de {libro} deste telefone: {error}",
+  "libro.paqueteAnterior": "Os textos de {libro} deste telefone vêm de um pacote feito para uma versão anterior do Servos. Receba o pacote de {libro} de novo."
 }

@@ -5,6 +5,8 @@
  * (philosophy, principle 8). Read from keys alone, never from the rows, which weigh megabytes.
  */
 
+import { readIngestReceiptMeta, scriptureIngestSchema } from '@bt-synergy/resource-catalog'
+import { USJ_PROCESSING_VERSION } from '@bt-synergy/usj-processor'
 import { LEXICON_SUBJECTS, MACULA } from './companions'
 import { BIBLE_ORDER, inBibleOrder, kindOf, type ResourceKind } from './reading'
 import { GREEK, HEBREW, type BookSources, type Original } from './screenData'
@@ -25,6 +27,11 @@ export interface ResourceHere {
   inRelease: string[]
   /** For resources kept by article: whether its articles are on this device. */
   articles: boolean
+  /**
+   * A text processed by another version of the code than the one Servos reads with (its pack was made before the app
+   * changed how it reads the text): its rows are there and cannot be read; its pack, made again, has to be received.
+   */
+  stale: boolean
 }
 
 export interface DeviceIndex {
@@ -57,6 +64,7 @@ export async function deviceIndex(stores: ResourceStores): Promise<DeviceIndex> 
       }
     }
     const content = (meta as { contentMetadata?: { books?: string[]; ingredients?: Array<{ identifier?: string }> } }).contentMetadata
+    const schema = kind === 'scripture' || kind === 'original' ? readIngestReceiptMeta(await stores.cache.get(`resource:${key}`))?.ingestSchema : undefined
     const inRelease = content?.books ?? content?.ingredients?.map((i) => i.identifier ?? '') ?? []
     resources.push({
       key,
@@ -69,6 +77,7 @@ export async function deviceIndex(stores: ResourceStores): Promise<DeviceIndex> 
       books: inBibleOrder(books),
       inRelease: inBibleOrder(inRelease.map((b) => b.toLowerCase()).filter((b) => BIBLE_ORDER.includes(b))),
       articles: kind === 'scripture' || kind === 'original' || PREPARED[kind] ? false : (await keysUnder(stores, `${key}/`, 1)).length > 0,
+      stale: typeof schema === 'string' && schema !== scriptureIngestSchema(USJ_PROCESSING_VERSION),
     })
   }
   return { resources: resources.sort((a, b) => a.key.localeCompare(b.key)) }
@@ -129,6 +138,8 @@ export interface Availability {
   notInLanguage: SourcePart[]
   /** Its original is not on this device: the originals' pack brings it. */
   needsOriginal: boolean
+  /** Its text or its original is here but was made for another version of the app: its pack has to be received again. */
+  stale: boolean
   /** The book's sources, when it can be opened. */
   sources: BookSources | null
   /** What Servos reads beside them: the lexicon of its original in the language, and MACULA's sentences and referents. */
@@ -159,7 +170,8 @@ export function availability(index: DeviceIndex, language: string, book: string)
   const has = Object.fromEntries(parts.map((p) => [p, Boolean(resourceFor(p)?.books.includes(code))])) as Record<SourcePart, boolean>
   const notOnDevice = parts.filter((p) => !has[p] && Boolean(resourceFor(p)?.inRelease.includes(code)))
   const notInLanguage = parts.filter((p) => !has[p] && !notOnDevice.includes(p))
-  const here = has.literal && originalHere
+  const stale = Boolean(resourceFor('literal')?.stale && has.literal) || Boolean(originalHere && index.resources.find((r) => r.key === original.key)?.stale)
+  const here = has.literal && originalHere && !stale
   // The lexicon of the book's original in its language (its literal text's owner's first), and MACULA for the book.
   const testament = original === GREEK ? 'greek' : 'hebrew'
   const lexicon = of
@@ -172,6 +184,7 @@ export function availability(index: DeviceIndex, language: string, book: string)
     notOnDevice,
     notInLanguage,
     needsOriginal: !originalHere,
+    stale,
     sources: here && chosen ? { ...chosen, original, ...(lexicon ? { lexicon: lexicon.key } : {}), ...(macula ? { macula: macula.key } : {}) } : null,
     extras: { lexicon: Boolean(lexicon), macula: Boolean(macula) },
   }

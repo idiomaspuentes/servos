@@ -10,7 +10,7 @@ import { availability, languagesOnDevice, originalOf, sourcesFor, type DeviceInd
 
 const resource = (key: string, kind: ResourceKind, books: string[], inRelease = books, articles = false, subject = ''): ResourceHere => {
   const [owner, language, resourceId] = key.split('/')
-  return { key, owner, language, resourceId, kind, subject, title: key, books, inRelease, articles }
+  return { key, owner, language, resourceId, kind, subject, title: key, books, inRelease, articles, stale: false }
 }
 
 /** es-419 as its packs leave it: Ruth with everything, Esther with its literal text only, Genesis published elsewhere. */
@@ -89,6 +89,17 @@ describe('qué tiene cada idioma en este teléfono', () => {
     expect(gen.sources).toBeNull()
     expect(availability(index, 'es-419', 'mrk').notInLanguage).toContain('literal')
   })
+
+  it('un texto hecho para una versión anterior de la app está, pero no se abre: se pide su paquete de nuevo', () => {
+    const old = (key: string) => ({ ...index, resources: index.resources.map((r) => (r.key === key ? { ...r, stale: true } : r)) })
+    const byText = availability(old('es-419_gl/es-419/glt'), 'es-419', 'rut')
+    expect(byText).toMatchObject({ here: false, stale: true, sources: null, notOnDevice: [] })
+    const byOriginal = availability(old('unfoldingWord/hbo/uhb'), 'es-419', 'rut')
+    expect(byOriginal).toMatchObject({ here: false, stale: true, needsOriginal: false })
+    // The Greek is not Ruth's original: Ruth opens.
+    expect(availability(old('unfoldingWord/el-x-koine/ugnt'), 'es-419', 'rut')).toMatchObject({ here: true, stale: false })
+    expect(availability(index, 'es-419', 'rut').stale).toBe(false)
+  })
 })
 
 /** With the real packs (`SERVOS_PAQUETES=<folder>`): the index read from the device itself, from keys alone. */
@@ -101,6 +112,8 @@ describe.skipIf(!folder)('el índice desde los paquetes reales', () => {
     for (const file of ['originals', 'es-419']) await openPack(stores, readFileSync(join(folder!, `${file}.langpack.zip`)))
     const real = await deviceIndex(stores)
     const glt = real.resources.find((r) => r.key === 'es-419_gl/es-419/glt')!
+    // Packs made with this version of the code (bt-synergy's CLI at the same commit): nothing to receive again.
+    expect(real.resources.filter((r) => r.stale).map((r) => r.key)).toEqual([])
     expect(glt.books).toEqual(expect.arrayContaining(['rut', 'est', 'jon', 'tit', '3jn']))
     expect(availability(real, 'es-419', 'rut').here).toBe(true)
     expect(availability(real, 'es-419', 'est').notInLanguage).toContain('simple')
