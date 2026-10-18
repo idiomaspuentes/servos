@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The moss of the app's mark (the accent in src/app/styles.css). -->
+    <color name="ic_launcher_background">#3B6F30</color>
+    <!-- The paper the app is drawn on, so nothing white flashes between the splash and the first screen. -->
+    <color name="servos_paper">#F7F2E8</color>
+</resources>

@@ -9,3 +9,7 @@ coverage/
 .playwright-cli/
 # The app for computers (vite build --mode escritorio)
 dist-escritorio/
+# The app for phones (vite build --mode telefono)
+dist-telefono/
+# The APK for phones (npm run telefono:compilar)
+dist-android/

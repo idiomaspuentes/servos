@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The book that speaks, white: the icon on the moss and the splash. The path is the one in design/logo/render-icons.js and src/app/frame/BrandMark.tsx: change all three. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- The book on its 48 grid, centred in the 108 of an adaptive icon, as wide in the 72 the launcher shows as it is
+         in the web app's maskable icon (about 52 %). -->
+    <group
+        android:pivotX="24"
+        android:pivotY="24"
+        android:scaleX="0.9"
+        android:scaleY="0.9"
+        android:translateX="30"
+        android:translateY="30">
+        <path
+            android:fillColor="#FFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M22.7 11.5Q16.49 8.5 6.3 8.5Q3.3 8.5 3.3 11.5V33.5Q3.3 36.5 6.3 36.5Q16.49 36.5 22.7 39.5ZM25.3 11.5Q31.51 8.5 41.7 8.5Q44.7 8.5 44.7 11.5V33.5Q44.7 36.5 41.7 36.5Q31.51 36.5 25.3 39.5ZM7.7 17H17.9V20.2H7.7ZM7.7 24H14.1V27.2H7.7ZM28.1 18.8H31.3V28.8H28.1ZM33.7 14.8H36.9V32.8H33.7ZM39.3 17.8H42.5V29.8H39.3Z" />
+    </group>
+</vector>
