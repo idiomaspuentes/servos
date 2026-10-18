@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Panes, type Pane, useWide } from '../../frame/Panes'
+import { Panes, type Pane, useWide, useWider } from '../../frame/Panes'
 import { glossedPlaces, useWordHelps, type GlossaryTarget } from '../../frame/TouchWords'
 import { readGlossaryFor, saveGlossaryEntry } from '../../projects/glossary'
 import { GlossarySheet } from './GlossarySheet'
@@ -234,6 +234,13 @@ function Center({ context }: MiniAppCenterProps) {
     </div>
   )
 
+  // From 1280 px the helps are a column of their own, in sight beside the text (principle 13): the note read there lights
+  // its words in the text, as once the helps pane is opened on a narrower screen.
+  const wider = useWider()
+  useEffect(() => {
+    if (wider) helpsOpened()
+  }, [wider, openKey]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const panes: Pane[] = [
     { id: 'suyo', label: t('editor.panelSuyo'), content: own },
     ...data.texts.map((x) => ({
@@ -262,6 +269,7 @@ function Center({ context }: MiniAppCenterProps) {
         panes={panes}
         label={t('editor.paneles')}
         fixed="suyo"
+        side="ayudas"
         onPane={(id) => {
           if (id === 'ayudas') helpsOpened()
         }}

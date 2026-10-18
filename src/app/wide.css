@@ -44,6 +44,32 @@
   .voice-button { align-self: flex-start; width: fit-content; min-width: 14rem; min-height: 3.5rem; padding-inline: 2rem; font-size: 1.1rem; }
 }
 
+/* From 1280 px, the columns translationCore 4 has: in the editor the text, the boxes and the helps side by side; in
+   the reviewers the groups at the left, always in sight, then the one being checked. */
+@media (min-width: 1280px) {
+  .screen-fill:has(.panes-split.has-side) { max-width: 1760px; }
+  .panes-split.has-side { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(20rem, 0.9fr); }
+  .panes-split.has-side > .pane-fixed { border-inline-end: 1px solid var(--line); }
+  .pane-side-title { margin: 0; font-size: 0.95rem; font-weight: 800; color: var(--text); }
+  /* Named as the tabs beside it are, on a line of the same height */
+  .pane-side > .pane-side-title {
+    min-height: var(--touch); display: flex; align-items: center; margin: -0.75rem -1rem 0.75rem; padding-inline: 1rem;
+    border-block-end: 1px solid var(--hair);
+  }
+
+  .screen-fill:has(.review-with-groups) { max-width: 74rem; }
+  .main-fill > .review-with-groups { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: 19rem minmax(0, 1fr); }
+  /* As tall as what it holds, the way on right after what is read (not at the window's foot), and no taller than the
+     window: then what is read scrolls */
+  .review-with-groups > .review { min-height: 0; align-self: start; max-height: 100%; }
+  .review-side {
+    min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin;
+    padding: 0.5rem 0.75rem 1.5rem; border-inline-end: 1px solid var(--line);
+  }
+  .review-side > .pane-side-title { min-height: var(--touch); display: flex; align-items: center; padding-inline: 0.5rem; }
+  .review-filter-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+}
+
 /* With a mouse, what acts shows it: everything that can be done takes a tone under the pointer (styles.css gives it to
    the cards and rows; these are the rest: the quiet buttons of the header and the sheets, the arrows, the position, the
    switches, the words to place or to mark, the versions to choose). */
