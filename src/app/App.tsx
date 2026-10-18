@@ -10,7 +10,7 @@ import { MiniAppScreen } from './frame/MiniAppScreen'
 import { useT } from './i18n/i18n'
 import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type Position } from './miniapps/contract'
 import { miniApp } from './miniapps/registry'
-import { loadProjects, saveProjects, titleOf, type Phase, type Project } from './projects/model'
+import { EXAMPLE_PROJECT_ID, exampleProject, loadProjects, saveProjects, titleOf, type Phase, type Project } from './projects/model'
 import { inProject, setProject } from './projects/scope'
 import { bookState, languageOf, libraryVersion, loadBook, setProjects as setLibraryProjects, subscribeLibrary } from './projects/library'
 import { placeLabel, stepPercent } from './projects/progress'
@@ -58,9 +58,9 @@ const chaptersFor = (book: string) => chaptersOf(book).map((c) => chapterOf(book
 const RESUME_KEY = 'servos.prototipo.seguir'
 function loadResume(): Resume | null {
   try {
-    return JSON.parse(localStorage.getItem(RESUME_KEY) ?? 'null') ?? { projectId: 'biblia-kichwa', book: 'tit' }
+    return JSON.parse(localStorage.getItem(RESUME_KEY) ?? 'null')
   } catch {
-    return { projectId: 'biblia-kichwa', book: 'tit' }
+    return null
   }
 }
 
@@ -279,7 +279,20 @@ export function App() {
     return (
       <>
         <TestModeBar />
-        <Welcome onStart={(name, example) => setPeople(example ? { names: EXAMPLE_PEOPLE, current: name } : addPerson(null, name))} />
+        <Welcome
+          onStart={(name, example) => {
+            if (example) {
+              // The example's team, its project, and Titus to go on with.
+              setPeople({ names: EXAMPLE_PEOPLE, current: name })
+              if (!projects.some((p) => p.id === EXAMPLE_PROJECT_ID)) setProjects([...projects, exampleProject()])
+              setResume({ projectId: EXAMPLE_PROJECT_ID, book: 'tit' })
+            } else {
+              setPeople(addPerson(null, name))
+              // Kept as they are (none, the first time), so that the example does not come back with the next visit.
+              setProjects(projects)
+            }
+          }}
+        />
       </>
     )
   }
@@ -444,7 +457,8 @@ export function App() {
           projects={projects}
           person={person}
           preset={screen.projectId}
-          examples={screen.projectId && screen.book && project(screen.projectId) ? exampleShared(project(screen.projectId)!, chaptersFor(screen.book)) : []}
+          // Work «to try» from the example's people: only in the example.
+          examples={screen.projectId === EXAMPLE_PROJECT_ID && screen.book && project(screen.projectId) ? exampleShared(project(screen.projectId)!, chaptersFor(screen.book)) : []}
           onBack={() => setScreen(screen.back)}
           onReceived={setProjects}
           onGo={(projectId, book) => (book ? openBook(projectId, book) : home())}

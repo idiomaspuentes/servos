@@ -839,5 +839,7 @@
   "libroNuevo.listos": "Ready on this phone",
   "libroNuevo.listos.computadora": "Ready on this computer",
   "libroNuevo.sinTextos": "The texts for {libro} are not on this phone: you can receive its pack when you open it.",
-  "libroNuevo.sinTextos.computadora": "The texts for {libro} are not on this computer: you can receive its pack when you open it."
+  "libroNuevo.sinTextos.computadora": "The texts for {libro} are not on this computer: you can receive its pack when you open it.",
+  "inicio.paraEmpezar": "To begin",
+  "inicio.primerProyecto": "Add your team's project"
 }

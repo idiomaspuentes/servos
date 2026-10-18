@@ -7,6 +7,8 @@
  * device (`manifest.yaml` and the books), like usfm-editor's, with Servos's journal beside each book.
  */
 
+import { loadPeople } from './people'
+
 export type Phase = 'estudio' | 'traduccion' | 'revision' | 'comunitaria' | 'publicacion'
 export const PHASES: Phase[] = ['estudio', 'traduccion', 'revision', 'comunitaria', 'publicacion']
 
@@ -76,10 +78,13 @@ export const titleOf = (project: { books: BookEntry[] } | undefined, code: strin
 
 const STORAGE_KEY = 'servos.prototipo.proyectos'
 
-/** What the prototype starts with: a Bible with Jonah and Titus under way and Ruth just added. */
+/** The example's project, which no project of a team's own takes as its id (its work is kept under it). */
+export const EXAMPLE_PROJECT_ID = 'biblia-kichwa'
+
+/** The example, entered from «Ver el ejemplo»: a Bible with Jonah and Titus under way and Ruth just added. */
 const SEED: Project[] = [
   {
-    id: 'biblia-kichwa',
+    id: EXAMPLE_PROJECT_ID,
     kind: 'bible',
     name: 'Biblia en kichwa',
     languageName: 'Kichwa',
@@ -97,15 +102,23 @@ const SEED: Project[] = [
   },
 ]
 
+/** The example's project, a copy of its own, to add when someone asks to see it. */
+export const exampleProject = (): Project => structuredClone(SEED[0])
+
+/**
+ * The projects on this device. None the first time: the example comes only when someone asks to see it. Before, it
+ * was there for everyone without being kept, so whoever had already started keeps it.
+ */
 export function loadProjects(): Project[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     // A project that is not whole (written halfway, or by something else) is left out, not let to stop the app.
     if (raw) return withNewSeedBooks((JSON.parse(raw) as Project[]).filter(isWhole))
+    if (loadPeople()) return SEED.map((p) => structuredClone(p))
   } catch {
-    /* blocked storage: start from the example */
+    /* blocked storage: nothing kept, nothing to show */
   }
-  return SEED
+  return []
 }
 
 const isWhole = (p: unknown): p is Project =>

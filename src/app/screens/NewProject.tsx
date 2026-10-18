@@ -12,7 +12,7 @@ import { MenuRow, Sheet } from '../frame/Sheet'
 import { useI18n, useT } from '../i18n/i18n'
 import { languageLabel, writtenRightToLeft } from '../projects/languages'
 import { helpsLanguagesHere } from '../projects/library'
-import { DEFAULT_MINI_APPS, slug, type Project } from '../projects/model'
+import { DEFAULT_MINI_APPS, EXAMPLE_PROJECT_ID, slug, type Project } from '../projects/model'
 
 export function AddProjectSheet({ onClose, onBible, onReceive }: { onClose(): void; onBible(): void; onReceive(): void }) {
   const t = useT()
@@ -108,7 +108,8 @@ export function NewProject({ existing, onCancel, onCreate }: { existing: Project
               return
             }
             let id = slug(name)
-            while (existing.some((p) => p.id === id)) id += '-2'
+            // Not the example's id either: its books and its work are kept under it.
+            while (existing.some((p) => p.id === id) || id === EXAMPLE_PROJECT_ID) id += '-2'
             onCreate({
               id,
               kind: 'bible',

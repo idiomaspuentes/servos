@@ -839,5 +839,7 @@
   "libroNuevo.listos": "Listos en este teléfono",
   "libroNuevo.listos.computadora": "Listos en esta computadora",
   "libroNuevo.sinTextos": "Los textos de {libro} no están en este teléfono: podrá recibir su paquete al abrirlo.",
-  "libroNuevo.sinTextos.computadora": "Los textos de {libro} no están en esta computadora: podrá recibir su paquete al abrirlo."
+  "libroNuevo.sinTextos.computadora": "Los textos de {libro} no están en esta computadora: podrá recibir su paquete al abrirlo.",
+  "inicio.paraEmpezar": "Para empezar",
+  "inicio.primerProyecto": "Agregue el proyecto de su equipo"
 }
