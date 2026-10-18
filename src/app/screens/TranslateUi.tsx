@@ -4,13 +4,16 @@
  * to translate, wherever it is. What is written applies at once, everywhere. The phrases are grouped by where they
  * appear (the frame, a screen, each mini app by its name); a sheet lists the parts with how far each has gone, to go
  * to one, with the language. A translation must keep the original's `{marks}` (where the app puts a name or a
- * number): a missing one is offered to touch rather than to type; a much longer one may not fit on a phone.
+ * number): a missing one is offered to touch rather than to type; a much longer one may not fit on a phone. A phrase
+ * said one way on a phone and another on a computer («toque», «haga clic») is two phrases, side by side, each saying
+ * where it is seen.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { LanguageSearch } from '../frame/LanguageSearch'
 import { saveFile } from '../frame/saveFile'
 import { Sheet } from '../frame/Sheet'
+import { computerKey, phoneKeyOf } from '../i18n/device'
 import { BASE_LANGUAGES, allKeys, baseText, marksOf, useI18n, type BaseLanguage } from '../i18n/i18n'
 import { miniApps } from '../miniapps/registry'
 import { percent } from '../projects/progress'
@@ -142,6 +145,8 @@ export function TranslateUi({ onBack }: { onBack(): void }) {
 
   const languageName = localLanguages.find((l) => l.code === target)?.name ?? target
   const original = key ? (baseText(fallback, key) ?? baseText('es', key) ?? key) : ''
+  // A phrase said one way on a phone and another on a computer: which of the two this one is.
+  const form = !key ? null : phoneKeyOf(key) ? 'interfaz.enComputadora' : baseText('es', computerKey(key)) !== undefined ? 'interfaz.enTelefono' : null
   const mine = key ? (translationOf(target, key) ?? '') : ''
   const issues = key ? problems(original, mine, t) : []
   const missingMarks = mine.trim() ? marksOf(original).filter((m) => !marksOf(mine).includes(m)) : marksOf(original)
@@ -178,7 +183,10 @@ export function TranslateUi({ onBack }: { onBack(): void }) {
             <button type="button" className="word-help-kind translate-where" onClick={() => setChoosing(true)}>
               {group.title} · {t('interfaz.fraseN', { n: group.keys.indexOf(key) + 1, total: group.keys.length })} ▾
             </button>
-            <span className="field-label">{t('interfaz.original')}</span>
+            <span className="field-label">
+              {t('interfaz.original')}
+              {form && ` · ${t(form)}`}
+            </span>
             <p className="translate-original-text">{original}</p>
             <label className="field">
               <span className="field-label">{t('interfaz.suTraduccion')}</span>

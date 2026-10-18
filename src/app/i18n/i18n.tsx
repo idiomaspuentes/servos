@@ -7,11 +7,15 @@
  * - A mini app brings its own texts (`registerTexts`) in the three base languages.
  * - Lookup: the person's translation for the chosen language → the base text in that language → the base language
  *   the person chose to fall back on → Spanish → the key itself.
+ * - On a computer a phrase may say it otherwise («haga clic», «esta computadora»): its computer form,
+ *   `{key}.computadora` (`device.ts`), comes first at each step of the lookup. The language goes before the device:
+ *   a phrase the person translated only in its phone form is still shown in their language.
  * - `{name}` marks a value the app fills in; a translation must keep the same marks (`marksOf`).
  * - `qps` is a test language: Spanish made 40 % longer, to see what breaks with longer phrases.
  */
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { computerKey, currentDevice, watchDevice, type Device } from './device'
 import { gatherInterface, interfacePackage, type InterfacePackage } from './interfacePackage'
 import en from './en.json'
 import es from './es.json'
@@ -41,9 +45,30 @@ export function baseText(lang: BaseLanguage, key: string): string | undefined {
   return base[lang][key]
 }
 
+/**
+ * A key's text from the layers it is looked up in, the most particular first; on a computer each layer gives the
+ * phrase's computer form before its phone form.
+ */
+export function lookup(key: string, layers: Array<Texts | undefined>, device: Device): string | undefined {
+  const computer = device === 'computadora' ? computerKey(key) : null
+  for (const layer of layers) {
+    const text = (computer ? layer?.[computer] : undefined) ?? layer?.[key]
+    if (text !== undefined) return text
+  }
+  return undefined
+}
+
 /** The `{name}` marks of a text, sorted, to check that a translation keeps them. */
 export function marksOf(text: string): string[] {
   return [...new Set(text.match(/\{[a-zA-Z0-9_]+\}/g) ?? [])].sort()
+}
+
+/**
+ * The phrases of a received translation the app can show: those it has (a computer form too), with the {marks} of
+ * their original. A phrase with other marks would show them raw: it stays out, to translate again.
+ */
+export function soundPhrases(texts: Texts): Texts {
+  return Object.fromEntries(Object.entries(texts).filter(([key, text]) => key in base.es && marksOf(base.es[key]).join() === marksOf(text).join()))
 }
 
 function fill(text: string, values?: Record<string, string | number>): string {
@@ -116,6 +141,7 @@ const Context = createContext<I18n | null>(null)
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [stored, setStored] = useState<Stored>(load)
+  const device = useSyncExternalStore(watchDevice, currentDevice, () => 'telefono' as const)
   // Screen readers and hyphenation follow the interface language.
   useEffect(() => {
     document.documentElement.lang = stored.language === PSEUDO_LANGUAGE ? 'es' : stored.language
@@ -132,13 +158,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const value = useMemo<I18n>(() => {
     const { language, fallback, translations, names } = stored
     const t: T = (key, values) => {
-      if (language === PSEUDO_LANGUAGE) return pseudo(fill(base.es[key] ?? key, undefined)).replace(/\{([a-zA-Z0-9_]+)\}/g, (w) => fill(w, values))
-      const text =
-        translations[language]?.[key] ??
-        base[language as BaseLanguage]?.[key] ??
-        base[fallback][key] ??
-        base.es[key] ??
-        key
+      if (language === PSEUDO_LANGUAGE) return pseudo(lookup(key, [base.es], device) ?? key).replace(/\{([a-zA-Z0-9_]+)\}/g, (w) => fill(w, values))
+      const text = lookup(key, [translations[language], base[language as BaseLanguage], base[fallback], base.es], device) ?? key
       return fill(text, values)
     }
     return {
@@ -169,10 +190,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       receivePackage: (p) => {
         // The languages the app brings are not replaced from a file; they are changed in the app's own texts.
         if (BASE_LANGUAGES.includes(p.code as BaseLanguage) || p.code === PSEUDO_LANGUAGE) return null
-        // A phrase whose {marks} are not those of the original would show them raw: it stays out, to translate again.
-        const sound = Object.fromEntries(
-          Object.entries(p.texts).filter(([key, text]) => key in base.es && marksOf(base.es[key]).join() === marksOf(text).join())
-        )
+        const sound = soundPhrases(p.texts)
         const broken = Object.keys(p.texts).length - Object.keys(sound).length
         const { texts, added, kept } = gatherInterface(translations[p.code] ?? {}, sound)
         const fb = BASE_LANGUAGES.includes(p.fallback as BaseLanguage) ? (p.fallback as BaseLanguage) : fallback
@@ -186,7 +204,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         return { added, kept, broken }
       },
     }
-  }, [stored, update])
+  }, [stored, update, device])
 
   return <Context.Provider value={value}>{children}</Context.Provider>
 }
