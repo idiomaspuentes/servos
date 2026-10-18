@@ -1,13 +1,14 @@
 /**
  * A person's Door43 account on this phone, linked once to publish the team's work (design, section 8). The password is
- * exchanged for a token in one request and not kept; a token made on Door43 itself can be used instead. Door43's test
- * copy (QA) is offered beside the real one, and, building the app, a mock on this computer.
+ * exchanged for a token in one request and not kept; a token made on Door43 itself can be used instead. It links to the
+ * real Door43 without asking; Door43's test copy (QA) is offered only to whoever opened the app with `?server=qa`,
+ * and, building the app, a mock on this computer.
  */
 
 import { useState } from 'react'
 import { Sheet } from '../frame/Sheet'
 import { useT } from '../i18n/i18n'
-import { HOSTS, accountOf, forgetAccount, hostName, problemOf, signIn, signInWithToken, type Door43Account } from '../projects/door43'
+import { HOSTS, accountOf, defaultHost, forgetAccount, hostName, problemOf, signIn, signInWithToken, type Door43Account } from '../projects/door43'
 
 export function Door43AccountSheet({
   person,
@@ -23,7 +24,7 @@ export function Door43AccountSheet({
 }) {
   const t = useT()
   const [account, setAccount] = useState(() => accountOf(person))
-  const [host, setHost] = useState(given ?? HOSTS.find((h) => h.id === (import.meta.env.DEV ? 'mock' : 'qa'))?.url ?? HOSTS[0].url)
+  const [host, setHost] = useState(given ?? defaultHost())
   const [withToken, setWithToken] = useState(false)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -70,16 +71,19 @@ export function Door43AccountSheet({
             void link()
           }}
         >
-          <fieldset className="field">
-            <legend className="field-label">{t('door43.donde')}</legend>
-            <div className="choice-row door43-hosts">
-              {HOSTS.map((h) => (
-                <button key={h.id} type="button" className={host === h.url ? 'choice is-on' : 'choice'} aria-pressed={host === h.url} onClick={() => setHost(h.url)}>
-                  {t(`door43.host.${h.id}`)}
-                </button>
-              ))}
-            </div>
-          </fieldset>
+          {/* Only one Door43 for most people: nothing to choose, nothing said. */}
+          {HOSTS.length > 1 && (
+            <fieldset className="field">
+              <legend className="field-label">{t('door43.donde')}</legend>
+              <div className="choice-row door43-hosts">
+                {HOSTS.map((h) => (
+                  <button key={h.id} type="button" className={host === h.url ? 'choice is-on' : 'choice'} aria-pressed={host === h.url} onClick={() => setHost(h.url)}>
+                    {t(`door43.host.${h.id}`)}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          )}
           {withToken ? (
             <label className="field">
               <span className="field-label">{t('door43.llave')}</span>

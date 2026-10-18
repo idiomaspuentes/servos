@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { attachToRelease, fileOf, fingerprint, leaveWork, manifestOf, markVersion, problemOf, proposedRepo, publish, signIn, workLeft, workNameOf, workRepoOf } from './door43'
+import { attachToRelease, fileOf, fingerprint, hostName, leaveWork, manifestOf, markVersion, problemOf, proposedRepo, publish, signIn, wantsQa, workLeft, workNameOf, workRepoOf } from './door43'
 import { DcsApiError } from '../../door43/dcs'
 import { fakeDoor43 } from './fakeDoor43'
 
@@ -185,5 +185,30 @@ describe('el trabajo del equipo por Door43', () => {
     expect([...files.keys()]).toEqual([])
     expect(names(assets)).toEqual(['ana-dev-a.servos.json.gz', 'bea-dev-b.servos.json.gz'])
     expect((await workLeft(account, to, 'dev-a')).map((x) => x.text)).toEqual(['{"de":"Bea"}'])
+  })
+})
+
+describe('which Door43', () => {
+  const kept = new Map<string, string>()
+  const storage = {
+    getItem: (k: string) => kept.get(k) ?? null,
+    setItem: (k: string, v: string) => void kept.set(k, v),
+    removeItem: (k: string) => void kept.delete(k),
+  }
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('QA only for whoever opened the app with ?server=qa, kept until ?server=door43', () => {
+    vi.stubGlobal('localStorage', storage)
+    expect(wantsQa('')).toBe(false)
+    expect(wantsQa('?server=qa')).toBe(true)
+    // The installed app opens without the question: still QA.
+    expect(wantsQa('')).toBe(true)
+    expect(wantsQa('?server=door43')).toBe(false)
+    expect(wantsQa('')).toBe(false)
+  })
+
+  it('an account linked to QA before is still named QA', () => {
+    expect(hostName('https://qa.door43.org')).toBe('qa')
+    expect(hostName('https://git.door43.org')).toBe('door43')
   })
 })
