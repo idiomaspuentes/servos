@@ -217,6 +217,7 @@ export function WordLines({
   writing,
   glossed,
   numbered = true,
+  tabbable = true,
 }: {
   lines: WordLine[]
   verse: number
@@ -224,6 +225,8 @@ export function WordLines({
   onWord(place: number): void
   /** Its verse number before the first line; not where the number has a column of its own (texts side by side). */
   numbered?: boolean
+  /** Whether Tab stops at each word: not between the boxes of rows where the team writes (the words are a click away). */
+  tabbable?: boolean
   /** Words the glossary has an entry for: marked, so a decision is seen before it is asked for. */
   glossed?: Set<number>
   /** The line that the line being written translates, to stand out from the rest of the verse. */
@@ -238,6 +241,7 @@ export function WordLines({
             <button
               key={key}
               type="button"
+              tabIndex={tabbable ? undefined : -1}
               className={`word${lit.has(place) ? ' is-lit' : ''}${glossed?.has(place) ? ' has-gloss' : ''}`}
               onClick={() => onWord(place)}
             >

@@ -2,7 +2,8 @@
  * A verse written a line to a field, as Taller does (`src/components/VerseLines.tsx`): each line of a poem in the
  * text translated from has its field, drawn set in like that line, so the app knows the shape of the verse (`\q1`,
  * `\q2`) and nobody types a marker. Enter begins a line, Backspace at the start joins it to the one before. A verse of
- * prose is one field.
+ * prose is one field. ↑ and ↓ go from line to line, and past the first or the last to the verse before or after
+ * (`onEdge`), as in a table.
  */
 
 import { useRef, useState, type KeyboardEvent } from 'react'
@@ -20,6 +21,7 @@ export function LineFields({
   placeholder,
   addLabel,
   onChange,
+  onEdge,
 }: {
   id: string
   /** The verse as it is kept: its lines parted by `\n`. */
@@ -31,6 +33,8 @@ export function LineFields({
   placeholder(line: number): string
   addLabel: string
   onChange(text: string): void
+  /** ↑ at the start of the first line, ↓ at the end of the last: whether the cursor went to the verse there. */
+  onEdge?(toward: 'previous' | 'next'): boolean
 }) {
   const [more, setMore] = useState(0)
   const root = useRef<HTMLDivElement>(null)
@@ -59,18 +63,25 @@ export function LineFields({
   const onKey = (event: KeyboardEvent<HTMLTextAreaElement>, line: number) => {
     const box = event.currentTarget
     const { selectionStart: from, selectionEnd: to } = box
-    if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+    // With Alt, Ctrl or Shift an arrow is the app's (Alt+↓, the next section) or the selection's, not a move.
+    const plain = !event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey
+    const atStart = plain && event.key === 'ArrowUp' && from === 0 && to === 0
+    const atEnd = plain && event.key === 'ArrowDown' && from === to && to === box.value.length
+    // Ctrl+Enter is the filled button's (keys.ts), not a new line.
+    if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey && !event.nativeEvent.isComposing) {
       event.preventDefault()
       if (poem) apply(splitLine(lines, line, from, to))
     } else if (poem && event.key === 'Backspace' && from === 0 && to === 0 && line > 0) {
       event.preventDefault()
       apply(joinLine(lines, line))
-    } else if (event.key === 'ArrowUp' && from === 0 && to === 0 && line > 0) {
+    } else if (atStart && line > 0) {
       event.preventDefault()
       put({ line: line - 1, offset: lines[line - 1].length })
-    } else if (event.key === 'ArrowDown' && from === box.value.length && line < lines.length - 1) {
+    } else if (atEnd && line < lines.length - 1) {
       event.preventDefault()
       put({ line: line + 1, offset: 0 })
+    } else if ((atStart && onEdge?.('previous')) || (atEnd && onEdge?.('next'))) {
+      event.preventDefault()
     }
   }
 

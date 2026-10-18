@@ -11,7 +11,8 @@
  * On a wide screen one pane (`fixed`, the boxes) stays in sight on the right and the others share the left, so the
  * text being read and the one being written are side by side. On a wider one (from 1280 px) another (`side`, the
  * helps) has a column of its own after them, as translationCore 4 keeps its helps at the right (philosophy,
- * principle 13). On a phone the tabs are at the foot, under the thumb (and right above the keyboard while writing).
+ * principle 13); there the fixed pane may be all there is beside it (the editor's rows, each with its box). On a phone
+ * the tabs are at the foot, under the thumb (and right above the keyboard while writing).
  */
 
 import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react'
@@ -224,9 +225,10 @@ export function Panes({
     </div>
   )
   if (!kept) return row
+  // Nothing beside the fixed pane but the side column: no empty row (the editor's rows, which hold their own boxes).
   return (
     <div className={aside ? 'panes-split has-side' : 'panes-split'}>
-      {row}
+      {panes.length > 0 && row}
       <section id={`pane-${kept.id}`} aria-label={kept.label} className="pane pane-fixed">
         {kept.content}
       </section>

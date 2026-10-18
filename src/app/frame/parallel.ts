@@ -41,6 +41,39 @@ export function versesOf(sets: Iterable<number>[]): number[] {
   return [...all].sort((a, b) => a - b)
 }
 
+/**
+ * The rows when the team writes in the same rows (the editor): a verse each, and the verses said together (`\v 1-2`)
+ * in one, as they are written in one box. `unitOf` gives the verses said with a verse, itself alone when none.
+ */
+export function rowsOf(verses: number[], unitOf: (verse: number) => number[]): number[][] {
+  const rows: number[][] = []
+  const placed = new Set<number>()
+  for (const v of verses) {
+    if (placed.has(v)) continue
+    const unit = unitOf(v)
+    for (const u of unit) placed.add(u)
+    rows.push(unit)
+  }
+  return rows
+}
+
+/**
+ * Where the line being written (counted over the box of the whole row) falls in a text: in which of the row's verses,
+ * and which of its lines. A text with fewer lines shows its last; one with none in the row shows nothing.
+ */
+export function lineIn(unit: number[], line: number, countOf: (verse: number) => number): { verse: number; line: number } | null {
+  let left = line
+  let last: { verse: number; line: number } | null = null
+  for (const verse of unit) {
+    const count = countOf(verse)
+    if (!count) continue
+    if (left < count) return { verse, line: left }
+    left -= count
+    last = { verse, line: count - 1 }
+  }
+  return last
+}
+
 /** What a text's cell says in a verse's row. */
 export type SideCell =
   | { kind: 'text' }

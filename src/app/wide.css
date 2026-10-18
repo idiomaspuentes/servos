@@ -72,12 +72,14 @@
 
 /* Texts side by side (SideBySide.tsx), from 1280 px: their names are switches, on (✓, raised) or one more to put beside
    (+, dashed); the chapter goes one row per verse, the verses open as one band across. The texts' area takes the room
-   the columns need: in the editor the boxes and the helps keep theirs. */
+   the columns need: in the study the note keeps its own. */
 @media (min-width: 1280px) {
   .side-by-side { display: flex; flex-direction: column; gap: 0.5rem; }
+  /* The switches stick to the very top of their pane: under its padding the rows would show through as they scroll */
+  .pane:has(> .side-by-side) { padding-block-start: 0; }
   .side-switches {
     position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: 0.35rem;
-    margin: -0.75rem -1rem 0; padding: 0.35rem 1rem; background: var(--bg); border-block-end: 1px solid var(--hair);
+    margin: 0 -1rem; padding: 0.35rem 1rem; background: var(--bg); border-block-end: 1px solid var(--hair);
   }
   .side-switch {
     display: inline-flex; align-items: center; gap: 0.35rem; width: auto; min-height: var(--touch); padding: 0.2rem 0.95rem;
@@ -116,11 +118,37 @@
   .study .side-cell { font-size: 1.1rem; line-height: 1.7; }
   .study .side-cell.is-original { font-size: 1.25rem; }
 
-  .panes-split.has-side:has(.side-by-side[data-n='2']) { grid-template-columns: minmax(0, 2.05fr) minmax(0, 1fr) minmax(18rem, 0.9fr); }
-  .panes-split.has-side:has(.side-by-side[data-n='3']) { grid-template-columns: minmax(0, 2.9fr) minmax(0, 1fr) minmax(18rem, 0.85fr); }
   .panes-split:not(.has-side):has(.side-by-side[data-n='2']) { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
   .panes-split:not(.has-side):has(.side-by-side[data-n='3']) { grid-template-columns: minmax(0, 2.7fr) minmax(0, 1fr); }
   .screen-fill:has(.side-by-side:not([data-n='1'])) { max-width: 1760px; }
+}
+
+/* The editor from 1280 px: each verse a row, the texts on and then its box, as desktop translation tools have it; the
+   helps keep their column. The rows take the room of their texts and their box. The box is the one of the narrower
+   window (its fields, a poem's lines set in, the choice between two versions), standing at its verse's height. */
+@media (min-width: 1280px) {
+  .panes-split.has-side:not(:has(> .panes)) { grid-template-columns: minmax(0, 2.15fr) minmax(19.5rem, 0.9fr); }
+  .panes-split.has-side:not(:has(> .panes)):has(.side-by-side[data-n='2']) { grid-template-columns: minmax(0, 3.15fr) minmax(19.5rem, 0.9fr); }
+  .panes-split.has-side:not(:has(> .panes)):has(.side-by-side[data-n='3']) { grid-template-columns: minmax(0, 4.15fr) minmax(19.5rem, 0.85fr); }
+
+  .side-rows.has-box .side-row { grid-template-columns: 2rem repeat(var(--side-n, 2), minmax(0, 1fr)) minmax(0, 1.15fr); }
+  .side-rows.has-box .side-row.is-under { padding-inline-start: calc(2rem + 1.25rem + 0.5rem); }
+  /* «10–11» goes on two lines rather than into the text */
+  .side-rows.has-box .side-num { overflow-wrap: anywhere; }
+  .side-cell .verse-number { font-family: var(--font); font-weight: 700; color: var(--accent); }
+  .side-cell.side-box { display: flex; flex-direction: column; gap: 0.35rem; font-family: var(--font); font-size: 1rem; line-height: 1.5; overflow-wrap: normal; }
+  .side-box .edit-joined { margin: 0; }
+  /* A box reached with Tab or ↓ comes into sight below the names that stay over the columns */
+  .side-box :is(.line-field, button) { scroll-margin-block: calc(var(--touch) * 2 + 1.5rem) 1rem; }
+  /* What is written in a row not open, quiet; a click goes there to write it */
+  .side-write {
+    display: block; width: 100%; margin: 0; padding: 0.5rem 0.75rem; border: 1px dashed transparent; background: none;
+    text-align: start; color: var(--text-soft); font-family: var(--project-font, var(--font)); font-size: 1rem; line-height: 1.5;
+    white-space: pre-line; overflow-wrap: anywhere;
+  }
+  .side-write.is-empty { font-family: var(--font); font-size: 0.9rem; }
+  .side-write-go { display: none; font-weight: 700; color: var(--accent); }
+  .side-write-go::after { content: ' →'; }
 }
 
 /* Home, the book and the welcome use the width: from 1280 px home's moss field («go on where you left off») has a column
@@ -170,6 +198,9 @@
   .mix-piece:not(.is-chosen, .is-cutting):hover { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent); }
   .decision:not(:disabled):hover { border-color: currentColor; }
   .side-switch:not(:disabled, .is-on):hover { color: var(--text); background-color: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .side-write:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 55%, transparent); background-color: color-mix(in srgb, var(--accent) 6%, transparent); }
+  .side-write.is-empty:hover .side-write-dash { display: none; }
+  .side-write.is-empty:hover .side-write-go { display: inline; }
 }
 
 /* With the keyboard, the focus is always in sight: on the moss field of home its ring is the field's light, not moss on

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cellOfOwn, cellOfText, shownAtStart, toggleShown, versesOf } from './parallel'
+import { cellOfOwn, cellOfText, lineIn, rowsOf, shownAtStart, toggleShown, versesOf } from './parallel'
 
 const order = ['TPL', 'TPS', 'Hebreo', 'suyo']
 
@@ -43,5 +43,29 @@ describe('texts side by side', () => {
     expect(cellOfOwn(5, startOf, textOf)).toEqual({ kind: 'joined', from: 4 })
     expect(cellOfOwn(4, startOf, textOf)).toEqual({ kind: 'text' })
     expect(cellOfOwn(3, startOf, textOf)).toEqual({ kind: 'missing' })
+  })
+})
+
+describe('rows with the box where the team writes', () => {
+  // The team said 1 with 2, and 4 with 5.
+  const unitOf = (v: number) => ({ 1: [1, 2], 2: [1, 2], 4: [4, 5], 5: [4, 5] })[v] ?? [v]
+
+  it('gives verses said together one row, as they have one box', () => {
+    expect(rowsOf([1, 2, 3, 4, 5], unitOf)).toEqual([[1, 2], [3], [4, 5]])
+  })
+
+  it('keeps a verse the texts lack in the row of the verses it is said with', () => {
+    expect(rowsOf([1, 3, 4], unitOf)).toEqual([[1, 2], [3], [4, 5]])
+  })
+
+  it('finds the line being written among the verses of a row', () => {
+    // Verse 2 has two lines, verse 3 three: the box of 2–3 has five.
+    const count = (v: number) => ({ 2: 2, 3: 3 })[v] ?? 0
+    expect(lineIn([2, 3], 0, count)).toEqual({ verse: 2, line: 0 })
+    expect(lineIn([2, 3], 3, count)).toEqual({ verse: 3, line: 1 })
+    // A text with fewer lines shows its last.
+    expect(lineIn([2, 3], 7, count)).toEqual({ verse: 3, line: 2 })
+    expect(lineIn([4], 2, () => 1)).toEqual({ verse: 4, line: 0 })
+    expect(lineIn([4], 0, () => 0)).toBeNull()
   })
 })

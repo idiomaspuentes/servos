@@ -4,12 +4,17 @@
  * the mini app draws it as it always has (`single`); with two or more, one row per verse, the verses open as one band
  * across, a touched word lit in every text that translates the same words of the original, and its helps under the
  * row. What was chosen is kept on this device, for each mini app.
+ *
+ * Where the team writes (the editor, `writing`), the row ends in the box where its verse is written, as desktop
+ * translation tools have it: always in rows, with one text on too, so the box being written in stays where it is when
+ * another text is put beside. Verses said together are one row with one box; the rows open hold the boxes, and the
+ * others what is written, a click away.
  */
 
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { Fragment, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import type { PrototypeText } from '../../prototype/data'
 import { useT } from '../i18n/i18n'
-import { cellOfOwn, cellOfText, shownAtStart, toggleShown, versesOf, type SideCell } from './parallel'
+import { cellOfOwn, cellOfText, lineIn, rowsOf, shownAtStart, toggleShown, versesOf, type SideCell } from './parallel'
 import { WordLines } from './TouchWords'
 
 export interface SideText {
@@ -20,6 +25,23 @@ export interface SideText {
   text?: PrototypeText
   /** The team's own text, verse by verse (`textOf`), and where a verse said with others starts (`joinStartOf`). */
   own?: { textOf(verse: number): string; startOf(verse: number): number }
+}
+
+/** The boxes where the team writes, a column after the texts in each row. */
+export interface SideWriting {
+  /** Its name over the column: «Su traducción». */
+  label: string
+  /** The verses said together with a verse (`joinedVerses`), in order: their row and their box. */
+  unitOf(verse: number): number[]
+  /** The boxes of a row open. */
+  box(unit: number[]): ReactNode
+  /** What is written of a row not open. */
+  written(unit: number[]): string
+  /** What a click on a row not open does, as said under the pointer: «Escribir el 4». */
+  goLabel(unit: number[]): string
+  go(unit: number[]): void
+  /** Said after the switches (how a poem's lines are written, when the verses open have one). */
+  hint?: ReactNode
 }
 
 const keptKey = (app: string) => `servos.prototipo.lado.${app}`
@@ -53,6 +75,7 @@ export function SideBySide({
   onWord,
   under,
   after,
+  writing,
 }: {
   /** The mini app, whose choice is kept apart from the others'. */
   app: string
@@ -62,7 +85,7 @@ export function SideBySide({
   /** The text the person reads, always among those shown. */
   initial?: string
   /** One text alone, as the mini app draws it; nothing for one it does not draw alone (then a row per verse). */
-  single(id: string): ReactNode
+  single?(id: string): ReactNode
   /** The verses that have a row: the whole chapter, or only those open (the study). */
   verses?: number[]
   /** The verses open (the verse, or those of its section): one band across the texts. */
@@ -78,6 +101,8 @@ export function SideBySide({
   under(ids: string[], verse: number): ReactNode
   /** What follows the rows (the study's helps, all together). */
   after?: ReactNode
+  /** The boxes where the team writes, at the end of each row (the editor). */
+  writing?: SideWriting
 }) {
   const t = useT()
   const order = texts.map((x) => x.id)
@@ -115,24 +140,30 @@ export function SideBySide({
   )
 
   // One text alone is drawn as the mini app draws it, when it has a way to (the team's own text has none: a row each).
-  const alone = shown.length === 1 ? single(shown[0].id) : null
+  // Where the team writes, always rows: the box stays at the end of its verse's row.
+  const alone = shown.length === 1 && !writing ? single?.(shown[0].id) : null
+  const lone = <p className="side-hint">{t('marco.lado.ayuda', { n: max })}</p>
   return (
     <div className="side-by-side" data-n={shown.length}>
       {switches}
       {alone !== null && alone !== undefined ? (
         <>
-          <p className="side-hint">{t('marco.lado.ayuda', { n: max })}</p>
+          {lone}
           {alone}
         </>
       ) : (
         <>
-          <Rows texts={shown} verses={verses} open={open} at={at} line={line} lit={lit} glossed={glossed} onWord={onWord} under={under} />
+          {writing && shown.length === 1 && lone}
+          {writing?.hint}
+          <Rows texts={shown} verses={verses} open={open} at={at} line={line} lit={lit} glossed={glossed} onWord={onWord} under={under} writing={writing} />
           {after}
         </>
       )}
     </div>
   )
 }
+
+const unitLabel = (unit: number[]) => (unit.length > 1 ? `${unit[0]}–${unit[unit.length - 1]}` : String(unit[0]))
 
 function Rows({
   texts,
@@ -144,6 +175,7 @@ function Rows({
   glossed,
   onWord,
   under,
+  writing,
 }: {
   texts: SideText[]
   verses?: number[]
@@ -154,25 +186,111 @@ function Rows({
   glossed?: Record<string, Set<number> | undefined>
   onWord(id: string, verse: number, place: number): void
   under(ids: string[], verse: number): ReactNode
+  writing?: SideWriting
 }) {
   const t = useT()
   const current = useRef<HTMLDivElement>(null)
   const verses = only ?? versesOf(texts.map((x) => (x.text ? Object.keys(x.text.lines).map(Number) : [])))
+  // A verse a row; where the team writes, the verses said together share one, as they share their box.
+  const rows = writing ? rowsOf(verses, writing.unitOf) : verses.map((v) => [v])
   const ids = texts.map((x) => x.id)
-  // The verse open is brought into sight within its pane, as one text alone does (ChapterLines).
+  // The verse open is brought into sight within its pane, as one text alone does (ChapterLines), clear of the names
+  // that stay over the columns. Where the team writes, the first row open: going from box to box in it moves nothing.
+  const anchor = writing ? (open[0] ?? at) : at
   useEffect(() => {
     const row = current.current
     const pane = row?.closest<HTMLElement>('.pane')
     if (!row || !pane) return
-    const top = row.offsetTop - 12
-    pane.scrollTop = top < pane.clientHeight / 3 ? 0 : top
-  }, [at, ids.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
+    const head = pane.querySelector<HTMLElement>('.side-row.is-head')
+    const covered = head ? (parseFloat(getComputedStyle(head).top) || 0) + head.offsetHeight : 0
+    pane.scrollTop = row.offsetTop < pane.clientHeight / 3 ? 0 : row.offsetTop - covered - 8
+  }, [anchor, ids.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const cellOf = (x: SideText, verse: number): SideCell =>
     x.text ? cellOfText(x.text.lines, verse) : x.own ? cellOfOwn(verse, x.own.startOf, x.own.textOf) : { kind: 'missing' }
 
+  // A text's cell in a row: its verse, or the verses said together one after another, each with its number.
+  const cell = (x: SideText, unit: number[]) => {
+    const v = unit[0]
+    const kind = unit.some((u) => cellOf(x, u).kind === 'text') ? 'text' : cellOf(x, v).kind
+    if (kind === 'missing')
+      return (
+        <span key={x.id} className="side-cell is-empty" role="cell" aria-label={t('marco.lado.falta')}>
+          —
+        </span>
+      )
+    if (kind === 'joined')
+      return (
+        <span key={x.id} className="side-cell is-empty" role="cell">
+          {t('marco.lado.junto', { n: x.own!.startOf(v) })}
+        </span>
+      )
+    if (x.own)
+      return (
+        <span key={x.id} className="side-cell is-own" role="cell">
+          {x.own.textOf(v)}
+        </span>
+      )
+    const text = x.text!
+    const writingAt = unit.includes(at) && line !== null ? lineIn(unit, line, (u) => text.lines[u]?.length ?? 0) : null
+    return (
+      <div key={x.id} className={text.original ? 'side-cell is-original' : 'side-cell'} role="cell" dir={text.dir ?? 'ltr'} lang={text.lang}>
+        {unit
+          .filter((u) => text.lines[u])
+          .map((u) => (
+            <WordLines
+              key={u}
+              lines={text.lines[u]}
+              verse={u}
+              lit={lit(x.id)}
+              onWord={(place) => onWord(x.id, u, place)}
+              writing={writingAt?.verse === u ? writingAt.line : undefined}
+              glossed={glossed?.[x.id]}
+              numbered={unit.length > 1}
+              // Where the team writes, Tab goes from box to box: the words are a click away, their helps in their column.
+              tabbable={!writing}
+            />
+          ))}
+      </div>
+    )
+  }
+
+  // The boxes of a row open; in another, what is written there, and a click goes to write it.
+  const box = (unit: number[], here: boolean) => {
+    if (!writing) return null
+    if (here)
+      return (
+        <div className="side-cell side-box" role="cell">
+          {writing.box(unit)}
+        </div>
+      )
+    const written = writing.written(unit).trim()
+    const go = writing.goLabel(unit)
+    return (
+      <div className="side-cell side-box" role="cell">
+        <button
+          type="button"
+          tabIndex={-1}
+          className={written ? 'side-write' : 'side-write is-empty'}
+          title={go}
+          aria-label={written ? `${go}: ${written}` : go}
+          onClick={() => writing.go(unit)}
+        >
+          {written || (
+            <>
+              <span className="side-write-dash" aria-hidden="true">
+                —
+              </span>
+              <span className="side-write-go">{go}</span>
+            </>
+          )}
+        </button>
+      </div>
+    )
+  }
+
   return (
-    <div className="side-rows" role="table" aria-label={t('marco.lado.textos')} style={{ '--side-n': texts.length } as CSSProperties}>
+    <div className={writing ? 'side-rows has-box' : 'side-rows'} role="table" aria-label={t('marco.lado.textos')} style={{ '--side-n': texts.length } as CSSProperties}>
       <div className="side-row is-head" role="row">
         <span className="side-num" role="columnheader" aria-label={t('marco.lado.versiculo')} />
         {texts.map((x) => (
@@ -180,50 +298,30 @@ function Rows({
             {x.label}
           </span>
         ))}
+        {writing && (
+          <span className="side-head" role="columnheader">
+            {writing.label}
+          </span>
+        )}
       </div>
-      {verses.map((v) => {
-        const here = open.includes(v)
-        const below = under(ids, v)
+      {rows.map((unit) => {
+        const here = unit.some((u) => open.includes(u))
+        const below = unit.map((u) => [u, under(ids, u)] as const).filter(([, b]) => b)
         return (
-          <div key={v} ref={v === at ? current : undefined} className="side-verse" role="rowgroup">
+          <div key={unit[0]} ref={unit.includes(anchor) ? current : undefined} className="side-verse" role="rowgroup">
             <div className={here ? 'side-row is-here' : 'side-row'} role="row">
               <span className="side-num" role="rowheader">
-                {v}
+                {unitLabel(unit)}
               </span>
-              {texts.map((x) => {
-                const cell = cellOf(x, v)
-                if (cell.kind === 'missing')
-                  return (
-                    <span key={x.id} className="side-cell is-empty" role="cell" aria-label={t('marco.lado.falta')}>
-                      —
-                    </span>
-                  )
-                if (cell.kind === 'joined')
-                  return (
-                    <span key={x.id} className="side-cell is-empty" role="cell">
-                      {t('marco.lado.junto', { n: cell.from })}
-                    </span>
-                  )
-                if (x.own)
-                  return (
-                    <span key={x.id} className="side-cell is-own" role="cell">
-                      {x.own.textOf(v)}
-                    </span>
-                  )
-                const text = x.text!
-                const count = text.lines[v]?.length ?? 0
-                const writing = v === at && line !== null && count ? Math.min(line, count - 1) : undefined
-                return (
-                  <div key={x.id} className={text.original ? 'side-cell is-original' : 'side-cell'} role="cell" dir={text.dir ?? 'ltr'} lang={text.lang}>
-                    <WordLines lines={text.lines[v]} verse={v} lit={lit(x.id)} onWord={(place) => onWord(x.id, v, place)} writing={writing} glossed={glossed?.[x.id]} numbered={false} />
-                  </div>
-                )
-              })}
+              {texts.map((x) => cell(x, unit))}
+              {box(unit, here)}
             </div>
-            {below && (
+            {below.length > 0 && (
               <div className="side-row is-under" role="row">
                 <div className="side-under" role="cell">
-                  {below}
+                  {below.map(([u, b]) => (
+                    <Fragment key={u}>{b}</Fragment>
+                  ))}
                 </div>
               </div>
             )}

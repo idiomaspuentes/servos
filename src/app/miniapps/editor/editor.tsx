@@ -5,10 +5,14 @@
  * the keyboard stays up all the while. A word touched in a text brings its notes and translation words under its
  * verse (`TouchWords`). In the prototype a draft is kept in this browser only; wired, every change goes to the
  * journal (design, section 6).
+ *
+ * From 1280 px each verse is a row: the texts on, then its box, as desktop translation tools have it (philosophy,
+ * principle 13). The box is the same in both shapes (`boxOf`); only where it stands changes.
  */
 
-import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, type FocusEvent } from 'react'
 import { Panes, type Pane, useWide, useWider, useWidest } from '../../frame/Panes'
+import { rowsOf } from '../../frame/parallel'
 import { SideBySide } from '../../frame/SideBySide'
 import { glossedPlaces, useWordHelps, type GlossaryTarget } from '../../frame/TouchWords'
 import { readGlossaryFor, saveGlossaryEntry } from '../../projects/glossary'
@@ -50,9 +54,7 @@ function readOthers(book: string, chapter: number, verses: number[]): Record<num
 
 /** Verses said together (joined) are written in one box, kept on the first: the verses open, as those boxes. */
 function unitsOf(book: string, chapter: number, verses: number[]): number[][] {
-  const out: number[][] = []
-  for (const v of verses) if (!out.some((u) => u.includes(v))) out.push(joinedVerses(book, chapter, v))
-  return out
+  return rowsOf(verses, (v) => joinedVerses(book, chapter, v))
 }
 const unitLabel = (unit: number[]) => (unit.length > 1 ? `${unit[0]}–${unit[unit.length - 1]}` : String(unit[0]))
 
@@ -77,15 +79,33 @@ function Center({ context }: MiniAppCenterProps) {
   }
 
   // Going on to another verse or section while writing: the cursor goes to its first line, and the keyboard stays up.
+  // A click on a row not open (from 1280 px) asks for the box of that row.
   const writing = useRef(false)
   const stopWriting = useRef<number>()
+  const asked = useRef<number | null>(null)
   const fieldsId = (verse: number) => `editor-v${verse}`
   useLayoutEffect(() => {
-    if (!writing.current) return
-    const box = document.getElementById(lineFieldId(fieldsId(shown[0]), 0)) as HTMLTextAreaElement | null
+    const verse = asked.current
+    asked.current = null
+    if (verse === null && !writing.current) return
+    const box = document.getElementById(lineFieldId(fieldsId(verse ?? shown[0]), 0)) as HTMLTextAreaElement | null
     box?.focus()
     box?.setSelectionRange(box.value.length, box.value.length)
   }, [openKey]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The line the cursor is in, for the texts to light it; and that the person is writing, so going on keeps it there.
+  const onBoxFocus = (event: FocusEvent) => {
+    window.clearTimeout(stopWriting.current)
+    writing.current = true
+    const id = event.target.id.match(/^editor-v(\d+)(?:-l(\d+))?$/)
+    if (id) setWritingLine({ verse: Number(id[1]), line: id[2] ? Number(id[2]) - 1 : 0 })
+  }
+  const onBoxBlur = () => {
+    // Later, not now: moving to another verse takes the focused field away for a moment.
+    stopWriting.current = window.setTimeout(() => {
+      writing.current = document.activeElement instanceof HTMLTextAreaElement
+    }, 0)
+  }
 
   // When the keyboard comes up the box area shrinks under the line being written: it is brought back into sight there.
   useEffect(() => {
@@ -153,6 +173,76 @@ function Center({ context }: MiniAppCenterProps) {
     frame.setSaved('guardado')
   }
 
+  // ↑ and ↓ past a box's first or last line: the box of the verse before or after, among the verses open.
+  const edge = (unit: number[], toward: 'previous' | 'next') => {
+    const i = units.findIndex((u) => u[0] === unit[0])
+    const to = units[toward === 'next' ? i + 1 : i - 1]
+    const first = to ? document.getElementById(lineFieldId(fieldsId(to[0]), 0)) : null
+    const fields = first?.closest('.line-fields')?.querySelectorAll<HTMLTextAreaElement>('textarea.line-field')
+    const box = fields && (toward === 'next' ? fields[0] : fields[fields.length - 1])
+    if (!box) return false
+    box.focus()
+    const at = toward === 'next' ? 0 : box.value.length
+    box.setSelectionRange(at, at)
+    return true
+  }
+
+  // The box of a verse, or of the verses said together: the same in a column of boxes and in the rows of a wide window.
+  // In a section the position follows the verse being written in, so the helps are that verse's.
+  const boxOf = (unit: number[]) => {
+    const v = unit[0]
+    const markers = unit.flatMap(markersOf)
+    const poem = markers.some(isPoemLine)
+    const conflict = structureConflictAt(position.book, position.chapter, v)
+    return (
+      <div
+        className="edit-verse-body"
+        onFocus={(event) => {
+          onBoxFocus(event)
+          if (!unit.includes(position.verse)) goTo({ ...position, verse: v })
+        }}
+        onBlur={onBoxBlur}
+      >
+        {conflict ? (
+          <TwoShapes
+            book={position.book}
+            conflict={conflict}
+            onChoose={(keepReceived) => {
+              chooseStructure(position.book, position.chapter, conflict.from, keepReceived, context.person.name)
+              setDrafts(readDrafts(position.book, position.chapter, context.shown))
+              setOthers(readOthers(position.book, position.chapter, context.shown))
+              frame.setSaved('guardado')
+            }}
+          />
+        ) : others[v] ? (
+          // Received from another computer while this one had its own text: both stay until someone chooses,
+          // and the choice comes before writing (the one kept can be corrected then).
+          <TwoVersions
+            here={{ text: drafts[v] ?? '', by: authorOf(position.book, position.chapter, v) ?? '' }}
+            received={others[v]!}
+            onChoose={(keepReceived) => choose(v, keepReceived)}
+          />
+        ) : (
+          <LineFields
+            key={fieldsId(v)}
+            id={fieldsId(v)}
+            text={drafts[v] ?? ''}
+            markers={markers}
+            poem={poem}
+            label={t('editor.suVersiculo', { v: unitLabel(unit) })}
+            placeholder={(line) => (poem ? t('editor.renglon', { n: line }) : t('editor.cajaVersiculo', { v: unitLabel(unit), idioma: context.project.languageName }))}
+            addLabel={t('editor.otroRenglon')}
+            onChange={(value) => write(v, value)}
+            onEdge={(toward) => edge(unit, toward)}
+          />
+        )}
+        {/* What a passage review saw to improve here, until someone marks it improved. */}
+        <VerseObservations book={position.book} chapter={position.chapter} verse={v} person={context.person.name} />
+      </div>
+    )
+  }
+  const joinedNote = (unit: number[]) => <p className="edit-joined">{t('editor.unidos', { versiculos: unitLabel(unit) })}</p>
+
   // Only the boxes: the texts to translate from are panes of their own, a swipe away. Both in one pane left each a
   // sliver once the keyboard was up, and the person could not tell the text being written from the one being read.
   const own = (
@@ -162,74 +252,16 @@ function Center({ context }: MiniAppCenterProps) {
       {!wide && units.every((u) => !(drafts[u[0]] ?? '').trim()) && (
         <p className="edit-where">{t('editor.comoEmpezar', { idioma: context.project.languageName, texto: bridge.abbreviation })}</p>
       )}
-      <div
-        className="edit-fields"
-        onFocus={(event) => {
-          window.clearTimeout(stopWriting.current)
-          writing.current = true
-          const id = event.target.id.match(/^editor-v(\d+)(?:-l(\d+))?$/)
-          if (id) setWritingLine({ verse: Number(id[1]), line: id[2] ? Number(id[2]) - 1 : 0 })
-        }}
-        onBlur={() => {
-          // Later, not now: moving to another verse takes the focused field away for a moment.
-          stopWriting.current = window.setTimeout(() => {
-            writing.current = document.activeElement instanceof HTMLTextAreaElement
-          }, 0)
-        }}
-      >
-        {units.map((unit) => {
-          const v = unit[0]
-          const markers = unit.flatMap(markersOf)
-          const poem = markers.some(isPoemLine)
-          return (
-            // In a section each verse keeps its own fields, its number before them: the text is still kept verse by
-            // verse, so a section and a verse at a time read and write the same drafts.
-            <div
-              key={v}
-              className={units.length > 1 ? 'edit-verse in-section' : 'edit-verse'}
-              onFocus={() => !unit.includes(position.verse) && goTo({ ...position, verse: v })}
-            >
-              {units.length > 1 && <span className="edit-verse-number" aria-hidden="true">{unitLabel(unit)}</span>}
-              {units.length === 1 && unit.length > 1 && <p className="edit-joined">{t('editor.unidos', { versiculos: unitLabel(unit) })}</p>}
-              <div className="edit-verse-body">
-                {structureConflictAt(position.book, position.chapter, v) ? (
-                  <TwoShapes
-                    book={position.book}
-                    conflict={structureConflictAt(position.book, position.chapter, v)!}
-                    onChoose={(keepReceived) => {
-                      chooseStructure(position.book, position.chapter, structureConflictAt(position.book, position.chapter, v)!.from, keepReceived, context.person.name)
-                      setDrafts(readDrafts(position.book, position.chapter, context.shown))
-                      setOthers(readOthers(position.book, position.chapter, context.shown))
-                      frame.setSaved('guardado')
-                    }}
-                  />
-                ) : others[v] ? (
-                  // Received from another computer while this one had its own text: both stay until someone chooses,
-                  // and the choice comes before writing (the one kept can be corrected then).
-                  <TwoVersions
-                    here={{ text: drafts[v] ?? '', by: authorOf(position.book, position.chapter, v) ?? '' }}
-                    received={others[v]!}
-                    onChoose={(keepReceived) => choose(v, keepReceived)}
-                  />
-                ) : (
-                  <LineFields
-                    key={fieldsId(v)}
-                    id={fieldsId(v)}
-                    text={drafts[v] ?? ''}
-                    markers={markers}
-                    poem={poem}
-                    label={t('editor.suVersiculo', { v: unitLabel(unit) })}
-                    placeholder={(line) => (poem ? t('editor.renglon', { n: line }) : t('editor.cajaVersiculo', { v: unitLabel(unit), idioma: context.project.languageName }))}
-                    addLabel={t('editor.otroRenglon')}
-                    onChange={(value) => write(v, value)}
-                  />
-                )}
-                {/* What a passage review saw to improve here, until someone marks it improved. */}
-                <VerseObservations book={position.book} chapter={position.chapter} verse={v} person={context.person.name} />
-              </div>
-            </div>
-          )
-        })}
+      <div className="edit-fields">
+        {units.map((unit) => (
+          // In a section each verse keeps its own fields, its number before them: the text is still kept verse by
+          // verse, so a section and a verse at a time read and write the same drafts.
+          <div key={unit[0]} className={units.length > 1 ? 'edit-verse in-section' : 'edit-verse'}>
+            {units.length > 1 && <span className="edit-verse-number" aria-hidden="true">{unitLabel(unit)}</span>}
+            {units.length === 1 && unit.length > 1 && joinedNote(unit)}
+            {boxOf(unit)}
+          </div>
+        ))}
         {anyPoem && <p className="edit-hint">{t('editor.comoRenglones')}</p>}
       </div>
     </div>
@@ -243,9 +275,10 @@ function Center({ context }: MiniAppCenterProps) {
   }, [wider, openKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const widest = useWidest()
+  const labelOf = (x: (typeof data.texts)[number]) => (x.original ? t(`editor.lengua.${x.lang ?? 'original'}`) : x.abbreviation)
   const texts: Pane[] = data.texts.map((x) => ({
     id: x.abbreviation,
-    label: x.original ? t(`editor.lengua.${x.lang ?? 'original'}`) : x.abbreviation,
+    label: labelOf(x),
     content: (
       <ChapterLines
         text={x}
@@ -260,18 +293,18 @@ function Center({ context }: MiniAppCenterProps) {
       />
     ),
   }))
-  // From 1280 px the texts can be read side by side (principle 13): their names are switches, two at a time, three
-  // from 1600 px, where the boxes and the helps still have their room. One alone is drawn as its pane is.
-  const together: Pane = {
+  // From 1280 px each verse is a row (principle 13): the texts on, their names switches, two at a time, three from
+  // 1600 px, and the verse's box at the end of its row; the helps keep their column. Always rows, with one text on
+  // too, so the box being written in stays where it is when another text is put beside.
+  const rows: Pane = {
     id: 'textos',
     label: t('marco.lado.textos'),
     content: (
       <SideBySide
         app="editor"
-        texts={data.texts.map((x, i) => ({ id: x.abbreviation, label: texts[i].label, text: x }))}
+        texts={data.texts.map((x) => ({ id: x.abbreviation, label: labelOf(x), text: x }))}
         max={widest ? 3 : 2}
         initial={textAbbreviation}
-        single={(id) => texts.find((p) => p.id === id)?.content}
         open={shown}
         at={position.verse}
         line={writingLine?.verse === position.verse ? writingLine.line : null}
@@ -282,21 +315,35 @@ function Center({ context }: MiniAppCenterProps) {
           const cards = ids.map((id) => [id, card(id, verse)] as const).filter(([, c]) => c)
           return cards.length ? cards.map(([id, c]) => <Fragment key={id}>{c}</Fragment>) : null
         }}
+        writing={{
+          label: t('editor.panelSuyo'),
+          unitOf: (v) => joinedVerses(position.book, position.chapter, v),
+          box: (unit) => (
+            <>
+              {unit.length > 1 && joinedNote(unit)}
+              {boxOf(unit)}
+            </>
+          ),
+          written: (unit) => textOf(position.book, position.chapter, unit[0]),
+          goLabel: (unit) => t('editor.escribirAqui', { v: unitLabel(unit) }),
+          go: (unit) => {
+            asked.current = unit[0]
+            goTo({ ...position, verse: unit[0] })
+          },
+          hint: anyPoem ? <p className="side-hint">{t('editor.comoRenglones')}</p> : undefined,
+        }}
       />
     ),
   }
-  const panes: Pane[] = [
-    { id: 'suyo', label: t('editor.panelSuyo'), content: own },
-    ...(wider ? [together] : texts),
-    { id: 'ayudas', label: t('editor.panelAyudas'), content: frame.helps(undefined, { glossary }) },
-  ]
+  const helps: Pane = { id: 'ayudas', label: t('editor.panelAyudas'), content: frame.helps(undefined, { glossary }) }
+  const panes: Pane[] = wider ? [rows, helps] : [{ id: 'suyo', label: t('editor.panelSuyo'), content: own }, ...texts, helps]
 
   return (
     <>
       <Panes
         panes={panes}
         label={t('editor.paneles')}
-        fixed="suyo"
+        fixed={wider ? 'textos' : 'suyo'}
         side="ayudas"
         onPane={(id) => {
           if (id === 'ayudas') helpsOpened()
@@ -381,6 +428,7 @@ export const editor: MiniApp = {
       textoPuente: 'Texto puente: {texto}',
       comoEmpezar: 'Escriba cada versículo en {idioma}. Lo que va a traducir está en el {texto}: deslice a la izquierda o toque «{texto}» arriba.',
       cajaVersiculo: 'Versículo {v} en {idioma}',
+      escribirAqui: 'Escribir el {v}',
       glosario: 'Glosario',
       glosarioSinOriginal: '«{palabra}» no está alineada con el original: no se sabe de qué palabra es.',
       comoSeTraduce: 'Cómo se traduce',
@@ -415,6 +463,7 @@ export const editor: MiniApp = {
       textoPuente: 'Texto ponte: {texto}',
       comoEmpezar: 'Escreva cada versículo em {idioma}. O que vai traduzir está no {texto}: deslize para a esquerda ou toque «{texto}» acima.',
       cajaVersiculo: 'Versículo {v} em {idioma}',
+      escribirAqui: 'Escrever o {v}',
       glosario: 'Glossário',
       glosarioSinOriginal: '«{palabra}» não está alinhada com o original: não se sabe de que palavra é.',
       comoSeTraduce: 'Como se traduz',
@@ -449,6 +498,7 @@ export const editor: MiniApp = {
       textoPuente: 'Bridge text: {texto}',
       comoEmpezar: 'Write each verse in {idioma}. What you will translate is in the {texto}: swipe left or touch «{texto}» above.',
       cajaVersiculo: 'Verse {v} in {idioma}',
+      escribirAqui: 'Write verse {v}',
       glosario: 'Glossary',
       glosarioSinOriginal: '«{palabra}» is not aligned to the original: which word it stands for is unknown.',
       comoSeTraduce: 'How it is translated',
