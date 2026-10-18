@@ -11,6 +11,7 @@
  * (principle 8).
  */
 
+import type { BookState } from '../projects/library'
 import { useEffect, useRef, useState } from 'react'
 import type { PrototypeData } from '../../prototype/data'
 import { RowButton, Suggestion } from '../frame/Actions'
@@ -38,6 +39,7 @@ export function BookScreen({
   onPhase,
   onName,
   onReceive,
+  state,
   onGlossary,
   onReceiveWork,
   onChooseVersions,
@@ -51,6 +53,8 @@ export function BookScreen({
   book: BookEntry
   /** The book's chapters whose texts and helps are on this phone, in order. */
   chapters: PrototypeData[]
+  /** How the book stands on this device: being read, not here (projects/library.ts). */
+  state?: BookState
   onBack(): void
   /** Opens a mini app where the person left off, or at a chapter. */
   onOpen(app: MiniApp, chapter?: number): void
@@ -237,7 +241,18 @@ export function BookScreen({
         </button>
       </header>
       <main className="main">
-        {!chapters.length && (
+        {!chapters.length && state?.state === 'loading' && (
+          // Being read from this device: said as it goes, a chapter at a time.
+          <p className="status" role="status">
+            {state.total ? t('libro.preparandoCapitulo', { libro: name, n: state.done, total: state.total }) : t('libro.preparando', { libro: name })}
+          </p>
+        )}
+        {!chapters.length && state?.state === 'error' && (
+          <p className="notice" role="alert">
+            {t('libro.noSeLeyo', { libro: name, error: state.message })}
+          </p>
+        )}
+        {!chapters.length && (!state || state.state === 'missing' || state.state === 'error') && (
           <>
             <p className="notice">{t('libro.faltaPaquete', { libro: name })}</p>
             <button type="button" className="button-primary" onClick={onReceive}>

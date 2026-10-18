@@ -764,5 +764,8 @@
   "marco.volverInicio": "Voltar ao início",
   "marco.falloDetalle": "Detalhe, para avisar do erro",
   "marco.copiar": "Copiar",
-  "marco.copiado": "Copiado"
+  "marco.copiado": "Copiado",
+  "libro.preparando": "Preparando os textos de {libro}…",
+  "libro.preparandoCapitulo": "Preparando os textos de {libro}: capítulo {n} de {total}.",
+  "libro.noSeLeyo": "Não foi possível ler os textos de {libro} deste telefone: {error}"
 }

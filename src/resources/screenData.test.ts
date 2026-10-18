@@ -55,7 +55,9 @@ const es419 = (original: BookSources['original']): BookSources => ({
 
 describe.skipIf(!folder)('un capítulo desde los paquetes reales', () => {
   const stores = openResourceStores({ cache: 'screen-cache', catalog: 'screen-catalog' })
+  // The suite's body still runs when it is skipped: nothing is opened without the packs' folder.
   const opened = (async () => {
+    if (!folder) return
     for (const file of ['originals', 'es-419']) await openPack(stores, readFileSync(join(folder!, `${file}.langpack.zip`)))
   })()
 

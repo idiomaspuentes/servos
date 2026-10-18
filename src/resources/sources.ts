@@ -68,7 +68,7 @@ export async function deviceIndex(stores: ResourceStores): Promise<DeviceIndex> 
       title: String(meta.title ?? key),
       books: inBibleOrder(books),
       inRelease: inBibleOrder(inRelease.map((b) => b.toLowerCase()).filter((b) => BIBLE_ORDER.includes(b))),
-      articles: kind === 'scripture' || kind === 'original' || PREPARED[kind] ? false : (await keysUnder(stores, `${key}/`)).length > 0,
+      articles: kind === 'scripture' || kind === 'original' || PREPARED[kind] ? false : (await keysUnder(stores, `${key}/`, 1)).length > 0,
     })
   }
   return { resources: resources.sort((a, b) => a.key.localeCompare(b.key)) }

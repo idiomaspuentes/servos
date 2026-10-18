@@ -34,7 +34,7 @@ export function openResourceStores(names: { cache?: string; catalog?: string } =
  * rows weigh megabytes (es-419's literal text is 6 MB). The adapter opens the database first, so it is never created
  * here without its store.
  */
-export async function keysUnder(stores: ResourceStores, prefix: string): Promise<string[]> {
+export async function keysUnder(stores: ResourceStores, prefix: string, limit?: number): Promise<string[]> {
   if (!stores.cacheName) return (await stores.cache.getByPrefix(prefix)).map((r) => r.key)
   await stores.cache.hasRawKeys(['servos:abrir'])
   const db = await new Promise<IDBDatabase>((resolve, reject) => {
@@ -44,7 +44,7 @@ export async function keysUnder(stores: ResourceStores, prefix: string): Promise
   })
   try {
     return await new Promise<string[]>((resolve, reject) => {
-      const request = db.transaction(CACHE_STORE, 'readonly').objectStore(CACHE_STORE).getAllKeys(IDBKeyRange.bound(prefix, `${prefix}￿`))
+      const request = db.transaction(CACHE_STORE, 'readonly').objectStore(CACHE_STORE).getAllKeys(IDBKeyRange.bound(prefix, `${prefix}\uffff`), limit)
       request.onsuccess = () => resolve(request.result as string[])
       request.onerror = () => reject(request.error)
     })

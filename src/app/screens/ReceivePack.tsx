@@ -1,12 +1,12 @@
 /**
- * Receive a pack: choose the file, see what it brings, open it. This one is real: it reads the pack's manifest and
- * opens it into this browser's stores with `src/resources`. What the reading screens show is still the prototype's
- * fixed chapter.
+ * Receive a pack: choose the file, see what it brings, open it into this device's stores (`src/resources`); then the
+ * projects' books are read from it again (projects/library.ts), and the screens show them.
  */
 
 import { useState } from 'react'
 import { describePack, openPack, type PackSummary } from '../../resources/packs'
 import { openResourceStores } from '../../resources/store'
+import { refreshLibrary } from '../projects/library'
 import { useT } from '../i18n/i18n'
 
 type Step =
@@ -82,6 +82,7 @@ export function ReceivePack({ onBack, onStudy }: { onBack(): void; onStudy(): vo
                 setStep({ kind: 'opening', summary })
                 try {
                   const result = await openPack(openResourceStores(), bytes)
+                  await refreshLibrary()
                   setStep({ kind: 'done', summary, written: result.written })
                 } catch (error) {
                   setStep({ kind: 'error', message: error instanceof Error ? error.message : String(error) })
