@@ -119,7 +119,8 @@ acción toma la forma de su papel:
   encabezado («‹ Inicio», «Más») va en el color del texto, en su lugar fijo de siempre.
 - **Tres tonos, no más** (como tC4): el fondo; encima, tarjetas que se separan por un tono y una sombra suave, no por
   un borde; dentro de una tarjeta, nada en su propia caja, solo líneas finas. Una caja dentro de otra hace competir a
-  las dos. En el editor, solo la caja que se escribe se dibuja; las demás son un fondo leve.
+  las dos. En el editor, solo la caja que se escribe se dibuja; las demás son un fondo leve. Al sol, donde un tono
+  desaparece, la tarjeta se separa por una línea (ver «Al sol», abajo).
 - **Papel, tinta y musgo** (18 de octubre de 2026, después de una
   [investigación del sector](INVESTIGACION_MARCA_Y_PALETA.md)): el fondo es el papel
   cálido de una Biblia impresa (#f7f2e8), el texto va en una tinta casi negra (#182125, 14.7:1), lo que lleva adelante
@@ -129,7 +130,16 @@ acción toma la forma de su papel:
   marca; en el sector casi todo es azul, rojo o naranja, y el verde profundo no es el color principal de nadie. Las
   sombras toman el café del papel, no el gris. **De noche, la tinta es el fondo y el papel es la luz**: un casi negro
   con un tinte frío (#0c1316, nunca negro puro), el texto en papel suave (nunca blanco), el musgo más claro (#98cf8b),
-  la profundidad por un tono más claro y no por sombras ni brillos.
+  la profundidad por un tono más claro y no por sombras ni brillos. **Al sol, líneas y peso en lugar de tonos** (18 de
+  octubre): a pleno sol cualquier esquema baja a unos 3–5:1, así que «Apariencia», en el menú de la persona, tiene una
+  cuarta opción, «Sol». El fondo es blanco y la tinta casi negra (#15141a, 18.3:1, el mínimo que un estudio propone
+  para leer afuera); el texto suave queda a 12.5:1 y las líneas a 7.5:1. Las tarjetas y los mosaicos se separan por
+  una línea, no por un tono, que al sol desaparece, y la píldora elegida lleva un borde oscuro. La interfaz sube un
+  peso (Mulish 500 en el texto, 600 en las líneas chicas) y la Escritura un tamaño, porque Charis no tiene pesos
+  intermedios. El musgo se oscurece (#2e612e, 7.3:1) y los estados también: «hecho» en #0950b3, «peligro» en #9c167b
+  y el aviso en #8f3000, todos a 7.2:1 o más, elegidos para que se distingan con protanopía, deuteranopía y
+  tritanopía mejor que los del día (CIEDE2000 de 8.5 o más entre dos cualesquiera; el día llega a 5.2). Por eso, al
+  sol, el peligro tira a ciruela.
 - **Sin vidrio ni degradados** (decidido el 17 de octubre): son la marca más reconocible de un diseño hecho en
   automático, el desenfoque gasta la batería de un teléfono barato y baja la lectura del texto. El carácter viene de
   lo que la app es: el papel, la tinta, la letra de la Escritura, el puente. Un solo campo de musgo en Inicio,
@@ -137,7 +147,7 @@ acción toma la forma de su papel:
 - **Las letras de translationCore 4** (17 de octubre; guardadas dentro de la app, con todos sus alfabetos, para que
   estén también sin internet): la interfaz en Mulish, la que tC4 usa en lugar de Avenir, la de unfoldingWord, gruesa
   en lo que nombra y en lo que actúa (títulos 850–900, botones, pestañas y nombres 800); la Escritura en Charis SIL,
-  con los números de versículo en tinta, como en una Biblia impresa. Charis es también la letra por defecto de lo que
+  con los números de versículo en el musgo, como los de color de una Biblia impresa. Charis es también la letra por defecto de lo que
   escribe el equipo. Se probaron antes Atkinson Hyperlegible (su cero con raya hacía leer «Jonás 1:1Ø»), Figtree y
   Literata. Los títulos se distinguen por tamaño y peso, no por gris, y ninguno deja una palabra sola en un renglón.
 - **La marca es el libro que habla** (la idea, del 17 de octubre; el dibujo, rehecho el 18): un libro abierto, la
@@ -147,7 +157,10 @@ acción toma la forma de su papel:
   color**, con dos renglones recortados de una página y tres barras de voz recortadas de la otra, todos del mismo
   ancho y con puntas planas, como las de Mulish; se dibujó en negro sobre una retícula de 48 y se eligió mirándolo a
   16 px. En la pantalla va solo, en el musgo, junto a «Servos» (`BrandMark`); el ícono del teléfono no es la marca en
-  un cuadrado sino el libro blanco sobre un campo de musgo (`public/`, de `design/logo/render-icons.js`). Se probaron
+  un cuadrado sino el libro blanco sobre un campo de musgo (`public/`, de `design/logo/render-icons.js`). En la
+  pestaña del navegador va el libro solo, en musgo (musgo claro con el navegador oscuro), redibujado a 16 px con cada
+  borde en un píxel entero: reducido, sus cortes de un tercio de píxel se volvían manchas grises. Android pinta con los
+  colores del teléfono la silueta del mismo libro (el ícono temático). Se probaron
   un puente (parecía el ícono de wifi, luego una mesa), dos voces (una app de mensajes), la alineación (se leía «XI»),
   una S de dos mitades y ondas en lugar de barras (parecían gusanos). Se evita lo que ya es de otros: la cola de globo
   de diálogo (BibleProject) y los arcos (wifi).
@@ -171,7 +184,7 @@ medida es tC4: una ventana ancha, ratón y teclado, columnas a los lados y el te
   de posición abajo. Desde 900 px, dos columnas: lo que se lee y lo que se escribe. Desde 1280 px, también la columna de
   las ayudas, como en tC4. Una ventana angosta en la computadora se ve como el teléfono, y está bien.
 - **Lo que en el teléfono es una hoja, en la ventana ancha es una columna o un cuadro.** La lista de un revisor va en una
-  columna a la izquierda; las ayudas, a la derecha. Lo que sigue siendo una hoja (compartir, un artículo, elegir un
+  columna a la izquierda desde 1280 px (antes, en un cuadro); las ayudas, a la derecha. Lo que sigue siendo una hoja (compartir, un artículo, elegir un
   libro) se abre como un cuadro en medio de la ventana, nunca pegado al pie. «Más» y el menú de la persona se abren bajo
   su botón.
 - **Anchos de lectura, no de ventana.** Un renglón de texto no pasa de unos 70 caracteres; un formulario, de unos 40rem.

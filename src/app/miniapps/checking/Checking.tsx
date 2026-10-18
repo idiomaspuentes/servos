@@ -163,6 +163,10 @@ export function checkingCenter<I extends Checkable>(kind: CheckKind<I>) {
     // From 1280 px the groups are a column at the left, always in sight, as translationCore 4's groups menu
     // (principle 13); on a narrower screen they are chosen in a sheet.
     const wider = useWider()
+    // The window grown wide shows the column, and the sheet is done with: narrowed again, it does not come back by itself.
+    useEffect(() => {
+      if (wider) setChoosing(false)
+    }, [wider])
     // From one note (or word) to the next by the keyboard: here they are what the position line is elsewhere.
     useKey('previous', previous ? () => go(previous) : null)
     useKey('next', following ? () => go(following) : null)

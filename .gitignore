@@ -5,3 +5,5 @@ dist/
 coverage/
 # Other sessions' working copies
 .claude/worktrees/
+# playwright-cli's page snapshots (design/logo/render-icons.js is run with it)
+.playwright-cli/

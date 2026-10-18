@@ -71,8 +71,19 @@ export function Home({
         {/* On a wide window the projects are a column of their own, beside the field (principle 13); on a phone this box
             is not drawn and they follow it, as before (wide.css). */}
         <div className="home-projects">
-          <h1>{t('inicio.tusProyectos')}</h1>
-          {projects.length === 0 && <p className="quiet">{t('inicio.sinProyectos')}</p>}
+          {projects.length === 0 ? (
+            // The first time, the one thing to do: the team's project.
+            <section className="book-resume is-field" aria-label={t('inicio.paraEmpezar')}>
+              <span className="book-resume-kicker">{t('inicio.paraEmpezar')}</span>
+              <span className="book-resume-what">{t('inicio.primerProyecto')}</span>
+              <span className="quiet book-resume-project">{t('inicio.agregarProyectoAyuda')}</span>
+              <button type="button" className="button-primary" onClick={onAddProject}>
+                {t('inicio.agregarProyecto')} →
+              </button>
+            </section>
+          ) : (
+            <h1>{t('inicio.tusProyectos')}</h1>
+          )}
           {projects.map((p) => (
             <article key={p.id} className="project-card">
               <div className="project-card-head">
@@ -113,13 +124,15 @@ export function Home({
               </div>
             </article>
           ))}
-          <button type="button" className="add-card" onClick={onAddProject}>
-            <span className="add-tile-plus" aria-hidden="true">
-              +
-            </span>
-            <span className="add-card-title">{t('inicio.agregarProyecto')}</span>
-            <span className="quiet">{t('inicio.agregarProyectoAyuda')}</span>
-          </button>
+          {projects.length > 0 && (
+            <button type="button" className="add-card" onClick={onAddProject}>
+              <span className="add-tile-plus" aria-hidden="true">
+                +
+              </span>
+              <span className="add-card-title">{t('inicio.agregarProyecto')}</span>
+              <span className="quiet">{t('inicio.agregarProyectoAyuda')}</span>
+            </button>
+          )}
         </div>
       </main>
     </div>

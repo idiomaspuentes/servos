@@ -94,6 +94,21 @@ export function searchLanguages(list: LanguageOption[], query: string, limit = 8
 const RIGHT_TO_LEFT = new Set(['ar', 'arb', 'arc', 'ckb', 'dv', 'fa', 'pes', 'prs', 'glk', 'he', 'hbo', 'ku-arab', 'mzn', 'ps', 'pbt', 'sd', 'syr', 'ug', 'ur', 'yi', 'ydd'])
 export const writtenRightToLeft = (code: string) => RIGHT_TO_LEFT.has(code.toLowerCase())
 
+/**
+ * A language's name in the languages the app speaks (`es-419` → «Español de Latinoamérica»), from the browser, which
+ * knows it without internet; its code when the browser does not know it. Door43's names mix languages («Español Latin
+ * America»).
+ */
+export function languageLabel(code: string, speaking: string[]): string {
+  try {
+    const name = new Intl.DisplayNames([...speaking, 'es'], { type: 'language' }).of(code)
+    if (name && name.toLowerCase() !== code.toLowerCase()) return name.charAt(0).toLocaleUpperCase() + name.slice(1)
+  } catch {
+    // A code the browser refuses: said as it is.
+  }
+  return code
+}
+
 let memory: LanguageOption[] | null = null
 
 function readKept(): LanguageOption[] | null {

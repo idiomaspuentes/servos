@@ -11,7 +11,7 @@ import { useT } from '../i18n/i18n'
 import { miniAppsFor } from '../miniapps/registry'
 import { writtenRightToLeft } from '../projects/languages'
 import { PHASES, type Phase, type Project } from '../projects/model'
-import { FONTS, PACKS, VERSIFICATIONS } from './NewProject'
+import { FONTS, HelpsChoice, VERSIFICATIONS } from './NewProject'
 import { ShareSheet } from './ShareSheet'
 
 export function ProjectSettings({ project, person, onBack, onSave }: { project: Project; person: string; onBack(): void; onSave(p: Project): void }) {
@@ -76,16 +76,7 @@ export function ProjectSettings({ project, person, onBack, onSave }: { project: 
 
         <fieldset className="field">
           <legend className="field-label">{t('nuevo.ayudas')}</legend>
-          {PACKS.map((p) => (
-            <button key={p.code} type="button" className={helps === p.code ? 'option is-on' : 'option'} aria-pressed={helps === p.code} onClick={() => setHelps(p.code)}>
-              <span className="option-title">
-                {p.name} ({p.code})
-              </span>
-              <span className="quiet">
-                {t('nuevo.enEsteTelefono')} · {p.what}
-              </span>
-            </button>
-          ))}
+          <HelpsChoice value={helps} onChange={setHelps} />
         </fieldset>
         <label className="field">
           <span className="field-label">{t('nuevo.letra')}</span>

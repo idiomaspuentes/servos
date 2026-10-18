@@ -221,6 +221,31 @@ describe('leer sin internet', () => {
     ])
     expect(chapter.lines[2][1].pieces.find((p) => p.text === 'Qué')?.word).toBe(1)
     expect(chapter.words[0]).toEqual({ verse: 2, own: 'jon 2:2:clamé:1', originals: ['jon 2:2:קראתי:1'] })
+    expect(chapter.notes).toBeUndefined()
+  })
+
+  it('la nota que sigue a una palabra es de esa palabra: el qere de un ketiv', () => {
+    const v = (n: number) => ({ kind: 'verse', chapterNumber: 1, verseNumber: n })
+    const w = (c: string, k: number) => ({ kind: 'token', token: { c, o: 1, k } })
+    const note = (text: string) => ({ kind: 'note', caller: 'a', text })
+    const chapter = wordsInLines({
+      version: 1,
+      unit: 1,
+      matchKeys: ['rut 1:8:אמה:1', 'rut 1:8:יעשה:1', 'rut 1:8:יהוה:1', 'rut 1:9:יתן:1'],
+      blocks: [
+        {
+          marker: 'p',
+          role: 'p',
+          indentLevel: 0,
+          chapterNumber: 1,
+          verseNumbers: [8, 9],
+          // A note before any word of its verse is about none of them.
+          inline: [v(8), w('אִמָּ֑⁠הּ', 0), w('יעשה', 1), { kind: 'text', text: ' ' }, note('Q יַ֣עַשׂ'), w('יְהוָ֤ה', 2), v(9), note('—'), w('יִתֵּ֤ן', 3)],
+        },
+      ],
+    } as never)
+    expect(chapter.notes).toEqual({ 1: 'Q יַ֣עַשׂ' })
+    expect(chapter.words.map((x) => x.own)).toEqual(['rut 1:8:אמה:1', 'rut 1:8:יעשה:1', 'rut 1:8:יהוה:1', 'rut 1:9:יתן:1'])
   })
 
   it('la introducción sola del capítulo 1 es la del libro cuando su título no nombra el capítulo', async () => {

@@ -23,6 +23,8 @@ import { showInPane } from './Panes'
 import { Sheet } from './Sheet'
 
 export type WordHelp =
+  /** What the original says of how a word of it is read: the qere of a ketiv, another possible reading, a note. */
+  | { kind: 'lectura'; id: string; places: Places; reading: 'qere' | 'perhaps' | 'note'; text: string }
   | { kind: 'glosario'; id: string; places: Places; entry: GlossaryEntry }
   | { kind: 'puente'; id: string; places: Places; abbreviation: string }
   | { kind: 'nota'; id: string; places: Places; note: PrototypeNote }
@@ -146,8 +148,25 @@ function lexiconOfWord(data: PrototypeData, abbreviation: string, place: number,
   return out
 }
 
+/**
+ * The notes the original gives on the words a touched word stands for: first among its helps, for they say what the
+ * text itself reads. The Hebrew writes «Q» before a qere and «Or perhaps» before another reading.
+ */
+function readingsOfWord(data: PrototypeData, abbreviation: string, place: number): WordHelp[] {
+  const original = data.texts.find((x) => x.original)
+  if (!original?.wordNotes) return []
+  return originalsOfWord(data, abbreviation, place).flatMap((p): WordHelp[] => {
+    const note = original.wordNotes?.[p]
+    if (!note) return []
+    const qere = note.match(/^Q\s+(.+)$/)
+    const perhaps = note.match(/^or perhaps\s+(.+)$/i)
+    const [reading, text] = qere ? (['qere', qere[1]] as const) : perhaps ? (['perhaps', perhaps[1]] as const) : (['note', note] as const)
+    return [{ kind: 'lectura', id: `lectura-${p}`, places: placesOfOriginals(data, [p]), reading, text }]
+  })
+}
+
 export function helpsOfWord(data: PrototypeData, abbreviation: string, place: number, glossary: GlossaryEntry[] = [], verse?: number): WordHelp[] {
-  const out: WordHelp[] = [...glossaryOf(data, abbreviation, place, glossary), ...otherBridges(data, abbreviation, place)]
+  const out: WordHelp[] = [...readingsOfWord(data, abbreviation, place), ...glossaryOf(data, abbreviation, place, glossary), ...otherBridges(data, abbreviation, place)]
   const seen = new Set<string>()
   for (const verse of data.verses) {
     for (const note of verse.notes) {
@@ -218,6 +237,7 @@ export function WordLines({
   glossed,
   numbered = true,
   tabbable = true,
+  noted,
 }: {
   lines: WordLine[]
   verse: number
@@ -229,6 +249,8 @@ export function WordLines({
   tabbable?: boolean
   /** Words the glossary has an entry for: marked, so a decision is seen before it is asked for. */
   glossed?: Set<number>
+  /** Words the text gives a note on (the Hebrew's ketiv, read by its qere): marked with «°», as Hebrew Bibles do. */
+  noted?: Set<number>
   /** The line that the line being written translates, to stand out from the rest of the verse. */
   writing?: number
 }) {
@@ -246,6 +268,11 @@ export function WordLines({
               onClick={() => onWord(place)}
             >
               {text}
+              {noted?.has(place) && (
+                <span className="word-noted" aria-hidden="true">
+                  °
+                </span>
+              )}
             </button>
           ))}
         </p>
@@ -334,6 +361,23 @@ export function WordHelpCard({
       </div>
 
       {!help && <p className="quiet">{t('ayudas.nadaEnPalabra')}</p>}
+
+      {help?.kind === 'lectura' && (
+        <>
+          <p className="word-help-kind">{t(help.reading === 'qere' ? 'ayudas.seLee' : help.reading === 'perhaps' ? 'ayudas.otraLectura' : 'ayudas.notaDelTexto')}</p>
+          {help.reading === 'note' ? (
+            // The text's own note, in English as it has it.
+            <p className="study-other-text" lang="en">
+              {help.text}
+            </p>
+          ) : (
+            <p className="help-reading" dir={original?.dir} lang={original?.lang}>
+              {help.text}
+            </p>
+          )}
+          {help.reading === 'qere' && <p className="quiet">{t('ayudas.seLeeAyuda')}</p>}
+        </>
+      )}
 
       {help?.kind === 'glosario' && (
         <>

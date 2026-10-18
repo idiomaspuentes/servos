@@ -54,7 +54,7 @@ const KIND_BY_SUBJECT: Record<string, ResourceKind> = {
   'Open Bible Stories': 'obs',
 }
 
-function kindOf(subject: unknown): ResourceKind {
+export function kindOf(subject: unknown): ResourceKind {
   const s = String(subject ?? '')
   return KIND_BY_SUBJECT[s] ?? (/OBS/i.test(s) ? 'obs-helps' : 'other')
 }
@@ -62,7 +62,7 @@ function kindOf(subject: unknown): ResourceKind {
 /** Source rows are keyed by book right after the resource key: `tn:{key}:{book}…`. */
 const BOOK_ROW_PREFIXES = ['scripture-usj:', 'tn:', 'tq:', 'twl:'] as const
 
-const BIBLE_ORDER = [
+export const BIBLE_ORDER = [
   'gen', 'exo', 'lev', 'num', 'deu', 'jos', 'jdg', 'rut', '1sa', '2sa', '1ki', '2ki', '1ch', '2ch', 'ezr', 'neh',
   'est', 'job', 'psa', 'pro', 'ecc', 'sng', 'isa', 'jer', 'lam', 'ezk', 'dan', 'hos', 'jol', 'amo', 'oba', 'jon',
   'mic', 'nam', 'hab', 'zep', 'hag', 'zec', 'mal', 'mat', 'mrk', 'luk', 'jhn', 'act', 'rom', '1co', '2co', 'gal',
@@ -265,6 +265,8 @@ export interface ChapterWords {
    * finds its notes. `own` is its match key (`jon 2:2:קראתי:1`), `originals` the original words it translates.
    */
   words: Array<{ verse: number; own: string; originals: string[] }>
+  /** The notes the text gives after a word, by the word's place: the Hebrew's qere after its ketiv («Q יַ֣עַשׂ»). */
+  notes?: Record<number, string>
 }
 
 /** A chapter of a text in lines of words, from the full prepared tier (null when the device lacks it). */
@@ -294,7 +296,10 @@ function spaceBefore(prev: FullInline | undefined): boolean {
 export function wordsInLines(full: ScriptureFullChapter): ChapterWords {
   const lines: Record<number, WordLine[]> = {}
   const words: ChapterWords['words'] = []
+  const notes: Record<number, string> = {}
   let verse = 0
+  // The word a note that follows it is about: the last one of its verse.
+  let last: number | null = null
   for (const block of full.blocks) {
     let current: WordLine | null = null
     const blockVerse = block.verseNumbers[0] ?? 0
@@ -307,7 +312,10 @@ export function wordsInLines(full: ScriptureFullChapter): ChapterWords {
         current = null
       } else if (item.kind === 'verse') {
         verse = item.verseNumber
+        last = null
         open(verse)
+      } else if (item.kind === 'note' && last !== null && item.text.trim()) {
+        notes[last] = notes[last] ? `${notes[last]} ${item.text.trim()}` : item.text.trim()
       } else if (item.kind === 'text' || item.kind === 'token') {
         const v = verse > 0 ? verse : blockVerse > 0 ? blockVerse : 1
         const shown = verse > 0 || block.marker === 'd'
@@ -318,6 +326,7 @@ export function wordsInLines(full: ScriptureFullChapter): ChapterWords {
         } else {
           if (spaceBefore(block.inline[i - 1])) line.pieces.push({ text: ' ' })
           line.pieces.push({ text: item.token.c, word: words.length })
+          last = words.length
           words.push({
             verse: v,
             own: full.matchKeys[item.token.k] ?? '',
@@ -339,7 +348,7 @@ export function wordsInLines(full: ScriptureFullChapter): ChapterWords {
     }
     while (verseLines.length > 1 && !verseLines[verseLines.length - 1].pieces.length) verseLines.pop()
   }
-  return { lines, words }
+  return Object.keys(notes).length ? { lines, words, notes } : { lines, words }
 }
 
 /**
@@ -415,25 +424,47 @@ export interface OriginalWord {
   morph: string
 }
 
+export interface OriginalWords {
+  words: OriginalWord[]
+  /**
+   * The words of each verse that stand in notes (the Hebrew's qere, after its ketiv), numbered as MACULA numbers a
+   * verse's words: from 1, those of notes included.
+   */
+  inNotes: Record<number, number[]>
+}
+
 /**
  * The lemma and Strong number of each word of a chapter of the original, by the word's place (as `readChapterWords`
- * numbers them). They are on the `\w` markers of the stored USJ, one a word in the same order; null when the
- * device lacks the chapter or the counts differ (then the places would not match).
+ * numbers them). They are on the `\w` markers of the stored USJ outside notes, one a word in the same order; null when
+ * the device lacks the chapter or the counts differ (then the places would not match).
  */
-export async function originalWordsOf(stores: ResourceStores, textKey: string, book: string, chapter: number): Promise<OriginalWord[] | null> {
-  type Node = { marker?: string; content?: Array<Node | string>; lemma?: string; strong?: string; 'x-morph'?: string }
+export async function originalWordsOf(stores: ResourceStores, textKey: string, book: string, chapter: number): Promise<OriginalWords | null> {
+  type Node = { type?: string; number?: string; marker?: string; content?: Array<Node | string>; lemma?: string; strong?: string; 'x-morph'?: string }
   const row = (await stores.cache.get(`scripture-usj:${textKey}:${book.toLowerCase()}:${chapter}`)) as { content?: { usj?: Node } } | null
   const usj = row?.content?.usj
   const words = await readChapterWords(stores, textKey, book, chapter)
   if (!usj || !words) return null
   const found: OriginalWord[] = []
-  const walk = (node: Node | string) => {
+  const inNotes: Record<number, number[]> = {}
+  let verse = 0
+  let counted = 0
+  const walk = (node: Node | string, inNote: boolean) => {
     if (typeof node === 'string') return
-    if (node.marker === 'w') found.push({ lemma: node.lemma ?? '', strong: node.strong ?? '', morph: node['x-morph'] ?? '' })
-    for (const child of node.content ?? []) walk(child)
+    if (node.type === 'verse') {
+      verse = Number(node.number) || verse
+      counted = 0
+    }
+    if (node.marker === 'w') {
+      counted++
+      // A note's words are not the text's: the Hebrew's qere stands in a footnote after its ketiv (Ruth 1:8), and the
+      // chapter's words leave it out (bt-synergy's usj-processor 2.3.0). MACULA counts it.
+      if (inNote) (inNotes[verse] ??= []).push(counted)
+      else found.push({ lemma: node.lemma ?? '', strong: node.strong ?? '', morph: node['x-morph'] ?? '' })
+    }
+    for (const child of node.content ?? []) walk(child, inNote || node.type === 'note')
   }
-  walk(usj)
-  return found.length === words.words.length ? found : null
+  walk(usj, false)
+  return found.length === words.words.length ? { words: found, inNotes } : null
 }
 
 /** The introductions a chapter of notes opens with: the book's, then the chapter's. */

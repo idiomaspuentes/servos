@@ -1,6 +1,10 @@
 /**
- * The prototype reads the chapters of Titus and Jonah taken from real packs (`makeData.test.ts`), in the shape the
- * screens need. When the screens are wired, `src/resources/reading.ts` gives the same things from the device.
+ * The chapters the screens read, in the shape they need (`PrototypeData`), and the lexicon of the original's words.
+ *
+ * Two sources, the device first: what the language packs left on this device, read and registered here book by book
+ * when a book opens (`src/resources/library.ts`), and the example's Titus and Jonah in es-419, bundled in the app
+ * (taken from real packs by `makeData.test.ts`). Both are kept by the project's helps language, so two projects that
+ * translate the same book with different helps do not read each other's.
  */
 
 import { strongParts, type LexiconFile } from '../lexicon/lexicon'
@@ -40,6 +44,16 @@ export interface PrototypeText {
   toOriginal?: number[][]
   /** For the original, each word's lemma and Strong number, by the word's place: what a glossary entry hangs from. */
   words?: Array<{ lemma: string; strong: string; morph?: string }>
+  /**
+   * For the original, the words of each verse that stand in notes and are not shown (the Hebrew's qere, after its
+   * ketiv), numbered as MACULA numbers a verse's words: from 1, those of notes included (`maculaPlace`).
+   */
+  inNotes?: Record<number, number[]>
+  /**
+   * For the original, the notes it gives after a word, by the word's place: the Hebrew's qere after its ketiv
+   * («Q יַ֣עַשׂ»), another possible reading («Or perhaps …»), a word on the manuscripts. In English, as the text has them.
+   */
+  wordNotes?: Record<number, string>
   /** The Greek or Hebrew the bridge texts translate. */
   original?: boolean
   dir?: 'ltr' | 'rtl'
@@ -58,7 +72,7 @@ export interface PrototypeData {
   bookIntro?: string
   /**
    * The chapter's sections, the verses of each: the translators' sections (`\ts\*`) that translationCore and
-   * translationCore 4 work by. The es-419 bridge texts do not mark them, so they come from unfoldingWord's ULT.
+   * translationCore 4 work by. The bridge texts do not mark them, so they come from unfoldingWord's ULT.
    */
   sections: number[][]
   verses: Array<{
@@ -71,27 +85,67 @@ export interface PrototypeData {
   academy: Record<string, { title: string; markdown: string }>
 }
 
+/** The example's language: its bundled books and lexicon are es-419's. */
+export const EXAMPLE_LANGUAGE = 'es-419'
+
 const files = import.meta.glob<PrototypeData>('./data/*-*.json', { eager: true, import: 'default' })
 
-/** The chapters the prototype has: by book, by chapter number. */
-export const CHAPTERS: Record<string, Record<number, PrototypeData>> = {}
-for (const data of Object.values(files)) (CHAPTERS[data.book.id] ??= {})[data.chapter] = data
+/** The example's chapters, bundled: by book, by chapter number. */
+const BUNDLED: Record<string, Record<number, PrototypeData>> = {}
+for (const data of Object.values(files)) (BUNDLED[data.book.id] ??= {})[data.chapter] = data
 
-/** A chapter of a book, when the prototype has it. */
-export const chapterOf = (book: string, chapter: number): PrototypeData | null => CHAPTERS[book]?.[chapter] ?? null
+/** Chapters read from this device, by `{language}:{book}`, then by chapter number. */
+const DEVICE = new Map<string, Record<number, PrototypeData>>()
+/** Lexicon entries read from this device, by `{language}:{kind}:{number}`. */
+const DEVICE_LEXICON = new Map<string, LexiconFile>()
+
+/** The helps language of the project the app is in (the library says it; the example's until it does). */
+let languageNow: () => string = () => EXAMPLE_LANGUAGE
+export const setLanguageResolver = (resolve: () => string) => {
+  languageNow = resolve
+}
+
+/** Keeps a book's chapters read from this device, for its language: they are read before the example's. */
+export function keepBook(language: string, book: string, chapters: PrototypeData[]) {
+  DEVICE.set(`${language}:${book}`, Object.fromEntries(chapters.map((c) => [c.chapter, c])))
+}
+
+/** Forgets the books read from this device (a pack was opened again: they are read anew). */
+export function forgetBooks() {
+  DEVICE.clear()
+}
+
+/** Keeps lexicon entries read from this device, by Strong number (`hebrew:7121`). */
+export function keepLexicon(language: string, entries: Record<string, LexiconFile>) {
+  for (const [key, file] of Object.entries(entries)) DEVICE_LEXICON.set(`${language}:${key}`, file)
+}
+
+const chaptersByBook = (book: string, language = languageNow()): Record<number, PrototypeData> | undefined =>
+  DEVICE.get(`${language}:${book}`) ?? (language === EXAMPLE_LANGUAGE ? BUNDLED[book] : undefined)
+
+/** Whether the example bundled in the app has the book (es-419's Titus and Jonah). */
+export const isBundled = (book: string) => Boolean(BUNDLED[book])
+
+/** A chapter of a book, when this device (or the example) has it. */
+export const chapterOf = (book: string, chapter: number): PrototypeData | null => chaptersByBook(book)?.[chapter] ?? null
 
 /**
- * The lexicon entry of a word of the original, by its Strong number (`c:H7121`, `G23160`): from Taller's lexicons on
- * Door43 (`makeLexicon.test.ts`), the entries of the prototype's words. Wired, the language pack carries them.
+ * The lexicon entry of a word of the original, by its Strong number (`c:H7121`, `G23160`), in the project's helps
+ * language: from this device's lexicon (the language pack carries it), else the example's (Taller's lexicons on
+ * Door43, the entries of Titus's and Jonah's words, `makeLexicon.test.ts`).
  */
 export function lexiconOf(strong: string): { file: LexiconFile; kind: 'greek' | 'hebrew'; number: number; letter: string } | null {
   const part = strongParts(strong)[0]
-  const file = part ? (lexicon as Record<string, LexiconFile>)[`${part.kind}:${part.number}`] : undefined
-  return part && file ? { file, ...part } : null
+  if (!part) return null
+  const language = languageNow()
+  const file =
+    DEVICE_LEXICON.get(`${language}:${part.kind}:${part.number}`) ??
+    (language === EXAMPLE_LANGUAGE ? (lexicon as Record<string, LexiconFile>)[`${part.kind}:${part.number}`] : undefined)
+  return file ? { file, ...part } : null
 }
 
-/** The chapter numbers the prototype has of a book, in order. */
+/** The chapter numbers this device (or the example) has of a book, in order. */
 export const chaptersOf = (book: string): number[] =>
-  Object.keys(CHAPTERS[book] ?? {})
+  Object.keys(chaptersByBook(book) ?? {})
     .map(Number)
     .sort((a, b) => a - b)

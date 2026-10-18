@@ -32,8 +32,9 @@
   --pill: #fefcf7;
   /* A box to write in, when it is not the one being written: the card's paper on the light ground; a faint field on the dark */
   --field: #fefcf7;
-  /* A field of moss: the one place where going on is the whole block (home's «go on where you left off») */
-  --field-ink: #3b6f30;
+  /* A field of moss: the one place where going on is the whole block (home's «go on where you left off»), a step
+     darker than the buttons' moss so the gold above it (5.4:1) and its soft line (5.7:1) read */
+  --field-ink: #2f5a26;
   --on-field: #f7f2e8;
   --on-field-soft: rgba(247, 242, 232, 0.84);
   --field-kicker: #f2cf8f;
@@ -52,9 +53,9 @@
 /* Ink night: at night the ink becomes the ground, a near-black with a cool tint (never pure black), and the paper
    becomes the light of the text, soft, never white. Depth comes from a lighter step, not from shadows or glows; the
    moss, lighter and softer, still goes on, the gold still marks. The viewer's theme wins either way: an explicit
-   data-theme, else the system's. */
+   data-theme (light, dark or sun), else the system's. */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
+  :root:not([data-theme='light'], [data-theme='sun']) {
     --bg: #0c1316;
     --surface: #151c20;
     --surface-soft: #1f262b;
@@ -115,6 +116,46 @@
   --field-button: #98cf8b;
   --field-button-text: #0c1316;
   color-scheme: dark;
+}
+
+/* Sun (18 October 2026): for reading outdoors on a cheap phone, where glare takes every scheme down to about 3-5:1.
+   White ground and a near-black ink at 18:1; grey text at 12:1 and lines at 7:1, since tints and tone steps vanish in
+   the sun: cards and tiles are drawn with a line instead (the card shadow becomes an edge), the chosen pill gets a dark
+   ring. The moss is darker to stay at 7:1, and so are the states, each at 7.5:1 or more; done, danger, warning and the
+   moss were chosen to stay apart under protanopia, deuteranopia and tritanopia (CIEDE2000 8.5 or more between any
+   two, where the day's palette has 5.2), which is why danger leans to plum. Heavier letters and a larger scripture are
+   at the end of this sheet. */
+:root[data-theme='sun'] {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-soft: #ececef;
+  --text: #15141a;
+  --text-soft: #34333b;
+  --line: #55545d;
+  --accent: #2e612e;
+  --accent-text: #ffffff;
+  --accent-soft: #e9f2e7;
+  --mark: #ffd34d;
+  --warn-bg: #fff0e0;
+  --warn-text: #8f3000;
+  --danger: #9c167b;
+  --done: #0950b3;
+  --done-soft: #e8effb;
+  --hair: #77767f;
+  --shadow-card: 0 0 0 1.5px #55545d;
+  --shadow-raised: 0 0 0 1.5px #15141a;
+  --track: #e6e6ea;
+  --pill: #ffffff;
+  --field: #ffffff;
+  --field-ink: #244b24;
+  --on-field: #ffffff;
+  --on-field-soft: rgba(255, 255, 255, 0.92);
+  --field-kicker: #ffd34d;
+  --field-button: #ffffff;
+  --field-button-text: #1f421f;
+  /* What cannot be touched yet, and a box's hint: grey, but still read (6.4:1 on white) */
+  --text-disabled: #5f5e66;
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; }
@@ -219,6 +260,8 @@ textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
 .help-verse { margin: 0 0 0.25rem; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-soft); }
 .help-quote { font-weight: 600; font-size: 1.05rem; margin-block-end: 0.25rem; }
 .help-original { color: var(--text-soft); font-size: 0.9rem; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+/* How the text is read (the qere): the content of its card, in the size and ink of the text itself. */
+.help-reading { margin: 0; font-family: var(--serif); font-size: 1.5rem; line-height: 1.5; color: var(--text); }
 .help-question { font-weight: 600; }
 .helps-steps { display: flex; justify-content: space-between; align-items: center; gap: 0.25rem; border-block-start: 1px solid var(--line); margin-block-start: 0.75rem; padding-block-start: 0.25rem; }
 /* A badge says a state: tinted, no border, a word like «Agreed»; never a verb (a chip is the action) */
@@ -369,6 +412,9 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 /* Add a book */
 .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); gap: 0.4rem; }
 .book-chip { font-size: 0.9rem; text-align: start; padding-inline: 0.6rem; }
+/* A book whose texts are on this device: it can be started at once. */
+.book-chip.has-texts { font-weight: 700; }
+.book-chip.has-texts::before { content: '●'; color: var(--accent); font-size: 0.6em; margin-inline-end: 0.4em; vertical-align: 0.15em; }
 .book-chip.is-in { display: flex; align-items: center; min-height: var(--touch); border-radius: var(--radius); padding-inline: 0.6rem; font-size: 0.9rem; color: var(--text-soft); background: var(--surface-soft); }
 .back-link { align-self: flex-start; padding-inline: 0; }
 .sheet-foot { position: sticky; inset-block-end: 0; background: var(--surface); padding-block: 0.75rem 0; }
@@ -595,6 +641,8 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .word:hover { background: var(--surface-soft); }
 .word.is-lit { background: var(--mark); }
 /* A word the glossary has an entry for: a decision is there to read */
+/* The masora's circle over a ketiv: the text has a note on how it is read. */
+.word-noted { font-size: 0.7em; vertical-align: super; line-height: 0; color: var(--accent); padding-inline-start: 0.05em; }
 .word.has-gloss { text-decoration: underline dotted var(--accent) 2px; text-underline-offset: 0.25em; }
 .word-group { white-space: nowrap; }
 .word:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
@@ -794,7 +842,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .review-group .quiet { flex: none; font-variant-numeric: tabular-nums; }
 /* On a phone the notes' bar (the group, and from note to note) is at the foot, under the thumb, right above the
    position line; on a wide screen it stays at the top. */
-@media (max-width: 899px) {
+@media (max-width: 899.98px) {
   .review-scroll { order: 1; }
   .review-next { order: 2; }
   .review-head { order: 3; border-block-end: 0; border-block-start: 1px solid var(--line); background: var(--surface); }
@@ -806,7 +854,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 
 /* On a phone the position line, with its arrows, is at the foot of a mini app's screen, under the thumb (right above
    the keyboard while writing); the notice of a new chapter floats above it. On a wide screen it stays at the top. */
-@media (max-width: 899px) {
+@media (max-width: 899.98px) {
   .screen-app { display: flex; flex-direction: column; }
   .screen-app > .main { order: 1; flex: 1; }
   .screen-app > .position-crossed { order: 2; }
@@ -982,6 +1030,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 /* A choice made in place in a menu (light or dark): its name, and the pills under it */
 .menu-choice { display: flex; flex-direction: column; gap: 0.4rem; padding: 0.6rem 0.9rem 0.75rem; border-block-end: 1px solid var(--line); }
 .choice-row.is-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.choice-row.is-four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .book-where { margin: -0.25rem 0 0; font-size: 0.85rem; padding-inline: 0.25rem; }
 
 /* Bringing versions together (design 6.10): each one's section read through in tabs, the versions of a verse as the
@@ -1122,7 +1171,7 @@ button, .file-button, summary, input, select, textarea {
 :is(.button-primary, .button-secondary, .header-app, .header-brand, .book-tile-name, .tool-card-name, .book-resume-what, .panes-tab, .book-step, .helps-tab) { font-weight: 800; }
 :is(.chapter-lines, .verse) .verse-number { color: var(--accent); font-weight: 700; }
 
-/* Home's «go on where you left off» as a field of ink: the first thing touched, and home's own anchor */
+/* Home's «go on where you left off» as a field of moss: the first thing touched, and home's own anchor */
 .book-resume.is-field { gap: 0.25rem; padding: 1.1rem 1rem 1rem; border-radius: 16px; background: var(--field-ink); color: var(--on-field); }
 .book-resume.is-field .book-resume-kicker { color: var(--field-kicker); font-size: 0.85rem; }
 .book-resume.is-field .book-resume-what { font-size: 1.35rem; line-height: 1.25; font-weight: 650; }
@@ -1130,4 +1179,72 @@ button, .file-button, summary, input, select, textarea {
 .book-resume.is-field .button-primary { background: var(--field-button); border-color: var(--field-button); color: var(--field-button-text); }
 @media (hover: hover) and (pointer: fine) {
   .book-resume.is-field .button-primary:not(:disabled):hover { background: color-mix(in srgb, var(--field-button) 88%, var(--field-ink)); border-color: color-mix(in srgb, var(--field-button) 88%, var(--field-ink)); }
+}
+
+/* Sun: what its tokens cannot say alone (top of this sheet). Mulish a step heavier, 500 for the text and 600 for the
+   small grey lines; the scripture a step larger instead, as Charis SIL has no weight between 400 and 700. The tiles
+   that were a tint are drawn with a line, the outlined buttons and chips with the dark line, a notice with its own
+   edge, the box being written with a thicker moss edge, and a box's hint in a grey that still reads. */
+:root[data-theme='sun'] body { font-weight: 500; -webkit-font-smoothing: auto; }
+:root[data-theme='sun'] :is(.quiet, .field-label, .menu-row-description, .center-label, .edit-where, .edit-hint,
+  .book-tile-phase, .chapter-row-count, .tool-chapter-count, .row-button-meta, .catalog-description, .help-original,
+  .header-person, .book-step-state, .lexicon-definition, .book-resume-project) { font-weight: 600; }
+:root[data-theme='sun'] .chapter-lines { font-size: 1.1rem; }
+:root[data-theme='sun'] .chapter-lines.is-alone { font-size: 1.25rem; }
+:root[data-theme='sun'] .verse-large { font-size: 1.4rem; }
+:root[data-theme='sun'] .book-tile { background: var(--surface); border-color: var(--line); }
+:root[data-theme='sun'] :is(.button-secondary, .chip, .project-settings) { border-color: var(--line); }
+:root[data-theme='sun'] .notice { box-shadow: inset 0 0 0 1.5px var(--warn-text); }
+:root[data-theme='sun'] :is(.line-field:focus, .line-field:focus-visible) { box-shadow: 0 0 0 2px var(--accent); }
+:root[data-theme='sun'] .position { background: var(--surface); }
+:root[data-theme='sun'] ::placeholder { color: var(--text-disabled); opacity: 1; }
+
+/* Sun, the other screens: a state that was only a tint or a faded tone is said with a line, a weight or a mark, as
+   the sun takes the tint first. Done is a blue edge (and ✓ where no word says it); begun, a moss bar at the foot;
+   where one is, a moss line and heavier letters; a word or piece picked, a dark edge; a button that cannot be touched
+   yet, dashed, with its words still readable (they often say what to do first). */
+:root[data-theme='sun'] .verse-cell.is-done:not(.is-current) { background: var(--surface); border-color: var(--done); box-shadow: inset 0 0 0 1px var(--done); color: var(--done); font-weight: 800; }
+:root[data-theme='sun'] .verse-cell.is-done:not(.is-current)::before {
+  content: '✓'; content: '✓' / ''; position: absolute; inset-block-start: 2px; inset-inline-start: 4px; font-size: 0.65rem;
+}
+:root[data-theme='sun'] .verse-cell.is-some:not(.is-current) { box-shadow: inset 0 -3px 0 var(--accent); }
+:root[data-theme='sun'] .chapter-cell.is-done { background: var(--surface); }
+:root[data-theme='sun'] .chapter-cell.is-done:not(.is-open) { border-color: var(--done); box-shadow: inset 0 0 0 1px var(--done); }
+:root[data-theme='sun'] .chapter-cell.is-done .chapter-cell-done { font-weight: 800; }
+:root[data-theme='sun'] .chapter-cell.is-open { box-shadow: inset 0 0 0 2px var(--accent); }
+:root[data-theme='sun'] .chapter-cell[aria-current='true'] .chapter-cell-number { text-decoration: underline 2px; text-underline-offset: 3px; }
+/* A bar's track is drawn, so how much is left still shows; a chapter all done says so in heavier blue */
+:root[data-theme='sun'] :is(.progress-bar, .chapter-row-bar) { background: var(--surface); box-shadow: inset 0 0 0 1px var(--hair); }
+:root[data-theme='sun'] .tool-chapter:has(.progress-bar[data-full]) .tool-chapter-count,
+:root[data-theme='sun'] .tool-progress:has(.progress-bar[data-full]) > span:last-child { color: var(--done); font-weight: 800; }
+:root[data-theme='sun'] .review-group.is-current { box-shadow: inset 3px 0 0 var(--accent); font-weight: 800; }
+:root[data-theme='sun'] [dir='rtl'] .review-group.is-current { box-shadow: inset -3px 0 0 var(--accent); }
+/* A reviewer's steps: the one open underlined in moss; a step done shows ✓ for its number, as the passage's do */
+:root[data-theme='sun'] .review-stepper [aria-current='step'] { font-weight: 800; box-shadow: inset 0 -3px 0 var(--accent); }
+:root[data-theme='sun'] .review-stepper:not(.passage-steps) .is-done .review-stepper-n { font-size: 0; }
+:root[data-theme='sun'] .review-stepper:not(.passage-steps) .is-done .review-stepper-n::before { content: '✓'; content: '✓' / ''; font-size: 0.8rem; }
+:root[data-theme='sun'] .review-stepper button:disabled { opacity: 1; color: var(--text-disabled); }
+:root[data-theme='sun'] .review-filter { border: 1px solid var(--line); }
+:root[data-theme='sun'] .picker-word.is-picked { border-color: var(--text); box-shadow: inset 0 0 0 1.5px var(--text); }
+:root[data-theme='sun'] .al-word[data-selected] { box-shadow: inset 0 0 0 1px var(--accent); font-weight: 800; }
+:root[data-theme='sun'] :is(.option.is-on, .book-chip.is-on) { box-shadow: inset 0 0 0 2px var(--accent); }
+:root[data-theme='sun'] :is(.option.is-on .option-title, .book-chip.is-on) { font-weight: 800; }
+/* The mix: each piece drawn, so where one ends and the next begins still shows */
+:root[data-theme='sun'] .mix-piece.is-mine { box-shadow: inset 0 0 0 1px var(--hair); }
+:root[data-theme='sun'] .review-renderings .review-unchecked { box-shadow: none; border: 1.5px dashed var(--line); }
+/* A block that was a tint (what is done, what arrives) gets its own edge, as the notice does */
+:root[data-theme='sun'] .review-done { box-shadow: inset 0 0 0 1.5px var(--done); }
+:root[data-theme='sun'] .book-resume:not(.is-field) { box-shadow: inset 0 0 0 1.5px var(--accent); }
+/* The card's edge passes behind a phase's name, not through it */
+:root[data-theme='sun'] .settings-phase legend { background: var(--surface); padding-inline: 0.4rem; }
+:root[data-theme='sun'] :is(.button-primary, .button-secondary, .chip):disabled { opacity: 1; background: var(--surface); color: var(--text-disabled); border: 1.5px dashed var(--hair); }
+:root[data-theme='sun'] .menu-row:disabled { opacity: 1; color: var(--text-disabled); }
+:root[data-theme='sun'] .menu-row:disabled .menu-row-description { color: inherit; }
+/* Sun keeps the tint under the mouse (principle 13): the lines above, later and as specific as the hover rules, would
+   hide it on a tile, a done cell and an outlined button. */
+@media (hover: hover) and (pointer: fine) {
+  :root[data-theme='sun'] :is(.book-tile, .chapter-cell, .verse-cell:not(.is-current)):not(:disabled):hover {
+    background-color: color-mix(in srgb, var(--accent) 9%, var(--surface-soft));
+  }
+  :root[data-theme='sun'] :is(.button-secondary, .chip, .project-settings):not(:disabled):hover { border-color: var(--accent); }
 }

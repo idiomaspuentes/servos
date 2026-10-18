@@ -370,7 +370,7 @@ export function DestinationForm({
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => {
             // One left: Enter takes it.
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
               e.preventDefault()
               if (shown.length === 1) setOwner(shown[0])
             }
@@ -437,6 +437,7 @@ export const publicar: MiniApp = {
       versionConGrabaciones: 'Con {n} grabaciones.',
       marcando: 'Marcando la versión…',
       sinCuenta: 'Para publicar, vincule su cuenta de Door43. Se hace una vez en este teléfono.',
+      'sinCuenta.computadora': 'Para publicar, vincule su cuenta de Door43. Se hace una vez en esta computadora.',
       vincularCuenta: 'Vincular mi cuenta de Door43',
       destinoPregunta: '¿Dónde se publica «{proyecto}»?',
       destinoAyuda: 'En una organización del equipo en Door43, un repositorio para todo el proyecto. Se elige una vez.',
@@ -453,6 +454,7 @@ export const publicar: MiniApp = {
       cambiar: 'Cambiar',
       libros: 'Lo que se sube',
       nada: 'Este proyecto todavía no tiene libros en este teléfono.',
+      'nada.computadora': 'Este proyecto todavía no tiene libros en esta computadora.',
       traducidos: 'Versículos traducidos: {n} de {total} · alineados: {a}',
       'estado.vacio': 'Sin texto todavía: no se sube',
       'estado.nunca': 'Todavía no se subió',
@@ -462,6 +464,7 @@ export const publicar: MiniApp = {
       subiendo: 'Subiendo…',
       mensaje: 'Servos: {nombre} sube {libros}',
       sinInternet: 'Sin internet ahora. Lo hecho está guardado en este teléfono. Puede pedir que se suba: cuando haya internet, se le pregunta antes de enviarlo.',
+      'sinInternet.computadora': 'Sin internet ahora. Lo hecho está guardado en esta computadora. Puede pedir que se suba: cuando haya internet, se le pregunta antes de enviarlo.',
       subirLuego: 'Subir cuando haya internet',
       versionLuego: 'Marcar una versión cuando haya internet',
       subido: 'Subido a Door43. Libros con cambios: {escritos} · sin cambios: {iguales}.',
@@ -471,6 +474,7 @@ export const publicar: MiniApp = {
       versionNota: 'Marcada desde Servos por {nombre}.',
       versionHecha: 'Versión {n} marcada en Door43.',
       sinTextos: 'Sus textos y ayudas no están en este teléfono: no se sube desde aquí',
+      'sinTextos.computadora': 'Sus textos y ayudas no están en esta computadora: no se sube desde aquí',
       enLaPagina: 'Esta es una página de prueba dentro de Claude, que no puede conectarse a Door43. En la app instalada, esto sube el proyecto.',
     },
     pt: {
@@ -482,6 +486,7 @@ export const publicar: MiniApp = {
       versionConGrabaciones: 'Com {n} gravações.',
       marcando: 'Marcando a versão…',
       sinCuenta: 'Para publicar, vincule sua conta do Door43. Faz-se uma vez neste telefone.',
+      'sinCuenta.computadora': 'Para publicar, vincule sua conta do Door43. Faz-se uma vez neste computador.',
       vincularCuenta: 'Vincular minha conta do Door43',
       destinoPregunta: 'Onde se publica «{proyecto}»?',
       destinoAyuda: 'Numa organização da equipe no Door43, um repositório para todo o projeto. Escolhe-se uma vez.',
@@ -498,6 +503,7 @@ export const publicar: MiniApp = {
       cambiar: 'Mudar',
       libros: 'O que se envia',
       nada: 'Este projeto ainda não tem livros neste telefone.',
+      'nada.computadora': 'Este projeto ainda não tem livros neste computador.',
       traducidos: 'Versículos traduzidos: {n} de {total} · alinhados: {a}',
       'estado.vacio': 'Ainda sem texto: não se envia',
       'estado.nunca': 'Ainda não foi enviado',
@@ -507,6 +513,7 @@ export const publicar: MiniApp = {
       subiendo: 'Enviando…',
       mensaje: 'Servos: {nombre} envia {libros}',
       sinInternet: 'Sem internet agora. O que foi feito está salvo neste telefone. Pode pedir que seja enviado: quando houver internet, pergunta-se antes de enviar.',
+      'sinInternet.computadora': 'Sem internet agora. O que foi feito está salvo neste computador. Pode pedir que seja enviado: quando houver internet, pergunta-se antes de enviar.',
       subirLuego: 'Enviar quando houver internet',
       versionLuego: 'Marcar uma versão quando houver internet',
       subido: 'Enviado ao Door43. Livros com mudanças: {escritos} · sem mudanças: {iguales}.',
@@ -516,6 +523,7 @@ export const publicar: MiniApp = {
       versionNota: 'Marcada pelo Servos por {nombre}.',
       versionHecha: 'Versão {n} marcada no Door43.',
       sinTextos: 'Seus textos e ajudas não estão neste telefone: não se envia daqui',
+      'sinTextos.computadora': 'Seus textos e ajudas não estão neste computador: não se envia daqui',
       enLaPagina: 'Esta é uma página de teste dentro do Claude, que não pode se conectar ao Door43. No app instalado, isto envia o projeto.',
     },
     en: {
@@ -527,6 +535,7 @@ export const publicar: MiniApp = {
       versionConGrabaciones: 'With {n} recordings.',
       marcando: 'Marking the version…',
       sinCuenta: 'To publish, link your Door43 account. It is done once on this phone.',
+      'sinCuenta.computadora': 'To publish, link your Door43 account. It is done once on this computer.',
       vincularCuenta: 'Link my Door43 account',
       destinoPregunta: 'Where is «{proyecto}» published?',
       destinoAyuda: "In one of the team's organizations on Door43, one repository for the whole project. Chosen once.",
@@ -543,6 +552,7 @@ export const publicar: MiniApp = {
       cambiar: 'Change',
       libros: 'What is uploaded',
       nada: 'This project has no books on this phone yet.',
+      'nada.computadora': 'This project has no books on this computer yet.',
       traducidos: 'Verses translated: {n} of {total} · aligned: {a}',
       'estado.vacio': 'No text yet: not uploaded',
       'estado.nunca': 'Not uploaded yet',
@@ -552,6 +562,7 @@ export const publicar: MiniApp = {
       subiendo: 'Uploading…',
       mensaje: 'Servos: {nombre} uploads {libros}',
       sinInternet: 'No internet now. What was done is kept on this phone. You can ask for it to be uploaded: when there is internet, you are asked before it is sent.',
+      'sinInternet.computadora': 'No internet now. What was done is kept on this computer. You can ask for it to be uploaded: when there is internet, you are asked before it is sent.',
       subirLuego: 'Upload when there is internet',
       versionLuego: 'Mark a version when there is internet',
       subido: 'Uploaded to Door43. Books with changes: {escritos} · unchanged: {iguales}.',
@@ -561,6 +572,7 @@ export const publicar: MiniApp = {
       versionNota: 'Marked from Servos by {nombre}.',
       versionHecha: 'Version {n} marked on Door43.',
       sinTextos: 'Its texts and helps are not on this phone: not uploaded from here',
+      'sinTextos.computadora': 'Its texts and helps are not on this computer: not uploaded from here',
       enLaPagina: 'This is a test page inside Claude, which cannot reach Door43. In the installed app, this uploads the project.',
     },
   },

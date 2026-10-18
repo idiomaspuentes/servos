@@ -48,13 +48,36 @@ const write = (k: string, value: unknown) => {
   }
 }
 
-/** Where Door43 is: the real one, its copy for trying things (QA), and, building the app, a local mock. */
-export const HOSTS: Array<{ id: 'door43' | 'qa' | 'mock'; url: string }> = [
+type Host = { id: 'door43' | 'qa' | 'mock'; url: string }
+const DEV = Boolean(import.meta.env?.DEV)
+const MOCK: Host = { id: 'mock', url: `http://${typeof location === 'undefined' ? 'localhost' : location.hostname}:8787` }
+/** Every Door43 Servos knows, to name an account linked to any of them. */
+const KNOWN: Host[] = [{ id: 'door43', url: PRODUCTION_HOST }, { id: 'qa', url: QA_HOST }, MOCK]
+
+const SERVER_KEY = `${KEY}.servidor`
+/**
+ * Whether Door43's test copy (QA) is for this device: it is for whoever tries the app, who opens it once with
+ * `?server=qa` (kept for the next times, the installed app too, until it is opened with `?server=door43`).
+ */
+export function wantsQa(search = typeof location === 'undefined' ? '' : location.search): boolean {
+  const asked = new URLSearchParams(search).get('server')
+  if (asked === 'qa') write(SERVER_KEY, 'qa')
+  if (asked === 'door43') write(SERVER_KEY, null)
+  return read<string>(SERVER_KEY) === 'qa'
+}
+
+/**
+ * The Door43 a person can link to: the real one; its copy for trying things (QA) when asked for (`wantsQa`); and,
+ * building the app, both QA and a local mock.
+ */
+export const HOSTS: Host[] = [
   { id: 'door43', url: PRODUCTION_HOST },
-  { id: 'qa', url: QA_HOST },
-  ...(import.meta.env?.DEV ? [{ id: 'mock' as const, url: `http://${typeof location === 'undefined' ? 'localhost' : location.hostname}:8787` }] : []),
+  ...(DEV || wantsQa() ? [{ id: 'qa' as const, url: QA_HOST }] : []),
+  ...(DEV ? [MOCK] : []),
 ]
-export const hostName = (url: string) => HOSTS.find((h) => h.url === url)?.id ?? url.replace(/^https?:\/\//, '')
+/** The Door43 a new link starts on: QA when asked for, the mock building the app, else the real one. */
+export const defaultHost = (): string => (wantsQa() ? QA_HOST : DEV ? MOCK.url : PRODUCTION_HOST)
+export const hostName = (url: string) => KNOWN.find((h) => h.url === url)?.id ?? url.replace(/^https?:\/\//, '')
 const configOf = (host: string): DcsClientConfig => ({ host, userAgent: 'Servos/0.1' })
 
 /** A person's Door43 account on this phone: the token, never the password. */

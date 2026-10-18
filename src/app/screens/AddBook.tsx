@@ -1,11 +1,13 @@
 /**
  * «Add a book», as translationCore 4's (`src/views/modals/AddBook.jsx`): a blank book or one from a USFM file; for a
- * blank one, the books by testament, those already in the project marked and not choosable.
+ * blank one, the books by testament, those already in the project marked and not choosable. The books whose texts and
+ * helps are on this device come first, and are marked among the others: they can be started at once.
  */
 
 import { useRef, useState } from 'react'
 import { MenuRow, Sheet } from '../frame/Sheet'
 import { useT } from '../i18n/i18n'
+import { bookIsHere } from '../projects/library'
 import { BOOKS, bookName, type Phase, type Project } from '../projects/model'
 import { previewBook, receiveBook } from '../projects/share'
 import { inProject } from '../projects/scope'
@@ -34,6 +36,8 @@ export function AddBookSheet({
   const file = useRef<HTMLInputElement>(null)
   const [picked, setPicked] = useState<string | null>(null)
   const has = new Set(project.books.map((b) => b.code))
+  const here = new Set(BOOKS.map(([code]) => code).filter((code) => bookIsHere(code, project.helpsLanguage)))
+  const ready = BOOKS.filter(([code]) => here.has(code) && !has.has(code))
 
   const grid = (codes: Array<[string, string]>, title: string) => (
     <>
@@ -45,7 +49,13 @@ export function AddBookSheet({
               {name} ✓
             </span>
           ) : (
-            <button key={code} type="button" className={picked === code ? 'book-chip is-on' : 'book-chip'} aria-pressed={picked === code} onClick={() => setPicked(code)}>
+            <button
+              key={code}
+              type="button"
+              className={`book-chip${picked === code ? ' is-on' : ''}${here.has(code) ? ' has-texts' : ''}`}
+              aria-pressed={picked === code}
+              onClick={() => setPicked(code)}
+            >
               {name}
             </button>
           )
@@ -59,7 +69,8 @@ export function AddBookSheet({
       {step === 'method' ? (
         <>
           <MenuRow label={t('libroNuevo.enBlanco')} description={t('libroNuevo.enBlancoAyuda')} onClick={() => setStep('pick')} />
-          <MenuRow label={t('libroNuevo.recibir')} description={t('libroNuevo.recibirAyuda')} onClick={onReceive} />
+          {/* A book someone sent: once the project has books, to work on one of them together. */}
+          {project.books.length > 0 && <MenuRow label={t('libroNuevo.recibir')} description={t('libroNuevo.recibirAyuda')} onClick={onReceive} />}
           {found ? (
             <UsfmFound
               found={found}
@@ -92,13 +103,17 @@ export function AddBookSheet({
           <button type="button" className="button-quiet back-link" onClick={() => setStep('method')}>
             ‹ {t('libroNuevo.volver')}
           </button>
+          {ready.length > 0 && grid(ready, t('libroNuevo.listos'))}
           {grid(BOOKS.slice(0, 39), t('libroNuevo.at'))}
           {grid(BOOKS.slice(39), t('libroNuevo.nt'))}
           <div className="sheet-foot">
             {picked ? (
-              <button type="button" className="button-primary" onClick={() => onCreate(picked)}>
-                {t('libroNuevo.crear', { libro: bookName(picked) })}
-              </button>
+              <>
+                {!here.has(picked) && <p className="quiet">{t('libroNuevo.sinTextos', { libro: bookName(picked) })}</p>}
+                <button type="button" className="button-primary" onClick={() => onCreate(picked)}>
+                  {t('libroNuevo.crear', { libro: bookName(picked) })}
+                </button>
+              </>
             ) : (
               <p className="quiet">{t('libroNuevo.elija')}</p>
             )}

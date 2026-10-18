@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
 import { viteSingleFile } from 'vite-plugin-singlefile'
+import { configDefaults } from 'vitest/config'
 
 /**
  * bt-synergy lives next to this repository (`../bt-synergy`, branch `feat/language-pack` or later), as usfm-ast lives
@@ -88,5 +89,7 @@ export default defineConfig(({ mode }) => ({
   optimizeDeps: { entries: ['index.html'] },
   test: {
     environment: 'node',
+    // Other sessions' working copies have their own tests (one of them writes files).
+    exclude: [...configDefaults.exclude, '**/.claude/**'],
   },
 }))

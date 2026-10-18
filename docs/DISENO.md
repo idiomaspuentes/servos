@@ -419,6 +419,10 @@ borrador con la forma del texto puente (sus párrafos, la poesía línea por lí
   - qué frases nuevas le faltan;
   - qué frases quedaron **invalidadas** porque el texto original cambió, mostrando el antes y el después.
 - La comprobación de claves y marcadores que Taller hace con `verify:config` se repite aquí.
+- Una frase que en la computadora se dice de otro modo («haga clic», «esta computadora») tiene al lado su forma de
+  computadora, `{clave}.computadora`, en los tres idiomas. La app la usa donde hay ratón o panel táctil, o en la app de
+  escritorio (`src/app/i18n/device.ts`); el traductor de la interfaz la muestra como una frase más, diciendo si es la
+  del teléfono o la de la computadora. Donde una sola forma dice bien en los dos («Elija un libro.»), hay una sola.
 - Hecho en el prototipo: «Traducir la app › Pasar esta traducción a otro teléfono» la guarda como archivo o como
   texto, y «Idioma de la app › Recibir una traducción» la junta en otro teléfono: entran las frases nuevas y las que
   ese teléfono tradujo distinto se quedan como estaban.
