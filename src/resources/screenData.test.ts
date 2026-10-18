@@ -85,3 +85,14 @@ describe.skipIf(!folder)('un capítulo desde los paquetes reales', () => {
     expect(data.book.name).not.toBe('TIT')
   }, 600_000)
 })
+
+describe('la tabla de secciones de toda la Biblia', () => {
+  it('trae las de Tito y Jonás tal como estaban, y las de cualquier otro libro', async () => {
+    const { sectionStartsOf } = await import('./sections')
+    expect(sectionStartsOf('tit', 1)).toEqual([1, 4, 6, 8, 10, 12, 15])
+    expect(sectionStartsOf('JON', 2)).toEqual([1, 3, 5, 7, 9])
+    expect(sectionStartsOf('rut', 1)?.[0]).toBe(1)
+    expect(sectionStartsOf('psa', 119)?.length).toBeGreaterThan(10)
+    expect(sectionStartsOf('rut', 9)).toBeUndefined()
+  })
+})
