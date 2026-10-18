@@ -5,7 +5,7 @@
 
 import { chapterOf, chaptersOf, type PrototypeData } from '../../prototype/data'
 import { readAlignment } from './alignment'
-import { fileOf, fingerprint, keepUploaded, manifestOf, markVersion, attachToRelease, publish, type Destination, type Door43Account, type FileResult } from './door43'
+import { booksThere, fileOf, fingerprint, keepUploaded, manifestOf, markVersion, attachToRelease, publish, type Destination, type Door43Account, type FileResult } from './door43'
 import { titleOf, type Project } from './model'
 import { audioFileOf, chosenTake, recordedPlaces, soundOf } from './recordings'
 import { inProject } from './scope'
@@ -71,9 +71,14 @@ export async function uploadProject(
 ): Promise<{ results: FileResult[]; books: BookToPublish[] }> {
   const books = booksOf(project)
   const withText = books.filter((b) => b.written > 0)
+  // The manifest names what this phone uploads and what others already uploaded: a book empty here is never left
+  // out of it, and its file stays (nothing is deleted).
+  const named = new Map(withText.map((b) => [b.code, b.title]))
+  for (const b of await booksThere(account, to)) if (!named.has(b.code)) named.set(b.code, b.title || titleOf(project, b.code))
+  const manifestBooks = [...named].map(([code, title]) => ({ code, title })).sort((a, b) => fileOf(a.code).localeCompare(fileOf(b.code)))
   const files = [
     ...withText.map((b) => ({ path: fileOf(b.code), content: b.usfm })),
-    { path: 'manifest.yaml', content: manifestOf(project, to.owner, to.repo, withText.map((b) => ({ code: b.code, title: b.title }))) },
+    { path: 'manifest.yaml', content: manifestOf(project, to.owner, to.repo, manifestBooks) },
   ]
   const results = await publish(account, to, files, message(withWorkOf(books).map((b) => b.title).join(', ')))
   const now = new Date().toISOString()

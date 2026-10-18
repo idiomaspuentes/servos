@@ -6,7 +6,7 @@
  * written here overwritten without a choice (`projects/share.ts`), and it says what was done.
  */
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { MenuRow } from '../frame/Sheet'
 import { useT } from '../i18n/i18n'
 import { bookName, type Project } from '../projects/model'
@@ -17,6 +17,7 @@ export function ReceiveScreen({
   projects,
   person,
   preset,
+  opened,
   examples = [],
   onBack,
   onReceived,
@@ -28,6 +29,8 @@ export function ReceiveScreen({
   person: string
   /** The project it was opened from, to gather into by default. */
   preset?: string
+  /** A file opened on the computer or dropped on the window, read at once: the first step shows what it brings. */
+  opened?: string
   /** Files to try it with, in the prototype. */
   examples?: SharedFile[]
   onBack(): void
@@ -60,6 +63,10 @@ export function ReceiveScreen({
     const from = projects.find((p) => p.id === preset && p.languageCode === shared.project.languageCode)
     setDestination(same ? { kind: 'join', projectId: same.id } : from ? { kind: 'join', projectId: from.id } : { kind: 'new' })
   }
+  // Each file opened from outside comes with a screen of its own (App gives it its own key).
+  useEffect(() => {
+    if (opened !== undefined) open(opened)
+  }, [])
 
   const same = file ? projects.find((p) => p.id === file.project.id) : undefined
   const sameLanguage = file ? projects.filter((p) => p.id !== file.project.id && p.languageCode === file.project.languageCode) : []

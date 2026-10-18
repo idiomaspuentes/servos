@@ -189,6 +189,9 @@ medida es tC4: una ventana ancha, ratón y teclado, columnas a los lados y el te
   su botón.
 - **Anchos de lectura, no de ventana.** Un renglón de texto no pasa de unos 70 caracteres; un formulario, de unos 40rem.
   Lo que sobra a los lados es margen o una columna que sirve, nunca un botón ni una caja estirados.
+- **La pantalla es toda la ventana** (Abel, 18 de octubre). La pantalla y su barra de arriba van siempre de borde a
+  borde, a cualquier ancho: nunca una franja en medio con la ventana vacía a los lados. Lo que se lee tiene su columna
+  dentro de la pantalla, y lo que se desplaza llega al borde de la ventana, con su barra ahí.
 - **Botones de su tamaño.** En la ventana ancha un botón mide lo que dice; el lleno va al final de lo que se lee, con la
   alternativa a su lado.
 - **Con ratón, lo que actúa lo muestra.** Todo lo que se puede hacer cambia de tono al pasar el ratón y pone la mano; lo
@@ -213,6 +216,8 @@ medida es tC4: una ventana ancha, ratón y teclado, columnas a los lados y el te
   escribirlo. Tab va de caja en caja (las palabras, con el ratón); ↓ y ↑ pasan de una caja a la de abajo o arriba.
   Desde 1280 px las ayudas tienen su columna; más angosta la ventana, «Ayudas» es un interruptor más: encendido, toman
   una columna a la derecha y en las filas cabe un texto (un clic en otro lo pone en su lugar); apagado, caben dos.
+- **Los archivos, como en la computadora** (18 de octubre). Un trabajo compartido se abre con doble clic o soltándolo
+  en la ventana, y lo que la app guarda se guarda con «Guardar como», donde la persona elige; no hay descargas.
 - **La letra no crece con la ventana.** El mismo tamaño que en el teléfono; lo que crece son las columnas.
 - **El teléfono no cambia.** Nada de esto toca los 375 px ni el editor con el teclado abierto (principio 12).
 
@@ -236,6 +241,7 @@ ventana de computadora a 1280 × 800, 1440 × 900 y 1920 × 1080, y angosta, de 
 - [ ] Al terminar, ¿a dónde lleva la app?
 - [ ] ¿Se ve bien en los tres idiomas?
 - [ ] En la ventana ancha, ¿hay algo estirado de borde a borde (un botón, una caja, un renglón de más de 70 caracteres)?
+- [ ] ¿La pantalla y su barra de arriba van de borde a borde de la ventana, y la barra de desplazamiento está en el borde?
 - [ ] ¿Hay un espacio vacío grande que una columna podría usar, o una hoja que debería ser columna o cuadro?
 - [ ] ¿Las hojas y los menús se abren en medio o bajo su botón, y se ven enteros?
 - [ ] Con el ratón, ¿todo lo que actúa cambia al pasar por encima? ¿Los signos solos dicen su nombre?

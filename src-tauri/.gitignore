@@ -1,0 +1,3 @@
+# What cargo builds, and the schemas Tauri writes from the plugins
+/target/
+/gen/schemas

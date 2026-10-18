@@ -3,7 +3,9 @@
  * from then on. A new version is kept whole in the background, and used when the person says so («Usar ahora») or the
  * next time the app opens; it never changes under someone's hands.
  *
- * Off in development (the dev server reloads by itself) and in the prototype shared as a page inside Claude.
+ * Off in development (the dev server reloads by itself), in the prototype shared as a page inside Claude, and in the
+ * app for computers (`--mode escritorio`), which carries all of itself inside the program and is updated by installing
+ * a new version.
  */
 
 import { useEffect, useState } from 'react'
@@ -13,12 +15,14 @@ let asked = false
 const listeners = new Set<() => void>()
 
 export function keepAppOffline() {
-  if (!import.meta.env.PROD || import.meta.env.MODE === 'pagina' || !('serviceWorker' in navigator) || 'claude' in window) return
-  // The team's work lives on this phone: the browser is asked not to clear it to make room.
+  const mode = import.meta.env.MODE
+  if (!import.meta.env.PROD || mode === 'pagina' || 'claude' in window) return
+  // The team's work lives on this phone or computer: the browser is asked not to clear it to make room.
   void navigator.storage
     ?.persisted?.()
     .then((kept) => kept || navigator.storage.persist())
     .catch(() => {})
+  if (mode === 'escritorio' || !('serviceWorker' in navigator)) return
   const start = () => {
     navigator.serviceWorker
       .register('/sw.js')

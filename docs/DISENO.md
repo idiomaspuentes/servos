@@ -460,6 +460,32 @@ grabó el teléfono.
     cuando la persona toca «Usar ahora» en Inicio, o la próxima vez que abre la app: nunca cambia en medio del
     trabajo. Se pide al navegador que no borre lo guardado para hacer lugar. La compilación escribe el *service
     worker* con la lista de sus archivos (`offline/sw.template.js`, `vite.config.ts`).
+- **La app para Windows** (Tauri 2, `src-tauri/`; primera compilación el 18 de octubre, decidida con Abel):
+  - **La misma app web dentro del programa** (`vite build --mode escritorio`, en `dist-escritorio/`): abre sin
+    internet desde la primera vez, sin *service worker* y sin el aviso «Usar ahora»; una versión nueva se instala
+    encima. Se compila en su propia carpeta para que nunca se suba como la app web, que sin su *service worker* no
+    abriría sin conexión.
+  - **La ventana:** «Servos», con el ícono de la app; 1280 × 800 la primera vez, nunca menos de 900 × 600, y recuerda su
+    tamaño, su lugar y si estaba maximizada. El menú del navegador (Atrás, Actualizar, Imprimir) sale solo donde se
+    escribe o sobre lo seleccionado, para cortar, copiar y pegar.
+  - **Lo guardado** queda, por ahora, en el almacenamiento de WebView2 (`%LOCALAPPDATA%\org.idiomaspuentes.servos`),
+    como en el navegador; la capa de `platform-adapters` viene después. El identificador `org.idiomaspuentes.servos`
+    no se cambia: es el lugar del trabajo en cada computadora. Lo de la app web no pasa solo a la de Windows: pasa con
+    Compartir y Recibir.
+  - **Un archivo `.servos` se abre con doble clic** (el instalador lo asocia), o **soltándolo en la ventana**; si
+    Servos ya está abierto, va a esa ventana. Se abre «Recibir» con el archivo ya leído; si nadie entró todavía, espera
+    a que se elija la persona. Soltar un archivo sirve también en la app web en una computadora.
+  - **Guardar** (Compartir, el libro en USFM, el glosario, la traducción de la interfaz) abre «Guardar como» de
+    Windows con el nombre que da la app; cerrar el cuadro no es un error.
+  - **Door43** responde a la ventana (`http://tauri.localhost`) como a la app web: su CORS acepta cualquier origen,
+    así que no hace falta pasar por Rust. La ventana solo deja salir lo que la app necesita (su CSP en
+    `tauri.conf.json`): Door43 y su copia de prueba, el Door43 de mentira al programar, y Google Fonts para las letras
+    de proyecto que aún no vienen dentro; las grabaciones (`blob:`) y las letras de la app, desde la app misma. Un
+    enlace a una página de internet («Ver en Door43») se abre en el navegador de la computadora, nunca dentro de Servos.
+  - **El instalador** (NSIS) se instala sin permisos de administrador, en español, portugués o inglés, y lleva WebView2
+    entero para una computadora sin internet que no lo tenga: pesa unos 210 MB (sin WebView2 serían unos 6). Todavía
+    sin firmar: Windows avisa antes de instalar.
+    Faltan la firma, las actualizaciones y Mac y Linux.
 - **Almacenamiento** por la capa de `platform-adapters` de `usfm-ast`, que ya abstrae la web, Tauri y Capacitor.
 - **Del lado de `usfm-ast`:** el analizador y el editor de USFM, el alineador y la lectura de formatos. Los
   sistemas de choques de `usfm-ast` no se usan.
