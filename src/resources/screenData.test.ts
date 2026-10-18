@@ -72,6 +72,20 @@ describe.skipIf(!folder)('un capítulo desde los paquetes reales', () => {
     expect(data.sections.flat()).toEqual(data.verses.map((v) => v.verse))
   }, 600_000)
 
+  it('Rut 1:8: el qere de la nota no es una palabra del versículo, que termina en su última palabra, y cada palabra tiene su léxico', async () => {
+    await opened
+    const data = await chapterData(stores, es419(HEBREW), 'rut', 1)
+    const hebrew = data.texts.find((t) => t.original)!
+    // Compared by their letters: the points and accents come in more than one order.
+    const letters = (w: string) => w.replace(/[֑-ׇ⁠]/g, '')
+    const line = hebrew.lines[8].flatMap((l) => l.pieces.filter((p) => p.word !== undefined).map((p) => letters(p.text)))
+    expect(line.at(-1)).toBe('ועמדי')
+    expect(line).toContain('יעשה')
+    expect(line).not.toContain('יעש')
+    // The lemma and Strong number of every word, which the lexicon and the glossary go by.
+    expect(hebrew.words?.length).toBe(Object.values(hebrew.lines).flat().flatMap((l) => l.pieces).filter((p) => p.word !== undefined).length)
+  }, 600_000)
+
   it('Ester, de la que el equipo solo publicó el TPL: abre igual, con el TPL y el hebreo, sin ayudas', async () => {
     await opened
     const data = await chapterData(stores, es419(HEBREW), 'est', 1)

@@ -417,18 +417,20 @@ export interface OriginalWord {
 
 /**
  * The lemma and Strong number of each word of a chapter of the original, by the word's place (as `readChapterWords`
- * numbers them). They are on the `\w` markers of the stored USJ, one a word in the same order; null when the
- * device lacks the chapter or the counts differ (then the places would not match).
+ * numbers them). They are on the `\w` markers of the stored USJ outside notes, one a word in the same order; null when
+ * the device lacks the chapter or the counts differ (then the places would not match).
  */
 export async function originalWordsOf(stores: ResourceStores, textKey: string, book: string, chapter: number): Promise<OriginalWord[] | null> {
-  type Node = { marker?: string; content?: Array<Node | string>; lemma?: string; strong?: string; 'x-morph'?: string }
+  type Node = { type?: string; marker?: string; content?: Array<Node | string>; lemma?: string; strong?: string; 'x-morph'?: string }
   const row = (await stores.cache.get(`scripture-usj:${textKey}:${book.toLowerCase()}:${chapter}`)) as { content?: { usj?: Node } } | null
   const usj = row?.content?.usj
   const words = await readChapterWords(stores, textKey, book, chapter)
   if (!usj || !words) return null
   const found: OriginalWord[] = []
   const walk = (node: Node | string) => {
-    if (typeof node === 'string') return
+    // A note's words are not the text's: the Hebrew's qere stands in a footnote after its ketiv (Ruth 1:8), and the
+    // chapter's words leave it out (bt-synergy's usj-processor 2.3.0).
+    if (typeof node === 'string' || node.type === 'note') return
     if (node.marker === 'w') found.push({ lemma: node.lemma ?? '', strong: node.strong ?? '', morph: node['x-morph'] ?? '' })
     for (const child of node.content ?? []) walk(child)
   }
