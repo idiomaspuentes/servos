@@ -91,6 +91,12 @@ function Center({ context }: MiniAppCenterProps) {
     redraw((n) => n + 1)
   }
 
+  const somethingToImprove = (
+    <button type="button" className="button-secondary" onClick={() => setMarking(true)}>
+      {t('revisor.hayAlgo')}
+    </button>
+  )
+
   if (!texts.some((x) => x.trim())) {
     return (
       <div className="review">
@@ -207,11 +213,8 @@ function Center({ context }: MiniAppCenterProps) {
             </button>
           </section>
         )}
-        {!marking && criterion && (
-          <button type="button" className="button-secondary" onClick={() => setMarking(true)}>
-            {t('revisor.hayAlgo')}
-          </button>
-        )}
+        {/* On a wide window it goes beside «Yes», at the foot (principle 13); on a phone, under what is compared. */}
+        {!marking && criterion && !wide && somethingToImprove}
 
         {observations.length > 0 && (
           <section className="passage-notes" aria-label={t('revisor.paraMejorar')}>
@@ -240,6 +243,7 @@ function Center({ context }: MiniAppCenterProps) {
             {t(`revisor.si.${criterion}`)}
           </button>
         ) : null}
+        {!marking && criterion && wide && somethingToImprove}
         {marking && !picked && <p className="quiet review-hint">{t('revisor.primeroMarque')}</p>}
       </div>
     </div>
@@ -341,8 +345,10 @@ export const revisor: MiniApp = {
       suTraduccion: 'Su traducción',
       comparar: 'Comparar con',
       compararAyuda: 'Toque un texto para compararlo con su traducción.',
+      'compararAyuda.computadora': 'Haga clic en un texto para compararlo con su traducción.',
       hayAlgo: 'Hay algo que mejorar',
       marque: 'Toque o deslice el dedo sobre las palabras que hay que mejorar:',
+      'marque.computadora': 'Haga clic o arrastre el ratón sobre las palabras que hay que mejorar:',
       queMejorar: '¿Qué hay que mejorar? (opcional)',
       mejorarAhora: 'Mejorarlo ahora por escrito',
       nadaQueMejorar: 'No, no hay nada',
@@ -379,8 +385,10 @@ export const revisor: MiniApp = {
       suTraduccion: 'Sua tradução',
       comparar: 'Comparar com',
       compararAyuda: 'Toque num texto para compará-lo com sua tradução.',
+      'compararAyuda.computadora': 'Clique num texto para compará-lo com sua tradução.',
       hayAlgo: 'Há algo para melhorar',
       marque: 'Toque ou deslize o dedo sobre as palavras que precisam melhorar:',
+      'marque.computadora': 'Clique ou arraste o mouse sobre as palavras que precisam melhorar:',
       queMejorar: 'O que precisa melhorar? (opcional)',
       mejorarAhora: 'Melhorar agora por escrito',
       nadaQueMejorar: 'Não, não há nada',
@@ -417,8 +425,10 @@ export const revisor: MiniApp = {
       suTraduccion: 'Your translation',
       comparar: 'Compare with',
       compararAyuda: 'Touch a text to compare it with your translation.',
+      'compararAyuda.computadora': 'Click a text to compare it with your translation.',
       hayAlgo: 'Something to improve',
       marque: 'Touch or slide your finger over the words to improve:',
+      'marque.computadora': 'Click or drag the mouse over the words to improve:',
       queMejorar: 'What is to improve? (optional)',
       mejorarAhora: 'Improve it now in writing',
       nadaQueMejorar: 'No, nothing',

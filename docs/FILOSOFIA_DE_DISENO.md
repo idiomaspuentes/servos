@@ -25,7 +25,7 @@ En el teléfono, el versículo con que se trabaja y la caja donde se escribe lle
 
 - Al escribir, el texto puente queda pegado a la caja: el versículo abierto muestra su TPL o su TPS, la caja y lo que conviene mirar en ese versículo.
 - En el teléfono no queda nada fijo que no haga falta. Con el teclado abierto quedan unos 400 px.
-- En la computadora (Tauri), lo que en el teléfono es una hoja o una pestaña puede ser una columna a un lado, como en tC4: los libros a la izquierda, las ayudas a la derecha y el texto en medio.
+- En la computadora (Tauri), lo que en el teléfono es una hoja o una pestaña puede ser una columna a un lado, como en tC4: los libros a la izquierda, las ayudas a la derecha y el texto en medio (principio 13).
 
 ### 3. Lo demás, cerca y en capas
 
@@ -94,8 +94,8 @@ Lo que se aprende en una mini app sirve en la siguiente, y una mini app nueva no
 
 ### 12. Cada acción tiene su forma
 
-Nada que actúe flota solo como texto azul: un enlace suelto en una línea se ve viejo y no dice qué es. Cada acción
-toma la forma de su papel:
+Nada que actúe flota solo como texto de enlace: un enlace suelto en una línea se ve viejo y no dice qué es. Cada
+acción toma la forma de su papel:
 
 | Papel | Forma | Ejemplos |
 |---|---|---|
@@ -115,18 +115,33 @@ toma la forma de su papel:
   sin borde, con un adjetivo («Acordada», «Pronto»), y no se toca.
 - **Presupuesto por pantalla:** un botón lleno y, como mucho, dos con borde; lo demás, filas y chips. Una sola
   sugerencia a la vez.
-- **El texto azul queda** dentro de una frase (al final, como «…Ver en Door43»). El encabezado («‹ Inicio», «Más»)
-  va en el color del texto, en su lugar fijo de siempre.
+- **El texto de enlace queda** dentro de una frase (al final, como «…Ver en Door43»), en el musgo de la app. El
+  encabezado («‹ Inicio», «Más») va en el color del texto, en su lugar fijo de siempre.
 - **Tres tonos, no más** (como tC4): el fondo; encima, tarjetas que se separan por un tono y una sombra suave, no por
   un borde; dentro de una tarjeta, nada en su propia caja, solo líneas finas. Una caja dentro de otra hace competir a
   las dos. En el editor, solo la caja que se escribe se dibuja; las demás son un fondo leve.
-- **Papel y tinta** (elegido el 17 de octubre de 2026): el fondo es el papel cálido de una Biblia impresa, el texto
-  va en tinta, lo que lleva adelante en un azul tinta profundo, y lo marcado en ocre. Las sombras toman el café del
-  papel, no el gris. **De noche, la tinta es el fondo y el papel es la luz**: un azul profundo con el tinte de la
-  paleta, el texto en papel suave (nunca blanco), la profundidad por un tono más claro y no por sombras ni brillos.
+- **Papel, tinta y musgo** (18 de octubre de 2026, después de una
+  [investigación del sector](INVESTIGACION_MARCA_Y_PALETA.md)): el fondo es el papel
+  cálido de una Biblia impresa (#f7f2e8), el texto va en una tinta casi negra (#182125, 14.7:1), lo que lleva adelante
+  y la marca en un verde musgo profundo (#3b6f30, 5.4:1), y lo marcado en un oro cálido. «Hecho» va en azul y
+  «peligro» en un carmesí, para que los tres se distingan también sin ver el rojo y el verde. El azul tinta de antes
+  (#17496a con ocre) se cambió porque era casi la paleta de unfoldingWord y se leía como «texto más oscuro», no como
+  marca; en el sector casi todo es azul, rojo o naranja, y el verde profundo no es el color principal de nadie. Las
+  sombras toman el café del papel, no el gris. **De noche, la tinta es el fondo y el papel es la luz**: un casi negro
+  con un tinte frío (#0c1316, nunca negro puro), el texto en papel suave (nunca blanco), el musgo más claro (#98cf8b),
+  la profundidad por un tono más claro y no por sombras ni brillos. **Al sol, líneas y peso en lugar de tonos** (18 de
+  octubre): a pleno sol cualquier esquema baja a unos 3–5:1, así que «Apariencia», en el menú de la persona, tiene una
+  cuarta opción, «Sol». El fondo es blanco y la tinta casi negra (#15141a, 18.3:1, el mínimo que un estudio propone
+  para leer afuera); el texto suave queda a 12.5:1 y las líneas a 7.5:1. Las tarjetas y los mosaicos se separan por
+  una línea, no por un tono, que al sol desaparece, y la píldora elegida lleva un borde oscuro. La interfaz sube un
+  peso (Mulish 500 en el texto, 600 en las líneas chicas) y la Escritura un tamaño, porque Charis no tiene pesos
+  intermedios. El musgo se oscurece (#2e612e, 7.3:1) y los estados también: «hecho» en #0950b3, «peligro» en #9c167b
+  y el aviso en #8f3000, todos a 7.5:1 o más, elegidos para que se distingan con protanopía, deuteranopía y
+  tritanopía mejor que los del día (CIEDE2000 de 8.5 o más entre dos cualesquiera; el día llega a 5.2). Por eso, al
+  sol, el peligro tira a ciruela.
 - **Sin vidrio ni degradados** (decidido el 17 de octubre): son la marca más reconocible de un diseño hecho en
   automático, el desenfoque gasta la batería de un teléfono barato y baja la lectura del texto. El carácter viene de
-  lo que la app es: el papel, la tinta, la letra de la Escritura, el puente. Un solo campo de tinta en Inicio,
+  lo que la app es: el papel, la tinta, la letra de la Escritura, el puente. Un solo campo de musgo en Inicio,
   «Siga donde quedó», que es lo primero que se toca.
 - **Las letras de translationCore 4** (17 de octubre; guardadas dentro de la app, con todos sus alfabetos, para que
   estén también sin internet): la interfaz en Mulish, la que tC4 usa en lugar de Avenir, la de unfoldingWord, gruesa
@@ -134,11 +149,20 @@ toma la forma de su papel:
   con los números de versículo en tinta, como en una Biblia impresa. Charis es también la letra por defecto de lo que
   escribe el equipo. Se probaron antes Atkinson Hyperlegible (su cero con raya hacía leer «Jonás 1:1Ø»), Figtree y
   Literata. Los títulos se distinguen por tamaño y peso, no por gris, y ninguno deja una palabra sola en un renglón.
-- **La marca es el libro que habla** (elegida el 17 de octubre): un libro abierto, la página izquierda escrita en
-  una lengua y la derecha dicha en voz alta en otra, una onda de voz en ocre. Dice traducir, por escrito y de viva
-  voz, y no solo leer (el libro abierto solo, el de antes, decía «leer»). Se probaron un puente (parecía el ícono de
-  wifi, luego una mesa), dos voces y la alineación (se leía «XI»). Va en su cuadrado de tinta, en la pantalla
-  (`BrandMark`) y en los íconos del teléfono (`public/`).
+- **La marca es el libro que habla** (la idea, del 17 de octubre; el dibujo, rehecho el 18): un libro abierto, la
+  página izquierda escrita y la derecha dicha en voz alta. Dice traducir, por escrito y de viva voz, y no solo leer
+  (el libro abierto solo, el de antes, decía «leer»). El primer dibujo se veía de aficionado: muchas piezas sueltas,
+  renglones grises, barras finas en ocre, todo metido en un cuadrado. Ahora es **una sola forma rellena, de un
+  color**, con dos renglones recortados de una página y tres barras de voz recortadas de la otra, todos del mismo
+  ancho y con puntas planas, como las de Mulish; se dibujó en negro sobre una retícula de 48 y se eligió mirándolo a
+  16 px. En la pantalla va solo, en el musgo, junto a «Servos» (`BrandMark`); el ícono del teléfono no es la marca en
+  un cuadrado sino el libro blanco sobre un campo de musgo (`public/`, de `design/logo/render-icons.js`). En la
+  pestaña del navegador va el libro solo, en musgo (musgo claro con el navegador oscuro), redibujado a 16 px con cada
+  borde en un píxel entero: reducido, sus cortes de un tercio de píxel se volvían manchas grises. Android pinta con los
+  colores del teléfono la silueta del mismo libro (el ícono temático). Se probaron
+  un puente (parecía el ícono de wifi, luego una mesa), dos voces (una app de mensajes), la alineación (se leía «XI»),
+  una S de dos mitades y ondas en lugar de barras (parecían gusanos). Se evita lo que ya es de otros: la cola de globo
+  de diálogo (BibleProject) y los arcos (wifi).
 - **Lo que se toca responde**: un botón o una tarjeta cede un poco bajo el dedo, una fila se tiñe, y con ratón se marca
   lo que está debajo. El movimiento es corto (una hoja sube deslizándose) y no hay ninguno si la persona pidió menos
   movimiento.
@@ -146,9 +170,39 @@ toma la forma de su papel:
   desliza de una a otra (o se toca la pestaña) sin quitarle el foco a la caja, así el teclado no se cierra. Es lo que
   hace posible traducir cómodo en un teléfono; ningún cambio de diseño lo toca (`Panes.tsx`).
 
+### 13. En la computadora, una app de computadora
+
+*18 de octubre de 2026.* En una computadora (Tauri, Windows primero) Servos se ve y se usa como una aplicación de
+escritorio, como en el teléfono se ve y se usa como una app de teléfono: no es un teléfono estirado a lo ancho. La
+medida es tC4: una ventana ancha, ratón y teclado, columnas a los lados y el texto en medio.
+
+- **Manda el ancho de la ventana, no el aparato.** Hasta 900 px es el teléfono: una columna, hojas que suben, la línea
+  de posición abajo. Desde 900 px, dos columnas: lo que se lee y lo que se escribe. Desde 1280 px, también la columna de
+  las ayudas, como en tC4. Una ventana angosta en la computadora se ve como el teléfono, y está bien.
+- **Lo que en el teléfono es una hoja, en la ventana ancha es una columna o un cuadro.** La lista de un revisor va en una
+  columna a la izquierda; las ayudas, a la derecha. Lo que sigue siendo una hoja (compartir, un artículo, elegir un
+  libro) se abre como un cuadro en medio de la ventana, nunca pegado al pie. «Más» y el menú de la persona se abren bajo
+  su botón.
+- **Anchos de lectura, no de ventana.** Un renglón de texto no pasa de unos 70 caracteres; un formulario, de unos 40rem.
+  Lo que sobra a los lados es margen o una columna que sirve, nunca un botón ni una caja estirados.
+- **Botones de su tamaño.** En la ventana ancha un botón mide lo que dice; el lleno va al final de lo que se lee, con la
+  alternativa a su lado.
+- **Con ratón, lo que actúa lo muestra.** Todo lo que se puede hacer cambia de tono al pasar el ratón y pone la mano; lo
+  que es solo un signo (‹ ›) dice su nombre y su atajo al dejar el ratón encima. Lo que se arrastra con el dedo se
+  arrastra con el ratón, y lo que se toca se hace con un clic. Los textos dicen «haga clic» y «esta computadora» en la
+  computadora, y «toque» y «este teléfono» en el teléfono.
+- **Con teclado se llega a todo.** Tab recorre la pantalla en el orden en que se lee (la cabecera, la línea de posición,
+  el centro, el botón lleno), con el foco siempre a la vista, también sobre el musgo. Una hoja o un menú abierto guarda el
+  foco dentro y, al cerrarse, lo devuelve al botón que lo abrió. Los mismos atajos en todas las mini apps: Esc cierra lo
+  de encima; Alt+↓ y Alt+↑ van al versículo o la sección siguiente y anterior, también desde una caja; Ctrl+Enter hace lo
+  del botón lleno; Ctrl+Z y Ctrl+Y deshacen y rehacen donde se puede. Un atajo nunca es la única forma de hacer algo.
+- **La letra no crece con la ventana.** El mismo tamaño que en el teléfono; lo que crece son las columnas.
+- **El teléfono no cambia.** Nada de esto toca los 375 px ni el editor con el teclado abierto (principio 12).
+
 ## Cómo comprobarlo
 
-Antes de dar por hecha una pantalla, se recorre a 375 px como lo haría alguien poco hábil con la tecnología, y se anotan los números:
+Antes de dar por hecha una pantalla, se recorre a 375 px como lo haría alguien poco hábil con la tecnología, y en una
+ventana de computadora a 1280 × 800, 1440 × 900 y 1920 × 1080, y angosta, de unos 900 px; y se anotan los números:
 
 - [ ] ¿Qué es lo principal, y se ve sin bajar?
 - [ ] ¿Cuántos controles hay a la vista sin tocar nada? (12 o menos)
@@ -158,9 +212,18 @@ Antes de dar por hecha una pantalla, se recorre a 375 px como lo haría alguien 
 - [ ] ¿Algo queda fijo sin necesidad, o tapa la caja con el teclado abierto?
 - [ ] Con el teclado abierto, ¿se desliza entre la caja y la fuente sin que la caja pierda el foco?
 - [ ] ¿Hay algún icono sin palabra?
-- [ ] ¿Hay alguna acción que sea solo texto azul suelto en una línea? (ninguna)
+- [ ] ¿Hay alguna acción que sea solo texto de enlace suelto en una línea? (ninguna)
 - [ ] ¿Las ayudas que se ven son las del versículo en que se trabaja?
 - [ ] ¿Se ve quién está trabajando, y si lo hecho está solo en el aparato o también en Door43?
 - [ ] ¿Funciona igual con el modo avión puesto?
 - [ ] Al terminar, ¿a dónde lleva la app?
-- [ ] ¿Se ve bien en los tres idiomas y en una computadora?
+- [ ] ¿Se ve bien en los tres idiomas?
+- [ ] En la ventana ancha, ¿hay algo estirado de borde a borde (un botón, una caja, un renglón de más de 70 caracteres)?
+- [ ] ¿Hay un espacio vacío grande que una columna podría usar, o una hoja que debería ser columna o cuadro?
+- [ ] ¿Las hojas y los menús se abren en medio o bajo su botón, y se ven enteros?
+- [ ] Con el ratón, ¿todo lo que actúa cambia al pasar por encima? ¿Los signos solos dicen su nombre?
+- [ ] Solo con el teclado, ¿se llega a todo con Tab, en orden y viendo el foco? ¿Esc cierra y devuelve el foco adonde
+  estaba? ¿Funcionan Alt+↓, Alt+↑ y Ctrl+Enter?
+- [ ] ¿Algún texto dice «toque», «deslice el dedo» o «este teléfono» en la computadora?
+- [ ] A 900 px, ¿se ve como el teléfono o como dos columnas, sin nada cortado ni encimado?
+- [ ] Después de un cambio para la computadora, ¿se ve igual que antes a 375 px?

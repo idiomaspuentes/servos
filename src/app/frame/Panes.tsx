@@ -9,8 +9,9 @@
  * swipe is read here from the pointer.
  *
  * On a wide screen one pane (`fixed`, the boxes) stays in sight on the right and the others share the left, so the
- * text being read and the one being written are side by side. On a phone the tabs are at the foot, under the thumb
- * (and right above the keyboard while writing).
+ * text being read and the one being written are side by side. On a wider one (from 1280 px) another (`side`, the
+ * helps) has a column of its own after them, as translationCore 4 keeps its helps at the right (philosophy,
+ * principle 13). On a phone the tabs are at the foot, under the thumb (and right above the keyboard while writing).
  */
 
 import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react'
@@ -42,18 +43,28 @@ export function showInPane(box: HTMLElement | null) {
   else if (r.bottom > c.bottom) pane.scrollTop += Math.min(r.top - c.top - 8, r.bottom - c.bottom + 8)
 }
 
-/** Where a screen is wide enough for two panes side by side. */
+/** Where a screen is wide enough for two panes side by side, and for a third column (the helps). */
 const WIDE = '(min-width: 900px)'
+const WIDER = '(min-width: 1280px)'
+
+function useMedia(query: string): boolean {
+  const [on, setOn] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches)
+  useEffect(() => {
+    const media = window.matchMedia(query)
+    const change = () => setOn(media.matches)
+    change()
+    media.addEventListener('change', change)
+    return () => media.removeEventListener('change', change)
+  }, [query])
+  return on
+}
 
 export function useWide(): boolean {
-  const [wide, setWide] = useState(() => typeof window !== 'undefined' && window.matchMedia(WIDE).matches)
-  useEffect(() => {
-    const query = window.matchMedia(WIDE)
-    const change = () => setWide(query.matches)
-    query.addEventListener('change', change)
-    return () => query.removeEventListener('change', change)
-  }, [])
-  return wide
+  return useMedia(WIDE)
+}
+
+export function useWider(): boolean {
+  return useMedia(WIDER)
 }
 
 /** How far a finger moves before it counts as a swipe, and how far (of the width) to go to the next pane. */
@@ -65,6 +76,7 @@ export function Panes({
   label,
   onPane,
   fixed,
+  side,
   open,
   holdFocus = true,
 }: {
@@ -72,6 +84,8 @@ export function Panes({
   label: string
   onPane?(id: string): void
   fixed?: string
+  /** A pane with a column of its own, after the others, on a window of 1280 px or more (the editor's helps). */
+  side?: string
   /**
    * Whether moving between panes keeps the focus in the box being written in (the editor: the keyboard stays up while
    * the person looks at the text). Not where writing is the lesser part (the study's note).
@@ -81,14 +95,17 @@ export function Panes({
   open?: { id: string }
 }) {
   const wide = useWide()
+  const wider = useWider()
   const kept = wide ? all.find((p) => p.id === fixed) : undefined
-  const panes = kept ? all.filter((p) => p !== kept) : all
+  const aside = kept && wider ? all.find((p) => p.id === side) : undefined
+  const panes = all.filter((p) => p !== kept && p !== aside)
   const track = useRef<HTMLDivElement>(null)
   const [current, setCurrent] = useState(0)
-  // Between one column and two the panes are not the same list: start again from the first.
-  const [wasWide, setWasWide] = useState(Boolean(kept))
-  if (wasWide !== Boolean(kept)) {
-    setWasWide(Boolean(kept))
+  // Between one column, two and three the panes are not the same list: start again from the first.
+  const columns = aside ? 3 : kept ? 2 : 1
+  const [wasColumns, setWasColumns] = useState(columns)
+  if (wasColumns !== columns) {
+    setWasColumns(columns)
     setCurrent(0)
   }
   const swipe = useRef<{ id: number; x: number; y: number; t: number; dx: number; horizontal: boolean | null } | null>(null)
@@ -199,11 +216,18 @@ export function Panes({
   )
   if (!kept) return row
   return (
-    <div className="panes-split">
+    <div className={aside ? 'panes-split has-side' : 'panes-split'}>
       {row}
       <section id={`pane-${kept.id}`} aria-label={kept.label} className="pane pane-fixed">
         {kept.content}
       </section>
+      {aside && (
+        <section id={`pane-${aside.id}`} aria-label={aside.label} className="pane pane-side">
+          {/* Its name over it, as the tabs name the panes beside it */}
+          <h2 className="pane-side-title">{aside.label}</h2>
+          {aside.content}
+        </section>
+      )}
     </div>
   )
 }

@@ -37,6 +37,7 @@ import {
 } from '@usfm-ast/alignment-box-model'
 import type { AlignmentGroup } from '@usfm-tools/types'
 import { chapterOf } from '../../../prototype/data'
+import { KEYS, useKey } from '../../frame/keys'
 import { placesOfOriginals, wordAt } from '../../frame/TouchWords'
 import { alignmentConflictAt, alignmentFor, chooseAlignment, draftTokens, readAlignment, sourceWords, writeAlignment } from '../../projects/alignment'
 import { joinedVerses, textOf } from '../../projects/work'
@@ -146,6 +147,9 @@ function Center({ context }: MiniAppCenterProps) {
     setHistory({ past: [...history.past, groups], future: history.future.slice(1) })
     keep(ahead)
   }
+  // As in any desktop program (principle 13); a box being written in keeps its own.
+  useKey('undo', history.past.length ? undo : null)
+  useKey('redo', history.future.length ? redo : null)
 
   const put = (boxId: string, indices: number[]) => indices.length && change(addSourcesToBox(original, draft, groups, boxId, indices))
   const tapWord = (i: number) => {
@@ -322,10 +326,10 @@ function Center({ context }: MiniAppCenterProps) {
             </>
           ) : (
             <>
-              <button type="button" className="chip" disabled={!history.past.length} onClick={undo}>
+              <button type="button" className="chip" disabled={!history.past.length} onClick={undo} title={t('marco.conAtajo', { accion: t('alineador.deshacer'), atajo: KEYS.undo })}>
                 ↶ {t('alineador.deshacer')}
               </button>
-              <button type="button" className="chip" disabled={!history.future.length} onClick={redo}>
+              <button type="button" className="chip" disabled={!history.future.length} onClick={redo} title={t('marco.conAtajo', { accion: t('alineador.rehacer'), atajo: KEYS.redo })}>
                 {t('alineador.rehacer')} ↷
               </button>
             </>
@@ -527,7 +531,9 @@ export const alineador: MiniApp = {
       otraPersona: 'Otra persona',
       suTraduccion: 'Su traducción',
       comoSeHace: 'Toque una palabra (o varias) y luego su caja, o mantenga el dedo y arrástrela a la caja.',
+      'comoSeHace.computadora': 'Haga clic en una palabra (o varias) y luego en su caja, o arrástrela con el ratón hasta la caja.',
       tocarCaja: 'Ahora toque la caja de la palabra que traduce.',
+      'tocarCaja.computadora': 'Ahora haga clic en la caja de la palabra que traduce.',
       cajasElegidas: 'Cajas elegidas: {n}. Puede unirlas, separarlas o vaciarlas.',
       todoAlineado: 'Todas las palabras de este versículo están en su caja.',
       quitar: 'Quitar «{palabra}» de esta caja',
@@ -556,7 +562,9 @@ export const alineador: MiniApp = {
       otraPersona: 'Outra pessoa',
       suTraduccion: 'Sua tradução',
       comoSeHace: 'Toque uma palavra (ou várias) e depois sua caixa, ou mantenha o dedo e arraste-a até a caixa.',
+      'comoSeHace.computadora': 'Clique numa palavra (ou várias) e depois na sua caixa, ou arraste-a com o mouse até a caixa.',
       tocarCaja: 'Agora toque a caixa da palavra que ela traduz.',
+      'tocarCaja.computadora': 'Agora clique na caixa da palavra que ela traduz.',
       cajasElegidas: 'Caixas escolhidas: {n}. Pode juntá-las, separá-las ou esvaziá-las.',
       todoAlineado: 'Todas as palavras deste versículo estão na sua caixa.',
       quitar: 'Tirar «{palabra}» desta caixa',
@@ -585,7 +593,9 @@ export const alineador: MiniApp = {
       otraPersona: 'Someone else',
       suTraduccion: 'Your translation',
       comoSeHace: 'Touch a word (or several), then its box, or hold your finger on it and drag it to the box.',
+      'comoSeHace.computadora': 'Click a word (or several), then its box, or drag it to the box with the mouse.',
       tocarCaja: 'Now touch the box of the word it translates.',
+      'tocarCaja.computadora': 'Now click the box of the word it translates.',
       cajasElegidas: 'Boxes chosen: {n}. You can join, separate or empty them.',
       todoAlineado: 'Every word of this verse is in its box.',
       quitar: 'Take «{palabra}» out of this box',

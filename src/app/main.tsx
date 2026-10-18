@@ -13,6 +13,8 @@ import './miniapps/registry'
 // The app's letters, inside it so they are there without internet: Mulish and Charis SIL, as translationCore 4.
 import './fonts.css'
 import './styles.css'
+// What a wide window changes (principle 13), after the phone's sheet so it wins where they meet.
+import './wide.css'
 
 // Before the first paint: a person who chose light or dark does not see the other one flash.
 applyTheme(themeOf())

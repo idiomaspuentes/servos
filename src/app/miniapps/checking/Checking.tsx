@@ -12,6 +12,8 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ComponentType, type ReactNode } from 'react'
 import { chapterOf, type Places, type PrototypeData, type PrototypeText } from '../../../prototype/data'
 import { useT } from '../../i18n/i18n'
+import { KEYS, useKey } from '../../frame/keys'
+import { useWider } from '../../frame/Panes'
 import { Sheet } from '../../frame/Sheet'
 import { WordLines, wordsOf } from '../../frame/TouchWords'
 import { WordPicker } from '../../frame/WordPicker'
@@ -158,6 +160,12 @@ export function checkingCenter<I extends Checkable>(kind: CheckKind<I>) {
       setCurrentId(c.id)
       if (c.chapter !== position.chapter || c.verse !== position.verse) goTo({ book, chapter: c.chapter, verse: c.verse })
     }
+    // From 1280 px the groups are a column at the left, always in sight, as translationCore 4's groups menu
+    // (principle 13); on a narrower screen they are chosen in a sheet.
+    const wider = useWider()
+    // From one note (or word) to the next by the keyboard: here they are what the position line is elsewhere.
+    useKey('previous', previous ? () => go(previous) : null)
+    useKey('next', following ? () => go(following) : null)
     // Opened on a verse with nothing to check (where the person left the translation), it starts at the next one.
     useEffect(() => {
       if (!item) go(inVerses.find(atOrAfter) ?? list[0])
@@ -178,15 +186,19 @@ export function checkingCenter<I extends Checkable>(kind: CheckKind<I>) {
 
     const header = (
       <div className="review-head">
-        <button type="button" className="chip review-filter" onClick={() => setChoosing(true)}>
-          {filterLabel} ▾
-        </button>
+        {wider ? (
+          <span className="review-filter-name">{filterLabel}</span>
+        ) : (
+          <button type="button" className="chip review-filter" onClick={() => setChoosing(true)}>
+            {filterLabel} ▾
+          </button>
+        )}
         <div className="review-steps">
-          <button type="button" className="pager-arrow" disabled={!previous} onClick={() => go(previous)} aria-label={t(k('anterior'))}>
+          <button type="button" className="pager-arrow" disabled={!previous} onClick={() => go(previous)} aria-label={t(k('anterior'))} title={t('marco.conAtajo', { accion: t(k('anterior')), atajo: KEYS.previous })}>
             ‹
           </button>
           <span className="quiet">{item ? t(k('notaN'), { n: at + 1, total: list.length }) : list.length}</span>
-          <button type="button" className="pager-arrow" disabled={!following} onClick={() => go(following)} aria-label={t(k('siguiente'))}>
+          <button type="button" className="pager-arrow" disabled={!following} onClick={() => go(following)} aria-label={t(k('siguiente'))} title={t('marco.conAtajo', { accion: t(k('siguiente')), atajo: KEYS.next })}>
             ›
           </button>
         </div>
@@ -214,8 +226,7 @@ export function checkingCenter<I extends Checkable>(kind: CheckKind<I>) {
         </button>
       )
     }
-    const picker = choosing && (
-      <Sheet title={t(k('revisarPor'))} onClose={() => setChoosing(false)}>
+    const groups = (
         <div className="review-groups">
           {row({ kind: 'todas' }, t(k('todasVersiculos')))}
           {(['despues', 'cambio'] as const).map((s) => all.some((c) => stateFor(c) === s) && row({ kind: 'estado', id: s }, t(k(`estado.${s}`))))}
@@ -233,12 +244,29 @@ export function checkingCenter<I extends Checkable>(kind: CheckKind<I>) {
               )
             })}
         </div>
+    )
+    const picker = choosing && !wider && (
+      <Sheet title={t(k('revisarPor'))} onClose={() => setChoosing(false)}>
+        {groups}
       </Sheet>
     )
+    // The reviewer, with the groups beside it where the window is wide enough.
+    const withGroups = (body: ReactNode) =>
+      wider ? (
+        <div className="review-with-groups">
+          <nav className="review-side" aria-label={t(k('revisarPor'))}>
+            <h2 className="pane-side-title">{t(k('revisarPor'))}</h2>
+            {groups}
+          </nav>
+          {body}
+        </div>
+      ) : (
+        body
+      )
 
     if (finished) {
       const missing = all.filter((c) => stateFor(c) !== 'bien')
-      return (
+      return withGroups(
         <div className="review">
           {header}
           <div className="review-empty">
@@ -274,7 +302,7 @@ export function checkingCenter<I extends Checkable>(kind: CheckKind<I>) {
 
     const data = item ? chapterData(item.chapter) : null
     if (!item || !data) {
-      return (
+      return withGroups(
         <div className="review">
           {header}
           <div className="review-empty">
@@ -292,7 +320,7 @@ export function checkingCenter<I extends Checkable>(kind: CheckKind<I>) {
       )
     }
 
-    return (
+    return withGroups(
       <div className="review">
         {header}
         <CheckSteps<I>

@@ -5,6 +5,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { chapterOf, chaptersOf } from '../prototype/data'
+import { usePrimaryKey } from './frame/keys'
 import { MiniAppScreen } from './frame/MiniAppScreen'
 import { useT } from './i18n/i18n'
 import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type Position } from './miniapps/contract'
@@ -65,6 +66,8 @@ function loadResume(): Resume | null {
 
 export function App() {
   const t = useT()
+  // Ctrl+Enter does what the filled button of what is on top does, on every screen (principle 13).
+  usePrimaryKey()
   const [projects, setProjectsState] = useState<Project[]>(loadProjects)
   // The books read from this device (projects/library.ts): a book read, or a pack opened, draws the screens again.
   const read = useSyncExternalStore(subscribeLibrary, libraryVersion)

@@ -4,7 +4,8 @@
  */
 
 import { Component, Fragment, useState, type ReactNode } from 'react'
-import { useT } from '../i18n/i18n'
+import { currentDevice } from '../i18n/device'
+import { lookup, useT } from '../i18n/i18n'
 import en from '../i18n/en.json'
 import es from '../i18n/es.json'
 import pt from '../i18n/pt.json'
@@ -42,15 +43,16 @@ export class LastResort extends Component<{ children: ReactNode }, { failed: boo
   render() {
     if (!this.state.failed) return this.props.children
     const lang = document.documentElement.lang
-    const say = (lang === 'pt' ? pt : lang === 'en' ? en : es) as Record<string, string>
+    const texts = (lang === 'pt' ? pt : lang === 'en' ? en : es) as Record<string, string>
+    const say = (key: string) => lookup(key, [texts], currentDevice())
     return (
       <div className="screen">
         <main className="main crashed">
-          <h1>{say['marco.fallo']}</h1>
-          <p>{say['marco.falloAyuda']}</p>
+          <h1>{say('marco.fallo')}</h1>
+          <p>{say('marco.falloAyuda')}</p>
           <p className="quiet">{appLabel()}</p>
           <button type="button" className="button-primary" onClick={() => location.reload()}>
-            {say['marco.volverInicio']}
+            {say('marco.volverInicio')}
           </button>
         </main>
       </div>
