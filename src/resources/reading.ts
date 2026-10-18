@@ -265,6 +265,8 @@ export interface ChapterWords {
    * finds its notes. `own` is its match key (`jon 2:2:קראתי:1`), `originals` the original words it translates.
    */
   words: Array<{ verse: number; own: string; originals: string[] }>
+  /** The notes the text gives after a word, by the word's place: the Hebrew's qere after its ketiv («Q יַ֣עַשׂ»). */
+  notes?: Record<number, string>
 }
 
 /** A chapter of a text in lines of words, from the full prepared tier (null when the device lacks it). */
@@ -294,7 +296,10 @@ function spaceBefore(prev: FullInline | undefined): boolean {
 export function wordsInLines(full: ScriptureFullChapter): ChapterWords {
   const lines: Record<number, WordLine[]> = {}
   const words: ChapterWords['words'] = []
+  const notes: Record<number, string> = {}
   let verse = 0
+  // The word a note that follows it is about: the last one of its verse.
+  let last: number | null = null
   for (const block of full.blocks) {
     let current: WordLine | null = null
     const blockVerse = block.verseNumbers[0] ?? 0
@@ -307,7 +312,10 @@ export function wordsInLines(full: ScriptureFullChapter): ChapterWords {
         current = null
       } else if (item.kind === 'verse') {
         verse = item.verseNumber
+        last = null
         open(verse)
+      } else if (item.kind === 'note' && last !== null && item.text.trim()) {
+        notes[last] = notes[last] ? `${notes[last]} ${item.text.trim()}` : item.text.trim()
       } else if (item.kind === 'text' || item.kind === 'token') {
         const v = verse > 0 ? verse : blockVerse > 0 ? blockVerse : 1
         const shown = verse > 0 || block.marker === 'd'
@@ -318,6 +326,7 @@ export function wordsInLines(full: ScriptureFullChapter): ChapterWords {
         } else {
           if (spaceBefore(block.inline[i - 1])) line.pieces.push({ text: ' ' })
           line.pieces.push({ text: item.token.c, word: words.length })
+          last = words.length
           words.push({
             verse: v,
             own: full.matchKeys[item.token.k] ?? '',
@@ -339,7 +348,7 @@ export function wordsInLines(full: ScriptureFullChapter): ChapterWords {
     }
     while (verseLines.length > 1 && !verseLines[verseLines.length - 1].pieces.length) verseLines.pop()
   }
-  return { lines, words }
+  return Object.keys(notes).length ? { lines, words, notes } : { lines, words }
 }
 
 /**

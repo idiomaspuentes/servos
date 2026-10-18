@@ -775,5 +775,9 @@
   "paquete.lexicoHebreo": "Léxico do hebraico",
   "paquete.listoOriginales": "Pronto. Os textos originais em hebraico e grego já estão neste telefone.",
   "paquete.listoFaltanOriginales": "Pronto. Para ler {libros}, receba também o pacote dos textos originais.",
-  "paquete.listoAyudas": "Pronto. As ajudas deste pacote já estão neste telefone."
+  "paquete.listoAyudas": "Pronto. As ajudas deste pacote já estão neste telefone.",
+  "ayudas.seLee": "Lê-se assim",
+  "ayudas.seLeeAyuda": "Assim está escrito (ketiv), mas a tradição o lê desta outra forma (qere).",
+  "ayudas.otraLectura": "Outra leitura possível",
+  "ayudas.notaDelTexto": "Nota do texto original"
 }

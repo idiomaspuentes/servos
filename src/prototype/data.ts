@@ -49,6 +49,11 @@ export interface PrototypeText {
    * ketiv), numbered as MACULA numbers a verse's words: from 1, those of notes included (`maculaPlace`).
    */
   inNotes?: Record<number, number[]>
+  /**
+   * For the original, the notes it gives after a word, by the word's place: the Hebrew's qere after its ketiv
+   * («Q יַ֣עַשׂ»), another possible reading («Or perhaps …»), a word on the manuscripts. In English, as the text has them.
+   */
+  wordNotes?: Record<number, string>
   /** The Greek or Hebrew the bridge texts translate. */
   original?: boolean
   dir?: 'ltr' | 'rtl'

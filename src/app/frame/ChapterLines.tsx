@@ -61,6 +61,7 @@ export function ChapterLines({
     pane.scrollTop = Math.max(0, pane.scrollTop + (r.top - p.top) - (pane.clientHeight - r.height) / 2)
   }, [at, writing, text.key])
 
+  const noted = text.wordNotes ? new Set(Object.keys(text.wordNotes).map(Number)) : undefined
   const verses = Object.keys(text.lines)
     .map(Number)
     .sort((a, b) => a - b)
@@ -73,7 +74,7 @@ export function ChapterLines({
       {verses.map((v) => (
         <div key={v} ref={v === at ? current : undefined}>
           <div className={shown.includes(v) ? 'chapter-verse is-current' : 'chapter-verse'} dir={text.dir ?? 'ltr'} lang={text.lang}>
-            <WordLines lines={text.lines[v]} verse={v} lit={lit} onWord={(place) => onWord(v, place)} writing={v === at ? writing : undefined} glossed={glossed} />
+            <WordLines lines={text.lines[v]} verse={v} lit={lit} onWord={(place) => onWord(v, place)} writing={v === at ? writing : undefined} glossed={glossed} noted={noted} />
           </div>
           {under(v)}
         </div>

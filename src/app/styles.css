@@ -588,6 +588,8 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .word:hover { background: var(--surface-soft); }
 .word.is-lit { background: var(--mark); }
 /* A word the glossary has an entry for: a decision is there to read */
+/* The masora's circle over a ketiv: the text has a note on how it is read. */
+.word-noted { font-size: 0.7em; vertical-align: super; line-height: 0; color: var(--accent); padding-inline-start: 0.05em; }
 .word.has-gloss { text-decoration: underline dotted var(--accent) 2px; text-underline-offset: 0.25em; }
 .word-group { white-space: nowrap; }
 .word:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }

@@ -236,6 +236,7 @@ export async function chapterData(
     lines: originalOwn.lines,
     words: originalWords.length ? originalWords : undefined,
     ...(originalRead && Object.keys(originalRead.inNotes).length ? { inNotes: originalRead.inNotes } : {}),
+    ...(originalOwn.notes ? { wordNotes: originalOwn.notes } : {}),
     original: true,
     dir: original.dir,
     lang: original.lang,

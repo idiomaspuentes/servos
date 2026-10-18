@@ -775,5 +775,9 @@
   "paquete.lexicoHebreo": "Hebrew lexicon",
   "paquete.listoOriginales": "Done. The original texts in Hebrew and Greek are now on this phone.",
   "paquete.listoFaltanOriginales": "Done. To read {libros}, also receive the pack of the original texts.",
-  "paquete.listoAyudas": "Done. The helps in this pack are now on this phone."
+  "paquete.listoAyudas": "Done. The helps in this pack are now on this phone.",
+  "ayudas.seLee": "Read as",
+  "ayudas.seLeeAyuda": "This is how it is written (ketiv), but tradition reads it this other way (qere).",
+  "ayudas.otraLectura": "Another possible reading",
+  "ayudas.notaDelTexto": "Note in the original text"
 }
