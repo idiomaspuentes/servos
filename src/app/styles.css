@@ -1183,3 +1183,45 @@ button, .file-button, summary, input, select, textarea {
 :root[data-theme='sun'] :is(.line-field:focus, .line-field:focus-visible) { box-shadow: 0 0 0 2px var(--accent); }
 :root[data-theme='sun'] .position { background: var(--surface); }
 :root[data-theme='sun'] ::placeholder { color: #5f5e66; opacity: 1; }
+
+/* Sun, the other screens: a state that was only a tint or a faded tone is said with a line, a weight or a mark, as
+   the sun takes the tint first. Done is a blue edge (and ✓ where no word says it); begun, a moss bar at the foot;
+   where one is, a moss line and heavier letters; a word or piece picked, a dark edge; a button that cannot be touched
+   yet, dashed, with its words still readable (they often say what to do first). */
+:root[data-theme='sun'] .verse-cell.is-done:not(.is-current) { background: var(--surface); border-color: var(--done); box-shadow: inset 0 0 0 1px var(--done); color: var(--done); font-weight: 800; }
+:root[data-theme='sun'] .verse-cell.is-done:not(.is-current)::before {
+  content: '✓'; content: '✓' / ''; position: absolute; inset-block-start: 2px; inset-inline-start: 4px; font-size: 0.65rem;
+}
+:root[data-theme='sun'] .verse-cell.is-some:not(.is-current) { box-shadow: inset 0 -3px 0 var(--accent); }
+:root[data-theme='sun'] .chapter-cell.is-done { background: var(--surface); }
+:root[data-theme='sun'] .chapter-cell.is-done:not(.is-open) { border-color: var(--done); box-shadow: inset 0 0 0 1px var(--done); }
+:root[data-theme='sun'] .chapter-cell.is-done .chapter-cell-done { font-weight: 800; }
+:root[data-theme='sun'] .chapter-cell.is-open { box-shadow: inset 0 0 0 2px var(--accent); }
+:root[data-theme='sun'] .chapter-cell[aria-current='true'] .chapter-cell-number { text-decoration: underline 2px; text-underline-offset: 3px; }
+/* A bar's track is drawn, so how much is left still shows; a chapter all done says so in heavier blue */
+:root[data-theme='sun'] :is(.progress-bar, .chapter-row-bar) { background: var(--surface); box-shadow: inset 0 0 0 1px var(--hair); }
+:root[data-theme='sun'] .tool-chapter:has(.progress-bar[data-full]) .tool-chapter-count,
+:root[data-theme='sun'] .tool-progress:has(.progress-bar[data-full]) > span:last-child { color: var(--done); font-weight: 800; }
+:root[data-theme='sun'] .review-group.is-current { box-shadow: inset 3px 0 0 var(--accent); font-weight: 800; }
+:root[data-theme='sun'] [dir='rtl'] .review-group.is-current { box-shadow: inset -3px 0 0 var(--accent); }
+/* A reviewer's steps: the one open underlined in moss; a step done shows ✓ for its number, as the passage's do */
+:root[data-theme='sun'] .review-stepper [aria-current='step'] { font-weight: 800; box-shadow: inset 0 -3px 0 var(--accent); }
+:root[data-theme='sun'] .review-stepper:not(.passage-steps) .is-done .review-stepper-n { font-size: 0; }
+:root[data-theme='sun'] .review-stepper:not(.passage-steps) .is-done .review-stepper-n::before { content: '✓'; content: '✓' / ''; font-size: 0.8rem; }
+:root[data-theme='sun'] .review-stepper button:disabled { opacity: 1; color: #5f5e66; }
+:root[data-theme='sun'] .review-filter { border: 1px solid var(--line); }
+:root[data-theme='sun'] .picker-word.is-picked { border-color: var(--text); box-shadow: inset 0 0 0 1.5px var(--text); }
+:root[data-theme='sun'] .al-word[data-selected] { box-shadow: inset 0 0 0 1px var(--accent); font-weight: 800; }
+:root[data-theme='sun'] :is(.option.is-on, .book-chip.is-on) { box-shadow: inset 0 0 0 2px var(--accent); }
+:root[data-theme='sun'] :is(.option.is-on .option-title, .book-chip.is-on) { font-weight: 800; }
+/* The mix: each piece drawn, so where one ends and the next begins still shows */
+:root[data-theme='sun'] .mix-piece.is-mine { box-shadow: inset 0 0 0 1px var(--hair); }
+:root[data-theme='sun'] .review-renderings .review-unchecked { box-shadow: none; border: 1.5px dashed var(--line); }
+/* A block that was a tint (what is done, what arrives) gets its own edge, as the notice does */
+:root[data-theme='sun'] .review-done { box-shadow: inset 0 0 0 1.5px var(--done); }
+:root[data-theme='sun'] .book-resume:not(.is-field) { box-shadow: inset 0 0 0 1.5px var(--accent); }
+/* The card's edge passes behind a phase's name, not through it */
+:root[data-theme='sun'] .settings-phase legend { background: var(--surface); padding-inline: 0.4rem; }
+:root[data-theme='sun'] :is(.button-primary, .button-secondary, .chip):disabled { opacity: 1; background: var(--surface); color: #5f5e66; border: 1.5px dashed var(--hair); }
+:root[data-theme='sun'] .menu-row:disabled { opacity: 1; color: #5f5e66; }
+:root[data-theme='sun'] .menu-row:disabled .menu-row-description { color: inherit; }
