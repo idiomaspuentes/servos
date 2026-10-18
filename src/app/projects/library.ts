@@ -14,7 +14,7 @@ import { readLexiconEntry, readMacula } from '../../resources/companions'
 import { booksOfText } from '../../resources/reading'
 import { chapterData } from '../../resources/screenData'
 import { sectionStartsOf } from '../../resources/sections'
-import { availability, deviceIndex, type Availability, type DeviceIndex } from '../../resources/sources'
+import { availability, deviceIndex, languagesOnDevice, sourcesFor, type Availability, type DeviceIndex } from '../../resources/sources'
 import { openResourceStores, type ResourceStores } from '../../resources/store'
 import type { Project } from './model'
 import { currentProject } from './scope'
@@ -86,6 +86,34 @@ export async function refreshLibrary(): Promise<void> {
 
 async function readAll() {
   for (const p of projects) for (const b of p.books) await loadBook(b.code, p.helpsLanguage).catch(() => {})
+}
+
+/** What a language has on this device for a project to work with: the parts of its sources, and its books. */
+export interface HelpsLanguage {
+  code: string
+  /** Books its literal bridge text has here. */
+  books: string[]
+  parts: Array<'literal' | 'simple' | 'notes' | 'questions' | 'words' | 'academy'>
+}
+
+/** The languages whose bridge texts are on this device, the one with most books first. */
+export function helpsLanguagesHere(): HelpsLanguage[] {
+  const here = index
+  if (!here) return []
+  return languagesOnDevice(here)
+    .map((code): HelpsLanguage => {
+      const sources = sourcesFor(here, code)
+      const literal = here.resources.find((r) => r.key === sources?.literal)
+      const parts = (['literal', 'simple', 'notes', 'questions', 'words', 'academy'] as const).filter((p) => Boolean(sources?.[p]))
+      return { code, books: literal?.books ?? [], parts: [...parts] }
+    })
+    .sort((a, b) => b.books.length - a.books.length)
+}
+
+/** A book that can be opened in a language: on this device, or the example bundled in the app. */
+export function bookIsHere(book: string, language: string): boolean {
+  const state = bookState(book, language).state
+  return state === 'example' || state === 'loading' || state === 'ready'
 }
 
 /** Whether a resource (a text, the originals, articles) is on this device. */

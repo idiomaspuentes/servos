@@ -409,6 +409,9 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 /* Add a book */
 .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); gap: 0.4rem; }
 .book-chip { font-size: 0.9rem; text-align: start; padding-inline: 0.6rem; }
+/* A book whose texts are on this device: it can be started at once. */
+.book-chip.has-texts { font-weight: 700; }
+.book-chip.has-texts::before { content: '●'; color: var(--accent); font-size: 0.6em; margin-inline-end: 0.4em; vertical-align: 0.15em; }
 .book-chip.is-in { display: flex; align-items: center; min-height: var(--touch); border-radius: var(--radius); padding-inline: 0.6rem; font-size: 0.9rem; color: var(--text-soft); background: var(--surface-soft); }
 .back-link { align-self: flex-start; padding-inline: 0; }
 .sheet-foot { position: sticky; inset-block-end: 0; background: var(--surface); padding-block: 0.75rem 0; }
