@@ -373,7 +373,6 @@
   "st.saving": "Saving…",
   "st.restore": "Back to the app's diagram",
   "st.teamMade": "The team's diagram · left like this by {who}",
-  "st.underWords": "Under each word: its meaning and, in blue, how the {text} says it in this passage.",
   "st.complexOne": "A main sentence and another that depends on it.",
   "st.bothOne": "{joined} parts, side by side, and a sentence that depends on another.",
   "st.partN": "Part {n}",
