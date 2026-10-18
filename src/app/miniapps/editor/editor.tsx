@@ -59,6 +59,9 @@ function unitsOf(book: string, chapter: number, verses: number[]): number[][] {
 }
 const unitLabel = (unit: number[]) => (unit.length > 1 ? `${unit[0]}–${unit[unit.length - 1]}` : String(unit[0]))
 
+/** A mouse and a keyboard: no keyboard on the screen comes up when a box gets the cursor (wide.css uses the same). */
+const COMPUTER = '(hover: hover) and (pointer: fine)'
+
 /** Whether the helps were put beside the rows on a window narrower than 1280 px: kept on this device, as the texts are. */
 const helpsKey = 'servos.prototipo.lado.editor.ayudas'
 function readHelpsOn(): boolean {
@@ -97,6 +100,8 @@ function Center({ context }: MiniAppCenterProps) {
   }
 
   // Going on to another verse or section while writing: the cursor goes to its first line, and the keyboard stays up.
+  // On a computer it waits there always, as soon as the editor opens and at every verse or section it goes on to (asked
+  // by Abel, 18 October); not on a phone, where a box with the cursor brings the keyboard up over the text to read.
   // A click on a row not open (on a computer) asks for the box of that row.
   const writing = useRef(false)
   const stopWriting = useRef<number>()
@@ -105,7 +110,7 @@ function Center({ context }: MiniAppCenterProps) {
   useLayoutEffect(() => {
     const verse = asked.current
     asked.current = null
-    if (verse === null && !writing.current) return
+    if (verse === null && !writing.current && !window.matchMedia(COMPUTER).matches) return
     const box = document.getElementById(lineFieldId(fieldsId(verse ?? shown[0]), 0)) as HTMLTextAreaElement | null
     box?.focus()
     box?.setSelectionRange(box.value.length, box.value.length)
