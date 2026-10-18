@@ -716,6 +716,8 @@
   "persona.tema.sistema": "Como el teléfono",
   "persona.tema.claro": "Claro",
   "persona.tema.oscuro": "Oscuro",
+  "persona.tema.sol": "Sol",
+  "persona.aparienciaAyuda": "Sol: más contraste y letra más gruesa, para leer afuera.",
   "libro.estaEn": "El libro está en {paso}.",
   "recibir.alineacionesElegir": "Versículos alineados de dos maneras, para elegir al alinear: {n}.",
   "versiones.borrado": "Lo borró: el versículo queda vacío.",

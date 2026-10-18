@@ -129,7 +129,16 @@ acción toma la forma de su papel:
   marca; en el sector casi todo es azul, rojo o naranja, y el verde profundo no es el color principal de nadie. Las
   sombras toman el café del papel, no el gris. **De noche, la tinta es el fondo y el papel es la luz**: un casi negro
   con un tinte frío (#0c1316, nunca negro puro), el texto en papel suave (nunca blanco), el musgo más claro (#98cf8b),
-  la profundidad por un tono más claro y no por sombras ni brillos.
+  la profundidad por un tono más claro y no por sombras ni brillos. **Al sol, líneas y peso en lugar de tonos** (18 de
+  octubre): a pleno sol cualquier esquema baja a unos 3–5:1, así que «Apariencia», en el menú de la persona, tiene una
+  cuarta opción, «Sol». El fondo es blanco y la tinta casi negra (#15141a, 18.3:1, el mínimo que un estudio propone
+  para leer afuera); el texto suave queda a 12.5:1 y las líneas a 7.5:1. Las tarjetas y los mosaicos se separan por
+  una línea, no por un tono, que al sol desaparece, y la píldora elegida lleva un borde oscuro. La interfaz sube un
+  peso (Mulish 500 en el texto, 600 en las líneas chicas) y la Escritura un tamaño, porque Charis no tiene pesos
+  intermedios. El musgo se oscurece (#2e612e, 7.3:1) y los estados también: «hecho» en #0950b3, «peligro» en #9c167b
+  y el aviso en #8f3000, todos a 7.5:1 o más, elegidos para que se distingan con protanopía, deuteranopía y
+  tritanopía mejor que los del día (CIEDE2000 de 8.5 o más entre dos cualesquiera; el día llega a 5.2). Por eso, al
+  sol, el peligro tira a ciruela.
 - **Sin vidrio ni degradados** (decidido el 17 de octubre): son la marca más reconocible de un diseño hecho en
   automático, el desenfoque gasta la batería de un teléfono barato y baja la lectura del texto. El carácter viene de
   lo que la app es: el papel, la tinta, la letra de la Escritura, el puente. Un solo campo de musgo en Inicio,
