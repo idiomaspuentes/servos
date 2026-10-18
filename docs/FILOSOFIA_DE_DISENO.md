@@ -120,7 +120,8 @@ acción toma la forma de su papel:
 - **Tres tonos, no más** (como tC4): el fondo; encima, tarjetas que se separan por un tono y una sombra suave, no por
   un borde; dentro de una tarjeta, nada en su propia caja, solo líneas finas. Una caja dentro de otra hace competir a
   las dos. En el editor, solo la caja que se escribe se dibuja; las demás son un fondo leve.
-- **Papel, tinta y musgo** (18 de octubre de 2026, después de una investigación del sector): el fondo es el papel
+- **Papel, tinta y musgo** (18 de octubre de 2026, después de una
+  [investigación del sector](INVESTIGACION_MARCA_Y_PALETA.md)): el fondo es el papel
   cálido de una Biblia impresa (#f7f2e8), el texto va en una tinta casi negra (#182125, 14.7:1), lo que lleva adelante
   y la marca en un verde musgo profundo (#3b6f30, 5.4:1), y lo marcado en un oro cálido. «Hecho» va en azul y
   «peligro» en un carmesí, para que los tres se distingan también sin ver el rojo y el verde. El azul tinta de antes
