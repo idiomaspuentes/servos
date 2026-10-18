@@ -59,9 +59,6 @@ function unitsOf(book: string, chapter: number, verses: number[]): number[][] {
 }
 const unitLabel = (unit: number[]) => (unit.length > 1 ? `${unit[0]}–${unit[unit.length - 1]}` : String(unit[0]))
 
-/** A mouse and a keyboard: no keyboard on the screen comes up when a box gets the cursor (wide.css uses the same). */
-const COMPUTER = '(hover: hover) and (pointer: fine)'
-
 /** Whether the helps were put beside the rows on a window narrower than 1280 px: kept on this device, as the texts are. */
 const helpsKey = 'servos.prototipo.lado.editor.ayudas'
 function readHelpsOn(): boolean {
@@ -99,35 +96,23 @@ function Center({ context }: MiniAppCenterProps) {
     setOthers(readOthers(position.book, position.chapter, starts))
   }
 
-  // Going on to another verse or section while writing: the cursor goes to its first line, and the keyboard stays up.
-  // On a computer it waits there always, as soon as the editor opens and at every verse or section it goes on to (asked
-  // by Abel, 18 October); not on a phone, where a box with the cursor brings the keyboard up over the text to read.
-  // A click on a row not open (on a computer) asks for the box of that row.
-  const writing = useRef(false)
-  const stopWriting = useRef<number>()
+  // The cursor waits in the first line of the verse or section open: as soon as the editor opens and at every verse or
+  // section it goes on to, so the person writes without looking for where (asked by Abel, 18 October), on a phone too,
+  // though the keyboard comes up with it. A click on a row not open (on a computer) asks for the box of that row.
   const asked = useRef<number | null>(null)
   const fieldsId = (verse: number) => `editor-v${verse}`
   useLayoutEffect(() => {
     const verse = asked.current
     asked.current = null
-    if (verse === null && !writing.current && !window.matchMedia(COMPUTER).matches) return
     const box = document.getElementById(lineFieldId(fieldsId(verse ?? shown[0]), 0)) as HTMLTextAreaElement | null
     box?.focus()
     box?.setSelectionRange(box.value.length, box.value.length)
   }, [openKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // The line the cursor is in, for the texts to light it; and that the person is writing, so going on keeps it there.
+  // The line the cursor is in, for the texts to light it.
   const onBoxFocus = (event: FocusEvent) => {
-    window.clearTimeout(stopWriting.current)
-    writing.current = true
     const id = event.target.id.match(/^editor-v(\d+)(?:-l(\d+))?$/)
     if (id) setWritingLine({ verse: Number(id[1]), line: id[2] ? Number(id[2]) - 1 : 0 })
-  }
-  const onBoxBlur = () => {
-    // Later, not now: moving to another verse takes the focused field away for a moment.
-    stopWriting.current = window.setTimeout(() => {
-      writing.current = document.activeElement instanceof HTMLTextAreaElement
-    }, 0)
   }
 
   // When the keyboard comes up the box area shrinks under the line being written: it is brought back into sight there.
@@ -224,7 +209,6 @@ function Center({ context }: MiniAppCenterProps) {
           onBoxFocus(event)
           if (!unit.includes(position.verse)) goTo({ ...position, verse: v })
         }}
-        onBlur={onBoxBlur}
       >
         {conflict ? (
           <TwoShapes

@@ -157,6 +157,9 @@ acción toma la forma de su papel:
 - **El editor con el teclado abierto se queda como está**: se ve una sola cosa, la caja o la fuente, y el dedo se
   desliza de una a otra (o se toca la pestaña) sin quitarle el foco a la caja, así el teclado no se cierra. Es lo que
   hace posible traducir cómodo en un teléfono; ningún cambio de diseño lo toca (`Panes.tsx`).
+- **El cursor espera en la primera caja** (decidido el 18 de octubre): al abrir el editor y al pasar a otro versículo
+  o sección, en el teléfono también, aunque suba el teclado. Solo esa caja dice qué escribir («Escriba en Kichwa»);
+  las vacías de al lado no dicen nada, su número ya está a su lado.
 
 ### 13. En la computadora, una app de computadora
 
