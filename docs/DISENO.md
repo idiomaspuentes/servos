@@ -396,9 +396,10 @@ Hecho en el prototipo (`outbox.ts`, `WaitingSheet`), probado con un Door43 de me
       (hasta ocho; el resto se cuenta y queda marcado en el editor) con lo que cambió dicho corto («Nota cambiada ·
       TPL»), y el botón lleno lleva al primero en el editor. Si no cambió nada en lo traducido, no se dice nada
       (principio 6).
-    - En el editor, bajo la caja de ese versículo, la etiqueta teñida «Ayudas cambiadas» con lo mismo dicho corto; «Qué
-      cambió ▾» despliega lo que decía cada nota y cada texto, y el chip «✓ Ya lo vi» quita la etiqueta. En Ayudas,
-      la nota cambiada lleva «Nota cambiada» y «Lo que decía antes ▾»; la nueva, «Nota nueva».
+    - En el editor, bajo la caja de ese versículo, una sola fila: la etiqueta teñida «Ayudas cambiadas» con lo mismo
+      dicho corto, y ▾. Desplegada, dice lo que decía cada nota y cada texto, y el chip «✓ Ya lo vi» quita la fila.
+      Una fila y no más, para que las cajas de una sección sigan juntas. En Ayudas, la nota cambiada lleva «Nota
+      cambiada» y «Lo que decía antes ▾»; la nueva, «Nota nueva».
     - Una revisión con las notas hecha antes de que su nota cambiara vuelve a quedar por hacer (`cambio`), aunque ya
       se haya visto el cambio; se abre desde leer la nota, con las palabras que se marcaron, y dice por qué.
 

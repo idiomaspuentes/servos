@@ -1,7 +1,8 @@
 /**
- * Under a verse already translated whose helps a newer pack changed (helpsChanges.ts): the label «Ayudas cambiadas»
- * and what changed, said short; unfolded, what each note and text said before. «Seen» takes the label away. The notes
- * as they are now are read in the helps, where a changed one unfolds what it said too (`HelpsPanel`).
+ * Under a verse already translated whose helps a newer pack changed (helpsChanges.ts): one row, the label «Ayudas
+ * cambiadas» and what changed said short; unfolded, what each note and text said before, and «Seen», which takes the
+ * row away. One row only, so the boxes of a section stay close. The notes as they are now are read in the helps,
+ * where a changed one unfolds what it said too (`HelpsPanel`).
  */
 
 import { useState, useSyncExternalStore } from 'react'
@@ -49,44 +50,52 @@ export function HelpsChanged({
   )
   return (
     <section className="helps-changed" aria-label={t('cambios.etiqueta')}>
-      <p className="helps-changed-head">
-        <span className="badge badge-changed">{t('cambios.etiqueta')}</span>
-        <span className="quiet">{summaryOf(change)}</span>
-      </p>
-      <RowButton kind="fold" label={t('cambios.queCambio')} expanded={open} onClick={() => setOpen((o) => !o)} />
+      <RowButton
+        kind="fold"
+        label={
+          <span className="helps-changed-head">
+            <span className="badge badge-changed">{t('cambios.etiqueta')}</span>
+            <span className="quiet">{summaryOf(change)}</span>
+          </span>
+        }
+        expanded={open}
+        onClick={() => setOpen((o) => !o)}
+      />
       {open && (
-        <ul className="helps-changed-list">
-          {change.notes.map((n) => (
-            <li key={n.id}>
-              <p>
-                {t(`cambios.cual.${n.kind}`)} {quote(n.quote)}
-              </p>
-              {n.kind === 'nueva' ? (
-                <p className="quiet">{t('cambios.leaEnAyudas')}</p>
-              ) : (
+        <>
+          <ul className="helps-changed-list">
+            {change.notes.map((n) => (
+              <li key={n.id}>
+                <p>
+                  {t(`cambios.cual.${n.kind}`)} {quote(n.quote)}
+                </p>
+                {n.kind === 'nueva' ? (
+                  <p className="quiet">{t('cambios.leaEnAyudas')}</p>
+                ) : (
+                  <div className="helps-changed-before">
+                    <p className="quiet">{t('cambios.decia')}</p>
+                    <Markdown text={n.before ?? ''} />
+                  </div>
+                )}
+              </li>
+            ))}
+            {change.texts.map((x) => (
+              <li key={x.text}>
+                <p>{t('cambios.textoCambio', { texto: x.text === 'literal' ? 'TPL' : 'TPS' })}</p>
                 <div className="helps-changed-before">
                   <p className="quiet">{t('cambios.decia')}</p>
-                  <Markdown text={n.before ?? ''} />
+                  <p className="helps-changed-text">{x.before || '—'}</p>
                 </div>
-              )}
-            </li>
-          ))}
-          {change.texts.map((x) => (
-            <li key={x.text}>
-              <p>{t('cambios.textoCambio', { texto: x.text === 'literal' ? 'TPL' : 'TPS' })}</p>
-              <div className="helps-changed-before">
-                <p className="quiet">{t('cambios.decia')}</p>
-                <p className="helps-changed-text">{x.before || '—'}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
+              </li>
+            ))}
+          </ul>
+          <div className="chip-row">
+            <button type="button" className="chip" onClick={() => seeChange(book, chapter, verse)}>
+              ✓ {t('cambios.visto')}
+            </button>
+          </div>
+        </>
       )}
-      <div className="chip-row">
-        <button type="button" className="chip" onClick={() => seeChange(book, chapter, verse)}>
-          ✓ {t('cambios.visto')}
-        </button>
-      </div>
     </section>
   )
 }
