@@ -497,9 +497,10 @@ grabó el teléfono.
   - **El teclado** achica la app por encima de él, como Chrome: el editor sigue igual que en el navegador, con la
     caja y la barra del pasaje a la vista, y se desliza entre la caja y el texto sin perder el foco. Probado en
     Android 14 y 15 en el emulador y en Android 16 en un Galaxy A56 (WebView 155).
-  - **La app se dibuja bajo las barras del teléfono** (la hora arriba, los botones abajo): la cabecera llega hasta
-    debajo de la hora, y con el teclado arriba las pestañas quedan bajo ella; las barras escriben en claro u oscuro
-    según el fondo de la app, aunque la persona haya elegido un tema distinto del teléfono.
+  - **La app queda entre las barras del teléfono** (la hora arriba, los botones abajo), en toda pantalla: la app de
+    Android no usa `viewport-fit=cover` (`vite.config.ts`), así Capacitor deja el espacio de las barras y del teclado
+    él mismo, con cualquier versión de la WebView. Las franjas de las barras toman el fondo de la app, y sus íconos
+    el color que se lee sobre él, aunque la persona haya elegido un tema distinto del teléfono.
   - **El botón Atrás** baja primero el teclado; después cierra la hoja de arriba, luego vuelve una pantalla; en
     Inicio deja la app detrás de las demás, tal como estaba.
   - **Un archivo `.servos` llega** con «Abrir con» (desde Archivos o una descarga) o con «Compartir» (desde WhatsApp,

@@ -50,6 +50,18 @@ function offlineShell(): Plugin {
   }
 }
 
+/**
+ * The app for phones is not drawn under Android's bars: without `viewport-fit=cover`, Capacitor keeps the page between
+ * the status bar and the buttons (or the keyboard) itself, on every screen, whatever the WebView's version. With it, a
+ * WebView from 140 on draws the page under them and every footer would have to leave the room by itself.
+ */
+function insideTheBars(): Plugin {
+  return {
+    name: 'servos-inside-the-bars',
+    transformIndexHtml: (html) => html.replace(', viewport-fit=cover', ''),
+  }
+}
+
 /** The commit the app is built from, with a mark when there were changes not yet committed. */
 function buildOf(): string {
   try {
@@ -70,7 +82,14 @@ const VERSION = (JSON.parse(readFileSync(resolve(HERE, 'package.json'), 'utf8'))
 const INSIDE: Record<string, string> = { escritorio: 'dist-escritorio', telefono: 'dist-telefono' }
 export default defineConfig(({ mode }) => ({
   define: { __APP_VERSION__: JSON.stringify(VERSION), __APP_BUILD__: JSON.stringify(buildOf()) },
-  plugins: mode === 'pagina' ? [react(), viteSingleFile()] : mode in INSIDE ? [react()] : [react(), offlineShell()],
+  plugins:
+    mode === 'pagina'
+      ? [react(), viteSingleFile()]
+      : mode === 'telefono'
+        ? [react(), insideTheBars()]
+        : mode in INSIDE
+          ? [react()]
+          : [react(), offlineShell()],
   // The single page carries its letters inside it (it has no files beside it).
   build: mode === 'pagina' ? { assetsInlineLimit: 1_000_000 } : mode in INSIDE ? { outDir: INSIDE[mode] } : undefined,
   resolve: {

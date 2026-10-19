@@ -72,20 +72,33 @@ export function isLight(colour: string): boolean {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 140
 }
 
+/** A CSS colour (`rgb(…)`) as Android takes it, `#rrggbb`; null when it is not one. */
+export function hexOf(colour: string): string | null {
+  const [r, g, b] = (colour.match(/\d+(\.\d+)?/g) ?? []).map(Number)
+  if (r === undefined || g === undefined || b === undefined) return null
+  return `#${[r, g, b].map((n) => Math.round(n).toString(16).padStart(2, '0')).join('')}`
+}
+
 /**
- * The phone's bars (the clock above, the buttons below) are drawn over the app: their writing follows the app's own
- * ground, which a person may have chosen apart from the phone's (light on a dark phone, «modo sol»).
+ * The phone's bars (the clock above, the buttons below) sit on strips of the window around the page: the strips take
+ * the app's own ground, and the bars' writing the colour that reads on it, whatever theme the person chose apart from
+ * the phone's (light on a dark phone, «modo sol»).
  */
 export function followTheme() {
   if (!onPhone()) return
   void import('@capacitor/core')
-    .then(({ SystemBars, SystemBarsStyle }) => {
+    .then(({ SystemBars, SystemBarsStyle, registerPlugin }) => {
+      const window_ = registerPlugin<{ setBackground(o: { color: string }): Promise<void> }>('ServosWindow')
       let was = ''
       const follow = () => {
-        const style = isLight(getComputedStyle(document.body).backgroundColor) ? SystemBarsStyle.Light : SystemBarsStyle.Dark
-        if (style === was) return
-        was = style
-        void SystemBars.setStyle({ style })
+        const ground = getComputedStyle(document.body).backgroundColor
+        if (ground === was) return
+        was = ground
+        const hex = hexOf(ground)
+        // The style first: Capacitor's sets the window back to the theme's ground each time.
+        void SystemBars.setStyle({ style: isLight(ground) ? SystemBarsStyle.Light : SystemBarsStyle.Dark })
+          .then(() => (hex ? window_.setBackground({ color: hex }) : undefined))
+          .catch(() => {})
       }
       follow()
       new MutationObserver(follow).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
