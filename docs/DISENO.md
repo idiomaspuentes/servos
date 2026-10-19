@@ -213,9 +213,12 @@ sabe hasta dónde incorporó a cada persona, y las decisiones viajan dentro de l
   alineación, porque se hizo sobre ese mismo texto. Si el texto que queda no es exactamente aquel sobre el que se
   alineó (porque alguien lo reescribió al decidir), la alineación de ese versículo queda **por revisar**, no se
   borra en silencio. Taller hace lo mismo con su huella de alineación.
-- Dos alineaciones distintas del mismo texto con la misma referencia (decidido el 14 de octubre): si las hizo la
-  misma persona, queda la más reciente; si las hicieron personas distintas, es un choque de alineación y se decide
-  como los de texto.
+- Dos alineaciones distintas del mismo texto con la misma referencia, hechas por separado (ninguna sabiendo de la
+  otra): es un choque de alineación y se decide como los de texto. **Decidido con Abel el 19 de octubre**, en lugar
+  de lo acordado el 14: el mismo nombre en dos aparatos puede ser otra persona (una Ana en un aparato y otra Ana en
+  otro), así que no se da por hecho que es la misma; y **la fecha no decide un choque, lo decide la elección que
+  hace una persona** (el reloj de un aparato sin internet puede estar mal). Lo mismo cuando ninguna de las dos se
+  hizo sobre el texto que quedó: se elige, y la elegida queda por revisar.
 - **Hecho** (16 de octubre de 2026): la capa está en el corazón (`src/core/alignment.ts`) y dentro de cada libro; el
   choque de alineación se elige en el alineador («Bea alineó este versículo de otra manera. ¿Cuál queda?»).
 - **La alineación alimenta el glosario** (idea del 15 de octubre, para la mini app de revisión «Alineación»): al
@@ -378,10 +381,17 @@ de elegir. Se dice, con «Ir a juntar» (`publishing.ts`, `door43Copy`, `knowsAl
     aplica sin preguntar; lo que dos personas cambiaron por separado desde el mismo texto queda como dos versiones
     para elegir (o, si unieron versículos de otra manera, como un tramo para elegir entero); la alineación entra si se hizo sobre el texto que queda, y si no
     queda por revisar, nunca borrada; de dos revisiones de una nota, de una palabra o de una pregunta de un pasaje
-    queda la dada sobre el texto que queda (de dos sobre el mismo, la más reciente); lo visto para mejorar se junta, y
+    queda la dada sobre el texto que queda; de dos sobre el mismo texto, la que se dio sabiendo de la otra, y dos
+    dadas por separado que dicen cosas distintas quedan las dos: la de aquí sigue y la otra espera a su lado para que
+    una persona elija (responder otra vez es elegir). En el revisor, esa nota o palabra queda «respondida de dos
+    maneras», no como hecha; al abrirla se ven las dos respuestas, una debajo de la otra, con quién dio cada una, sus
+    palabras marcadas y su comentario, y se toca la que queda («Quedarse con esta respuesta»). La fecha no decide (19 de octubre; sección 6.8). Un «sí» de un
+    pasaje dice siempre lo mismo: dos sobre el mismo texto son una sola respuesta; lo visto para mejorar se junta, y
     lo marcado mejorado sigue mejorado; el glosario se junta palabra por palabra (una traducción
     distinta queda como otra forma); dos notas de estudio distintas sobre los mismos versículos quedan las dos, cada
-    una con su autor.
+    una con su autor; de las grabaciones, ninguna toma se pierde, y la que suena sigue a las elecciones: la elegida
+    (o grabada) sabiendo de la otra cuenta, y dos elegidas por separado dejan sonar la de aquí mientras la otra
+    espera; en «Traducir de viva voz» se escuchan las dos y se toca la que queda (19 de octubre).
 - Al importar, la app dice qué trae y qué cambia antes de aplicarlo.
 - Un paquete de recursos más nuevo puede reemplazar a uno anterior; el trabajo hecho no se toca, pero la app avisa
   qué notas o textos cambiaron en los versículos ya traducidos.

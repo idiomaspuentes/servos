@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { readShared, receiveShared, shareProject } from './share'
-import { readCheck, writeCheck, type NoteCheck } from './noteChecks'
+import { readCheck, stateOf, writeCheck, type NoteCheck } from './noteChecks'
 import { addObservation, answer } from './passageReview'
 import { readGlossary, saveGlossaryEntry, type GlossaryEntry } from './glossary'
-import { addTake, chooseTake, chosenTake, takesOf } from './recordings'
+import { addTake, chooseTake, chosenTake, takesOf, takesToChoose } from './recordings'
 import { alignmentConflictAt, writeAlignment } from './alignment'
 import { bookStateOf, chooseVersion, forgetBooks, otherVersion, readDraft, studyNotesOf, writeDraft, writeStudyNote } from './work'
 import type { Project } from './model'
@@ -112,17 +112,37 @@ describe('7. Dos respuestas a la misma revisión de palabra', () => {
     receive(share('Bea'), 'Ana')
   }
 
-  it('sobre el mismo texto queda la más reciente, venga de donde venga', () => {
+  it('sobre el mismo texto, dadas por separado: queda la de aquí y la otra espera al lado para elegir; la fecha no decide', () => {
     bothWithVerse()
     on('Ana')
     writeCheck('jon', 'w1', check({ by: 'Ana', at: '2026-10-15T10:00:00Z' }), 'revisionPalabra')
     on('Bea')
     writeCheck('jon', 'w1', check({ status: 'despues', reason: 'equipo', comment: '¿Tayta o Dios?', by: 'Bea', at: '2026-10-15T11:00:00Z' }), 'revisionPalabra')
     receive(share('Bea'), 'Ana')
-    expect(readCheck('jon', 'w1', 'revisionPalabra')).toMatchObject({ by: 'Bea', comment: '¿Tayta o Dios?' })
-    // And the other way: Bea's is the latest, Ana's does not come back over it.
+    expect(readCheck('jon', 'w1', 'revisionPalabra')).toMatchObject({ by: 'Ana', others: [{ by: 'Bea', comment: '¿Tayta o Dios?' }] })
+    // It is not resolved while it waits: the reviewer shows it «answered two ways».
+    expect(stateOf(readCheck('jon', 'w1', 'revisionPalabra'), 'Taytaku rimarqa')).toBe('elegir')
+    // On Bea's side, the same: hers stays, Ana's waits beside it.
     receive(share('Ana'), 'Bea')
-    expect(readCheck('jon', 'w1', 'revisionPalabra')?.by).toBe('Bea')
+    expect(readCheck('jon', 'w1', 'revisionPalabra')).toMatchObject({ by: 'Bea', others: [{ by: 'Ana' }] })
+    // Ana answers again knowing both: that is the choice, and it settles it on Bea's device too.
+    on('Ana')
+    writeCheck('jon', 'w1', check({ status: 'despues', reason: 'equipo', comment: 'Lo vemos juntos', by: 'Ana', at: '2026-10-14T09:00:00Z' }), 'revisionPalabra')
+    receive(share('Ana'), 'Bea')
+    const settled = readCheck('jon', 'w1', 'revisionPalabra')
+    expect([settled?.comment, settled?.others]).toEqual(['Lo vemos juntos', undefined])
+  })
+
+  it('la que se dio sabiendo de la otra entra, aunque el reloj de su aparato diga una hora anterior', () => {
+    bothWithVerse()
+    on('Bea')
+    writeCheck('jon', 'w1', check({ by: 'Bea', at: '2026-10-15T10:00:00Z' }), 'revisionPalabra')
+    receive(share('Bea'), 'Ana')
+    on('Bea')
+    writeCheck('jon', 'w1', check({ status: 'despues', comment: 'Mejor revisarlo', by: 'Bea', at: '2026-10-01T00:00:00Z' }), 'revisionPalabra')
+    receive(share('Bea'), 'Ana')
+    expect(readCheck('jon', 'w1', 'revisionPalabra')).toMatchObject({ comment: 'Mejor revisarlo' })
+    expect(readCheck('jon', 'w1', 'revisionPalabra')?.others).toBeUndefined()
   })
 
   it('la dada sobre el texto que queda gana, aunque la otra sea más nueva', () => {
@@ -135,15 +155,14 @@ describe('7. Dos respuestas a la misma revisión de palabra', () => {
     expect(readCheck('jon', 'w1', 'revisionPalabra')?.by).toBe('Ana')
   })
 
-  it('un «bien» más nuevo reemplaza un «corregir después» con su comentario, y el comentario no queda en ninguna parte', () => {
+  it('un «bien» dado por separado no borra un «corregir después» con su comentario: los dos quedan para elegir', () => {
     bothWithVerse()
     on('Ana')
     writeCheck('jon', 'w1', check({ status: 'despues', reason: 'equipo', comment: 'Hablarlo con el equipo', by: 'Ana', at: '2026-10-15T10:00:00Z' }), 'revisionPalabra')
     on('Bea')
     writeCheck('jon', 'w1', check({ by: 'Bea', at: '2026-10-15T11:00:00Z' }), 'revisionPalabra')
     receive(share('Bea'), 'Ana')
-    expect(readCheck('jon', 'w1', 'revisionPalabra')).toMatchObject({ status: 'bien', by: 'Bea' })
-    expect(JSON.stringify([...store.values()])).not.toContain('Hablarlo con el equipo')
+    expect(readCheck('jon', 'w1', 'revisionPalabra')).toMatchObject({ status: 'despues', comment: 'Hablarlo con el equipo', others: [{ status: 'bien', by: 'Bea' }] })
   })
 })
 
@@ -216,7 +235,7 @@ describe('10. Alineaciones distintas del mismo texto', () => {
   })
 
   // Decided with Abel on 19 October 2026: a name on another device may be another person, and the date never decides.
-  it.fails('dos «Ana» en dos aparatos son dos personas: se elige, no gana la más reciente (hoy gana la más reciente)', () => {
+  it('dos «Ana» en dos aparatos pueden ser dos personas: se elige, no gana la más reciente', () => {
     on('Ana-teléfono')
     writeDraft('jon', 1, 1, 'Taytaku rimarqa', 'Ana')
     receive(share('Ana', 'Ana-teléfono'), 'Ana', 'Ana-aldea')
@@ -261,18 +280,37 @@ describe('11. Notas de estudio sobre los mismos versículos', () => {
 })
 
 describe('12. Grabaciones: la toma que cuenta', () => {
-  it('las tomas se juntan, ninguna se pierde; la que cuenta es la de aquí, aunque la otra sea más nueva (duda)', () => {
+  /** What `person` shares, with the sound of every take (withSounds reads it from IndexedDB; here, as if it had). */
+  const withSound = (person: string) => {
+    const file = share(person)
+    file.books[0].recordings = file.books[0].recordings!.map((r) => ({ ...r, takes: r.takes.map((x) => ({ ...x, sound: btoa('ok') })) }))
+    return file
+  }
+
+  it('elegidas por separado: ninguna toma se pierde, la de aquí sigue sonando y la otra espera a que alguien elija', () => {
     on('Ana')
     addTake('jon', 1, 1, { by: 'Ana', at: '2026-10-15T10:00:00Z', ms: 900, mime: 'audio/webm' }, 'ana1')
     on('Bea')
     addTake('jon', 1, 1, { by: 'Bea', at: '2026-10-15T11:00:00Z', ms: 900, mime: 'audio/webm' }, 'bea1')
-    chooseTake('jon', 1, 1, 'bea1')
-    const file = share('Bea')
-    // The sound travels with withSounds (IndexedDB); here, as if it had been read.
-    file.books[0].recordings = file.books[0].recordings!.map((r) => ({ ...r, takes: r.takes.map((x) => ({ ...x, sound: btoa('ok') })) }))
-    receive(file, 'Ana')
+    receive(withSound('Bea'), 'Ana')
     expect(takesOf('jon', 1, 1).map((x) => x.id)).toEqual(['ana1', 'bea1'])
     expect(chosenTake('jon', 1, 1)?.id).toBe('ana1')
+    expect(takesToChoose('jon', 1, 1).map((x) => x.id)).toEqual(['ana1', 'bea1'])
+    // Ana chooses Bea's: it counts, and the choice settles it on Bea's device too.
+    chooseTake('jon', 1, 1, 'bea1')
+    expect([chosenTake('jon', 1, 1)?.id, takesToChoose('jon', 1, 1)]).toEqual(['bea1', []])
+    receive(withSound('Ana'), 'Bea')
+    expect([chosenTake('jon', 1, 1)?.id, takesToChoose('jon', 1, 1)]).toEqual(['bea1', []])
+  })
+
+  it('una toma grabada o elegida sabiendo de la otra cuenta sin preguntar, aunque el reloj diga otra hora', () => {
+    on('Ana')
+    addTake('jon', 1, 1, { by: 'Ana', at: '2026-10-15T10:00:00Z', ms: 900, mime: 'audio/webm' }, 'ana1')
+    receive(withSound('Ana'), 'Bea')
+    on('Bea')
+    addTake('jon', 1, 1, { by: 'Bea', at: '2026-10-01T00:00:00Z', ms: 900, mime: 'audio/webm' }, 'bea1')
+    receive(withSound('Bea'), 'Ana')
+    expect([chosenTake('jon', 1, 1)?.id, takesToChoose('jon', 1, 1)]).toEqual(['bea1', []])
   })
 })
 

@@ -8,7 +8,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { WordLines } from '../../frame/TouchWords'
-import { addTake, chooseTake, chosenTake, clock, keepSound, recorderOptions, soundOf, takeCovering, takesOf, type Take } from '../../projects/recordings'
+import { addTake, chooseTake, chosenTake, clock, keepSound, recorderOptions, soundOf, takeCovering, takesOf, takesToChoose, type Take } from '../../projects/recordings'
 import { joinStartOf, joinedVerses, textOf } from '../../projects/work'
 import type { MiniApp, MiniAppCenterProps } from '../contract'
 
@@ -48,6 +48,9 @@ function Center({ context }: MiniAppCenterProps) {
   const rec = useRef<{ recorder: MediaRecorder; stream: MediaStream; chunks: Blob[]; started: number; timer: number } | null>(null)
   const take = chosenTake(book, chapter, place)
   const takes = takesOf(book, chapter, place)
+  // Another device chose another take apart: which one counts is chosen first, as two versions of a verse are.
+  const choices = takesToChoose(book, chapter, place)
+  const [pick, setPick] = useState<string | null>(null)
   const written = [...new Set(verses.map((v) => joinStartOf(book, chapter, v)))]
     .map((v) => textOf(book, chapter, v).trim())
     .filter(Boolean)
@@ -124,6 +127,40 @@ function Center({ context }: MiniAppCenterProps) {
               <span className="voice-dot" aria-hidden="true" />
               {t('editorVoz.detener')} · {clock(elapsed)}
             </button>
+          ) : choices.length ? (
+            <section className="versions" aria-label={t('editorVoz.elegirTitulo')}>
+              <p className="versions-ask">{t('editorVoz.elegirPregunta')}</p>
+              {choices.map((x) => (
+                <div
+                  key={x.id}
+                  role="radio"
+                  tabIndex={0}
+                  aria-checked={pick === x.id}
+                  className={pick === x.id ? 'version is-on' : 'version'}
+                  onClick={() => setPick(x.id)}
+                  onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setPick(x.id)}
+                >
+                  <span className="version-who">
+                    <span className="version-dot" aria-hidden="true" />
+                    {said(x)}
+                  </span>
+                  <TakePlayer take={x} />
+                </div>
+              ))}
+              <button
+                type="button"
+                className="button-primary"
+                disabled={!pick}
+                onClick={() => {
+                  if (!pick) return
+                  chooseTake(book, chapter, place, pick)
+                  setPick(null)
+                  redraw((n) => n + 1)
+                }}
+              >
+                {t('editorVoz.quedarseCon')}
+              </button>
+            </section>
           ) : take ? (
             <>
               <TakePlayer key={take.id} take={take} />
@@ -143,7 +180,7 @@ function Center({ context }: MiniAppCenterProps) {
               {problem}
             </p>
           )}
-          {takes.length > 1 && !recording && (
+          {takes.length > 1 && !recording && !choices.length && (
             <details className="advanced" open={others} onToggle={(e) => setOthers(e.currentTarget.open)}>
               <summary>{t('editorVoz.otras', { n: takes.length - 1 })}</summary>
               <ul className="voice-takes">
@@ -192,7 +229,11 @@ export const editorVoz: MiniApp = {
   helps: false,
   fills: true,
   writes: true,
-  done: (at) => takeCovering(at.book, at.chapter, joinStartOf(at.book, at.chapter, at.verse)) !== null,
+  // Said, and not waiting for a choice between two takes chosen apart.
+  done: (at) => {
+    const place = joinStartOf(at.book, at.chapter, at.verse)
+    return takeCovering(at.book, at.chapter, place) !== null && !takesToChoose(at.book, at.chapter, place).length
+  },
   Center,
   texts: {
     es: {
@@ -214,6 +255,9 @@ export const editorVoz: MiniApp = {
       sinPermiso: 'El teléfono no dio permiso para usar el micrófono. Permítalo en los ajustes del navegador o de la app.',
       'sinPermiso.computadora': 'La computadora no dio permiso para usar el micrófono. Permítalo en los ajustes del navegador o de la app.',
       noSePuede: 'Este aparato, o esta página, no deja grabar.',
+      elegirTitulo: 'Dos grabaciones elegidas',
+      elegirPregunta: 'En otro aparato se eligió otra grabación. Escúchelas: ¿cuál queda?',
+      quedarseCon: 'Quedarse con esta grabación',
     },
     pt: {
       nombre: 'Traduzir em voz alta',
@@ -234,6 +278,9 @@ export const editorVoz: MiniApp = {
       sinPermiso: 'O telefone não deu permissão para usar o microfone. Permita nas configurações do navegador ou do app.',
       'sinPermiso.computadora': 'O computador não deu permissão para usar o microfone. Permita nas configurações do navegador ou do app.',
       noSePuede: 'Este aparelho, ou esta página, não deixa gravar.',
+      elegirTitulo: 'Duas gravações escolhidas',
+      elegirPregunta: 'Em outro aparelho foi escolhida outra gravação. Escute as duas: qual fica?',
+      quedarseCon: 'Ficar com esta gravação',
     },
     en: {
       nombre: 'Translate by voice',
@@ -254,6 +301,9 @@ export const editorVoz: MiniApp = {
       sinPermiso: 'The phone did not allow the microphone. Allow it in the browser or app settings.',
       'sinPermiso.computadora': 'The computer did not allow the microphone. Allow it in the browser or app settings.',
       noSePuede: 'This device, or this page, does not allow recording.',
+      elegirTitulo: 'Two recordings chosen',
+      elegirPregunta: 'Another recording was chosen on another device. Listen to them: which one stays?',
+      quedarseCon: 'Keep this recording',
     },
   },
 }

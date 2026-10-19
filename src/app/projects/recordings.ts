@@ -39,6 +39,16 @@ interface VerseTakes {
   takes: Take[]
   /** The take that counts; the last one, unless another was chosen. */
   chosen: string | null
+  /**
+   * The takes there were when the one that counts was chosen (or recorded): the choice was made knowing them. What tells,
+   * between devices, which choice came after; never the date.
+   */
+  knew?: string[]
+  /**
+   * Takes chosen apart on other devices, neither choice knowing the other: they wait for a person to choose which one
+   * counts (decided with Abel on 19 October 2026). Choosing a take settles them.
+   */
+  waiting?: string[]
 }
 
 const KEY = 'servos.prototipo.grabacion'
@@ -87,6 +97,22 @@ export interface PlaceTakes {
   verse: number
   takes: Take[]
   chosen: string | null
+  knew?: string[]
+  waiting?: string[]
+}
+
+/** The take that counts in a place's takes. */
+const countingOf = (m: Pick<VerseTakes, 'takes' | 'chosen'>) => m.chosen ?? m.takes[m.takes.length - 1]?.id ?? null
+
+/**
+ * The takes to choose from when another device chose another one apart: the one that counts here first, then each
+ * waiting. Empty when there is nothing to choose.
+ */
+export function takesToChoose(book: string, chapter: number, verse: number): Take[] {
+  const m = readMeta(book, chapter, verse)
+  const ids = [countingOf(m), ...(m.waiting ?? [])].filter((id, i, all): id is string => Boolean(id) && all.indexOf(id) === i)
+  const takes = ids.map((id) => m.takes.find((x) => x.id === id)).filter((x): x is Take => Boolean(x))
+  return takes.length > 1 ? takes : []
 }
 
 /** Every place of a book that has recordings, in order. */
@@ -108,16 +134,42 @@ export function recordedPlaces(book: string): PlaceTakes[] {
 }
 
 /**
- * Gathers takes received for a place (another phone's): those not here come in, none is lost; the one that counts
- * here stays so, and where there was none, the one that counted there does. Gives back the takes that came in.
+ * Gathers takes received for a place (another phone's): those not here come in, none is lost. Which counts follows the
+ * choices: where there was none here, the one that counted there; a choice made knowing the other one comes after it;
+ * two made apart leave the one here counting and the other waiting for a person to choose. Gives back the takes that
+ * came in.
  */
-export function gatherTakes(book: string, chapter: number, verse: number, received: { takes: Take[]; chosen: string | null }): Take[] {
+export function gatherTakes(
+  book: string,
+  chapter: number,
+  verse: number,
+  received: { takes: Take[]; chosen: string | null; knew?: string[]; waiting?: string[] }
+): Take[] {
   const m = readMeta(book, chapter, verse)
   const fresh = received.takes.filter((x) => !m.takes.some((y) => y.id === x.id))
-  if (!fresh.length) return []
-  const here = m.chosen ?? m.takes[m.takes.length - 1]?.id ?? null
-  const there = received.chosen ?? received.takes[received.takes.length - 1]?.id ?? null
-  writeMeta(book, chapter, verse, { takes: [...m.takes, ...fresh], chosen: here ?? there })
+  const takes = [...m.takes, ...fresh]
+  const has = (id: string | null) => Boolean(id) && takes.some((x) => x.id === id)
+  const here = m.takes.length ? countingOf(m) : null
+  const there = has(countingOf(received)) ? countingOf(received) : null
+  let next: VerseTakes
+  if (!here || !there || here === there) {
+    const counting = here ?? there
+    const knew = here ? m.knew : received.knew
+    const waiting = [...new Set([...(m.waiting ?? []), ...(received.waiting ?? [])])].filter((id) => id !== counting && has(id) && !(knew ?? []).includes(id))
+    next = { takes, chosen: counting, ...(knew ? { knew } : {}), ...(waiting.length ? { waiting } : {}) }
+  } else {
+    const thereKnew = Boolean(received.knew?.includes(here))
+    const hereKnew = Boolean(m.knew?.includes(there))
+    const theirs = thereKnew && !hereKnew
+    const counting = theirs ? there : here
+    const knew = theirs ? received.knew : m.knew
+    const apart = thereKnew === hereKnew ? [there] : []
+    const waiting = [...new Set([...(m.waiting ?? []), ...(received.waiting ?? []), ...apart])].filter(
+      (id) => id !== counting && has(id) && (apart.includes(id) || !(knew ?? []).includes(id))
+    )
+    next = { takes, chosen: counting, ...(knew ? { knew } : {}), ...(waiting.length ? { waiting } : {}) }
+  }
+  if (JSON.stringify(next) !== JSON.stringify({ ...m, takes: m.takes })) writeMeta(book, chapter, verse, next)
   return fresh
 }
 
@@ -130,16 +182,19 @@ export function audioFileOf(book: string, chapter: number, verse: number, take: 
   return `audio/${book.toUpperCase()}/${n(chapter)}/${n(verse)}${to}.${ending}`
 }
 
+/** Chooses the take that counts, knowing every take there is: any chosen apart elsewhere is settled. */
 export function chooseTake(book: string, chapter: number, verse: number, id: string) {
   const m = readMeta(book, chapter, verse)
-  if (m.takes.some((x) => x.id === id)) writeMeta(book, chapter, verse, { ...m, chosen: id })
+  if (m.takes.some((x) => x.id === id)) writeMeta(book, chapter, verse, { takes: m.takes, chosen: id, knew: m.takes.map((x) => x.id) })
 }
 
 /** Notes a new take of a verse: it becomes the one that counts. Its sound is kept apart (`keepSound`). */
 export function addTake(book: string, chapter: number, verse: number, take: Omit<Take, 'id'>, id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`): Take {
   const m = readMeta(book, chapter, verse)
   const made = { ...take, id }
-  writeMeta(book, chapter, verse, { takes: [...m.takes, made], chosen: id })
+  // Recorded knowing the takes there were: it comes after them, and settles any waiting to be chosen.
+  const takes = [...m.takes, made]
+  writeMeta(book, chapter, verse, { takes, chosen: id, knew: takes.map((x) => x.id) })
   return made
 }
 
