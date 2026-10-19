@@ -41,8 +41,17 @@
   }
   .main-fill > .button-primary, .study-next { align-self: flex-start; }
   :is(.glossary-actions, .translate-steps, .choice-row) > :is(.button-primary, .button-secondary) { width: auto; min-width: 0; }
-  /* «Yes» and its alternative side by side at the foot of what is compared */
-  .passage .review-next { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+  /* «Yes» and its alternatives side by side at the foot of what is checked */
+  .review-next { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+  .review-next .review-hint { flex-basis: 100%; text-align: start; }
+  .review-other-answers { flex-direction: row; flex-wrap: wrap; }
+  /* From the third step of a check, what was read stays in a column beside what is done */
+  .review:has(.review-beside) .review-scroll { --column: 72rem; }
+  /* The way on under the column where it is decided, not under what was read */
+  .review:has(.review-beside) .review-next { max-width: 72rem; padding-inline-start: calc(50% + 0.75rem); }
+  .review-beside { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+  .review-read, .review-do { min-width: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+  .review-read { padding-inline-end: 1.5rem; border-inline-end: 1px solid var(--line); }
   .align-actions { justify-content: flex-start; }
   .align-actions > button { flex: none; min-width: 8rem; }
   /* The one big button to record: round and its own size, not a bar across the window */

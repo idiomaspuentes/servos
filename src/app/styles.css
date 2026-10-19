@@ -541,7 +541,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
   html { overflow-x: clip; }
   .screen > .header, .screen > .position { margin-inline: calc(50% - 50vw); padding-inline: 1.5rem; }
   .screen > .position { display: flex; justify-content: center; gap: 1rem; }
-  .main-fill > .review, .main-fill > .align { flex: 0 1 auto; }
+  .main-fill > .review, .main-fill > .review-alone > .review, .main-fill > .align { flex: 0 1 auto; }
   .review-scroll, .align-boxes { flex: 0 1 auto; }
 }
 
@@ -725,6 +725,8 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 
 /* Checking with the notes: one note at a time, read from the top down to its answer */
 .review { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+/* Under 1280 px the reviewer stands alone, its wrapper only there to keep the same elements as with the groups */
+.review-alone { display: contents; }
 .review-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.5rem max(1rem, calc((100% - 46rem) / 2 + 1rem)); border-block-end: 1px solid var(--line); }
 /* What the list shows, chosen in a sheet: the bar's shape (the arrows' corners, no edge), in a neutral fill: it chooses, it does not go on */
 .review-filter { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border: 0; border-radius: var(--radius); background: var(--surface-soft); font-weight: 600; }
@@ -750,7 +752,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 @media (prefers-reduced-motion: reduce) { .review-quote-text, .review-quote-text[class*='is-entering'] { animation: none; transition: none; } }
 
 /* A note's three steps, numbered at the top: where the person is, and the ones done to go back to */
-.review-stepper { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.25rem; }
+.review-stepper { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.25rem; }
 .review-stepper button { width: 100%; min-height: var(--touch); display: flex; flex-direction: column; align-items: center; gap: 0.15rem; padding: 0.25rem; border: 0; border-block-end: 3px solid var(--line); border-radius: 0; background: none; color: var(--text-soft); font-size: 0.8rem; line-height: 1.2; text-align: center; }
 .review-stepper button:disabled { opacity: 0.55; }
 .review-stepper-n { display: inline-grid; place-items: center; width: 1.5rem; height: 1.5rem; border-radius: 999px; border: 1px solid var(--line); font-weight: 600; font-size: 0.8rem; }
@@ -765,6 +767,27 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .review-again { display: flex; flex-direction: column; gap: 0.5rem; border-block-start: 1px solid var(--line); padding-block-start: 0.75rem; }
 .review-again h3 { margin: 0; font-size: 1rem; }
 .review-again-figure { margin: 0; font-weight: 600; }
+/* The four steps of the reviewers (checking/Checking.tsx). What is asked is said once, in the text's weight; what is
+   only a help to it, softer. The source's verse is read in its box, the rest of its section in the soft tone. */
+.review-instruction.is-soft { font-size: 1rem; font-weight: 500; color: var(--text-soft); }
+.review-verse.is-context, .review-verse.is-context .word { color: var(--text-soft); }
+.review-verse + .review-verse { margin-block-start: 0.35rem; }
+.review-quote > .row-button { margin-block-start: 0.25rem; }
+.review-phrase, .review-word-name { margin: 0; font-family: var(--serif); font-size: 1.25rem; font-weight: 700; line-height: 1.4; }
+.review-lit { font-family: var(--serif); }
+/* What to look for, recalled in a line above the words to mark */
+.review-recall { margin: 0; display: flex; gap: 0.6rem; align-items: baseline; padding: 0.5rem 0.75rem; border-radius: var(--radius); background: var(--surface-soft); font-size: 1.05rem; line-height: 1.5; }
+.review-recall-text { flex: none; font-size: 0.8rem; font-weight: 800; color: var(--text-soft); }
+/* The source's words and the translation's, one over the other */
+.review-pair { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.5rem 0.75rem; align-items: baseline; padding: 0.75rem; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-card); }
+.review-pair dt { font-size: 0.8rem; font-weight: 800; color: var(--text-soft); }
+.review-pair dd { margin: 0; font-family: var(--serif); font-size: 1.1rem; line-height: 1.5; }
+.review-pair-mine { font-family: var(--project-font, var(--serif)); }
+.review-fold-body { display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; padding-block: 0.25rem 0.5rem; }
+.review-unchecked { display: flex; flex-direction: column; }
+.review-other-answers { display: flex; flex-direction: column; gap: 0.5rem; border-block-start: 1px solid var(--line); padding-block-start: 0.75rem; }
+.review-unchecked > .quiet { margin: 0 0 0.25rem; }
+.review-unchecked > .review-more-places { align-self: flex-start; margin-block-start: 0.5rem; }
 /* Aligning: the draft's words in a bank above, one box for each word of the source below, as Taller draws them */
 .align { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.4rem; padding: 0.5rem 1rem 0; max-width: 60rem; margin-inline: auto; width: 100%; }
 .align-top { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
@@ -858,9 +881,9 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 @media (max-width: 899.98px) {
   .review-scroll { order: 1; }
   .review-next { order: 2; }
-  .review-head { order: 3; border-block-end: 0; border-block-start: 1px solid var(--line); background: var(--surface); }
+  .review-head { order: 3; border-block-end: 0; border-block-start: 1px solid var(--line); background: var(--surface); padding-block-end: calc(0.5rem + env(safe-area-inset-bottom, 0px)); }
   .review > .review-empty { order: 1; flex: 1; }
-  .main-fill:has(> .review) { padding-block-end: 0; }
+  .main-fill:has(> .review, > .review-alone) { padding-block-end: 0; }
 }
 /* While writing why a note is left for later, the keyboard has the foot: the comment stays in sight. */
 .screen-fill.is-writing .review-head { display: none; }
@@ -1040,14 +1063,12 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 }
 .observation, .word-help { border-block: 0; border-inline-end: 0; box-shadow: var(--shadow-card); }
 
-/* A reviewer's first step reads in one order: the phrase (the biggest), what the note says, the way on. The rest is
-   said small and quiet: the kind and name of the note, the lead-in, which text the phrase is shown in (under it), and
-   the steps, which say where one is without looking like tabs. */
+/* A reviewer's steps each read in one order: what is asked, then what it is about (the source's verse, chosen by the
+   pills over it, in the scripture's letter), the way on. The rest is said small and quiet: the kind and name of the
+   note, and the steps, which say where one is without looking like tabs. */
 .word-help-kind { flex-wrap: wrap; row-gap: 0; text-wrap: balance; }
-.review-lead { margin: 0; font-size: 0.9rem; color: var(--text-soft); }
-.review-quote .review-quote-switch { order: 2; }
-.review-quote .review-quote-text { font-size: 1.3rem; }
-.review-quote .review-quote-text.is-verse { font-size: 1.1rem; }
+.review-quote .review-quote-text { font-family: var(--serif); font-size: 1.3rem; }
+.review-quote .review-quote-text.is-verse { font-size: 1.15rem; }
 .review-stepper button { flex-direction: row; justify-content: center; gap: 0.3rem; border-block-end: 0; }
 .review-stepper-n { width: auto; height: auto; border: 0; border-radius: 0; background: none; }
 .review-stepper .is-done .review-stepper-n { background: none; color: var(--done); }
