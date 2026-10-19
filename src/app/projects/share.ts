@@ -424,3 +424,13 @@ export function shareFileName(file: SharedFile, bookNames: string[]): string {
   const what = bookNames.length === 1 ? `${file.project.name} — ${bookNames[0]}` : file.project.name
   return `${what} — ${file.from} — ${file.at.slice(0, 10)}.servos`.replace(/[\\/:*?"<>|]/g, '')
 }
+
+/**
+ * The name of work shared from a project kept to its team (`Privacy`): it says nothing of the project, the book or who
+ * shares it, only the day it was made (here, not in UTC), so whoever finds it in Downloads or on a card learns nothing.
+ * Who sent it is seen in «Receive», once the team's password opens it.
+ */
+export function sealedFileName(at: Date = new Date()): string {
+  const two = (n: number) => String(n).padStart(2, '0')
+  return `copia-${two(at.getDate())}-${two(at.getMonth() + 1)}.servos`
+}

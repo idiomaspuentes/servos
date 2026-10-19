@@ -914,5 +914,14 @@
   "privacidad.abrirSi": "Yes, change it",
   "privacidad.abrirNo": "Keep it to the team",
   "copias.soloConContrasena": "Some projects are for the team only: their copies are always kept with a password.",
-  "copias.quedaFuera": "Without a password, what only the team can see is not copied: {proyectos}. To copy it, stop making copies and start again with a password."
+  "copias.quedaFuera": "Without a password, what only the team can see is not copied: {proyectos}. To copy it, stop making copies and start again with a password.",
+  "compartir.soloEquipo": "Only someone who knows the team's password can open this file. Its name does not say what it is.",
+  "compartir.cualquiera": "Anyone who has this file can open it and see what is written.",
+  "compartir.contrasenaEquipo": "The team's password",
+  "compartir.contrasenaAyuda": "Agree on it in person: whoever receives the file needs it to open it. Servos remembers it here for next time.",
+  "compartir.cambiarContrasena": "Change the password",
+  "recibir.cerradoTitulo": "A file only for the team",
+  "recibir.cerradoAyuda": "Type the password the team agreed on.",
+  "recibir.noEsLaContrasena": "That is not the password. Ask whoever sent you the file.",
+  "recibir.abrirArchivo": "Open the file"
 }

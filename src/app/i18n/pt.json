@@ -914,5 +914,14 @@
   "privacidad.abrirSi": "Sim, mudar",
   "privacidad.abrirNo": "Manter só a equipe",
   "copias.soloConContrasena": "Há projetos que só a equipe pode ver: suas cópias são guardadas sempre com senha.",
-  "copias.quedaFuera": "Sem senha não se copia o que só a equipe pode ver: {proyectos}. Para copiá-lo, deixe de fazer cópias e comece de novo com senha."
+  "copias.quedaFuera": "Sem senha não se copia o que só a equipe pode ver: {proyectos}. Para copiá-lo, deixe de fazer cópias e comece de novo com senha.",
+  "compartir.soloEquipo": "Só quem souber a senha da equipe pode abrir este arquivo. O nome dele não diz o que é.",
+  "compartir.cualquiera": "Qualquer pessoa que tiver este arquivo pode abri-lo e ver o que está escrito.",
+  "compartir.contrasenaEquipo": "Senha da equipe",
+  "compartir.contrasenaAyuda": "Combinem a senha pessoalmente: quem receber o arquivo precisa dela para abri-lo. O Servos a lembra aqui para a próxima vez.",
+  "compartir.cambiarContrasena": "Mudar a senha",
+  "recibir.cerradoTitulo": "Um arquivo só para a equipe",
+  "recibir.cerradoAyuda": "Escreva a senha que a equipe combinou.",
+  "recibir.noEsLaContrasena": "Essa não é a senha. Peça-a a quem lhe mandou o arquivo.",
+  "recibir.abrirArchivo": "Abrir o arquivo"
 }

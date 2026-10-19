@@ -351,6 +351,9 @@ Hecho en el prototipo (`outbox.ts`, `WaitingSheet`), probado con un Door43 de me
   - **Va todo, sin preguntar** capa por capa. El diario hace que traer lo mismo dos veces no duplique nada.
   - **Compartir:** desde un libro («Más › Compartir este libro») o desde los ajustes del proyecto («Compartir el
     proyecto», con los libros marcados; todos de entrada). Se puede mandar parte de un libro («Jonás 1:1–10»).
+    En un proyecto «Solo el equipo», el archivo va cerrado con la contraseña del equipo, que se elige la primera vez
+    y el aparato recuerda, y se llama `copia-18-10.servos`, sin el proyecto, el libro ni la persona; al recibirlo se
+    pide esa contraseña, salvo que el aparato ya la tenga (18 de octubre; `PROPUESTA_NO_EXPONER.md`).
   - **Recibir** («Agregar un proyecto › Recibir», o desde el libro), en tres pasos, sin aplicar nada antes del último:
     qué trae (de quién, cuándo, qué libros y el glosario); dónde va (si el proyecto ya está en el aparato, se junta
     con él; si no, se elige: **agregarlo como proyecto nuevo o juntarlo con uno propio del mismo idioma**, el caso de

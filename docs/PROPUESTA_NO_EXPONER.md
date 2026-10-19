@@ -130,6 +130,16 @@ de amenazas.
 Es lo que más deja a la vista hoy (el archivo que se encuentra en Descargas o en una tarjeta), usa lo que ya está hecho
 para las copias, y no cambia nada en los proyectos «Cualquiera que tenga el archivo».
 
+**Hecho** (18 de octubre, rama `claude/compartir-cerrado`): con «Solo el equipo», Compartir pide la contraseña del
+equipo la primera vez (dos veces, de 8 letras o más, como las copias), la recuerda en el aparato (la llave, no la
+contraseña: `projects/teamKeys.ts`) y guarda el archivo cerrado (`SVs1`, el cifrado de las copias) con el nombre
+`copia-18-10.servos`; «Copiar el texto» copia también el texto cerrado. Bajo los botones, una línea dice quién puede
+abrirlo. Recibir abre solo un archivo cerrado con una llave que ya está en el aparato; si no, pide «la contraseña que
+acordó el equipo» y guarda la llave para el proyecto donde entra. «✎ Cambiar la contraseña» en Compartir. Y para todos:
+los textos del sistema sin «Biblia» (A), lo de `cache/compartir` se borra pasados 15 minutos, al abrir la app y al
+compartir (B), y las apps recientes sin foto (C). Falta «Olvidar la contraseña en este teléfono» en Ajustes del
+proyecto.
+
 **Después**, en este orden: el **bloqueo** (G) con su tarjeta y la opción **sin capturas** (H), porque cubren el
 teléfono que alguien toma; el repositorio privado al publicar (K) y la línea de Door43 (D); y al final el **nombre e ícono
 discretos** (I) y lo de después de recibir (J).

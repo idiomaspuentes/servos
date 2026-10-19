@@ -11,9 +11,15 @@
  * password itself is not kept anywhere: forgotten, the copies cannot be opened, by anyone.
  *
  * Its letters, decoded: four bytes that mark it (`SVc1`), the salt (16), the nonce (12), and the sealed text.
+ *
+ * Work shared from a project kept to its team («Share», `screens/ShareSheet.tsx`) is sealed the same way, under the
+ * team's password (`teamKeys.ts`), and marked `SVs1`, so «Receive» can ask for the team's password and not the copies'.
  */
 
-const MARK = [0x53, 0x56, 0x63, 0x31]
+/** What a sealed text is: a copy kept on a memory card, or work shared within a team. */
+export type Sealed = 'copia' | 'compartido'
+const MARKS: Record<Sealed, number[]> = { copia: [0x53, 0x56, 0x63, 0x31], compartido: [0x53, 0x56, 0x73, 0x31] }
+const MARK = MARKS.copia
 const SALT = 16
 const NONCE = 12
 /** The rounds that make guessing a password slow (OWASP's figure for PBKDF2-SHA256, 2023). */
@@ -41,37 +47,59 @@ export async function keyFrom(password: string, salt: Uint8Array = globalThis.cr
 }
 
 /** The work, sealed: letters that say nothing. */
-export async function lock(text: string, { key, salt }: CopyKey): Promise<string> {
+export async function lock(text: string, { key, salt }: CopyKey, kind: Sealed = 'copia'): Promise<string> {
   const nonce = globalThis.crypto.getRandomValues(new Uint8Array(NONCE))
   const sealed = new Uint8Array(await subtle().encrypt({ name: 'AES-GCM', iv: nonce }, key, (await squeeze(text)) as BufferSource))
   const all = new Uint8Array(MARK.length + SALT + NONCE + sealed.length)
-  all.set(MARK, 0)
+  all.set(MARKS[kind], 0)
   all.set(salt, MARK.length)
   all.set(nonce, MARK.length + SALT)
   all.set(sealed, MARK.length + SALT + NONCE)
   return toLetters(all)
 }
 
-/** Whether a text is a sealed copy (it is told by its first letters, which are the same in every copy). */
-export function isLocked(text: string): boolean {
+/** Whether a text is sealed, and how: told by its first letters, which are the same in every copy and every file. */
+export function lockedKind(text: string): Sealed | null {
   const head = fromLetters(text.trim().slice(0, 8))
-  return head !== null && MARK.every((b, i) => head[i] === b)
+  if (head === null) return null
+  for (const kind of Object.keys(MARKS) as Sealed[]) if (MARKS[kind].every((b, i) => head[i] === b)) return kind
+  return null
 }
 
-/** Opens a sealed copy with its password: the work's text, or null when the password is not the one it was sealed with. */
-export async function unlock(text: string, password: string, rounds = ROUNDS): Promise<string | null> {
-  const all = fromLetters(text.trim())
-  if (!all || !isLocked(text)) return null
-  const salt = all.slice(MARK.length, MARK.length + SALT)
+/** Whether a text is sealed (a copy or work shared within a team). */
+export const isLocked = (text: string): boolean => lockedKind(text) !== null
+
+/** The salt a sealed text was sealed with: a key kept on the device opens it only if it was drawn with the same. */
+export function saltOf(text: string): Uint8Array | null {
+  const all = isLocked(text) ? fromLetters(text.trim()) : null
+  return all ? all.slice(MARK.length, MARK.length + SALT) : null
+}
+
+/** Opens a sealed text with a key already drawn: the work's text, or null when the key is not the one. */
+export async function openWith(text: string, key: CryptoKey): Promise<string | null> {
+  const all = isLocked(text) ? fromLetters(text.trim()) : null
+  if (!all) return null
   const nonce = all.slice(MARK.length + SALT, MARK.length + SALT + NONCE)
-  const sealed = all.slice(MARK.length + SALT + NONCE)
-  const { key } = await keyFrom(password, salt, rounds)
   try {
-    const open = new Uint8Array(await subtle().decrypt({ name: 'AES-GCM', iv: nonce }, key, sealed))
+    const open = new Uint8Array(await subtle().decrypt({ name: 'AES-GCM', iv: nonce }, key, all.slice(MARK.length + SALT + NONCE)))
     return await unsqueeze(open)
   } catch {
     return null
   }
+}
+
+/** Opens a sealed text with its password, and gives the key drawn too, to be kept and open the next without asking. */
+export async function unlockKeeping(text: string, password: string, rounds = ROUNDS): Promise<{ text: string; key: CopyKey } | null> {
+  const salt = saltOf(text)
+  if (!salt) return null
+  const key = await keyFrom(password, salt, rounds)
+  const open = await openWith(text, key.key)
+  return open === null ? null : { text: open, key }
+}
+
+/** Opens a sealed copy with its password: the work's text, or null when the password is not the one it was sealed with. */
+export async function unlock(text: string, password: string, rounds = ROUNDS): Promise<string | null> {
+  return (await unlockKeeping(text, password, rounds))?.text ?? null
 }
 
 async function squeeze(text: string): Promise<Uint8Array> {

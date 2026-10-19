@@ -914,5 +914,14 @@
   "privacidad.abrirSi": "Sí, cambiar",
   "privacidad.abrirNo": "Dejar solo el equipo",
   "copias.soloConContrasena": "Hay proyectos que solo el equipo puede ver: sus copias se guardan siempre con contraseña.",
-  "copias.quedaFuera": "Sin contraseña no se copia lo que solo el equipo puede ver: {proyectos}. Para copiarlo, deje de hacer copias y empiece de nuevo con contraseña."
+  "copias.quedaFuera": "Sin contraseña no se copia lo que solo el equipo puede ver: {proyectos}. Para copiarlo, deje de hacer copias y empiece de nuevo con contraseña.",
+  "compartir.soloEquipo": "Solo quien sepa la contraseña del equipo puede abrir este archivo. Su nombre no dice qué es.",
+  "compartir.cualquiera": "Cualquiera que tenga este archivo puede abrirlo y ver lo escrito.",
+  "compartir.contrasenaEquipo": "Contraseña del equipo",
+  "compartir.contrasenaAyuda": "Acuérdenla en persona: quien reciba el archivo la necesita para abrirlo. Servos la recuerda aquí para la próxima vez.",
+  "compartir.cambiarContrasena": "Cambiar la contraseña",
+  "recibir.cerradoTitulo": "Un archivo solo para el equipo",
+  "recibir.cerradoAyuda": "Escriba la contraseña que acordó el equipo.",
+  "recibir.noEsLaContrasena": "Esa no es la contraseña. Pídala a quien le mandó el archivo.",
+  "recibir.abrirArchivo": "Abrir el archivo"
 }
