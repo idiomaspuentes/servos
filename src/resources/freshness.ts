@@ -111,3 +111,7 @@ export function packAgainstDevice(
     replace: resources.filter((r) => r.stale || (r.standing === 'newer' && !r.lacking.length)).map((r) => r.key),
   }
 }
+
+/** Whether opening the pack changes anything here: a resource replaced, a new one, or books of the same release added. */
+export const bringsAnything = (against: PackAgainstDevice): boolean =>
+  against.replace.length > 0 || against.resources.some((a) => a.standing === 'new' || (a.standing === 'same' && a.adds.length > 0))

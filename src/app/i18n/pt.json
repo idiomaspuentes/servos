@@ -103,6 +103,7 @@
   "pasos.pendiente": "Mais adiante",
   "inicio.agregarProyecto": "Adicionar um projeto",
   "inicio.tusProyectos": "Seus projetos",
+  "inicio.dentroAbriendo": "Preparando os textos e as ajudas que vêm com o app… {pct} %",
   "inicio.sinProyectos": "Ainda não há projetos. Adicione um para começar.",
   "inicio.libros": "{n} livros",
   "inicio.unLibro": "1 livro",
