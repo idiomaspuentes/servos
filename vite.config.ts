@@ -1,8 +1,8 @@
 /// <reference types="vitest/config" />
 import { execSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { readdirSync, readFileSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
@@ -55,6 +55,34 @@ function offlineShell(): Plugin {
  * the status bar and the buttons (or the keyboard) itself, on every screen, whatever the WebView's version. With it, a
  * WebView from 140 on draws the page under them and every footer would have to leave the room by itself.
  */
+/**
+ * The language packs inside the apps for phones and computers (`src/app/projects/packsInside.ts` opens them the first
+ * time the app starts): every `*.langpack.zip` of `SERVOS_PAQUETES_DENTRO`, or of `paquetes-dentro/` beside this file
+ * (not in the repository: the packs are made with bt-synergy's `prepare-language`). They go in `paquetes/`, the
+ * originals first, with an index naming each by what it holds. Without packs the app is built as before, and says so.
+ */
+function packsInside(): Plugin {
+  const folder = resolve(process.env.SERVOS_PAQUETES_DENTRO || join(HERE, 'paquetes-dentro'))
+  return {
+    name: 'servos-packs-inside',
+    apply: 'build',
+    generateBundle() {
+      const files = existsSync(folder)
+        ? readdirSync(folder)
+            .filter((f) => f.endsWith('.langpack.zip'))
+            .sort((a, b) => Number(!a.startsWith('originals')) - Number(!b.startsWith('originals')) || a.localeCompare(b))
+        : []
+      if (!files.length) this.warn(`No language packs in ${folder}: the app is built without texts and helps inside it`)
+      const packs = files.map((file) => {
+        const bytes = readFileSync(join(folder, file))
+        this.emitFile({ type: 'asset', fileName: `paquetes/${file}`, source: bytes })
+        return { file, id: createHash('sha1').update(bytes).digest('hex').slice(0, 16) }
+      })
+      this.emitFile({ type: 'asset', fileName: 'paquetes/index.json', source: JSON.stringify({ packs }) })
+    },
+  }
+}
+
 function insideTheBars(): Plugin {
   return {
     name: 'servos-inside-the-bars',
@@ -90,9 +118,9 @@ export default defineConfig(({ command, isPreview, mode }) => ({
     mode === 'pagina'
       ? [react(), viteSingleFile()]
       : mode === 'telefono'
-        ? [react(), insideTheBars()]
+        ? [react(), insideTheBars(), packsInside()]
         : mode in INSIDE
-          ? [react()]
+          ? [react(), packsInside()]
           : [react(), offlineShell()],
   // The single page carries its letters inside it (it has no files beside it).
   build:

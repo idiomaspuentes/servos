@@ -5,7 +5,7 @@
 
 import { Fragment, useState } from 'react'
 import { LEXICON_SUBJECTS } from '../../resources/companions'
-import { packAgainstDevice, type PackAgainstDevice, type PackResourceStanding } from '../../resources/freshness'
+import { bringsAnything, packAgainstDevice, type PackAgainstDevice, type PackResourceStanding } from '../../resources/freshness'
 import { describePack, openPack, openingLeft, type PackSummary } from '../../resources/packs'
 import { openResourceStores } from '../../resources/store'
 import { RowButton } from '../frame/Actions'
@@ -246,8 +246,6 @@ export function ReceivePack({
 const replaced = (against: PackAgainstDevice, a: PackResourceStanding) => against.replace.includes(a.key)
 
 /** Whether opening the pack changes anything here: a resource or books this device does not have, or a newer copy. */
-const bringsAnything = (against: PackAgainstDevice) =>
-  against.replace.length > 0 || against.resources.some((a) => a.standing === 'new' || (a.standing === 'same' && a.adds.length > 0))
 
 /**
  * The last step: what is now on this device and, when the pack changed the helps of verses already translated, those

@@ -17,6 +17,7 @@ import { answerSuggestion, cardInPhone, copiesHere, suggestionAnswered } from '.
 import { useCopies } from './CopiesSheet'
 import { useT } from '../i18n/i18n'
 import { titleOf, type Project } from '../projects/model'
+import { insideState, onInside } from '../projects/packsInside'
 
 export interface Resume {
   projectId: string
@@ -54,6 +55,8 @@ export function Home({
   onCopies(): void
 }) {
   const t = useT()
+  const [inside, setInside] = useState(insideState)
+  useEffect(() => onInside(setInside), [])
   const copies = useCopies()
   // A card in the phone and no copy yet: offered once, on home (philosophy, principles 9 and 12).
   const [card, setCard] = useState(false)
@@ -80,6 +83,12 @@ export function Home({
         </button>
       </header>
       <main className="main">
+        {/* The first start of the app for phones or computers: the texts and helps it brings are being opened. */}
+        {inside.opening && (
+          <p className="status" role="status">
+            {t('inicio.dentroAbriendo', { pct: Math.floor(100 * inside.part) })}
+          </p>
+        )}
         {resumeProject && resumeBook && (
           <section className="book-resume is-field" aria-label={t('libro.sigaDonde')}>
             <span className="book-resume-kicker">{t('libro.sigaDonde')}</span>
