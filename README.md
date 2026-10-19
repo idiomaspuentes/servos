@@ -35,4 +35,4 @@ Hace falta [Rust](https://rustup.rs) y, en Windows, las herramientas de compilac
   WebView2 para instalarse sin internet. No está firmado: Windows avisa «Windows protegió su PC», y se instala con
   «Más información › Ejecutar de todas formas».
 
-Dominio previsto: `servos.bible` (todavía no apartado).
+Dominio: `servos.idiomaspuentes.org` (decidido el 18 de octubre).
