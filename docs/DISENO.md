@@ -306,8 +306,11 @@ persona que no están en este teléfono. Para no borrarlos, no se subió». El b
 que abre «Recibir» con ese libro: qué trae y qué cambia, y nada se aplica antes del último paso. Se compara de a tres
 con lo último visto: lo que cambió solo en Door43 entra, lo que cambió solo aquí queda, y solo lo que cambió en los dos
 lados va a «Juntar». Después se sube otra vez. Una subida que esperaba internet hace lo mismo: no sube ese libro, sigue
-esperando con su motivo, y la hoja «Ya hay internet» ofrece «Traer lo de Door43» (`publishing.ts`, `door43Copy`,
-`knowsAll`; probado en `subirSinPisar.test.ts` y en la app con un Door43 de mentira).
+esperando con su motivo, y la hoja «Ya hay internet» ofrece «Traer lo de Door43». Lo traído va firmado con quien lo
+subió, como lo nombra Door43 (su nombre completo o su usuario; «Door43» si no lo dice). Y mientras un libro tiene
+versiones traídas de Door43 esperando en «Juntar», no se sube: subirlo pondría la versión de aquí sobre la otra antes
+de elegir. Se dice, con «Ir a juntar» (`publishing.ts`, `door43Copy`, `knowsAll`, `waitsFromDoor43`; probado en
+`subirSinPisar.test.ts` y en la app con un Door43 de mentira).
 
 ## 7. Los paquetes
 

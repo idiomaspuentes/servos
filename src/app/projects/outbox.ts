@@ -136,6 +136,8 @@ export async function runErrand(
     if (failed) return { problem: failed.problem ?? 'other' }
     // Someone else uploaded a book meanwhile: it waits, to be brought in and gathered before it goes (no version either).
     if (results.some((r) => r.state === 'changed')) return { problem: 'changed' }
+    // Versions brought from Door43 still wait to be gathered here: the book goes once they are.
+    if (results.some((r) => r.state === 'gather')) return { problem: 'gather' }
     if (e.kind === 'subir') {
       const usfm = results.filter((r) => r.path.endsWith('.usfm'))
       return { sent: { kind: 'subir', written: usfm.filter((r) => r.state === 'written').length, same: usfm.filter((r) => r.state === 'same').length } }

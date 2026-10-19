@@ -258,13 +258,13 @@ export function titlesOf(yaml: string): Map<string, string> {
 
 /**
  * What happened to a file uploaded: written, the same as on Door43 already, not uploaded because Door43 has another
- * text this phone has not seen (someone else uploaded it: it is brought and gathered first, `changed`), or not
- * uploaded (and why). `sha` is the file's on Door43 after it, when known.
+ * text this phone has not seen (someone else uploaded it: it is brought and gathered first, `changed`), not uploaded
+ * because versions brought from Door43 still wait to be gathered here (`gather`), or not uploaded (and why). `sha` is the file's on Door43 after it, when known.
  */
-export type FileResult = { path: string; state: 'written' | 'same' | 'changed' | 'failed'; problem?: Problem; sha?: string }
+export type FileResult = { path: string; state: 'written' | 'same' | 'changed' | 'gather' | 'failed'; problem?: Problem; sha?: string }
 
 /** Why something could not be done, said in the person's terms. */
-export type Problem = 'offline' | 'signin' | 'scope' | 'permission' | 'conflict' | 'changed' | 'other'
+export type Problem = 'offline' | 'signin' | 'scope' | 'permission' | 'conflict' | 'changed' | 'gather' | 'other'
 export function problemOf(e: unknown): Problem {
   if (e instanceof DcsApiError) {
     if (e.status === 401) return 'signin'
@@ -390,6 +390,20 @@ export async function fileThere(account: Door43Account, to: Destination, path: s
   } catch (e) {
     if (e instanceof DcsApiError && e.status === 404) return null
     throw e
+  }
+}
+
+/**
+ * Who last uploaded a file, as Door43 names the account (its full name, or its user name): what a version brought from
+ * there is signed with. Null when Door43 does not say.
+ */
+export async function uploaderOf(account: Door43Account, to: Destination, path: string): Promise<string | null> {
+  type Commit = { author?: { full_name?: string; login?: string } | null; commit?: { author?: { name?: string } } }
+  try {
+    const [last] = await call<Commit[]>(account, to, `/commits?path=${encodeURIComponent(path)}&limit=1`)
+    return last?.author?.full_name?.trim() || last?.author?.login || last?.commit?.author?.name || null
+  } catch {
+    return null
   }
 }
 

@@ -7,7 +7,7 @@ import { ask, runErrand, sendWaiting, waiting } from './outbox'
 import { changedOnDoor43, fromDoor43, uploadProject } from './publishing'
 import { readShared, receiveShared, shareProject } from './share'
 import { setProject } from './scope'
-import { forgetBooks, otherVersion, readDraft, writeDraft } from './work'
+import { chooseVersion, forgetBooks, otherVersion, readDraft, writeDraft } from './work'
 
 /**
  * Two people upload the same book from two phones (design 6.10: «Git does not gather the USFM: Servos does»). What one
@@ -168,6 +168,24 @@ describe('traer lo de Door43 y juntarlo antes de subir', () => {
     expect(jon.choices).toBe(1)
     expect([readDraft('jon', 1, 2), otherVersion('jon', 1, 2)?.text]).toEqual(['Ishkay de Ana.', 'Ishkay de Bea.'])
     expect(door.text(JON)).toContain('Ishkay de Bea.')
+    // Until it is gathered, uploading would put Ana's over Bea's there before anyone chose: it waits.
+    const { results } = await upload('Ana')
+    expect(results.find((r) => r.path === '32-JON.usfm')?.state).toBe('gather')
+    expect(door.text(JON)).toContain('Ishkay de Bea.')
+    on('Ana')
+    chooseVersion('jon', 1, 2, false, 'Ana')
+    expect((await upload('Ana')).results.find((r) => r.path === '32-JON.usfm')?.state).toBe('written')
+    expect(door.text(JON)).toContain('Ishkay de Ana.')
+  })
+
+  it('lo traído va firmado con quien lo subió, como lo nombra Door43', async () => {
+    await bothFromDoor43()
+    on('Ana')
+    writeDraft('jon', 1, 2, 'Ishkay de Ana.', 'Ana')
+    const brought = await changedOnDoor43({ host, username: 'ana', token: TOKEN }, to, project)
+    const file = readShared(JSON.stringify(fromDoor43(project, brought.map((b) => ({ ...b, by: 'Bea Quispe' })))))!
+    receiveShared(file, ['jon'], { kind: 'join', projectId: 'kichwa' }, [project], 'Ana')
+    expect(otherVersion('jon', 1, 2)?.by).toBe('Bea Quispe')
   })
 
   it('traer otra vez la misma versión no trae nada nuevo', async () => {

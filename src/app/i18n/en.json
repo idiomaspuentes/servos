@@ -709,6 +709,7 @@
   "door43.problema.permission": "Door43 does not allow this with this account. Ask whoever coordinates to add it to the organization.",
   "door43.problema.conflict": "Someone uploaded changes to Door43 meanwhile. Try uploading again.",
   "door43.problema.changed": "Someone uploaded other changes of this book to Door43. Bring them and gather them here before uploading.",
+  "door43.problema.gather": "This book has versions brought from Door43 waiting in «Bring together». Bring them together and it will be uploaded.",
   "door43.problema.other": "Door43 answered with an error. Try again later.",
   "versiones.formaTitulo": "Verses joined another way",
   "versiones.formaPregunta": "Here these verses are {aqui}. {nombre} sent them {alla}. Which stays for the whole passage?",

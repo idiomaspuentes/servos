@@ -34,7 +34,7 @@ import { arrive } from '../../frame/arriving'
 import type { MiniApp, MiniAppCenterProps } from '../contract'
 
 function Center({ context }: MiniAppCenterProps) {
-  const { t, project, person } = context
+  const { t, project, person, frame } = context
   const [account, setAccount] = useState(() => accountOf(person.name))
   const [linking, setLinking] = useState(false)
   const [to, setTo] = useState<Destination | null>(() => destinationOf(project.id))
@@ -45,6 +45,8 @@ function Center({ context }: MiniAppCenterProps) {
   // Books not uploaded because someone else uploaded another text of them: brought and gathered before uploading.
   const [behind, setBehind] = useState<string[] | null>(null)
   const [bringing, setBringing] = useState(false)
+  // Books not uploaded because versions brought from Door43 still wait to be gathered here.
+  const [toGather, setToGather] = useState<string[] | null>(null)
   const [version, setVersion] = useState<number | null>(null)
   const [versioned, setVersioned] = useState<number | null>(null)
   const [versionTakes, setVersionTakes] = useState(0)
@@ -106,15 +108,20 @@ function Center({ context }: MiniAppCenterProps) {
     setVersioned(null)
     setUnreached(false)
     setBehind(null)
+    setToGather(null)
     try {
       const { results: done } = await uploadProject(account, to, project, person.name, (libros) => t('publicar.mensaje', { nombre: person.name, libros }))
       const failedFile = done.find((r) => r.state === 'failed')
       if (failedFile?.problem === 'offline') return later('subir', true)
       const changed = done.filter((r) => r.state === 'changed').map((r) => r.path)
+      const waiting = done.filter((r) => r.state === 'gather').map((r) => r.path)
+      const titles = (paths: string[]) => books.filter((b) => paths.includes(fileOf(b.code))).map((b) => b.title)
       setResults(done)
       if (failedFile) setProblem(t(`door43.problema.${failedFile.problem ?? 'other'}`))
-      else if (changed.length) setBehind(books.filter((b) => changed.includes(fileOf(b.code))).map((b) => b.title))
-      else {
+      else if (changed.length || waiting.length) {
+        if (changed.length) setBehind(titles(changed))
+        if (waiting.length) setToGather(titles(waiting))
+      } else {
         settle('subir', project.id, person.name)
         setVersion(await nextVersion(account, to).catch(() => null))
       }
@@ -208,7 +215,7 @@ function Center({ context }: MiniAppCenterProps) {
   // A version: once everything is up (with internet, its number known), or to wait with the upload for internet.
   const versionNow = online && version !== null && allUp
   const versionLater = !online && waitsFor !== 'version' && (allUp || waitsFor === 'subir')
-  const showVersion = versioned === null && !problem && !behind && !busy && (versionNow || versionLater)
+  const showVersion = versioned === null && !problem && !behind && !toGather && !busy && (versionNow || versionLater)
   return (
     <div className="publish">
       <section className="publish-where">
@@ -261,7 +268,18 @@ function Center({ context }: MiniAppCenterProps) {
           </button>
         </section>
       )}
-      {results && !problem && !behind && (
+      {toGather && !problem && (
+        <section className="publish-behind" role="status">
+          <p className="notice">{t('publicar.porJuntar', { libros: toGather.join(', ') })}</p>
+          {!behind && written > 0 && <p className="quiet">{t('publicar.losDemas', { n: written })}</p>}
+          {!behind && (
+            <button type="button" className="button-primary" onClick={() => frame.back()}>
+              {t('publicar.irAJuntar')}
+            </button>
+          )}
+        </section>
+      )}
+      {results && !problem && !behind && !toGather && (
         <p className="review-done" role="status">
           ✓ {t('publicar.subido', { escritos: written, iguales: same })}
           {takes > 0 && ` ${t('publicar.grabacionesConVersion')}`}{' '}
@@ -308,7 +326,7 @@ function Center({ context }: MiniAppCenterProps) {
       )}
 
       {(online || !waitsFor) && (
-        <button type="button" className={`${behind ? 'button-secondary' : 'button-primary'} publish-go`} disabled={busy || withWork.length === 0} onClick={() => void upload()}>
+        <button type="button" className={`${behind || toGather ? 'button-secondary' : 'button-primary'} publish-go`} disabled={busy || withWork.length === 0} onClick={() => void upload()}>
           {busy ? t('publicar.subiendo') : online ? t('publicar.subir') : t('publicar.subirLuego')}
         </button>
       )}
@@ -503,6 +521,8 @@ export const publicar: MiniApp = {
       'cambiado.computadora': 'En Door43, {libros} tiene cambios de otra persona que no están en esta computadora. Para no borrarlos, no se subió. Tráigalos y júntelos aquí; después suba otra vez.',
       losDemas: 'Lo demás se subió ({n}).',
       traerDoor43: 'Traer lo de Door43',
+      porJuntar: '{libros} tiene versiones traídas de Door43 que esperan en «Juntar». Para no reemplazar la otra antes de elegir, no se subió. Júntelas y suba otra vez.',
+      irAJuntar: 'Ir a juntar',
       trayendo: 'Trayendo…',
       versionLuego: 'Marcar una versión cuando haya internet',
       subido: 'Subido a Door43. Libros con cambios: {escritos} · sin cambios: {iguales}.',
@@ -557,6 +577,8 @@ export const publicar: MiniApp = {
       'cambiado.computadora': 'No Door43, {libros} tem mudanças de outra pessoa que não estão neste computador. Para não apagá-las, não foi enviado. Traga-as e junte-as aqui; depois envie de novo.',
       losDemas: 'O resto foi enviado ({n}).',
       traerDoor43: 'Trazer o que está no Door43',
+      porJuntar: '{libros} tem versões trazidas do Door43 que esperam em «Juntar». Para não substituir a outra antes de escolher, não foi enviado. Junte-as e envie de novo.',
+      irAJuntar: 'Ir juntar',
       trayendo: 'Trazendo…',
       versionLuego: 'Marcar uma versão quando houver internet',
       subido: 'Enviado ao Door43. Livros com mudanças: {escritos} · sem mudanças: {iguales}.',
@@ -611,6 +633,8 @@ export const publicar: MiniApp = {
       'cambiado.computadora': 'On Door43, {libros} has someone else’s changes that are not on this computer. So as not to erase them, it was not uploaded. Bring them and gather them here; then upload again.',
       losDemas: 'The rest was uploaded ({n}).',
       traerDoor43: 'Bring what is on Door43',
+      porJuntar: '{libros} has versions brought from Door43 waiting in «Bring together». So as not to replace the other one before choosing, it was not uploaded. Bring them together and upload again.',
+      irAJuntar: 'Bring them together',
       trayendo: 'Bringing…',
       versionLuego: 'Mark a version when there is internet',
       subido: 'Uploaded to Door43. Books with changes: {escritos} · unchanged: {iguales}.',
