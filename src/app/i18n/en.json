@@ -103,6 +103,7 @@
   "pasos.pendiente": "Later",
   "inicio.agregarProyecto": "Add a project",
   "inicio.tusProyectos": "Your projects",
+  "inicio.dentroAbriendo": "Getting ready the texts and helps that come with the app… {pct} %",
   "inicio.sinProyectos": "No projects yet. Add one to start.",
   "inicio.libros": "{n} books",
   "inicio.unLibro": "1 book",

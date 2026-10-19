@@ -8,6 +8,7 @@ import { followTheme, keepBackButton, receiveArrivingFiles } from './frame/phone
 import { applyTheme, themeOf } from './frame/theme'
 import { moveAlignmentsIn, moveBooksToProjects, openBooks } from './projects/bookText'
 import { openLibrary } from './projects/library'
+import { openPacksInside } from './projects/packsInside'
 import { loadProjects } from './projects/model'
 import { moveWorkToProjects } from './projects/scope'
 import { I18nProvider } from './i18n/i18n'
@@ -43,7 +44,8 @@ void openBooks()
     // Alignments kept verse by verse go into their book's alignment layer, once.
     moveAlignmentsIn()
     // What the language packs left on this device; the projects' books are then read from it in the background.
-    return openLibrary(projects)
+    // …and, in the apps for phones and computers, the texts and helps they bring are opened the first time.
+    return openLibrary(projects).then(() => void openPacksInside())
   })
   .finally(() =>
     createRoot(document.getElementById('root')!).render(

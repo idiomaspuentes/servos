@@ -25,6 +25,15 @@ Estado: en diseño. Ver [`docs/DISENO.md`](docs/DISENO.md).
 - `npm test` y `npm run typecheck`.
 - `npm run build`: la app web, con su *service worker*, en `dist/`.
 
+### Los paquetes dentro de las apps
+
+Las apps para Windows y para Android llevan dentro los paquetes de textos y ayudas que haya en `paquetes-dentro/`
+(o en la carpeta que diga `SERVOS_PAQUETES_DENTRO`), y los abren solas la primera vez que se usan: la persona elige
+su idioma, escribe su nombre y empieza un libro sin pasar ningún archivo. Esa carpeta no está en el repositorio; los
+paquetes se hacen con `bt-synergy/packages/resource-pipeline/cli/prepare-language.ts --lang es-419 --no-obs --macula
+<carpeta de Taller con trees/ y referents/>`. Sin paquetes, las apps se compilan igual y lo avisan. Un paquete se abre
+una sola vez (se reconoce por lo que contiene); el que trae una versión nueva de la app se abre si es más nuevo.
+
 ### La app para Windows (Tauri)
 
 Hace falta [Rust](https://rustup.rs) y, en Windows, las herramientas de compilación de C++ de Visual Studio.
