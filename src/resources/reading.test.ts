@@ -12,6 +12,7 @@ import {
   introsOf,
   notesOfVerse,
   readChapter,
+  readVerseHelps,
   referenceCovers,
   resourcesOnDevice,
   textQuoteOf,
@@ -19,6 +20,7 @@ import {
   wordsInLines,
 } from './reading'
 import { packAgainstDevice } from './freshness'
+import { compareHelps } from '../app/projects/helpsChanges'
 import { deviceIndex } from './sources'
 import { RESOURCE_VERSIONS, openResourceStores } from './store'
 
@@ -176,6 +178,28 @@ describe('recibir otra versión de los recursos', () => {
     const here = (await deviceIndex(stores)).resources
     expect(here.find((r) => r.key === TN)?.stamp).toBe('v67#2026-10-12T14_03_00Z')
     expect(here.find((r) => r.key === GLT)?.stamp).toBe(stamp(GLT))
+  })
+
+  it('lo que se lee de un versículo antes y después dice qué nota cambió y qué decía', async () => {
+    const { stores } = await deviceWithPack()
+    const places = [{ chapter: 1, verse: 1 }, { chapter: 1, verse: 2 }]
+    const before = await readVerseHelps(stores, { literal: GLT, notes: TN }, 'tit', places)
+    expect(before[0]).toEqual({
+      chapter: 1,
+      verse: 1,
+      notes: [
+        { id: 'abcd', quote: 'δοῦλος Θεοῦ', note: 'Pablo se llama **siervo**.' },
+        { id: 'efgh', quote: 'κατὰ πίστιν', note: 'Para la fe.' },
+      ],
+      literal: 'Pablo, siervo de Dios y apóstol,',
+      simple: '',
+    })
+    const { bytes } = await buildLanguagePack({ source: laterSource(), language: 'es-419', versions: RESOURCE_VERSIONS })
+    await openPack(stores, bytes, { replace: [TN] })
+    const after = await readVerseHelps(stores, { literal: GLT, notes: TN }, 'tit', places)
+    expect(compareHelps(before, after, 'T')).toEqual([
+      { chapter: 1, verse: 1, at: 'T', notes: [{ id: 'abcd', kind: 'cambiada', quote: 'δοῦλος Θεοῦ', before: 'Pablo se llama **siervo**.' }], texts: [] },
+    ])
   })
 
   it('sin pedir reemplazar, el aparato se queda con lo suyo, como antes', async () => {

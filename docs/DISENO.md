@@ -385,8 +385,22 @@ Hecho en el prototipo (`outbox.ts`, `WaitingSheet`), probado con un Door43 de me
   - **Con internet**, de vez en cuando y nunca mientras se escribe, se comparará con lo marcado `tc-ready` en Door43
     para el idioma de ayudas de cada proyecto, y una tarjeta en Inicio lo sugerirá una vez por versión, con «Bajar y
     preparar» y «Ahora no».
-  - Después de actualizar, la app dirá en qué versículos ya traducidos cambió una nota o el texto puente, los marcará
-    en el editor y dejará por hacer la revisión de una nota que cambió.
+  - **Qué cambió en lo ya traducido** (hecho): antes de abrir un paquete que reemplaza algo, para cada proyecto cuyo
+    idioma de ayudas es el del paquete y cada libro suyo que el paquete trae, se leen sus versículos ya escritos (los
+    de un tramo unido, cada uno): las notas de cada uno (id, texto y cita) y su TPL y TPS. Hay que leerlo antes,
+    porque al reemplazar se escriben encima. Después de abrir se vuelven a leer y se comparan
+    (`src/app/projects/helpsChanges.ts`): nota nueva, nota cambiada (con lo que decía), nota quitada (con lo que
+    decía), y si cambió el TPL o el TPS. Lo que cambió se guarda por proyecto y libro (`servos.recursos.cambios`);
+    si llega otro paquete antes de que se vea, se junta, y cada nota guarda lo que decía primero.
+    - El último paso de Recibir dice «Cambió algo en N versículos que ya tradujo», una fila con › por versículo
+      (hasta ocho; el resto se cuenta y queda marcado en el editor) con lo que cambió dicho corto («Nota cambiada ·
+      TPL»), y el botón lleno lleva al primero en el editor. Si no cambió nada en lo traducido, no se dice nada
+      (principio 6).
+    - En el editor, bajo la caja de ese versículo, la etiqueta teñida «Ayudas cambiadas» con lo mismo dicho corto; «Qué
+      cambió ▾» despliega lo que decía cada nota y cada texto, y el chip «✓ Ya lo vi» quita la etiqueta. En Ayudas,
+      la nota cambiada lleva «Nota cambiada» y «Lo que decía antes ▾»; la nueva, «Nota nueva».
+    - Una revisión con las notas hecha antes de que su nota cambiara vuelve a quedar por hacer (`cambio`), aunque ya
+      se haya visto el cambio; se abre desde leer la nota, con las palabras que se marcaron, y dice por qué.
 
 ## 8. Publicar
 

@@ -997,6 +997,23 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .observation p { margin: 0; }
 .observation-words { font-family: var(--project-font, var(--font)); }
 .verse-observations { display: flex; flex-direction: column; gap: 0.4rem; margin-block-start: 0.5rem; }
+/* A verse already translated whose helps a newer pack changed (editor, HelpsChanged): a tinted label, not a box */
+.badge-changed { background: var(--warn-bg); color: var(--warn-text); margin-inline-start: 0; }
+.helps-changed { display: flex; flex-direction: column; gap: 0.25rem; margin-block-start: 0.5rem; }
+.helps-changed-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.5rem; margin: 0; }
+.helps-changed-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+.helps-changed-list p { margin: 0; }
+.helps-changed-before { padding-inline-start: 0.75rem; border-inline-start: 2px solid var(--hair); color: var(--text-soft); }
+.helps-changed-before > :first-child { margin-block-start: 0; }
+.helps-changed-before > :last-child { margin-block-end: 0; }
+.helps-changed-text { font-family: var(--scripture-font, var(--font)); }
+.helps-changed .chip-row { margin-block-start: 0.25rem; }
+.help-changed { align-self: flex-start; }
+/* Receiving: the verses already translated whose helps changed, one row each */
+.pack-changes { display: flex; flex-direction: column; gap: 0.25rem; }
+.pack-changes h2 { margin: 0.5rem 0 0; font-size: 1.15rem; }
+.pack-changes p { margin: 0 0 0.25rem; }
+.pack-changes-project { margin: 0.5rem 0 0; font-size: 0.95rem; }
 
 .version-unit { display: flex; gap: 0.4rem; align-items: baseline; }
 .version-unit .verse-number { flex: none; font-size: 0.75rem; color: var(--text-soft); }

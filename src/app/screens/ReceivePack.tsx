@@ -3,13 +3,16 @@
  * projects' books are read from it again (projects/library.ts), and the screens show them.
  */
 
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { LEXICON_SUBJECTS } from '../../resources/companions'
 import { packAgainstDevice, type PackAgainstDevice, type PackResourceStanding } from '../../resources/freshness'
 import { describePack, openPack, openingLeft, type PackSummary } from '../../resources/packs'
 import { openResourceStores } from '../../resources/store'
-import { availabilityOf, copiesOnDevice, onDevice, refreshLibrary } from '../projects/library'
-import { bookName } from '../projects/model'
+import { RowButton } from '../frame/Actions'
+import { useChangeSummary } from '../miniapps/editor/HelpsChanged'
+import { keepHelpsChanges, watchHelps, type BookChanges } from '../projects/helpsWatch'
+import { availabilityOf, copiesOnDevice, loadBook, onDevice, refreshLibrary } from '../projects/library'
+import { bookName, loadProjects } from '../projects/model'
 import { useT } from '../i18n/i18n'
 
 type Step =
@@ -18,11 +21,26 @@ type Step =
   | { kind: 'summary'; bytes: Uint8Array; summary: PackSummary; file: string; against: PackAgainstDevice }
   /** Being opened: rows gone through of all, for a phone that takes a minute or two. */
   | { kind: 'opening'; summary: PackSummary; done: number; total: number }
-  /** Opened: the books it brought that can now be read, and those that wait for the originals. */
-  | { kind: 'done'; summary: PackSummary; readable: string[]; waiting: string[] }
+  /**
+   * Opened: the books it brought that can now be read, and those that wait for the originals; and the verses already
+   * translated whose helps it changed (helpsChanges.ts).
+   */
+  | { kind: 'done'; summary: PackSummary; readable: string[]; waiting: string[]; changed: BookChanges[] }
   | { kind: 'error'; message: string }
 
-export function ReceivePack({ onBack, onStudy }: { onBack(): void; onStudy(): void }) {
+/** How many changed verses the last step lists: the rest are marked in the editor all the same. */
+const LISTED = 8
+
+export function ReceivePack({
+  onBack,
+  onStudy,
+  onOpenVerse,
+}: {
+  onBack(): void
+  onStudy(): void
+  /** Opens a verse of a project's book in the editor. */
+  onOpenVerse(projectId: string, book: string, chapter: number, verse: number): void
+}) {
   const t = useT()
   const [step, setStep] = useState<Step>({ kind: 'choose' })
   // A pack whose opening did not end the last time (the app closed, the phone went off).
@@ -160,20 +178,28 @@ export function ReceivePack({ onBack, onStudy }: { onBack(): void; onStudy(): vo
                     ?.request('screen')
                     .catch(() => null)
                   try {
+                    const stores = openResourceStores()
+                    // What the verses already translated read in the resources it replaces, read before their rows
+                    // are written over, to say afterwards what changed in them.
+                    const watched = against.replace.length ? await watchHelps(stores, summary.language, booksOf(summary)).catch(() => []) : []
                     // Only what the pack has newer, or what is here and can no longer be read, takes the place of this
                     // device's copy; an older one leaves it as it is.
-                    await openPack(openResourceStores(), bytes, {
+                    await openPack(stores, bytes, {
                       replace: against.replace,
                       file,
                       onProgress: (done, total) => setStep({ kind: 'opening', summary, done, total }),
                     })
                     await refreshLibrary()
+                    const changed = watched.length ? await keepHelpsChanges(stores, summary.language, watched).catch(() => []) : []
+                    // The books with changed verses are read first, so the editor opens at once on one of them.
+                    for (const c of changed) await loadBook(c.book, summary.language)
                     const brought = booksOf(summary)
                     setStep({
                       kind: 'done',
                       summary,
                       readable: brought.filter((b) => availabilityOf(b, summary.language)?.here),
                       waiting: brought.filter((b) => availabilityOf(b, summary.language)?.needsOriginal),
+                      changed,
                     })
                   } catch (error) {
                     setStep({ kind: 'error', message: error instanceof Error ? error.message : String(error) })
@@ -200,14 +226,7 @@ export function ReceivePack({ onBack, onStudy }: { onBack(): void; onStudy(): vo
           </section>
         )}
 
-        {step.kind === 'done' && (
-          <>
-            <p role="status">{doneText(step)}</p>
-            <button type="button" className="button-primary" onClick={onStudy}>
-              {t('marco.volver')}
-            </button>
-          </>
-        )}
+        {step.kind === 'done' && <Done step={step} text={doneText(step)} onStudy={onStudy} onOpenVerse={onOpenVerse} />}
 
         {step.kind === 'error' && (
           <>
@@ -229,3 +248,61 @@ const replaced = (against: PackAgainstDevice, a: PackResourceStanding) => agains
 /** Whether opening the pack changes anything here: a resource or books this device does not have, or a newer copy. */
 const bringsAnything = (against: PackAgainstDevice) =>
   against.replace.length > 0 || against.resources.some((a) => a.standing === 'new' || (a.standing === 'same' && a.adds.length > 0))
+
+/**
+ * The last step: what is now on this device and, when the pack changed the helps of verses already translated, those
+ * verses, one row each; the filled button opens the first in the editor. Leaving is the header's «‹».
+ */
+function Done({
+  step,
+  text,
+  onStudy,
+  onOpenVerse,
+}: {
+  step: Extract<Step, { kind: 'done' }>
+  text: string
+  onStudy(): void
+  onOpenVerse(projectId: string, book: string, chapter: number, verse: number): void
+}) {
+  const t = useT()
+  const summaryOf = useChangeSummary()
+  const verses = step.changed.flatMap((b) => b.changes.map((c) => ({ ...b, change: c })))
+  const projects = loadProjects()
+  // Each project's name over its verses, when the pack changed verses of more than one.
+  const several = new Set(step.changed.map((b) => b.project)).size > 1
+  const listed = verses.slice(0, LISTED)
+  const first = verses[0]
+  return (
+    <>
+      <p role="status">{text}</p>
+      {first && (
+        <section className="pack-changes" aria-labelledby="pack-changes-title">
+          <h2 id="pack-changes-title">{t(verses.length === 1 ? 'paquete.cambioUno' : 'paquete.cambios', { n: verses.length })}</h2>
+          <p className="quiet">{t('paquete.cambiosAyuda')}</p>
+          <div className="row-list">
+            {listed.map((v, i) => (
+              <Fragment key={`${v.project}.${v.book}.${v.change.chapter}.${v.change.verse}`}>
+                {several && (i === 0 || listed[i - 1].project !== v.project) && (
+                  <h3 className="pack-changes-project">{projects.find((p) => p.id === v.project)?.name ?? v.project}</h3>
+                )}
+                <RowButton
+                  label={`${bookName(v.book)} ${v.change.chapter}:${v.change.verse}`}
+                  meta={summaryOf(v.change)}
+                  onClick={() => onOpenVerse(v.project, v.book, v.change.chapter, v.change.verse)}
+                />
+              </Fragment>
+            ))}
+          </div>
+          {verses.length > LISTED && <p className="quiet">{t('paquete.cambiosMas', { n: verses.length - LISTED })}</p>}
+        </section>
+      )}
+      <button
+        type="button"
+        className="button-primary"
+        onClick={() => (first ? onOpenVerse(first.project, first.book, first.change.chapter, first.change.verse) : onStudy())}
+      >
+        {first ? t('paquete.verPrimero', { lugar: `${bookName(first.book)} ${first.change.chapter}:${first.change.verse}` }) : t('marco.volver')}
+      </button>
+    </>
+  )
+}

@@ -516,3 +516,40 @@ export async function notesOfVerse(
       }
     })
 }
+
+/** A verse's helps as they stand: its notes and its literal and simple bridge texts (to compare, helpsChanges.ts). */
+export interface VerseHelps {
+  chapter: number
+  verse: number
+  notes: Array<{ id: string; quote: string; note: string }>
+  literal: string
+  simple: string
+}
+
+/** The helps of these verses of a book, as this device has them now: what a newer pack may change. */
+export async function readVerseHelps(
+  stores: ResourceStores,
+  sources: { literal: string; simple?: string; notes?: string },
+  book: string,
+  places: ReadonlyArray<{ chapter: number; verse: number }>
+): Promise<VerseHelps[]> {
+  const out: VerseHelps[] = []
+  const chapters = new Map<string, Record<number, VerseLine[]> | null>()
+  const textOf = async (key: string | undefined, chapter: number, verse: number) => {
+    if (!key) return ''
+    const at = `${key}:${chapter}`
+    if (!chapters.has(at)) chapters.set(at, await readChapterLines(stores, key, book, chapter))
+    return (chapters.get(at)?.[verse] ?? []).map((l) => l.text).join(' ')
+  }
+  for (const { chapter, verse } of places) {
+    const notes = sources.notes ? await notesOfVerse(stores, { notesKey: sources.notes, textKey: sources.literal, book, chapter, verse }) : []
+    out.push({
+      chapter,
+      verse,
+      notes: notes.map((n) => ({ id: n.id, quote: n.quote, note: n.note })),
+      literal: await textOf(sources.literal, chapter, verse),
+      simple: await textOf(sources.simple, chapter, verse),
+    })
+  }
+  return out
+}

@@ -11,6 +11,7 @@
  */
 
 import type { PrototypeData, PrototypeNote } from '../../prototype/data'
+import { noteChangedAt } from './helpsChanges'
 import { scoped } from './scope'
 
 /**
@@ -95,6 +96,8 @@ export interface NoteCheck {
   verseText: string
   by: string
   at: string
+  /** Read back only: its note changed after it was answered (a newer pack), so it is to be checked again. */
+  noteChanged?: boolean
 }
 
 /** The words of a verse as the translator touches them: what spaces part. */
@@ -105,16 +108,21 @@ export const wordsOfVerse = (text: string) => text.split(/\s+/).filter(Boolean)
 const key = (book: string, id: string, store: string) => `servos.prototipo.${store}.${scoped(book)}.${id}`
 
 export function readCheck(book: string, id: string, store = 'revisionNota'): NoteCheck | null {
+  let check: NoteCheck | null
   try {
-    return JSON.parse(localStorage.getItem(key(book, id, store)) ?? 'null') as NoteCheck | null
+    check = JSON.parse(localStorage.getItem(key(book, id, store)) ?? 'null') as NoteCheck | null
   } catch {
     return null
   }
+  // An answer to a note that said something else then is not an answer to it now (helpsChanges.ts).
+  const changed = check && store === 'revisionNota' ? noteChangedAt(book, id) : null
+  return check && changed && check.at < changed ? { ...check, noteChanged: true } : check
 }
 
 export function writeCheck(book: string, id: string, check: NoteCheck, store = 'revisionNota') {
+  const { noteChanged: _, ...kept } = check
   try {
-    localStorage.setItem(key(book, id, store), JSON.stringify(check))
+    localStorage.setItem(key(book, id, store), JSON.stringify(kept))
   } catch {
     /* kept on screen for this visit */
   }
@@ -126,6 +134,6 @@ export type CheckState = 'pendiente' | 'bien' | 'despues' | 'cambio'
 export function stateOf(check: NoteCheck | null, verseText: string): CheckState {
   if (!check) return 'pendiente'
   // Answered for another text: whatever the answer, it is to be checked again.
-  if (check.verseText.trim() !== verseText.trim()) return 'cambio'
+  if (check.verseText.trim() !== verseText.trim() || check.noteChanged) return 'cambio'
   return check.status
 }

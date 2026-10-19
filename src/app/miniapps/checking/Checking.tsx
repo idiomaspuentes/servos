@@ -422,8 +422,11 @@ function CheckSteps<I extends Checkable>({
   const words = wordsOfVerse(verseText)
   const before = readCheck(book, item.id, kind.store)
   const state = stateOf(before, verseText)
+  // Its note changed since it was answered (a newer pack), the verse being the same: the words marked still stand,
+  // and the note is read again from the start.
+  const noteChanged = Boolean(before?.noteChanged) && before!.verseText.trim() === verseText.trim()
   // The words chosen before still point at the same words only while the verse is the same.
-  const kept = before && state !== 'cambio' ? before : null
+  const kept = before && (state !== 'cambio' || noteChanged) ? before : null
   // Back from the editor: at the step it was opened from, with the words marked, if the verse is the same; at marking
   // the words again if it was changed. Then it is as any other.
   const [back] = useState(() => {
@@ -437,7 +440,7 @@ function CheckSteps<I extends Checkable>({
   const [picked, setPicked] = useState<number[]>(back ? (back.same ? back.picked : []) : (kept?.words ?? []))
   const [notThere, setNotThere] = useState(back ? back.same && back.notThere : Boolean(kept?.notThere))
   // Answered, it opens at its answer; its verse changed, at marking the words again; else at reading the source.
-  const [step, setStep] = useState<Step>(back ? (back.same ? back.step : 3) : kept ? 4 : state === 'cambio' ? 3 : 1)
+  const [step, setStep] = useState<Step>(back ? (back.same ? back.step : 3) : noteChanged ? 1 : kept ? 4 : state === 'cambio' ? 3 : 1)
   const [reached, setReached] = useState<Step>(step)
   // The second step of a kind that asks it read through is not done until it says so.
   const [ready, setReady] = useState(!kind.gated)
@@ -534,6 +537,7 @@ function CheckSteps<I extends Checkable>({
 
   const read = (
     <>
+      {noteChanged && <p className="notice">{t('cambios.revisionNota')}</p>}
       <p className="review-instruction">{t(k('leaTexto'))}</p>
       {source}
     </>
@@ -548,7 +552,7 @@ function CheckSteps<I extends Checkable>({
           {lit(kind.around ?? 0)}
         </p>
       )}
-      {state === 'cambio' && <p className="notice">{t(k('cambio'))}</p>}
+      {state === 'cambio' && !noteChanged && <p className="notice">{t(k('cambio'))}</p>}
       {words.length === 0 ? (
         <p className="notice">{t(k('sinTraducir'))}</p>
       ) : (
