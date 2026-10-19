@@ -521,18 +521,17 @@ grabó el teléfono.
     de la persona. La persona elige una carpeta una sola vez, y Android le recuerda el permiso: las copias quedan
     aunque se desinstale la app. De cada proyecto se guarda unos minutos después de un cambio, nunca mientras se
     escribe, y al dejar la app; quedan las tres últimas, y cada una se escribe entera antes de borrar la más vieja.
-    - **Antes se pregunta cómo**, diciendo qué implica: hay equipos que traducen donde la Biblia está prohibida.
-      **Con contraseña** (recomendado), la copia va comprimida y cifrada (AES-256-GCM, clave sacada de la contraseña
-      con PBKDF2, 600 000 rondas, `projects/lockedCopy.ts`) y se llama `copia-3fa9c1-20261018-2304.dat`: no dice
-      Servos, ni el proyecto, ni que es una Biblia. La clave queda en el teléfono sin poder salir de él; la
-      contraseña no se guarda en ninguna parte, y olvidada, la copia no sirve. **Sin contraseña**, la copia es el
-      `.servos` de Compartir, y la app avisa que cualquiera con la tarjeta puede leerla.
-    - **Recuperar** es «Recibir» con el archivo de la copia: pide la contraseña y se junta como cualquier trabajo
-      compartido. Probado en el emulador: una copia hecha, la app desinstalada, y todo de vuelta en otra persona.
+    - **Cada proyecto se copia como eligió quién puede ver su trabajo** (filosofía, principio 9): uno de «Solo el
+      equipo» va cerrado con la contraseña del equipo, la misma de Compartir y Recibir (`projects/teamKeys.ts`), y
+      se llama `copia-3fa9c1-20261018-2304.dat`: no dice Servos, ni el proyecto, ni que es una Biblia; uno de
+      «Cualquiera que tenga el archivo», abierto, como el `.servos` de Compartir. La hoja de la copia no pide una
+      contraseña propia: si este teléfono todavía no sabe la del equipo de un proyecto, la pide ahí, y hasta
+      entonces ese proyecto no se copia (nunca se copia abierto).
+    - **Recuperar** es «Recibir» con el archivo de la copia: pide la contraseña del equipo (o la abre sola donde el
+      teléfono ya la sabe), y la recuerda para ese proyecto. Probado en el emulador: la clave olvidada, una
+      contraseña equivocada rechazada, la correcta que abre y se recuerda, y la misma copia abierta después sin
+      preguntar.
     - **Borrar las copias** borra solo los archivos con el nombre de las copias de Servos, nada más de la carpeta.
-    - **Sigue lo que eligió cada proyecto** («¿Quién puede ver el trabajo de este equipo?», al crearlo y en sus
-      ajustes; filosofía, principio 9): con un proyecto de «Solo el equipo» en el teléfono, la copia solo se
-      ofrece con contraseña, y unas copias ya hechas sin ella dejan fuera ese proyecto y lo dicen.
     - En la computadora, y una memoria USB en el teléfono, quedan para después.
   - **Sin internet** la app lo sabe: la WebView no sigue la red sola, y la app le dice cuándo hay y cuándo no, para
     que lo que espera internet (6.11) espere en modo avión en vez de intentar. Cuentan el Wi-Fi y los datos, no una

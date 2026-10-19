@@ -1,16 +1,19 @@
 /**
  * «Copia en la tarjeta» (`frame/copies.ts`; philosophy, principle 9): setting up a copy of the work on a memory card,
- * and what can be done with it after. Before anything is written, how it is kept is chosen, each choice saying in
- * plain words what it means: some teams translate where the Bible is banned, and a card anyone can read could cost
- * them their freedom or their life. With a password is the one recommended; what it does not protect is said too.
+ * and what can be done with it after. How each project is kept follows who can see its work (`Privacy`): a project
+ * kept to its team goes sealed with the team's password, the same as for «Share» and «Receive»; the rest, open. So
+ * nothing is chosen here but the folder; a project kept to its team whose password this phone does not know yet asks
+ * for it here, and is not copied until it is given.
  */
 
 import { useEffect, useState } from 'react'
 import { MenuRow, Sheet } from '../frame/Sheet'
-import { copiesState, copyNow, eraseCopies, onCopies, onlyLocked, setUpCopies, stopCopies, type CopiesState } from '../frame/copies'
+import { copiesState, copyNow, eraseCopies, onCopies, setUpCopies, stopCopies, type CopiesState } from '../frame/copies'
 import { useT } from '../i18n/i18n'
+import { loadProjects, privacyOf } from '../projects/model'
+import { chooseTeamPassword } from '../projects/teamKeys'
 
-/** The shortest password taken: long enough that guessing it takes years, short enough to remember. */
+/** The shortest team password, as when it is chosen to share. */
 const SHORTEST = 8
 
 export function useCopies(): CopiesState {
@@ -27,25 +30,66 @@ export function whenCopied(at: string, lang: string): string {
   return today ? hour : `${d.toLocaleDateString(lang, { day: 'numeric', month: 'short' })} ${hour}`
 }
 
+/** The team's password of a project kept to its team, chosen or typed here once, so its copies can be sealed. */
+function TeamPassword({ id, name, person }: { id: string; name: string; person: string }) {
+  const t = useT()
+  const [password, setPassword] = useState('')
+  const [again, setAgain] = useState('')
+  const [working, setWorking] = useState(false)
+  const short = password.length > 0 && password.length < SHORTEST
+  const differ = again.length > 0 && again !== password
+  return (
+    <form
+      className="copies-confirm"
+      onSubmit={async (e) => {
+        e.preventDefault()
+        if (password.length < SHORTEST || again !== password) return
+        setWorking(true)
+        await chooseTeamPassword(id, password)
+        setPassword('')
+        setAgain('')
+        await copyNow(person)
+        setWorking(false)
+      }}
+    >
+      <p>{t('copias.faltaContrasena', { proyecto: name })}</p>
+      <label className="field">
+        <span className="field-label">{t('compartir.contrasenaEquipo')}</span>
+        <input type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        {short && <span className="field-problem">{t('copias.corta', { n: SHORTEST })}</span>}
+      </label>
+      <label className="field">
+        <span className="field-label">{t('copias.otraVez')}</span>
+        <input type="password" autoComplete="new-password" value={again} onChange={(e) => setAgain(e.target.value)} />
+        {differ && <span className="field-problem">{t('copias.noIguales')}</span>}
+      </label>
+      <p className="quiet">{t('compartir.contrasenaAyuda')}</p>
+      <button type="submit" className="button-secondary" disabled={password.length < SHORTEST || again !== password || working}>
+        {working ? t('copias.copiando') : t('copias.guardarContrasena')}
+      </button>
+    </form>
+  )
+}
+
 export function CopiesSheet({ person, onClose }: { person: string; onClose(): void }) {
   const t = useT()
   const state = useCopies()
-  const [locked, setLocked] = useState(true)
-  const [password, setPassword] = useState('')
-  const [again, setAgain] = useState('')
   const [working, setWorking] = useState(false)
   const [said, setSaid] = useState<string | null>(null)
   const [erasing, setErasing] = useState(false)
   const lang = document.documentElement.lang || 'es'
+  // How the projects of this phone will be kept: said once, plainly, by who can see each.
+  const projects = loadProjects()
+  const team = projects.some((p) => privacyOf(p) === 'equipo')
+  const open = projects.some((p) => privacyOf(p) !== 'equipo')
+  const how = team && open ? t('copias.comoAmbos') : team ? t('copias.comoEquipo') : t('copias.comoAbierto')
 
   if (state.place) {
     const { place } = state
     return (
       <Sheet title={t('copias.titulo')} onClose={onClose}>
         <div className="copies">
-          <p>
-            {t('copias.donde', { lugar: place.label })} · {t(place.locked ? 'copias.conContrasena' : 'copias.sinContrasena')}
-          </p>
+          <p>{t('copias.donde', { lugar: place.label })}</p>
           <p className="quiet">
             {state.failed === 'missing'
               ? t('copias.faltaTarjeta')
@@ -68,15 +112,11 @@ export function CopiesSheet({ person, onClose }: { person: string; onClose(): vo
           >
             {working ? t('copias.copiando') : t('copias.ahora')}
           </button>
-          {!place.locked && <p className="notice">{t('copias.sinContrasenaAviso')}</p>}
-          {!place.locked && (state.leftOut?.length ?? 0) > 0 && (
-            <p className="notice">{t('copias.quedaFuera', { proyectos: state.leftOut!.join(', ') })}</p>
-          )}
-          <MenuRow
-            label={t('copias.borrar')}
-            description={t('copias.borrarAyuda')}
-            onClick={() => setErasing(true)}
-          />
+          <p className="quiet">{how}</p>
+          {(state.waiting ?? []).map((w) => (
+            <TeamPassword key={w.id} id={w.id} name={w.name} person={person} />
+          ))}
+          <MenuRow label={t('copias.borrar')} description={t('copias.borrarAyuda')} onClick={() => setErasing(true)} />
           {erasing && (
             <div className="copies-confirm" role="alertdialog" aria-label={t('copias.borrarPregunta')}>
               <p>{t('copias.borrarPregunta')}</p>
@@ -104,79 +144,38 @@ export function CopiesSheet({ person, onClose }: { person: string; onClose(): vo
               {said}
             </p>
           )}
-          {place.locked && <p className="quiet">{t('copias.noProtegeTelefono')}</p>}
+          {team && <p className="quiet">{t('copias.noProtegeTelefono')}</p>}
         </div>
       </Sheet>
     )
   }
 
-  // With a project kept to its team, a copy is only made with a password: the other way is not offered.
-  const mustLock = onlyLocked()
-  const short = locked && password.length > 0 && password.length < SHORTEST
-  const differ = locked && again.length > 0 && again !== password
-  const ready = !locked || (password.length >= SHORTEST && again === password)
   return (
-    <Sheet title={t('copias.titulo')} onClose={onClose} dirty={password !== ''}>
+    <Sheet title={t('copias.titulo')} onClose={onClose}>
       <div className="copies">
         <p>{t('copias.para')}</p>
-        <fieldset className="option-cards">
-          <legend className="field-label">{t('copias.como')}</legend>
-          <label className={`option-card${locked ? ' is-chosen' : ''}`}>
-            <input type="radio" name="copia-como" checked={locked} onChange={() => setLocked(true)} />
-            <span>
-              <strong>{t('copias.conContrasenaRecomendada')}</strong>
-              <span className="quiet">{t('copias.conContrasenaQue')}</span>
-            </span>
-          </label>
-          {!mustLock && (
-            <label className={`option-card${!locked ? ' is-chosen' : ''}`}>
-              <input type="radio" name="copia-como" checked={!locked} onChange={() => setLocked(false)} />
-              <span>
-                <strong>{t('copias.sinContrasena')}</strong>
-                <span className="quiet">{t('copias.sinContrasenaQue')}</span>
-              </span>
-            </label>
-          )}
-        </fieldset>
-        {mustLock && <p className="quiet">{t('copias.soloConContrasena')}</p>}
-        {locked && (
-          <>
-            <label className="field">
-              <span className="field-label">{t('copias.contrasena')}</span>
-              <input type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
-              {short && <span className="field-problem">{t('copias.corta', { n: SHORTEST })}</span>}
-            </label>
-            <label className="field">
-              <span className="field-label">{t('copias.otraVez')}</span>
-              <input type="password" autoComplete="new-password" value={again} onChange={(e) => setAgain(e.target.value)} />
-              {differ && <span className="field-problem">{t('copias.noIguales')}</span>}
-            </label>
-            <p className="notice">{t('copias.anotela')}</p>
-          </>
-        )}
+        <p className="quiet">{how}</p>
         <button
           type="button"
           className="button-primary"
-          disabled={!ready || working}
+          disabled={working}
           onClick={async () => {
             setWorking(true)
             setSaid(null)
-            const done = await setUpCopies(locked ? password : null, person)
+            const done = await setUpCopies(person)
             setWorking(false)
-            if (done === 'done') {
-              setPassword('')
-              setAgain('')
-            } else if (done === 'failed') setSaid(t('copias.noSePudo'))
+            if (done === 'failed') setSaid(t('copias.noSePudo'))
           }}
         >
           {working ? t('copias.copiando') : t('copias.elegirCarpeta')}
         </button>
+        <p className="quiet">{t('copias.carpetaAyuda')}</p>
         {said && (
           <p className="notice" role="alert">
             {said}
           </p>
         )}
-        {locked && <p className="quiet">{t('copias.noProtegeTelefono')}</p>}
+        {team && <p className="quiet">{t('copias.noProtegeTelefono')}</p>}
       </div>
     </Sheet>
   )
