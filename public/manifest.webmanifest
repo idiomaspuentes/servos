@@ -1,7 +1,7 @@
 {
   "name": "Servos",
   "short_name": "Servos",
-  "description": "Para traducir la Biblia en su idioma, en equipo, con o sin internet.",
+  "description": "Para traducir en su idioma, en equipo, con o sin internet.",
   "lang": "es",
   "start_url": "./",
   "scope": "./",

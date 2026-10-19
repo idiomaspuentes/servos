@@ -2,17 +2,21 @@
  * A project's settings, on its card as in translationCore 4 (`ProjectSettings.jsx`): its name, its language (searched in
  * Door43's list, as when it was created) and the direction it is written in, and — Servos's own — which mini apps each
  * step uses. Whoever coordinates chooses; every phone in the project then sees the same, so the person translating
- * never has to choose.
+ * never has to choose. So is who can see the team's work outside the app (`PrivacyChoice`); and, for a project kept to
+ * its team, this device can forget the team's password (`projects/teamKeys.ts`), to be asked for it again.
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { MenuRow } from '../frame/Sheet'
 import { LanguageSearch } from '../frame/LanguageSearch'
 import { useT } from '../i18n/i18n'
 import { miniAppsFor } from '../miniapps/registry'
 import { writtenRightToLeft } from '../projects/languages'
-import { PHASES, type Phase, type Project } from '../projects/model'
+import { PHASES, privacyOf, type Phase, type Privacy, type Project } from '../projects/model'
+import { PrivacyChoice } from './PrivacyChoice'
 import { FONTS, HelpsChoice, VERSIFICATIONS } from './NewProject'
 import { ShareSheet } from './ShareSheet'
+import { forgetTeamKeys, teamKey } from '../projects/teamKeys'
 
 export function ProjectSettings({ project, person, onBack, onSave }: { project: Project; person: string; onBack(): void; onSave(p: Project): void }) {
   const t = useT()
@@ -24,7 +28,14 @@ export function ProjectSettings({ project, person, onBack, onSave }: { project: 
   const [helps, setHelps] = useState(project.helpsLanguage)
   const [chosen, setChosen] = useState<Record<Phase, string[]>>(project.miniApps)
   const [missing, setMissing] = useState(false)
+  const [privacy, setPrivacy] = useState<Privacy>(privacyOf(project))
   const [sharing, setSharing] = useState(false)
+  // Whether this device keeps the team's password of the project, and whether it was just forgotten.
+  const [keyHere, setKeyHere] = useState(false)
+  const [forgotten, setForgotten] = useState(false)
+  useEffect(() => {
+    void teamKey(project.id).then((k) => setKeyHere(k !== null))
+  }, [project.id, sharing])
   const toggle = (phase: Phase, id: string) =>
     setChosen((c) => ({ ...c, [phase]: c[phase].includes(id) ? c[phase].filter((x) => x !== id) : [...c[phase], id] }))
   const save = () => {
@@ -32,7 +43,7 @@ export function ProjectSettings({ project, person, onBack, onSave }: { project: 
       setMissing(true)
       return
     }
-    onSave({ ...project, name: name.trim(), languageName: language.name.trim(), languageCode: language.code.trim().toLowerCase(), direction, font, versification, helpsLanguage: helps, miniApps: chosen })
+    onSave({ ...project, name: name.trim(), languageName: language.name.trim(), languageCode: language.code.trim().toLowerCase(), direction, font, versification, helpsLanguage: helps, miniApps: chosen, privacy })
   }
 
   return (
@@ -97,6 +108,24 @@ export function ProjectSettings({ project, person, onBack, onSave }: { project: 
             </select>
           </label>
         </details>
+
+        <PrivacyChoice value={privacy} onChange={setPrivacy} ask />
+        {keyHere && (
+          <MenuRow
+            label={t('ajustes.olvidarContrasena')}
+            description={t('ajustes.olvidarContrasenaAyuda')}
+            onClick={async () => {
+              await forgetTeamKeys(project.id)
+              setKeyHere(false)
+              setForgotten(true)
+            }}
+          />
+        )}
+        {forgotten && (
+          <p className="status" role="status">
+            {t('ajustes.contrasenaOlvidada')}
+          </p>
+        )}
 
         {project.books.length > 0 && (
           <section className="settings-share">

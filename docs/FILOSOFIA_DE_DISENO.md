@@ -66,11 +66,26 @@ Lo normal no se anuncia. Un aviso aparece cuando hay algo que hacer o algo sali�
 - **Quién hizo cada cambio.** En un aparato compartido, siempre se ve quién está trabajando, y cada cambio lleva su nombre (diseño, sección 5).
 - **Un número que baja dice por qué.**
 
-### 9. El trabajo no se pierde
+### 9. El trabajo no se pierde ni se expone
 
 - Cada cambio queda en el diario; mezclar nunca borra trabajo en silencio (diseño, sección 2).
 - Nada reescribe en silencio el texto de una persona.
 - La app propone y la persona confirma: una sugerencia (de alineación, de mezcla) no se guarda sin que alguien la acepte.
+- **Una copia fuera del aparato** (una tarjeta, una memoria USB) protege el trabajo de un teléfono roto o perdido.
+  La app la ofrece; no la hace sin que la persona elija dónde.
+- **Hay equipos que traducen donde la Biblia está prohibida**, y que alguien encuentre su trabajo puede costarles la
+  cárcel o la vida. Por eso nada que la app deja fuera de sí misma (una copia, un archivo compartido) dice qué es
+  sin que la persona lo haya decidido sabiendo lo que implica:
+  - La app lo explica antes, en palabras simples y en el momento de elegir, no en una ayuda aparte: qué puede ver
+    quien encuentre el archivo y qué se pierde si se olvida la contraseña.
+  - Lo más seguro es lo recomendado: una copia con contraseña, con un nombre que no dice nada.
+  - Lo que la app deja fuera se puede borrar desde la app.
+  - La app no promete lo que no hace: una contraseña protege la copia, no el teléfono desbloqueado en otras manos.
+- **Cada proyecto elige quién puede ver su trabajo**, al crearlo: «Solo el equipo» (elegido de entrada) o «Cualquiera
+  que tenga el archivo». La mayoría de los equipos no necesita lo primero, y no se le impone. La elección viaja con
+  el proyecto y, al juntar, queda la más reservada; cerrarlo es un toque, abrirlo pide confirmar.
+- **Se habla solo de quién puede ver el trabajo.** Nunca «riesgo», «peligro» ni «prohibido»: asustaría a quienes no
+  están en esa situación, y diría en la pantalla de los demás lo que conviene no decir (una prueba lo vigila).
 
 ### 10. Un marco para todas las mini apps
 
@@ -238,6 +253,7 @@ ventana de computadora a 1280 × 800, 1440 × 900 y 1920 × 1080, y angosta, de 
 - [ ] ¿Las ayudas que se ven son las del versículo en que se trabaja?
 - [ ] ¿Se ve quién está trabajando, y si lo hecho está solo en el aparato o también en Door43?
 - [ ] ¿Funciona igual con el modo avión puesto?
+- [ ] ¿Deja algo fuera de la app (un archivo, una copia)? ¿Dice antes, con palabras simples, quién podría leerlo?
 - [ ] Al terminar, ¿a dónde lleva la app?
 - [ ] ¿Se ve bien en los tres idiomas?
 - [ ] En la ventana ancha, ¿hay algo estirado de borde a borde (un botón, una caja, un renglón de más de 70 caracteres)?

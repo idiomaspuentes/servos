@@ -4,6 +4,11 @@
  * is on this phone; if not, as a new project or into one of this phone's in the same language, two projects that
  * began apart, design 6.5); and which books, each saying what it would change here. Then it is gathered, nothing
  * written here overwritten without a choice (`projects/share.ts`), and it says what was done.
+ *
+ * A copy sealed with a password (kept on a memory card, `frame/copies.ts`) asks for it first; opened, it is received
+ * like any other file. Work shared sealed from a project kept to its team asks for the team's password, unless a key
+ * kept on this device opens it (`projects/teamKeys.ts`); the key drawn from a password typed here is kept for the
+ * project it is received into, so the next file from the team opens without asking.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -12,6 +17,8 @@ import { useT } from '../i18n/i18n'
 import { bookName, type Project } from '../projects/model'
 import { previewBook, readShared, receiveShared, versesIn, type BookReceived, type Destination, type SharedFile } from '../projects/share'
 import { inProject } from '../projects/scope'
+import { isLocked, lockedKind, unlockKeeping, type CopyKey } from '../projects/lockedCopy'
+import { keepTeamKey, openWithTeamKeys } from '../projects/teamKeys'
 
 export function ReceiveScreen({
   projects,
@@ -50,8 +57,32 @@ export function ReceiveScreen({
   const [chosen, setChosen] = useState<string[]>([])
   const [done, setDone] = useState<{ projectId: string; books: BookReceived[]; glossary: { added: number } } | null>(null)
   const picker = useRef<HTMLInputElement>(null)
+  // A sealed copy waiting for its password, what is typed, and whether the last one tried was not it.
+  const [sealed, setSealed] = useState<string | null>(null)
+  const [password, setPassword] = useState('')
+  const [notIt, setNotIt] = useState(false)
+  const [opening, setOpening] = useState(false)
+  // The key a password typed here drew, to keep for the project the work goes to.
+  const [typedKey, setTypedKey] = useState<CopyKey | null>(null)
 
   const open = (text: string) => {
+    if (isLocked(text)) {
+      setWrong(false)
+      setNotIt(false)
+      setPassword('')
+      setTypedKey(null)
+      setSealed(text)
+      // A file from the team opens by itself with a key kept here; the password is asked only if none opens it.
+      if (lockedKind(text) === 'compartido') {
+        setOpening(true)
+        void openWithTeamKeys(text).then((plain) => {
+          setOpening(false)
+          if (plain !== null) open(plain)
+        })
+      }
+      return
+    }
+    setSealed(null)
     const shared = readShared(text)
     if (!shared) return setWrong(true)
     setWrong(false)
@@ -133,6 +164,52 @@ export function ReceiveScreen({
     )
   }
 
+  if (!file && sealed !== null) {
+    // A file shared within a team asks for the team's password; a copy, for the one chosen for the copies.
+    const shared = lockedKind(sealed) === 'compartido'
+    const tryIt = async () => {
+      setOpening(true)
+      const opened = await unlockKeeping(sealed, password)
+      setOpening(false)
+      if (opened === null) return setNotIt(true)
+      setPassword('')
+      open(opened.text)
+      if (shared) setTypedKey(opened.key)
+    }
+    return (
+      <div className="screen">
+        {header}
+        <main className="main">
+          <h1>{t(shared ? 'recibir.cerradoTitulo' : 'copias.cerradaTitulo')}</h1>
+          <p className="quiet">{t(shared ? 'recibir.cerradoAyuda' : 'copias.cerradaAyuda')}</p>
+          <form
+            className="copy-password"
+            onSubmit={(e) => {
+              e.preventDefault()
+              if (password && !opening) void tryIt()
+            }}
+          >
+            <label className="field">
+              <span className="field-label">{t('copias.contrasena')}</span>
+              <input type="password" autoComplete="off" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus />
+            </label>
+            {notIt && (
+              <p className="notice" role="alert">
+                {t(shared ? 'recibir.noEsLaContrasena' : 'copias.noEsLaContrasena')}
+              </p>
+            )}
+            <button type="submit" className="button-primary" disabled={!password || opening}>
+              {opening ? t('copias.abriendo') : t(shared ? 'recibir.abrirArchivo' : 'copias.abrir')}
+            </button>
+          </form>
+          <button type="button" className="button-secondary" onClick={() => setSealed(null)}>
+            {t('recibir.otroArchivo')}
+          </button>
+        </main>
+      </div>
+    )
+  }
+
   if (!file) {
     return (
       <div className="screen">
@@ -145,7 +222,7 @@ export function ReceiveScreen({
           <input
             ref={picker}
             type="file"
-            accept=".servos,application/json,text/plain"
+            accept=".servos,.dat,application/json,application/octet-stream,text/plain"
             hidden
             onChange={async (e) => {
               const chosenFile = e.target.files?.[0]
@@ -254,6 +331,7 @@ export function ReceiveScreen({
           disabled={!chosen.length || !destination}
           onClick={() => {
             const result = receiveShared(file, chosen, destination!, projects, person)
+            if (typedKey) void keepTeamKey(result.projectId, typedKey)
             onReceived(result.projects)
             setDone({ projectId: result.projectId, books: result.books, glossary: result.glossary })
           }}

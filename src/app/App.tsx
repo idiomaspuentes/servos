@@ -19,6 +19,8 @@ import { AddBookSheet } from './screens/AddBook'
 import { BookScreen } from './screens/BookScreen'
 import { GatherScreen } from './screens/GatherScreen'
 import { TeamWorkScreen } from './screens/TeamWorkScreen'
+import { keepCopying } from './frame/copies'
+import { CopiesSheet } from './screens/CopiesSheet'
 import { closeTopSheet, onSheets } from './frame/Sheet'
 import { GlossaryScreen } from './screens/GlossaryScreen'
 import { Home, type Resume } from './screens/Home'
@@ -86,6 +88,11 @@ export function App() {
   const person = people?.current ?? EXAMPLE_PEOPLE[0]
   const setPerson = (name: string) => people && setPeople({ ...people, current: name })
   const [personMenu, setPersonMenu] = useState(false)
+  const [copiesSheet, setCopiesSheet] = useState(false)
+  // A copy on the memory card, while someone works (frame/copies.ts): who is working is read when it is made.
+  const working = useRef<string | null>(null)
+  working.current = people ? person : null
+  useEffect(() => keepCopying(() => working.current), [])
   // What waited for internet (design 6.11): shown when internet comes, or when the app opens with it, before anything
   // goes; not while something is being typed. «Not now» holds until internet comes again.
   const waits = useWaiting(person)
@@ -344,6 +351,7 @@ export function App() {
           onAddBook={setAddBookFor}
           onSettings={(projectId) => setScreen({ kind: 'settings', projectId })}
           onPersonMenu={() => setPersonMenu(true)}
+          onCopies={() => setCopiesSheet(true)}
         />
       )}
 
@@ -586,8 +594,13 @@ export function App() {
             setPersonMenu(false)
             setDoor43(true)
           }}
+          onCopies={() => {
+            setPersonMenu(false)
+            setCopiesSheet(true)
+          }}
         />
       )}
+      {copiesSheet && <CopiesSheet person={person} onClose={() => setCopiesSheet(false)} />}
       {door43 && <Door43AccountSheet person={person} onClose={() => setDoor43(false)} />}
       {asking && (
         <WaitingSheet

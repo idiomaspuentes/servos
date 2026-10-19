@@ -5,9 +5,16 @@
  * changes: adding a book is one more tile among the books, dashed; the project's settings, a small bordered button
  * by its name, as on tC4's project cards; adding a project, one more card after them all, dashed, saying what it
  * can be. Dashed is kept for adding, so two things that mean something different do not look alike.
+ *
+ * On a phone with a memory card and no copy of the work on it yet, the copy is offered once (`frame/copies.ts`); and
+ * when a copy could not be made, it is said there.
  */
 
+import { useEffect, useState } from 'react'
+import { Suggestion } from '../frame/Actions'
 import { BrandMark } from '../frame/BrandMark'
+import { answerSuggestion, cardInPhone, copiesHere, suggestionAnswered } from '../frame/copies'
+import { useCopies } from './CopiesSheet'
 import { useT } from '../i18n/i18n'
 import { titleOf, type Project } from '../projects/model'
 
@@ -28,6 +35,7 @@ export function Home({
   onAddBook,
   onSettings,
   onPersonMenu,
+  onCopies,
 }: {
   projects: Project[]
   person: string
@@ -42,8 +50,22 @@ export function Home({
   onAddBook(projectId: string): void
   onSettings(projectId: string): void
   onPersonMenu(): void
+  /** Opens the copy on a memory card. */
+  onCopies(): void
 }) {
   const t = useT()
+  const copies = useCopies()
+  // A card in the phone and no copy yet: offered once, on home (philosophy, principles 9 and 12).
+  const [card, setCard] = useState(false)
+  const [answered, setAnswered] = useState(suggestionAnswered)
+  useEffect(() => {
+    if (!copiesHere() || copies.place || answered) return
+    let on = true
+    void cardInPhone().then((present) => on && setCard(present))
+    return () => {
+      on = false
+    }
+  }, [copies.place, answered])
   const resumeProject = resume && projects.find((p) => p.id === resume.projectId)
   const resumeBook = resumeProject?.books.find((b) => b.code === resume!.book)
   return (
@@ -67,6 +89,34 @@ export function Home({
               {t('libro.continuar')} →
             </button>
           </section>
+        )}
+        {copies.place && copies.failed ? (
+          // Said only when it fails (principle 6), once, under what continues the work.
+          <section className="suggestion" role="status">
+            <p>{t('copias.avisoInicio')}</p>
+            <div className="chip-row">
+              <button type="button" className="chip chip-action" onClick={onCopies}>
+                {t('copias.ver')}
+              </button>
+            </div>
+          </section>
+        ) : (
+          !copies.place &&
+          card &&
+          // With no project yet there is nothing to copy, and the one thing to do is to add it.
+          projects.length > 0 &&
+          !answered && (
+            <Suggestion
+              text={t('copias.sugerencia')}
+              action={t('copias.sugerenciaAccion')}
+              mark=""
+              onAction={onCopies}
+              onDismiss={() => {
+                answerSuggestion()
+                setAnswered(true)
+              }}
+            />
+          )
         )}
         {/* On a wide window the projects are a column of their own, beside the field (principle 13); on a phone this box
             is not drawn and they follow it, as before (wide.css). */}

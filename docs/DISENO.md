@@ -351,6 +351,9 @@ Hecho en el prototipo (`outbox.ts`, `WaitingSheet`), probado con un Door43 de me
   - **Va todo, sin preguntar** capa por capa. El diario hace que traer lo mismo dos veces no duplique nada.
   - **Compartir:** desde un libro («Más › Compartir este libro») o desde los ajustes del proyecto («Compartir el
     proyecto», con los libros marcados; todos de entrada). Se puede mandar parte de un libro («Jonás 1:1–10»).
+    En un proyecto «Solo el equipo», el archivo va cerrado con la contraseña del equipo, que se elige la primera vez
+    y el aparato recuerda, y se llama `copia-18-10.servos`, sin el proyecto, el libro ni la persona; al recibirlo se
+    pide esa contraseña, salvo que el aparato ya la tenga (18 de octubre; `PROPUESTA_NO_EXPONER.md`).
   - **Recibir** («Agregar un proyecto › Recibir», o desde el libro), en tres pasos, sin aplicar nada antes del último:
     qué trae (de quién, cuándo, qué libros y el glosario); dónde va (si el proyecto ya está en el aparato, se junta
     con él; si no, se elige: **agregarlo como proyecto nuevo o juntarlo con uno propio del mismo idioma**, el caso de
@@ -513,6 +516,23 @@ grabó el teléfono.
     al desinstalar. No se copia a la nube ni a otro teléfono (las copias de Android están apagadas): el trabajo
     viaja con Compartir y Recibir. Por eso el APK lleva la firma propia de Servos, fuera del repositorio: una
     versión nueva se instala encima solo si está firmada con la misma llave.
+  - **Una copia en la tarjeta** (o en una memoria USB), por si el teléfono se pierde o se daña (filosofía, principio
+    9; decidida con Abel el 18 de octubre). Con una tarjeta puesta, Inicio la sugiere una vez; también está en el menú
+    de la persona. La persona elige una carpeta una sola vez, y Android le recuerda el permiso: las copias quedan
+    aunque se desinstale la app. De cada proyecto se guarda unos minutos después de un cambio, nunca mientras se
+    escribe, y al dejar la app; quedan las tres últimas, y cada una se escribe entera antes de borrar la más vieja.
+    - **Cada proyecto se copia como eligió quién puede ver su trabajo** (filosofía, principio 9): uno de «Solo el
+      equipo» va cerrado con la contraseña del equipo, la misma de Compartir y Recibir (`projects/teamKeys.ts`), y
+      se llama `copia-3fa9c1-20261018-2304.dat`: no dice Servos, ni el proyecto, ni que es una Biblia; uno de
+      «Cualquiera que tenga el archivo», abierto, como el `.servos` de Compartir. La hoja de la copia no pide una
+      contraseña propia: si este teléfono todavía no sabe la del equipo de un proyecto, la pide ahí, y hasta
+      entonces ese proyecto no se copia (nunca se copia abierto).
+    - **Recuperar** es «Recibir» con el archivo de la copia: pide la contraseña del equipo (o la abre sola donde el
+      teléfono ya la sabe), y la recuerda para ese proyecto. Probado en el emulador: la clave olvidada, una
+      contraseña equivocada rechazada, la correcta que abre y se recuerda, y la misma copia abierta después sin
+      preguntar.
+    - **Borrar las copias** borra solo los archivos con el nombre de las copias de Servos, nada más de la carpeta.
+    - En la computadora, y una memoria USB en el teléfono, quedan para después.
   - **Sin internet** la app lo sabe: la WebView no sigue la red sola, y la app le dice cuándo hay y cuándo no, para
     que lo que espera internet (6.11) espere en modo avión en vez de intentar. Cuentan el Wi-Fi y los datos, no una
     VPN, que sigue encendida en modo avión.
@@ -553,4 +573,5 @@ Propuesta de etapas, para conversar:
 - PIN opcional por persona (sección 5).
 - A dónde va cada proyecto en Door43 (sección 8).
 - Paquete compartido con Taller o copia adaptada (sección 11).
-- El nombre de dominio `servos.bible` todavía no está apartado.
+- El dominio es `servos.idiomaspuentes.org` (decidido el 18 de octubre): no dice *bible* en el historial del
+  navegador.

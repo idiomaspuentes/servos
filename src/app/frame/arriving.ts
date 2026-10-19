@@ -35,8 +35,14 @@ export function onArrived(take: (file: Arrived) => void): () => void {
   return () => void takers.delete(take)
 }
 
-/** Whether a file's name says it is work shared from Servos (`.servos`, or `.servos.json` as a page inside Claude saves it). */
-export const isShared = (name: string) => /\.servos(\.json)?$/i.test(name)
+/** Whether a file's name is one of the copies kept on a memory card (`copies.ts`): sealed ones say nothing more. */
+const isCopy = (name: string) => /^copia-[0-9a-f]{6}-\d{8}-\d{4}\.dat$/i.test(name)
+
+/**
+ * Whether a file's name says it is work shared from Servos (`.servos`, or `.servos.json` as a page inside Claude saves
+ * it), or a copy of it.
+ */
+export const isShared = (name: string) => /\.servos(\.json)?$/i.test(name) || isCopy(name)
 
 /** Whether a file is worth reading as text to see if it is shared work: a shared one, or JSON or text by its name. */
 const readable = (name: string) => isShared(name) || /\.(json|txt)$/i.test(name)

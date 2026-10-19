@@ -23,7 +23,7 @@
 
 import type { AlignmentGroup } from '@usfm-tools/types'
 import { gatherGlossary, readGlossary, saveGlossaryEntry, type GlossaryEntry } from './glossary'
-import type { BookEntry, Phase, Project } from './model'
+import { closer, privacyOf, type BookEntry, type Phase, type Project } from './model'
 import type { NoteCheck } from './noteChecks'
 import { blobOf, gatherTakes, keepSound, recordedPlaces, soundBase64, takesOf, type Take } from './recordings'
 import { placesOf, textKey, type BookState } from '../../core'
@@ -404,7 +404,9 @@ export function receiveShared(
     const name = books.find((b) => b.code === x.code)?.name
     return name ? { ...x, name } : x
   })
-  const updated: Project = { ...target, books: [...named, ...added] }
+  // Only the team, on either phone, stays only the team: receiving never opens up what someone closed.
+  const privacy = closer(privacyOf(target), privacyOf(file.project))
+  const updated: Project = { ...target, books: [...named, ...added], ...(privacy === 'equipo' ? { privacy } : {}) }
   const { gathered, changed } = gatherGlossary(readGlossary(updated.id), file.glossary ?? [])
   for (const entry of changed) saveGlossaryEntry(updated.id, entry)
   const next = destination.kind === 'join' ? projects.map((p) => (p.id === updated.id ? updated : p)) : [...projects, updated]
@@ -421,4 +423,14 @@ const freeId = (id: string, projects: Project[]) => {
 export function shareFileName(file: SharedFile, bookNames: string[]): string {
   const what = bookNames.length === 1 ? `${file.project.name} — ${bookNames[0]}` : file.project.name
   return `${what} — ${file.from} — ${file.at.slice(0, 10)}.servos`.replace(/[\\/:*?"<>|]/g, '')
+}
+
+/**
+ * The name of work shared from a project kept to its team (`Privacy`): it says nothing of the project, the book or who
+ * shares it, only the day it was made (here, not in UTC), so whoever finds it in Downloads or on a card learns nothing.
+ * Who sent it is seen in «Receive», once the team's password opens it.
+ */
+export function sealedFileName(at: Date = new Date()): string {
+  const two = (n: number) => String(n).padStart(2, '0')
+  return `copia-${two(at.getDate())}-${two(at.getMonth() + 1)}.servos`
 }

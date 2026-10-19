@@ -49,4 +49,4 @@ están puestos.
   perder el trabajo del teléfono, solo si la firma es la misma: hay que guardar copia de esa carpeta. Sin llave, la
   compilación se detiene antes de dar un APK sin firmar.
 
-Dominio previsto: `servos.bible` (todavía no apartado).
+Dominio: `servos.idiomaspuentes.org` (decidido el 18 de octubre).

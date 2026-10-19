@@ -35,14 +35,27 @@ export function RowButton({
  * Something the app suggests doing once (naming the book): a neutral card under what continues the work, with its
  * action and «Not now». One a screen; what it offers stays reachable in «More».
  */
-export function Suggestion({ text, action, onAction, onDismiss }: { text: ReactNode; action: string; onAction(): void; onDismiss(): void }) {
+export function Suggestion({
+  text,
+  action,
+  mark = '✎',
+  onAction,
+  onDismiss,
+}: {
+  text: ReactNode
+  action: string
+  /** The sign before the action, when it says what it does (✎ to write); none when the action opens something. */
+  mark?: string
+  onAction(): void
+  onDismiss(): void
+}) {
   const t = useT()
   return (
     <section className="suggestion" aria-label={typeof text === 'string' ? text : undefined}>
       <p>{text}</p>
       <div className="chip-row">
         <button type="button" className="chip chip-action" onClick={onAction}>
-          ✎ {action}
+          {mark ? `${mark} ${action}` : action}
         </button>
         <button type="button" className="chip" onClick={onDismiss}>
           {t('marco.ahoraNo')}

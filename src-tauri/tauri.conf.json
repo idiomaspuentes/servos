@@ -47,7 +47,7 @@
     "publisher": "Idiomas Puentes",
     "copyright": "Idiomas Puentes",
     "category": "Education",
-    "shortDescription": "Para traducir la Biblia en su idioma, en equipo, con o sin internet",
+    "shortDescription": "Para traducir en su idioma, en equipo, con o sin internet",
     "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.ico"],
     "fileAssociations": [
       {
