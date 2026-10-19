@@ -4,8 +4,8 @@
  * next time the app opens; it never changes under someone's hands.
  *
  * Off in development (the dev server reloads by itself), in the prototype shared as a page inside Claude, and in the
- * app for computers (`--mode escritorio`), which carries all of itself inside the program and is updated by installing
- * a new version.
+ * apps for computers (`--mode escritorio`) and phones (`--mode telefono`), which carry all of themselves inside the
+ * program and are updated by installing a new version.
  */
 
 import { useEffect, useState } from 'react'
@@ -22,7 +22,7 @@ export function keepAppOffline() {
     ?.persisted?.()
     .then((kept) => kept || navigator.storage.persist())
     .catch(() => {})
-  if (mode === 'escritorio' || !('serviceWorker' in navigator)) return
+  if (mode === 'escritorio' || mode === 'telefono' || !('serviceWorker' in navigator)) return
   const start = () => {
     navigator.serviceWorker
       .register('/sw.js')

@@ -35,4 +35,18 @@ Hace falta [Rust](https://rustup.rs) y, en Windows, las herramientas de compilac
   WebView2 para instalarse sin internet. No está firmado: Windows avisa «Windows protegió su PC», y se instala con
   «Más información › Ejecutar de todas formas».
 
+### La app para Android (Capacitor)
+
+Hace falta Android Studio (su Java 21 y el SDK de Android 36); `JAVA_HOME` y `ANDROID_HOME` se toman de ahí si no
+están puestos.
+
+- `npm run telefono:compilar`: el APK, en `dist-android/Servos-<versión>.apk`, para instalar por cable
+  (`adb install -r`) o pasándolo como archivo, sin tienda. La app web va dentro (`vite build --mode telefono`, en
+  `dist-telefono/`, sin *service worker*).
+- `npm run telefono:abrir`: el proyecto `android/` en Android Studio, para probar en el emulador o en un teléfono.
+- **La firma:** el APK se firma con la llave propia de Servos, que no está en el repositorio: la busca en
+  `~/.servos/android-firma.properties` (o donde diga `SERVOS_FIRMA`). Android instala una versión nueva encima, sin
+  perder el trabajo del teléfono, solo si la firma es la misma: hay que guardar copia de esa carpeta. Sin llave, la
+  compilación se detiene antes de dar un APK sin firmar.
+
 Dominio previsto: `servos.bible` (todavía no apartado).

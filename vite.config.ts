@@ -66,11 +66,13 @@ const VERSION = (JSON.parse(readFileSync(resolve(HERE, 'package.json'), 'utf8'))
 // `vite build --mode escritorio`: the app for computers (Tauri, `src-tauri`). It is kept whole inside the program, so it
 // opens without internet from the first time and has no service worker; it is built in a folder of its own, so that it
 // is never put online as the web app, which without its worker would not open offline.
+// `vite build --mode telefono`: the app for phones (Capacitor, `android/`), kept whole inside the app in the same way.
+const INSIDE: Record<string, string> = { escritorio: 'dist-escritorio', telefono: 'dist-telefono' }
 export default defineConfig(({ mode }) => ({
   define: { __APP_VERSION__: JSON.stringify(VERSION), __APP_BUILD__: JSON.stringify(buildOf()) },
-  plugins: mode === 'pagina' ? [react(), viteSingleFile()] : mode === 'escritorio' ? [react()] : [react(), offlineShell()],
+  plugins: mode === 'pagina' ? [react(), viteSingleFile()] : mode in INSIDE ? [react()] : [react(), offlineShell()],
   // The single page carries its letters inside it (it has no files beside it).
-  build: mode === 'pagina' ? { assetsInlineLimit: 1_000_000 } : mode === 'escritorio' ? { outDir: 'dist-escritorio' } : undefined,
+  build: mode === 'pagina' ? { assetsInlineLimit: 1_000_000 } : mode in INSIDE ? { outDir: INSIDE[mode] } : undefined,
   resolve: {
     alias: [
       { find: /^@bt-synergy\/catalog-manager\/core$/, replacement: `${BT}/catalog-manager/src/core.ts` },

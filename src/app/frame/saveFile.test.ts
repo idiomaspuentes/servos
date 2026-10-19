@@ -28,3 +28,33 @@ describe('saving a file in the app for computers', () => {
     expect(await saveFile('Jonás.servos', '{}')).toEqual({ state: 'failed', name: 'Jonás.servos' })
   })
 })
+
+const { share } = vi.hoisted(() => ({ share: vi.fn() }))
+// As Capacitor's plugins do, it answers to `then` too: taken for a promise, it would fail.
+vi.mock('@capacitor/core', () => ({ registerPlugin: () => ({ share, then: () => Promise.reject(new Error('"ServosFiles.then()" is not implemented')) }) }))
+
+describe('saving a file in the app for phones', () => {
+  beforeEach(() => {
+    share.mockReset()
+    vi.stubGlobal('window', { Capacitor: { isNativePlatform: () => true } })
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  it("hands the file, under the name the app gave it and with its type, to the phone's share sheet", async () => {
+    share.mockResolvedValue({})
+    expect(await saveFile('Jonás.servos', '{}', 'application/json', 'Guardar en el teléfono')).toEqual({ state: 'shared', name: 'Jonás.servos' })
+    expect(share).toHaveBeenCalledWith({ name: 'Jonás.servos', text: '{}', type: 'application/json', keepHere: 'Guardar en el teléfono' })
+    await saveFile('JON.usfm', '\\id JON', 'text/plain')
+    expect(share).toHaveBeenLastCalledWith({ name: 'JON.usfm', text: '\\id JON', type: 'text/plain', keepHere: '' })
+  })
+
+  it('says the name it was kept under when it was kept on the phone', async () => {
+    share.mockResolvedValue({ saved: 'Jonás (1).servos' })
+    expect(await saveFile('Jonás.servos', '{}', 'application/json', 'Guardar en el teléfono')).toEqual({ state: 'saved', name: 'Jonás (1).servos' })
+  })
+
+  it('says it could not when the file could not be written', async () => {
+    share.mockRejectedValue(new Error('No space left'))
+    expect(await saveFile('Jonás.servos', '{}')).toEqual({ state: 'failed', name: 'Jonás.servos' })
+  })
+})

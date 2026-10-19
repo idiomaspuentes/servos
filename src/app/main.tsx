@@ -4,6 +4,7 @@ import { App } from './App'
 import { keepAppOffline } from './frame/appUpdate'
 import { KeepGoing, LastResort } from './frame/Crashed'
 import { keepBrowserMenuToText, receiveOpenedFiles } from './frame/desktop'
+import { followTheme, keepBackButton, receiveArrivingFiles } from './frame/phone'
 import { applyTheme, themeOf } from './frame/theme'
 import { moveAlignmentsIn, moveBooksToProjects, openBooks } from './projects/bookText'
 import { openLibrary } from './projects/library'
@@ -26,6 +27,11 @@ keepAppOffline()
 // In the app for computers: a file opened on the computer goes to be received, and the browser's menu stays away.
 receiveOpenedFiles()
 keepBrowserMenuToText()
+// In the app for phones: a file opened with Servos or shared to it goes to be received, and the back button goes back.
+receiveArrivingFiles()
+keepBackButton()
+// …and the phone's bars write in the colour the app's ground wants, whatever theme the person chose.
+followTheme()
 
 // The books kept on this device are opened (and the prototype's verse-by-verse text moved in) before anything shows.
 void openBooks()

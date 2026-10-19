@@ -20,9 +20,10 @@ export function ShareSheet({ project, books, person, onClose }: { project: Proje
   const save = async () => {
     const shared = await file()
     const name = shareFileName(shared, chosen.map((c) => titleOf(project, c)))
-    const saved = await saveFile(name, JSON.stringify(shared))
-    // Said only when it was saved: a file refused or not possible here is not reported as done.
-    setSaid(saved.state === 'saved' ? t('compartir.guardado', { archivo: saved.name }) : saved.state === 'declined' ? null : t('compartir.noGuardado'))
+    const saved = await saveFile(name, JSON.stringify(shared), 'application/json', t('compartir.guardarEnTelefono'))
+    // Said only when it was saved: a file refused or not possible here is not reported as done, and one shared from a
+    // phone went where the person chose, which the phone does not say.
+    setSaid(saved.state === 'saved' ? t('compartir.guardado', { archivo: saved.name }) : saved.state === 'failed' ? t('compartir.noGuardado') : null)
   }
   const copy = async () => {
     try {
