@@ -296,13 +296,13 @@ describe('la revisión del pasaje y las revisiones viajan y siguen a su texto', 
     writeCheck('jon', 'n1', { status: 'bien', words: [0], verseText: 'Taytaku rimarqa', by: 'Ana', at: '2026-10-15T11:00:00Z' })
     receive(file, 'Ana')
     expect(readCheck('jon', 'n1')?.by).toBe('Ana')
-    // On the same text, the latest.
+    // On the same text, given apart: not the latest, but both, Bea's waiting beside Ana's for a person to choose.
     store = bea
     writeCheck('jon', 'n1', { status: 'despues', words: [0], verseText: 'Taytaku rimarqa', by: 'Bea', at: '2026-10-15T13:00:00Z' })
     const later = share('Bea')
     store = ana
     receive(later, 'Ana')
-    expect(readCheck('jon', 'n1')?.by).toBe('Bea')
+    expect(readCheck('jon', 'n1')).toMatchObject({ by: 'Ana', others: [{ by: 'Bea', status: 'despues' }] })
   })
 })
 

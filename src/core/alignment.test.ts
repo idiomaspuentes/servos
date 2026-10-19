@@ -49,11 +49,18 @@ describe("dos alineaciones del mismo texto", () => {
     expect([aligned(back.layer), back.report.conflicts.length]).toEqual([links("Pablo", "Dios"), 0]);
   });
 
-  it("si las hizo la misma persona por separado (en dos aparatos), queda la más reciente", () => {
+  it("el mismo nombre en dos aparatos puede ser otra persona: se elige, no gana la más reciente", () => {
     const tel = recordAlignment(emptyAlignmentLayer(), ana, v1, texto, links("Pablo"), at());
     const compu = recordAlignment(emptyAlignmentLayer(), anaOtra, v1, texto, links("Dios"), at());
     const { layer, report } = mergeAlignments(tel, compu, now(texto), ana, at());
-    expect([aligned(layer), report.conflicts.length]).toEqual([links("Dios"), 0]);
+    expect([aligned(layer), report.conflicts.length]).toEqual([links("Pablo"), 1]);
+  });
+
+  it("dos hechas por separado sobre un texto que ya no está: se elige, la fecha no decide", () => {
+    const mine = recordAlignment(emptyAlignmentLayer(), ana, v1, "Pablo, esclavo de Dios", links("Pablo"), at());
+    const theirs = recordAlignment(emptyAlignmentLayer(), beto, v1, "Pablo, siervo del Señor", links("Señor"), at());
+    const { layer, report } = mergeAlignments(mine, theirs, now(texto), ana, at());
+    expect([aligned(layer), report.conflicts.length]).toEqual([links("Pablo"), 1]);
   });
 
   it("si las hicieron dos personas por separado, es un choque; lo elegido no se vuelve a preguntar", () => {
