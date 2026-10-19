@@ -500,7 +500,9 @@ grabó el teléfono.
   - **El botón Atrás** baja primero el teclado; después cierra la hoja de arriba, luego vuelve una pantalla; en
     Inicio deja la app detrás de las demás, tal como estaba.
   - **Un archivo `.servos` llega** con «Abrir con» (desde Archivos o una descarga) o con «Compartir» (desde WhatsApp,
-    Bluetooth u otra app): se abre «Recibir» con el archivo ya leído, también con Servos cerrado.
+    Bluetooth u otra app): se abre «Recibir» con el archivo ya leído, también con Servos cerrado. «Mis archivos» de
+    Samsung solo ofrece, para un tipo que no conoce, las apps que abren cualquier archivo: por eso Servos aparece en
+    «Abrir con» para todos, y «Recibir» dice cuando uno no es trabajo compartido.
   - **Guardar** (Compartir, el libro en USFM, el glosario, la traducción de la interfaz) abre la hoja de compartir
     del teléfono, con el archivo y su tipo: WhatsApp, Bluetooth, Quick Share… y, primero, **«Guardar en el
     teléfono»**, que pregunta la carpeta (Descargas, la tarjeta) y deja el archivo con su nombre. Muchos teléfonos no

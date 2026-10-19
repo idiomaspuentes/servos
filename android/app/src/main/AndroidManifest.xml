@@ -49,6 +49,22 @@
                 <data android:pathPattern=".*\\..*\\.servos" />
                 <data android:pathPattern=".*\\..*\\..*\\.servos" />
             </intent-filter>
+            <!-- …and of any type, or none: Samsung's «Mis archivos» offers for a file whose kind it does not know only the
+                 apps that take any file, and its address does not carry the name. Servos is then among those offered
+                 for every file; «Recibir» says when one is not work shared from Servos. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+            </intent-filter>
             <!-- A file shared to Servos («Compartir»): from WhatsApp, Bluetooth received, a file manager. -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
