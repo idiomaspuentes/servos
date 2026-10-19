@@ -1,23 +1,33 @@
-# Que el trabajo no exponga a quien traduce
+# Quién puede ver el trabajo
 
-*Propuesta, 18 de octubre de 2026. Para conversar con Abel; nada de esto está construido ni decidido.*
+*Propuesta, 18 de octubre de 2026. Para conversar con Abel; nada de esto está construido.*
 
-Algunos equipos traducen donde la Biblia y la fe cristiana están prohibidas, y que les encuentren una traducción
-puede costarles la cárcel o la vida. Esta propuesta mira qué deja ver Servos hoy a quien toma el teléfono o la
-computadora de un equipo, o a quien encuentra un archivo que se pasaron, y qué se puede hacer sin estorbar a los
-equipos que no corren ese riesgo.
+Servos tiene que dejar claro, y dejar elegir, quién puede ver el trabajo de un equipo: quien toma su teléfono o su
+computadora, o quien encuentra un archivo que se pasaron.
 
-Se apoya en el principio 9, ya aprobado, **«El trabajo no se pierde ni se expone»** (`FILOSOFIA_DE_DISENO.md`, rama
-`claude/copia-en-tarjeta`). Las copias en la tarjeta SD ya están cubiertas en esa rama: cifradas con contraseña
-(AES-GCM), con nombres que no dicen nada (`copias/…dat`), una elección clara antes de guardar y «Borrar las copias».
-Esta propuesta trata lo demás: el bloqueo, las capturas, el nombre de los archivos de Compartir, el nombre y el ícono
-de la app y las copias que deja la hoja de compartir.
+**Lo decidido por Abel** (18 de octubre), que esta propuesta da por hecho:
+
+- **Es un modo de cada proyecto**, no algo siempre puesto. Lo pregunta la app al crear el proyecto, lo contesta quien
+  coordina, y viaja con el proyecto al compartirlo. Al recibir en un proyecto que ya está en el aparato, queda el modo
+  más cerrado de los dos.
+- **Dos modos.** **«Solo el equipo»**, el elegido de entrada: las copias siempre con contraseña, Compartir cerrado y con
+  un nombre que no dice nada, y se ofrecen el bloqueo de la app y un nombre e ícono discretos. **«Cualquiera que tenga
+  el archivo»**: como hoy.
+- **Subir la protección es un toque; bajarla pide confirmar** y dice qué deja de estar protegido.
+- **Las palabras:** la app habla solo de quién puede ver el trabajo («Solo el equipo puede ver…»). Nunca «riesgo»,
+  «peligro», ni nada que asuste a los equipos que no viven esa situación, ni dónde está prohibida la Biblia.
+- El modo mismo (`Project.privacy`, la pregunta al crear el proyecto, Ajustes, y las copias en la tarjeta que lo siguen)
+  se construye en la rama `claude/copia-en-tarjeta`. El principio 9, **«El trabajo no se pierde ni se expone»**, ya
+  está aprobado.
+
+Esta propuesta trata lo que falta bajo «Solo el equipo»: **Compartir, el bloqueo de la app, las capturas, el nombre y
+el ícono, y las copias que deja la hoja de compartir**, más lo que conviene para todos.
 
 **En pocas palabras:** hoy cualquiera que tome el teléfono desbloqueado abre Servos y lee todo, y cada archivo que se
 comparte lleva en el nombre el proyecto, el libro y quién lo mandó («Biblia en kichwa — Tito — Ana — 2026-10-19.servos»)
-y, dentro, sin cifrar, el texto, los nombres de todo el equipo y sus voces. **Primer paso recomendado** (sección 4): lo
-barato que no estorba a nadie, y que Compartir haga lo que el principio 9 ya pide a las copias: un nombre que no dice
-nada y la explicación en el momento de elegir. Después, el bloqueo del propio teléfono y el «modo discreto».
+y, dentro, abierto, el texto, los nombres de todo el equipo y sus voces. **Primer paso recomendado** (sección 5): que
+Compartir siga el modo del proyecto (nombre que no dice nada y contraseña con «Solo el equipo»), más tres arreglos
+pequeños para todos. Después, el bloqueo, y al final el nombre e ícono discretos.
 
 ## 1. Lo que hoy queda a la vista
 
@@ -44,106 +54,103 @@ Revisado en `main` (020b587) y en la rama de Android (`claude/determined-kilby-0
 Lo que ya está bien: no hay notificaciones, Android no copia el trabajo a la nube, el repositorio del trabajo del equipo
 es privado, y la contraseña de Door43 no se guarda. El nombre «Servos» por sí solo no dice «Biblia».
 
-## 2. Qué se puede hacer, de lo más chico a lo más grande
+## 2. Para todos los proyectos
 
-Dos clases de cambios:
+Lo que no cambia nada para quien trabaja y deja menos a la vista. No depende del modo.
 
-- **Lo que no estorba a nadie** viene puesto para todos.
-- **Lo que sale de la app** (un archivo de Compartir) se decide en el momento de compartir, con lo más seguro como
-  recomendado, como ya hacen las copias en la tarjeta (principio 9).
-- **Lo que cambia cómo se usa la app** (otro nombre, sin capturas, un bloqueo) se elige en un solo lugar, el
-  **«modo discreto»**, en el menú de la persona. Un equipo sin riesgo no lo ve nunca si no lo busca.
+| # | Qué | Tamaño | Lo que no evita |
+|---|---|---|---|
+| A | **Textos del sistema sin «Biblia»**: «Para traducir en equipo, con o sin internet» en el manifiesto de la PWA, el instalador de Windows y el tipo de archivo `.servos` | Muy chico | Lo que se ve al abrir la app |
+| B | **Borrar lo que quedó de compartir**: vaciar `cache/compartir` al abrir la app (la app que recibió el archivo ya lo leyó) | Muy chico | La copia que guardó WhatsApp, Bluetooth o la carpeta elegida |
+| C | **Apps recientes sin foto** en Android 13 o más (`setRecentsScreenshotEnabled(false)`): la vista de recientes muestra un cuadro vacío; las capturas siguen funcionando | Muy chico | Android 12 o menos |
+| D | **Antes de publicar en Door43**, una línea al pie del paso: «Lo que publiques en Door43 lo puede ver cualquiera en internet, con el nombre de tu cuenta» | Muy chico | Que la red vea que el teléfono habla con Door43 |
 
-| # | Propuesta | Para todos o discreto | Tamaño | Lo que no protege |
+## 3. Con «Solo el equipo»
+
+| # | Qué | Cómo sigue el modo | Tamaño | Lo que no evita |
 |---|---|---|---|---|
-| A | **Textos del sistema sin «Biblia»**: «Para traducir en equipo, con o sin internet» en el manifiesto, el instalador y el tipo de archivo | Para todos | Muy chico | Lo que se ve al abrir la app |
-| B | **Borrar las copias de compartir**: vaciar `cache/compartir` al abrir la app (la app que recibió el archivo ya lo leyó) | Para todos | Muy chico | La copia que guardó WhatsApp, Bluetooth o la carpeta elegida |
-| C | **Recientes sin foto** en Android 13 o más (`setRecentsScreenshotEnabled(false)`): la vista de recientes muestra un cuadro vacío, pero las capturas de pantalla siguen funcionando | Para todos | Muy chico | Android 12 o menos; una captura que la persona haga |
-| D | **Compartir elige el nombre, como las copias**: lo recomendado es un nombre que no dice nada («copia-18-10.servos»); quien lo quiera con el libro, el proyecto y su nombre lo elige ahí mismo, sabiendo lo que implica (principio 9). La hoja de compartir muestra el nombre elegido. Quien recibe ve de quién es al abrirlo en Recibir | Para todos: es una elección en Compartir, con lo seguro como recomendado | Chico | Lo que hay dentro del archivo, si no va con contraseña (H) |
-| E | **Sin capturas** (`FLAG_SECURE` en Android, `contentProtected` en la ventana de Tauri): la pantalla sale negra en capturas, en grabaciones y al compartir la pantalla, también en Android 12 o menos | Discreto: estorba a quien manda capturas para pedir ayuda | Chico | Una foto de la pantalla con otro teléfono |
-| F | **Bloqueo del propio teléfono**: al abrir Servos, y al volver a él después de un rato, pide la huella, la cara o el PIN del teléfono (Android `BiometricPrompt` con credencial del aparato; Windows Hello). Sin nada que recordar ni que perder. En la PWA, donde no hay eso, un PIN de la app | Discreto | Mediano | Un teléfono que alguien entrega abierto o es obligado a abrir; el teléfono sin bloqueo propio (la app lo dice y no ofrece el bloqueo); herramientas forenses, porque lo guardado no se cifra |
-| G | **Nombre e ícono discretos** elegidos en el modo discreto: «Cuaderno» o «Notas», con un ícono neutro (Android `activity-alias`, uno por nombre). Dentro de la app, la primera pantalla tampoco dice Servos hasta pasar el bloqueo | Discreto | Mediano en Android; en Windows, renombrar el acceso del menú Inicio; en la PWA no se puede | El nombre del paquete (`org.idiomaspuentes.servos`) en Ajustes › Apps y para cualquier herramienta; cambiarlo haría perder el trabajo. Algunos lanzadores quitan el acceso de la pantalla y hay que ponerlo otra vez |
-| H | **Compartir con contraseña**: el `.servos` va cifrado con **el mismo cifrado de las copias en la tarjeta** (AES-GCM con contraseña, ya en `claude/copia-en-tarjeta`); la contraseña se acuerda en persona y Recibir la pide. Recomendado en Compartir, como en las copias; sin ella, la app dice antes qué puede ver quien encuentre el archivo. La diferencia con las copias: aquí la contraseña la tiene que saber otra persona, así que la app no puede guardarla por el equipo | Para todos: la elección en Compartir | Mediano (el cifrado ya está; falta Recibir y la elección) | Quien conoce la contraseña; una contraseña débil; una contraseña olvidada deja el archivo sin abrir (el trabajo sigue en el teléfono que lo mandó) |
-| I | **Después de recibir**: «El archivo sigue en Descargas. ¿Lo borro?» cuando Android da permiso; si no, la app dice dónde está para borrarlo a mano | Discreto | Chico a mediano | Copias en WhatsApp o en su nube |
-| J | **Antes de publicar**: una línea en «Publicar en Door43» que diga que lo publicado lo ve cualquiera en internet, con el nombre de la cuenta y de la organización; y la opción de dejarlo **privado** hasta que el equipo decida | Para todos (la línea); la opción, en Publicar | Chico | Que alguien en la red vea que el teléfono habla con Door43 (eso solo lo cubre una VPN) |
-| K | **Lo que la app no controla, dicho**: el teclado aprende palabras (cómo apagarlo en Gboard y Samsung), WhatsApp guarda copias, los instaladores quedan en Descargas, usar un apodo en lugar del nombre | Para todos, en la página que explica | Solo texto | — |
-| L | **Cifrar todo lo guardado en el aparato** | — | Muy grande | No lo recomiendo ahora: Android ya cifra el teléfono apagado o recién encendido, y con el teléfono desbloqueado la app tiene que poder leer. Ayudaría solo contra herramientas forenses en un teléfono ya abierto una vez |
-| M | **«Quitar Servos de este teléfono»**: borra todo, después de comprobar que hay una copia en tarjeta o en otro teléfono | Discreto | Mediano | Choca con «el trabajo no se pierde»: solo con copia comprobada. Para más adelante |
+| E | **Compartir cerrado**: el `.servos` va con contraseña, con **el mismo cifrado de las copias** (AES-GCM, rama `claude/copia-en-tarjeta`). La contraseña se acuerda en persona; Recibir la pide y puede recordarla para ese proyecto | Siempre con contraseña, sin preguntar. Con «Cualquiera…», como hoy | Mediano (el cifrado ya está; falta Recibir) | Quien sabe la contraseña; una contraseña olvidada deja ese archivo sin abrir (el trabajo sigue en el teléfono que lo mandó) |
+| F | **Nombre que no dice nada**: «copia-18-10.servos» en lugar del proyecto, el libro y la persona; es también lo que muestra la hoja de compartir. Quien recibe ve de quién es al abrirlo en Recibir, después de la contraseña. El modo viaja **dentro** del archivo cerrado | Siempre. Con «Cualquiera…», el nombre de hoy | Chico | Que alguien sepa que es un archivo de Servos (la extensión) |
+| G | **Bloqueo de la app con el del propio teléfono**: al abrir Servos, y al volver a él después de unos minutos, pide la huella, la cara o el PIN del teléfono (Android `BiometricPrompt` con credencial del aparato; Windows Hello). Nada nuevo que recordar ni que perder. En la PWA, donde no hay eso, un PIN de la app | Se ofrece una vez (sección 4); se enciende o apaga en Ajustes. Es del aparato, no del proyecto: basta que un proyecto sea «Solo el equipo» para ofrecerlo | Mediano | El teléfono que se entrega con Servos ya abierto; quien obliga a abrirlo; el teléfono sin bloqueo propio (la app lo dice y no lo ofrece); herramientas forenses (lo guardado no se cifra) |
+| H | **Sin capturas mientras está abierto un proyecto «Solo el equipo»** (`FLAG_SECURE` en Android, `contentProtected` en la ventana de Tauri): la pantalla sale negra en capturas, en grabaciones, al compartir la pantalla y en apps recientes, también en Android 12 o menos | Al abrir un proyecto con ese modo; se quita al salir de él | Chico | Una foto de la pantalla con otro teléfono. Estorba a quien manda capturas para pedir ayuda: Ajustes debe poder apagarlo |
+| I | **Nombre e ícono discretos**: «Cuaderno» o «Notas», con un ícono neutro (Android `activity-alias`, uno por nombre). La primera pantalla tampoco dice Servos hasta pasar el bloqueo | Se ofrece una vez, junto con el bloqueo; se cambia en Ajustes. Es del aparato | Mediano en Android; en Windows, renombrar el acceso del menú Inicio; en la PWA no se puede | El nombre del paquete (`org.idiomaspuentes.servos`) en Ajustes › Apps; cambiarlo haría perder el trabajo. Algunos lanzadores quitan el acceso de la pantalla de inicio |
+| J | **Después de recibir**: «El archivo sigue en Descargas. ¿Lo borro?» cuando Android da permiso; si no, dice dónde está | Solo en un proyecto «Solo el equipo» | Chico a mediano | Copias en WhatsApp o en su nube |
+| K | **Al publicar en Door43**: el repositorio se crea privado, y hacerlo público es una decisión aparte, con su confirmación | Con «Solo el equipo». Con «Cualquiera…», público como hoy | Chico | Lo que ya se hizo público |
 
-Lo que ninguna de estas opciones protege, y la app debe decirlo sin rodeos: alguien que tiene el teléfono abierto en la
-mano mientras Servos está abierto; alguien que obliga a la persona a desbloquearlo; herramientas forenses con tiempo y
-el teléfono; las copias que otras apps guardaron por su cuenta; y lo que se ve en la red al hablar con Door43.
+**Lo que se deja para después:** cifrar todo lo guardado en el aparato (muy grande; Android ya cifra el teléfono
+apagado, y con el teléfono abierto la app tiene que poder leer) y «Quitar Servos de este teléfono» (choca con «el
+trabajo no se pierde»; solo con una copia comprobada).
 
-## 3. Cómo y cuándo lo explica la app
+Lo que ningún modo evita, y la app debe decirlo en palabras simples, sin asustar: alguien que tiene el teléfono abierto
+en Servos; alguien que obliga a desbloquearlo; herramientas forenses con tiempo; las copias que otras apps guardaron
+por su cuenta; lo que se ve en la red al hablar con Door43.
 
-Siguiendo los principios 6 (avisos solo cuando algo falla), 9 (el trabajo no se pierde ni se expone: la app lo
-explica en el momento de elegir, no en una ayuda aparte) y 12 (cada acción tiene su forma):
+## 4. Cómo lo dice la app
 
-- **La explicación va donde se elige.** En Compartir, junto al nombre y la contraseña; al encender el bloqueo, junto al
-  interruptor; al publicar, al pie del paso. Siempre en dos frases: qué hace y qué no hace.
-- **Los ajustes, en un solo lugar.** En el menú de la persona, una fila de dos líneas: **«Quién puede ver tu
-  trabajo»** — «Bloqueo, nombre de la app y capturas». Ahí están el interruptor del modo discreto y las opciones que
-  enciende, cada una con su propio interruptor y sus dos frases. Es donde se cambian, no una ayuda que haya que leer
-  antes.
-- **Nunca más de lo cierto** (principio 8). La app no dice «protegido» ni «seguro». Dice, por ejemplo: «Con el
-  bloqueo, quien tome el teléfono no puede abrir Servos sin tu huella o tu PIN. No sirve si el teléfono ya está abierto
-  en Servos, ni contra quien te obligue a abrirlo».
-- **Ningún aviso a quien no lo necesita** (principio 6). Ni la primera vez que se abre la app, ni con un cartel en
-  Inicio. La primera vez sigue preguntando solo el idioma y el nombre (diseño, sección 5).
-- **En el momento en que el riesgo aparece, una línea, una vez.** Lo que la app sugiere una vez va en una tarjeta
-  neutra, con su acción y «Ahora no» (principio 12):
-  - **Al compartir** (cada vez, no solo la primera, porque es una elección como la de las copias): el nombre que no
-    dice nada y la contraseña vienen recomendados; si se elige el otro nombre o sin contraseña, una línea dice antes
-    qué verá quien encuentre el archivo («el proyecto, el libro y tu nombre»; «todo lo escrito y las voces»).
-  - **La primera vez que se publica en Door43**: «Lo que publiques lo puede ver cualquiera en internet, con el nombre
-    de tu cuenta». No es una tarjeta que se descarta: es la línea que dice qué cambia, al pie del paso.
-  - **Al vincular la cuenta de Door43**: una frase sobre elegir un nombre de cuenta que no diga quién eres.
-- **Lo que se deshace no pide confirmación; lo que no se deshace, sí.** Encender el modo discreto es inmediato; si se
-  elige otro nombre de app, la app dice antes que el ícono cambia de lugar en la pantalla del teléfono y cómo
-  encontrarlo.
-- **Para quien reparte la app**, que es quien más decide: una hoja de una página (en español, portugués e inglés) que
-  va junto al APK y al instalador, con lo mismo que la página de la app, más lo que conviene antes de instalar (borrar
-  el instalador de Descargas, usar apodos, el bloqueo del teléfono).
+Siguiendo los principios 6 (avisos solo cuando algo falla), 8 (honestidad), 9 (la app lo explica en el momento de
+elegir, no en una ayuda aparte) y 12 (cada acción tiene su forma). Todas las frases hablan de **quién puede ver**, nunca
+de amenazas.
 
-## 4. Primer paso recomendado
+- **Al compartir, una línea bajo el nombre del archivo** (no una tarjeta ni un aviso):
+  - «Solo el equipo»: «Solo quien sepa la contraseña del equipo puede abrir este archivo».
+  - «Cualquiera…»: «Cualquiera que tenga este archivo puede abrirlo y ver lo escrito».
+- **El bloqueo y el nombre discreto se ofrecen una vez**, en una tarjeta neutra con su acción y «Ahora no»
+  (principio 12), la primera vez que se abre un proyecto «Solo el equipo» en ese aparato: «Solo el equipo puede ver
+  este proyecto. ¿Quieres que Servos pida la huella o el PIN de este teléfono al abrirse?» › «Pedir al abrir». Debajo,
+  en la misma tarjeta, una fila: «Mostrar Servos con otro nombre en el teléfono ›». Si el teléfono no tiene bloqueo:
+  «Este teléfono se abre sin PIN. Para que Servos lo pida, primero ponle un PIN al teléfono».
+- **Al subir el modo**, en Ajustes del proyecto: un toque, y la línea que dice lo que cambia: «Desde ahora, los archivos
+  que compartas y las copias llevan contraseña».
+- **Al bajarlo**, un cuadro que confirma y dice qué deja de estar protegido, sin asustar: «Con “Cualquiera que tenga
+  el archivo”, lo que compartas desde ahora irá sin contraseña y con el nombre del proyecto. Lo ya compartido sigue
+  como está». Botones: «Cambiar» (con borde) y cerrar.
+- **Al recibir un archivo cerrado**: «Este archivo es solo para el equipo. Escribe la contraseña que acordaron». Si se
+  equivoca: «Esa no es la contraseña. Pídela a quien te lo mandó». Nunca «acceso denegado» ni nada parecido.
+- **Al recibir en un proyecto con un modo más abierto**: el proyecto pasa a «Solo el equipo», y la pantalla final de
+  Recibir lo dice en una línea: «Este proyecto ahora es solo para el equipo, como el que llegó».
+- **En Ajustes de la app**, una fila de dos líneas, **«Al abrir Servos»** — «Pedir la huella o el PIN, otro nombre en
+  el teléfono, capturas», donde se encienden y apagan el bloqueo, el nombre discreto y las capturas. Es donde se
+  cambian, no una ayuda que haya que leer antes.
+- **Nunca más de lo cierto.** La app no dice «seguro» ni «protegido» a secas. Dice qué evita y, en otra frase, qué no:
+  «Con esto, quien tome el teléfono no puede abrir Servos sin tu huella o tu PIN. No sirve si Servos ya está abierto».
+- **Para quien reparte la app**: una hoja de una página, en los tres idiomas, junto al APK y al instalador, con los dos
+  modos y lo que conviene al instalar (borrar el instalador de Descargas, que el teléfono tenga PIN, usar apodos).
 
-**Lo barato que no estorba a nadie, y Compartir como las copias**, en un solo cambio:
+## 5. Primer paso recomendado
 
-1. Textos del sistema sin «Biblia» (A).
-2. Borrar las copias de `cache/compartir` al abrir la app (B).
-3. Recientes sin foto en Android 13 o más (C).
-4. En Compartir, el nombre que no dice nada como recomendado, con la explicación al elegir (D).
-5. La línea antes de publicar en Door43 (J, sin la opción de privado todavía).
+**Compartir sigue el modo del proyecto, y tres arreglos para todos**, en un solo cambio:
 
-Es poco código, no cambia nada para un equipo sin riesgo salvo el nombre que se propone al compartir, y aplica a
-Compartir lo que el principio 9 ya pide a las copias.
+1. Compartir con «Solo el equipo»: contraseña con el cifrado de las copias, nombre que no dice nada, y Recibir que pide
+   la contraseña (E, F), con las líneas de la sección 4.
+2. Textos del sistema sin «Biblia» (A), borrar lo que quedó de compartir (B) y apps recientes sin foto (C).
 
-**Después**, en este orden: **Compartir con contraseña** (H), que ya tiene el cifrado hecho en la rama de las copias;
-el **bloqueo** del propio teléfono (F), porque cubre el caso más común, el teléfono que alguien toma; y el **modo
-discreto**, con la fila «Quién puede ver tu trabajo», sin capturas (E) y nombre e ícono (G).
+Es lo que más deja a la vista hoy (el archivo que se encuentra en Descargas o en una tarjeta), usa lo que ya está hecho
+para las copias, y no cambia nada en los proyectos «Cualquiera que tenga el archivo».
 
-## 5. Para decidir
+**Después**, en este orden: el **bloqueo** (G) con su tarjeta, porque cubre el teléfono que alguien toma; **sin
+capturas** (H); el repositorio privado al publicar (K) y la línea de Door43 (D); y al final el **nombre e ícono
+discretos** (I) y lo de después de recibir (J).
 
-1. **El nombre recomendado al compartir: ¿con el libro o sin nada?** El principio 9 pide que lo recomendado sea un
-   nombre que no dice nada. «Tito 18-10.servos» se reconoce mejor en Descargas, pero dice el libro. Recomiendo
-   «copia-18-10.servos», con el libro como otra opción en la misma elección.
-2. **El bloqueo: ¿uno por aparato o uno por persona?** El diseño (sección 5) pregunta por un PIN por persona, para que
-   otro no trabaje con su nombre. Es otra cosa. Para no exponer, basta el bloqueo del teléfono, uno por aparato.
-   Propongo resolverlos por separado.
-3. **¿Qué nombres y qué íconos ofrece el modo discreto?** Propongo nombres neutros y verdaderos («Cuaderno», «Notas»),
-   no disfrazarse de calculadora: si alguien descubre el disfraz, se ve peor.
-4. **¿Publicar en privado primero?** Hoy publicar crea un repositorio público. ¿Se ofrece dejarlo privado hasta que el
-   equipo decida?
-5. **¿Qué dominio para la PWA?** `servos.bible` todavía no está apartado; *bible* en el historial del navegador es lo
-   primero que alguien ve.
+## 6. Para decidir
 
-## 6. El principio 9, aplicado a lo demás
+1. **¿Cuántos minutos fuera de Servos antes de volver a pedir el bloqueo?** Propongo 5, y que al apagar la pantalla
+   se pida siempre.
+2. **¿Sin capturas encendido de entrada con «Solo el equipo», o solo ofrecido?** Recomiendo encendido, con la opción de
+   apagarlo en Ajustes para quien manda capturas a quien le ayuda.
+3. **¿Recibir recuerda la contraseña del proyecto?** Recordarla ahorra escribirla cada vez; no recordarla deja el
+   teléfono con menos. Recomiendo recordarla, porque lo guardado en el teléfono ya está a la vista de quien abre
+   Servos, y para eso está el bloqueo.
+4. **¿Qué nombres e íconos discretos?** Propongo nombres neutros y verdaderos («Cuaderno», «Notas»), no disfrazarse de
+   calculadora: si alguien descubre el disfraz, se ve peor.
+5. **¿Qué dominio para la PWA?** `servos.bible` todavía no está apartado; *bible* queda en el historial del navegador.
+
+## 7. El principio 9, aplicado
 
 El principio 9 ya aprobado, «El trabajo no se pierde ni se expone», habla de lo que la app deja fuera de sí misma.
-Esta propuesta lo aplica tal como está: Compartir se trata como una copia (D, H), y la explicación va en el momento de
-elegir. Lo único que el principio no cubre todavía es lo que se ve **dentro** del aparato: la app abierta, las
-capturas, el nombre en el lanzador, lo que queda en la caché. Si Abel quiere que quede escrito, bastaría una línea
-más en su lista, sin cambiar lo aprobado:
+Esta propuesta lo aplica tal como está: Compartir se trata como una copia, y la explicación va en el momento de elegir.
+Lo único que no cubre todavía es lo que se ve **dentro** del aparato. Si Abel quiere que quede escrito, bastaría una
+línea más en su lista, sin cambiar lo aprobado:
 
-> - Lo que se ve en el aparato también se elige: quien corre riesgo puede cerrar la app con el bloqueo del teléfono,
->   quitarle su nombre y evitar las capturas, y la app no deja atrás copias de lo que pasó a otra app.
+> - En un proyecto «Solo el equipo», también lo que se ve en el aparato se elige: Servos puede pedir la huella o el PIN
+>   del teléfono al abrirse, mostrarse con otro nombre y no dejarse capturar, y no deja atrás copias de lo que pasó a
+>   otra app.
