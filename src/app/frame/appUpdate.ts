@@ -25,7 +25,7 @@ export function keepAppOffline() {
   if (mode === 'escritorio' || mode === 'telefono' || !('serviceWorker' in navigator)) return
   const start = () => {
     navigator.serviceWorker
-      .register('/sw.js')
+      .register(`${import.meta.env.BASE_URL}sw.js`)
       .then((registration) => {
         // Only an update waits with a version already in use; the first one is used at once.
         const ready = (worker: ServiceWorker | null) => {
