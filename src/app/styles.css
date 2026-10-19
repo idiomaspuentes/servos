@@ -661,11 +661,60 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .word:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 /* The helps of a touched word, under its verse */
-.word-help { margin-block: 0.5rem; padding: 0.5rem 0.75rem 0.75rem; border: 1px solid var(--line); border-inline-start: 3px solid var(--accent); border-radius: var(--radius); background: var(--surface); font-family: var(--font); font-size: 1rem; line-height: 1.5; }
-.word-help-head { display: flex; align-items: center; gap: 0.5rem; }
-.help-bridge { font-size: 1.1rem; }
-.word-help-word { font-weight: 600; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+/* The card of a touched word (TouchWords): the word, the helps one at a time, more folded. Scripture and the original
+   in Charis, never smaller than the text around them; labels small and heavy, in lower case; parts apart by a fine
+   line, nothing in a box of its own. No wider than a line can be read on a wide window. */
+.word-help { margin-block: 0.5rem; padding: 0.6rem 1rem 0.35rem; max-width: 40rem; border: 1px solid var(--line); border-inline-start: 3px solid var(--accent); border-radius: var(--radius); background: var(--surface); font-family: var(--font); font-size: 1rem; line-height: 1.5; text-align: start; }
+.word-help p { margin: 0; }
+.word-help-head { display: flex; align-items: flex-start; gap: 0.5rem; }
+.word-help-word { flex: 1; min-width: 0; padding-block-start: 0.3rem; overflow-wrap: anywhere; font-family: var(--serif); font-weight: 700; font-size: 1.4rem; line-height: 1.3; }
+.word-help-word bdi[dir='rtl'] { font-size: 1.7rem; font-weight: 400; }
 .word-help-close { min-width: var(--touch); padding-inline: 0.5rem; font-size: 0.95rem; }
+.word-help-scripture { font-family: var(--serif); }
+.word-help-original { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.6rem; }
+.word-help-original .word-help-scripture { font-size: 1.35rem; line-height: 1.5; }
+.word-help-gloss { color: var(--text-soft); }
+.word-help-texts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.1rem 0.6rem; align-items: baseline; margin: 0.3rem 0 0; }
+.word-help-texts > div { display: contents; }
+.word-help-texts dt { font-size: 0.8rem; font-weight: 800; color: var(--text-soft); }
+.word-help-texts dd { margin: 0; font-size: 1.05rem; }
+.word-help-texts dd bdi[dir='rtl'] { font-size: 1.2rem; }
+.word-help-part { border-block-start: 1px solid var(--line); margin-block-start: 0.7rem; padding-block-start: 0.6rem; }
+.word-help-team { display: flex; flex-direction: column; gap: 0.4rem; }
+.word-help-label { display: flex; flex-wrap: wrap; align-items: center; gap: 0.15rem 0.5rem; font-size: 0.85rem; font-weight: 800; color: var(--text-soft); }
+.word-help-label .badge { margin: 0; }
+.word-help-label .word-help-soft { font-weight: 600; }
+.word-help-decided { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.word-help-decided > p { min-width: 0; }
+.word-help-decided .chip { flex: none; white-space: nowrap; }
+.word-help-rendering { font-size: 1.2rem; font-weight: 800; overflow-wrap: anywhere; }
+.word-help-soft { color: var(--text-soft); font-size: 0.95rem; }
+.word-help-team-note { color: var(--text-soft); font-size: 0.95rem; white-space: pre-line; }
+.word-help-paged-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-height: var(--touch); }
+.word-help-steps.helps-steps { margin: 0; padding: 0; border: 0; gap: 0.4rem; justify-content: flex-end; }
+.word-help-quote { font-family: var(--serif); font-weight: 700; font-size: 1.1rem; }
+.word-help-quote-original { margin-block-start: 0.1rem !important; }
+.word-help-quote-original .word-help-scripture { font-size: 1.2rem; color: var(--text-soft); }
+.word-help-paged .markdown, .word-help-paged > p:not(.word-help-quote):not(.word-help-quote-original) { margin-block-start: 0.4rem; }
+.word-help-paged .row-button { margin-block-start: 0.4rem; }
+.word-help-more { border-block-start: 1px solid var(--line); margin-block-start: 0.7rem; }
+.word-help-more > summary, .word-help-other > summary { min-height: var(--touch); display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-weight: 800; cursor: pointer; list-style: none; }
+.word-help-more > summary::-webkit-details-marker, .word-help-other > summary::-webkit-details-marker { display: none; }
+.word-help-more > summary::after, .word-help-other > summary::after { content: '▾'; font-size: 1rem; transition: transform var(--quick) var(--ease); }
+.word-help-more[open] > summary::after, .word-help-other[open] > summary::after { transform: rotate(180deg); }
+.word-help-other > summary { font-weight: 700; }
+.word-help-more-part { margin-block-end: 0.5rem; }
+/* In the card the facts run as lines («Grammar noun, …»), so a long label does not squeeze its value into a column. */
+.word-help-more .word-facts { display: block; margin-block: 0.5rem; }
+.word-help-more .word-facts > div { display: block; }
+.word-help-more .word-facts dt { display: inline; padding: 0; margin-inline-end: 0.5rem; }
+.word-help-more .word-facts dd { display: inline; }
+.word-help-more > summary .word-help-scripture { font-weight: 400; font-size: 1.15rem; }
+.word-help-more .word-referents { margin-block: 0.5rem; }
+.word-referents-ask { font-size: 0.85rem; font-weight: 800; color: var(--text-soft); }
+.word-referents-text, .word-facts-original { font-family: var(--serif); font-size: 1.15rem; }
+.word.is-touched { text-decoration: underline solid var(--accent) 2px; text-underline-offset: 0.25em; }
+@media (prefers-reduced-motion: reduce) { .word-help-more > summary::after, .word-help-other > summary::after { transition: none; } }
 .word-help-kind { margin: 0; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-soft); display: flex; gap: 0.5rem; align-items: center; }
 
 /* The team's note on what is studied: a box that grows with what is written */
@@ -881,7 +930,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 /* A word of the original: its facts, and whom it points to */
 .word-facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.15rem 0.75rem; margin: 0.25rem 0; }
 .word-facts > div { display: contents; }
-.word-facts dt { color: var(--text-soft); font-size: 0.85rem; }
+.word-facts dt { color: var(--text-soft); font-size: 0.85rem; font-weight: 700; padding-block-start: 0.15rem; }
 .word-facts dd { margin: 0; }
 .word-referents ul { margin: 0 0 0.25rem; padding-inline-start: 1.1rem; }
 
@@ -1026,7 +1075,6 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .publish-where-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .publish-where-head .chip { flex: none; white-space: nowrap; }
 .helps-steps { display: flex; align-items: center; justify-content: center; gap: 0.9rem; }
-.word-help-actions { margin-block-start: 0.25rem; }
 .review-more-places { min-height: var(--touch); }
 .study-write { margin-block-start: 1rem; }
 /* Scroll bars thin where text scrolls, not to compete with the text */

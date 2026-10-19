@@ -9,7 +9,6 @@
 
 import { RowButton } from './Actions'
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import { flushSync } from 'react-dom'
 import type { Places, PrototypeData, PrototypeNote, PrototypeText } from '../../prototype/data'
 import type { WordLine } from '../../resources/reading'
 import { useT } from '../i18n/i18n'
@@ -17,10 +16,10 @@ import { entriesAbout, type GlossaryEntry } from '../projects/glossary'
 import { lexiconOf } from '../../prototype/data'
 import { sensesOfWord, strongCode, type LexiconSense } from '../../lexicon/lexicon'
 import { Markdown } from './Markdown'
-import { OriginalFacts, Referents } from './OriginalWord'
+import { hasReferents, OriginalFacts, Referents } from './OriginalWord'
 import { SentenceDiagram } from './SentenceDiagram'
-import { showInPane } from './Panes'
 import { Sheet } from './Sheet'
+import { inSight, keepPlace, litOf, pagedHelps, revealBelow, shortGloss } from './wordCard'
 
 export type WordHelp =
   /** What the original says of how a word of it is read: the qere of a ketiv, another possible reading, a note. */
@@ -186,7 +185,8 @@ export function helpsOfWord(data: PrototypeData, abbreviation: string, place: nu
   return out
 }
 
-/** A word touched in a text, and the help of it being read. */
+
+/** A word touched in a text, and which of its helps read one at a time is open (an index into `pagedHelps`). */
 export interface Touched {
   abbreviation: string
   verse: number
@@ -195,12 +195,16 @@ export interface Touched {
   index: number
 }
 
-/** The words a touched help lights in a text: its places there, or the touched word alone when it has no help. */
+/**
+ * The words lit in a text, and the word touched there: the touched word is marked apart from the words a help lights,
+ * so the person still sees which word they touched while the helps light other words around it.
+ */
+export type Lit = Set<number> & { touched?: { verse: number; place: number } }
+
+/** The words a touched word's card lights in a text (`wordCard.litOf`). */
 export function litPlaces(touched: Touched | null, abbreviation: string): Set<number> {
   if (!touched) return new Set()
-  const help = touched.helps[touched.index]
-  if (help) return new Set(help.places[abbreviation] ?? [])
-  return touched.abbreviation === abbreviation ? new Set([touched.place]) : new Set()
+  return litOf(touched.helps, touched.index, touched, abbreviation)
 }
 
 /**
@@ -228,6 +232,17 @@ function groups(pieces: WordLine['pieces'], word: (place: number, text: string, 
   return out
 }
 
+/**
+ * The word button last pressed: the card that opens for it keeps it where it stood on screen. Taken once, by the
+ * touch that follows the press.
+ */
+let pressed: HTMLElement | null = null
+function takePressed(): HTMLElement | null {
+  const el = pressed
+  pressed = null
+  return el
+}
+
 export function WordLines({
   lines,
   verse,
@@ -241,7 +256,7 @@ export function WordLines({
 }: {
   lines: WordLine[]
   verse: number
-  lit: Set<number>
+  lit: Lit
   onWord(place: number): void
   /** Its verse number before the first line; not where the number has a column of its own (texts side by side). */
   numbered?: boolean
@@ -254,6 +269,7 @@ export function WordLines({
   /** The line that the line being written translates, to stand out from the rest of the verse. */
   writing?: number
 }) {
+  const touched = lit.touched?.verse === verse ? lit.touched.place : undefined
   return (
     <>
       {lines.map((line, i) => (
@@ -264,8 +280,12 @@ export function WordLines({
               key={key}
               type="button"
               tabIndex={tabbable ? undefined : -1}
-              className={`word${lit.has(place) ? ' is-lit' : ''}${glossed?.has(place) ? ' has-gloss' : ''}`}
-              onClick={() => onWord(place)}
+              className={`word${lit.has(place) ? ' is-lit' : ''}${place === touched ? ' is-touched' : ''}${glossed?.has(place) ? ' has-gloss' : ''}`}
+              aria-expanded={place === touched ? true : undefined}
+              onClick={(e) => {
+                pressed = e.currentTarget
+                onWord(place)
+              }}
             >
               {text}
               {noted?.has(place) && (
@@ -297,7 +317,6 @@ export function wordAt(text: PrototypeText, place: number): string {
   return ''
 }
 
-/** The words of a help in a text, in order, with «…» where other words lie between. */
 /** The words of a text at these places, in reading order, with «…» where words are left out between them. */
 export function wordsOf(text: PrototypeText, places: number[] | undefined): string {
   if (!places?.length) return ''
@@ -305,6 +324,21 @@ export function wordsOf(text: PrototypeText, places: number[] | undefined): stri
   return sorted.map((p, i) => (i > 0 && p > sorted[i - 1] + 1 ? `… ${wordAt(text, p)}` : wordAt(text, p))).join(' ')
 }
 
+/** Words of a text, set apart in their own direction and letters: Hebrew starts its line beside a label, not at the far edge. */
+function Scripture({ text, children, className = 'word-help-scripture' }: { text: PrototypeText | undefined; children: ReactNode; className?: string }) {
+  return (
+    <bdi className={className} lang={text?.lang} dir={text?.dir}>
+      {children}
+    </bdi>
+  )
+}
+
+/**
+ * The card of a touched word, under its verse, in one shape for every kind of word (principle 10): first what the
+ * word is (in the original, its sense here; in the other texts; the team's decision), which stays while the person
+ * moves through the helps; then the helps, one at a time (principle 4), the only part that changes; last, folded,
+ * more about the word of the original for whoever wants to go to its root.
+ */
 export function WordHelpCard({
   data,
   touched,
@@ -312,6 +346,7 @@ export function WordHelpCard({
   onClose,
   onNote,
   onGlossary,
+  cardRef,
 }: {
   data: PrototypeData
   touched: Touched
@@ -321,183 +356,295 @@ export function WordHelpCard({
   onNote?(word: string): void
   /** For a mini app where the person decides how words are translated (the editor): add or change its entry. */
   onGlossary?(): void
+  /** The card's box, for whoever keeps the pane in place around it. */
+  cardRef?(box: HTMLElement | null): void
 }) {
   const t = useT()
   const [article, setArticle] = useState<{ title: string; markdown: string } | null>(null)
   const [diagram, setDiagram] = useState<{ verse: number; place: number } | null>(null)
   const text = data.texts.find((x) => x.abbreviation === touched.abbreviation)!
   const original = data.texts.find((x) => x.original)
-  const help = touched.helps[touched.index]
-  const count = touched.helps.length
   const word = wordAt(text, touched.place)
+  const paged = pagedHelps(touched.helps)
+  const index = Math.min(touched.index, Math.max(0, paged.length - 1))
+  const help = paged[index]
+  const decided = touched.helps.filter((h): h is Extract<WordHelp, { kind: 'glosario' }> => h.kind === 'glosario')
+  const bridges = touched.helps.filter((h): h is Extract<WordHelp, { kind: 'puente' }> => h.kind === 'puente')
+  const lexicons = touched.helps.filter((h): h is Extract<WordHelp, { kind: 'lexico' }> => h.kind === 'lexico')
+  const originals = originalsOfWord(data, touched.abbreviation, touched.place)
+  const gloss = lexicons
+    .map((l) => shortGloss(l.here[0], l.brief))
+    .filter(Boolean)
+    .join(' · ')
 
-  // Brought into sight in the pane that scrolls around it, never by scrolling the page: under the keyboard there is
-  // little room, and the card would open out of sight.
-  const self = useRef<HTMLElement>(null)
-  // Where the pane was when the word was touched: closing the card goes back there, to the word, and not to wherever
-  // reading a long help left the scroll. Read before the card is brought into sight, which moves it.
-  const before = useRef<{ pane: HTMLElement; top: number } | null>(null)
+  // Moving to another help changes only what is under the arrows, so nothing moves: the arrows stay under the finger
+  // and the words lit stay where they were. Only when reading the last help left its start above the pane does the
+  // next one come back to its first line.
+  const pagedHead = useRef<HTMLDivElement>(null)
+  const refocus = useRef<'previous' | 'next' | null>(null)
+  const shownHelp = useRef(`${touched.abbreviation}|${touched.place}|${index}`)
   useLayoutEffect(() => {
-    const pane = self.current?.parentElement?.closest<HTMLElement>('.pane')
-    before.current = pane ? { pane, top: pane.scrollTop } : null
-  }, [touched.place])
-  useLayoutEffect(() => showInPane(self.current), [touched.place, touched.index])
-  const close = () => {
-    const back = before.current
-    // The card leaves at once, so the pane is its old height again before it is scrolled back.
-    flushSync(onClose)
-    if (back) back.pane.scrollTop = back.top
+    const key = `${touched.abbreviation}|${touched.place}|${index}`
+    const sameWord = shownHelp.current.startsWith(`${touched.abbreviation}|${touched.place}|`)
+    if (shownHelp.current === key || !sameWord) {
+      shownHelp.current = key
+      return
+    }
+    shownHelp.current = key
+    const head = pagedHead.current
+    const pane = head?.closest<HTMLElement>('.pane')
+    if (head && pane) {
+      const view = paneView(pane)
+      const top = head.getBoundingClientRect().top
+      if (top < view.top) pane.scrollTop -= view.top - top + 8
+    }
+    // An arrow used up to its end is no longer a place for the focus: it goes to the other arrow, so whoever goes by
+    // the keyboard keeps their place in the card (principle 13).
+    const used = refocus.current
+    refocus.current = null
+    if (used && head) {
+      const arrows = head.querySelectorAll<HTMLButtonElement>('.pager-arrow')
+      const [previous, next] = [arrows[0], arrows[arrows.length - 1]]
+      const there = used === 'next' ? next : previous
+      if (there?.disabled) (used === 'next' ? previous : next)?.focus()
+    }
+  }, [touched.abbreviation, touched.place, index])
+
+  const go = (to: number, used: 'previous' | 'next') => {
+    refocus.current = used
+    onIndex(to)
   }
 
+  const labelOf = (h: WordHelp): string =>
+    h.kind === 'lectura'
+      ? t(h.reading === 'qere' ? 'ayudas.seLee' : h.reading === 'perhaps' ? 'ayudas.otraLectura' : 'ayudas.notaDelTexto')
+      : h.kind === 'nota'
+        ? t('ayudas.nota')
+        : h.kind === 'palabra' && h.keyTerm
+          ? t('ayudas.palabraClave')
+          : t('ayudas.palabraTraduccion')
+
+  const teamNotes = decided.filter((d) => d.entry.note || d.entry.by)
+  const teamNotesShown = (
+    <>
+      {teamNotes.map((d) => (
+        <p key={d.id} className="word-help-team-note">
+          {d.entry.note}
+          {d.entry.note && d.entry.by ? ' — ' : ''}
+          {d.entry.by && <span className="quiet">{t('ayudas.glosarioDe', { nombre: d.entry.by })}</span>}
+        </p>
+      ))}
+    </>
+  )
+
   return (
-    <aside ref={self} className="word-help" aria-label={t('ayudas.dePalabra', { palabra: word })}>
+    <aside
+      ref={cardRef}
+      className="word-help"
+      aria-label={t('ayudas.dePalabra', { palabra: word })}
+      onKeyDown={(e) => {
+        // Esc closes the card from inside it, as it closes a sheet (principle 13).
+        if (e.key !== 'Escape') return
+        e.stopPropagation()
+        onClose()
+      }}
+    >
       <div className="word-help-head">
-        <span className="word-help-word" dir={text.dir} lang={text.lang}>
-          {word}
-        </span>
-        <button type="button" className="button-quiet word-help-close" onClick={close}>
+        <p className="word-help-word">
+          <Scripture text={text}>{word}</Scripture>
+        </p>
+        <button type="button" className="button-quiet word-help-close" onClick={onClose}>
           {t('ayudas.cerrar')}
         </button>
       </div>
 
-      {!help && <p className="quiet">{t('ayudas.nadaEnPalabra')}</p>}
-
-      {help?.kind === 'lectura' && (
-        <>
-          <p className="word-help-kind">{t(help.reading === 'qere' ? 'ayudas.seLee' : help.reading === 'perhaps' ? 'ayudas.otraLectura' : 'ayudas.notaDelTexto')}</p>
-          {help.reading === 'note' ? (
-            // The text's own note, in English as it has it.
-            <p className="study-other-text" lang="en">
-              {help.text}
-            </p>
-          ) : (
-            <p className="help-reading" dir={original?.dir} lang={original?.lang}>
-              {help.text}
-            </p>
-          )}
-          {help.reading === 'qere' && <p className="quiet">{t('ayudas.seLeeAyuda')}</p>}
-        </>
+      {(gloss || (!text.original && original && originals.length > 0)) && (
+        <p className="word-help-original">
+          {!text.original && original && originals.length > 0 && <Scripture text={original}>{wordsOf(original, originals)}</Scripture>}
+          {gloss && <span className="word-help-gloss">{gloss}</span>}
+        </p>
       )}
 
-      {help?.kind === 'glosario' && (
-        <>
-          <p className="word-help-kind">
-            {t('ayudas.glosario')}
-            <span className="badge">{t(help.entry.status === 'agreed' ? 'ayudas.acordada' : 'ayudas.propuesta')}</span>
-          </p>
-          <p className="help-quote help-bridge">{help.entry.rendering || t('ayudas.sinTraduccion')}</p>
-          {help.entry.alternatives.length > 0 && <p className="quiet">{t('ayudas.tambien', { formas: help.entry.alternatives.join(', ') })}</p>}
-          {help.entry.avoid.length > 0 && <p className="quiet">{t('ayudas.seEvita', { formas: help.entry.avoid.join(', ') })}</p>}
-          {original && (
-            <p className="help-original" dir={original.dir} lang={original.lang}>
-              {help.entry.lemma}
-            </p>
-          )}
-          {help.entry.note && <p className="study-other-text">{help.entry.note}</p>}
-          {help.entry.by && <p className="quiet">{t('ayudas.glosarioDe', { nombre: help.entry.by })}</p>}
-        </>
+      {bridges.length > 0 && (
+        <dl className="word-help-texts">
+          {bridges.map((b) => {
+            const other = data.texts.find((x) => x.abbreviation === b.abbreviation)!
+            return (
+              <div key={b.id}>
+                <dt>{b.abbreviation}</dt>
+                <dd>
+                  <Scripture text={other}>{wordsOf(other, b.places[b.abbreviation])}</Scripture>
+                </dd>
+              </div>
+            )
+          })}
+        </dl>
       )}
 
-      {help?.kind === 'puente' && (
-        <>
-          <p className="word-help-kind">{t('ayudas.enOtroTexto', { texto: help.abbreviation })}</p>
-          <p className="help-quote help-bridge">{wordsOf(data.texts.find((x) => x.abbreviation === help.abbreviation)!, help.places[help.abbreviation])}</p>
-          {original && !text.original && (
-            <p className="help-original" dir={original.dir} lang={original.lang}>
-              {wordsOf(original, help.places[original.abbreviation])}
-            </p>
-          )}
-        </>
-      )}
-
-      {help?.kind === 'nota' && (
-        <>
-          <p className="word-help-kind">{t('ayudas.nota')}</p>
-          {help.places[touched.abbreviation]?.length ? (
-            <p className="help-quote" dir={text.dir} lang={text.lang}>
-              {wordsOf(text, help.places[touched.abbreviation])}
-            </p>
-          ) : null}
-          {original && !text.original && (
-            <p className="help-original" dir={original.dir} lang={original.lang}>
-              {help.note.quote}
-            </p>
-          )}
-          <Markdown text={help.note.note} />
-          {help.note.academy && data.academy[help.note.academy] && (
-            <RowButton label={t('ayudas.leerArticulo', { titulo: data.academy[help.note.academy].title })} onClick={() => setArticle(data.academy[help.note.academy!])} />
-          )}
-        </>
-      )}
-
-      {help?.kind === 'lexico' && (
-        <>
-          <p className="word-help-kind">{t('ayudas.lexico')}</p>
-          <OriginalFacts data={data} place={help.place} />
-          <Referents data={data} verse={help.verse} place={help.place} />
-          <RowButton label={t('st.open')} onClick={() => setDiagram({ verse: help.verse, place: help.place })} />
-          {help.brief && <p className="help-quote">{help.brief}</p>}
-          {help.byVerse && <p className="help-verse">{t('ayudas.enEsteVersiculo')}</p>}
-          {help.here.map((s, i) => (
-            <LexiconSenseText key={i} sense={s} />
+      {(decided.length > 0 || onGlossary || onNote) && (
+        <div className="word-help-part word-help-team">
+          {decided.map((d, i) => (
+            <div key={d.id}>
+              <p className="word-help-label">
+                {t('ayudas.glosarioDelEquipo')}
+                <span className="badge">{t(d.entry.status === 'agreed' ? 'ayudas.acordada' : 'ayudas.propuesta')}</span>
+              </p>
+              <div className="word-help-decided">
+                <p className="word-help-rendering">{d.entry.rendering || t('ayudas.sinTraduccion')}</p>
+                {i === 0 && onGlossary && (
+                  <button type="button" className="chip" onClick={onGlossary}>
+                    ✎ {t('ayudas.cambiar')}
+                  </button>
+                )}
+              </div>
+              {(d.entry.alternatives.length > 0 || d.entry.avoid.length > 0) && (
+                <p className="word-help-soft">
+                  {[
+                    d.entry.alternatives.length ? t('ayudas.tambien', { formas: d.entry.alternatives.join(', ') }) : '',
+                    d.entry.avoid.length ? t('ayudas.seEvita', { formas: d.entry.avoid.join(', ') }) : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </p>
+              )}
+            </div>
           ))}
-          {help.other.length > 0 && (
-            <details className="general-notes">
-              <summary>{t('ayudas.otrosSentidos', { n: help.other.length })}</summary>
-              {help.other.map((s, i) => (
-                <LexiconSenseText key={i} sense={s} />
+          {/* With no word of the original to say more about, what the team noted is said here. */}
+          {lexicons.length === 0 && teamNotesShown}
+          {!decided.length && onGlossary && (
+            <div className="word-help-decided">
+              <p className="word-help-label">
+                {t('ayudas.glosarioDelEquipo')}
+                <span className="word-help-soft">{t('ayudas.sinDecidir')}</span>
+              </p>
+              <button type="button" className="chip" onClick={onGlossary}>
+                + {t('ayudas.agregar')}
+              </button>
+            </div>
+          )}
+          {onNote && (
+            <div className="chip-row">
+              <button type="button" className="chip" onClick={() => onNote(word)}>
+                + {t('ayudas.anotarPalabra')}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {help && (
+        <section className="word-help-part word-help-paged" aria-label={labelOf(help)}>
+          <div className="word-help-paged-head" ref={pagedHead}>
+            <p className="word-help-label">{labelOf(help)}</p>
+            {paged.length > 1 && (
+              <div className="helps-steps word-help-steps">
+                <button type="button" className="pager-arrow" aria-label={t('ayudas.anterior')} title={t('ayudas.anterior')} disabled={index === 0} onClick={() => go(index - 1, 'previous')}>
+                  ‹
+                </button>
+                <span className="quiet">{t('ayudas.cuenta', { i: index + 1, n: paged.length })}</span>
+                <button type="button" className="pager-arrow" aria-label={t('ayudas.siguiente')} title={t('ayudas.siguiente')} disabled={index === paged.length - 1} onClick={() => go(index + 1, 'next')}>
+                  ›
+                </button>
+              </div>
+            )}
+          </div>
+
+          {help.kind === 'lectura' && (
+            <>
+              {help.reading === 'note' ? (
+                // The text's own note, in English as it has it.
+                <p className="study-other-text" lang="en">
+                  {help.text}
+                </p>
+              ) : (
+                <p className="help-reading">
+                  <Scripture text={original}>{help.text}</Scripture>
+                </p>
+              )}
+              {help.reading === 'qere' && <p className="word-help-soft">{t('ayudas.seLeeAyuda')}</p>}
+            </>
+          )}
+
+          {help.kind === 'nota' && (
+            <>
+              {help.places[touched.abbreviation]?.length ? (
+                <p className="word-help-quote">
+                  <Scripture text={text}>{wordsOf(text, help.places[touched.abbreviation])}</Scripture>
+                </p>
+              ) : null}
+              {original && !text.original && (
+                <p className="word-help-quote-original">
+                  <Scripture text={original}>{help.note.quote}</Scripture>
+                </p>
+              )}
+              <Markdown text={help.note.note} />
+              {help.note.academy && data.academy[help.note.academy] && (
+                <RowButton label={t('ayudas.leerArticuloDe', { titulo: data.academy[help.note.academy].title })} onClick={() => setArticle(data.academy[help.note.academy!])} />
+              )}
+            </>
+          )}
+
+          {help.kind === 'palabra' &&
+            (() => {
+              // An article's title names the word and its kin («apóstol, apostolado»): the word first, the kin under it.
+              const [name, ...kin] = (data.words[help.article]?.title ?? help.article).split(/,\s*/)
+              return (
+                <>
+                  <p className="word-help-quote">{name}</p>
+                  {kin.length > 0 && <p className="word-help-soft">{t('ayudas.tambien', { formas: kin.join(', ') })}</p>}
+                  {original && !text.original && (
+                    <p className="word-help-quote-original">
+                      <Scripture text={original}>{help.original}</Scripture>
+                    </p>
+                  )}
+                  {data.words[help.article] && <RowButton label={t('ayudas.leerElArticulo')} onClick={() => setArticle(data.words[help.article])} />}
+                </>
+              )
+            })()}
+        </section>
+      )}
+
+      {!help && lexicons.length === 0 && bridges.length === 0 && decided.length === 0 && <p className="quiet">{t('ayudas.nadaEnPalabra')}</p>}
+
+      {lexicons.map((l, i) => (
+        <details key={l.id} className="word-help-more">
+          <summary>
+            <span>
+              {/* The lemma in its own letters, wherever the language puts it in the sentence. */}
+              {t('ayudas.masSobre', { palabra: ' ' })
+                .split(' ')
+                .flatMap((part, j) => (j === 0 ? [part] : [<Scripture key={j} text={original}>{l.lemma}</Scripture>, part]))}
+            </span>
+          </summary>
+          {i === 0 && teamNotes.length > 0 && (
+            <div className="word-help-more-part">
+              <p className="word-help-label">{t('ayudas.glosarioDelEquipo')}</p>
+              {teamNotesShown}
+            </div>
+          )}
+          <div className="word-help-more-part">
+            {l.byVerse && <p className="word-help-label">{t('ayudas.enEsteVersiculo')}</p>}
+            {l.here.map((s, j) => (
+              <LexiconSenseText key={j} sense={s} />
+            ))}
+          </div>
+          <Referents data={data} verse={l.verse} place={l.place} credit={false} />
+          <OriginalFacts data={data} place={l.place} />
+          {l.other.length > 0 && (
+            <details className="word-help-other">
+              <summary>{t('ayudas.otrosSentidos', { n: l.other.length })}</summary>
+              {l.other.map((s, j) => (
+                <LexiconSenseText key={j} sense={s} />
               ))}
             </details>
           )}
-          <p className="quiet lexicon-credit">{t('ayudas.lexicoCredito')}</p>
-        </>
-      )}
-
-      {help?.kind === 'palabra' && (
-        <>
-          <p className="word-help-kind">
-            {t('ayudas.palabraTraduccion')}
-            {help.keyTerm && <span className="badge">{t('ayudas.palabraClave')}</span>}
+          <RowButton label={t('st.open')} onClick={() => setDiagram({ verse: l.verse, place: l.place })} />
+          <p className="quiet lexicon-credit">
+            {t('ayudas.lexicoCredito')}
+            {hasReferents(data, l.verse, l.place) && ` ${t('lx.refCredit')}`}
           </p>
-          <p className="help-quote">{data.words[help.article]?.title ?? help.article}</p>
-          {original && !text.original && (
-            <p className="help-original" dir={original.dir} lang={original.lang}>
-              {help.original}
-            </p>
-          )}
-          {data.words[help.article] && (
-            <RowButton label={t('ayudas.leerArticulo', { titulo: data.words[help.article].title })} onClick={() => setArticle(data.words[help.article])} />
-          )}
-        </>
-      )}
-
-      {(onNote || onGlossary) && (
-        // What the person can do with the word touched: chips on the card that is about it.
-        <div className="chip-row word-help-actions">
-          {onNote && (
-            <button type="button" className="chip" onClick={() => onNote(word)}>
-              + {t('ayudas.anotarPalabra')}
-            </button>
-          )}
-          {onGlossary && (
-            <button type="button" className="chip" onClick={onGlossary}>
-              {touched.helps.some((h) => h.kind === 'glosario') ? `✎ ${t('ayudas.cambiarGlosario')}` : `+ ${t('ayudas.agregarGlosario')}`}
-            </button>
-          )}
-        </div>
-      )}
-
-      {count > 1 && (
-        <div className="helps-steps">
-          <button type="button" className="pager-arrow" aria-label={t('ayudas.anterior')} title={t('ayudas.anterior')} disabled={touched.index === 0} onClick={() => onIndex(touched.index - 1)}>
-            ‹
-          </button>
-          <span className="quiet">{t('ayudas.cuenta', { i: touched.index + 1, n: count })}</span>
-          <button type="button" className="pager-arrow" aria-label={t('ayudas.siguiente')} title={t('ayudas.siguiente')} disabled={touched.index === count - 1} onClick={() => onIndex(touched.index + 1)}>
-            ›
-          </button>
-        </div>
-      )}
+        </details>
+      ))}
 
       {article && (
         <Sheet title={article.title} onClose={() => setArticle(null)}>
@@ -507,6 +654,14 @@ export function WordHelpCard({
       {diagram && <SentenceDiagram data={data} verse={diagram.verse} place={diagram.place} onClose={() => setDiagram(null)} />}
     </aside>
   )
+}
+
+/** The part of a pane in sight: under the names that stay over the columns of texts side by side. */
+function paneView(pane: HTMLElement): { top: number; bottom: number } {
+  const box = pane.getBoundingClientRect()
+  const head = pane.querySelector<HTMLElement>('.side-row.is-head')
+  const covered = head ? Math.max(0, head.getBoundingClientRect().bottom - box.top) : 0
+  return { top: box.top + covered, bottom: box.bottom }
 }
 
 /** A word to add to the glossary: the original words it stands for, and the word as the person touched it. */
@@ -525,6 +680,12 @@ export interface GlossaryTarget {
  *
  * Without a touched word, the note being read in the helps pane lights its words, once the person has opened that
  * pane (`helpsOpened`): lit words nobody asked for, in a text read before the helps, only puzzle.
+ *
+ * The pane does not move under the person's finger. A word touched stays where it was on screen, also when a card
+ * above it goes away; its card is brought into sight only as far as the word stays in sight, so the words it lights
+ * are seen while it is read. Closed, the word stays where it is; when reading the card took it out of sight, it comes
+ * back to where it was when touched. The focus goes back to the word only when it was in the card: in the editor the
+ * box being written keeps it, and the keyboard stays up.
  */
 export function useWordHelps({
   data,
@@ -554,10 +715,16 @@ export function useWordHelps({
   const [at, setAt] = useState<Omit<Touched, 'helps'> | null>(null)
   const [helpsRead, setHelpsRead] = useState(false)
   const [key, setKey] = useState(resetKey)
+  /** The word to keep in place through the next drawing, at its top on screen; and whether it takes the focus back. */
+  const anchor = useRef<{ el: HTMLElement; y: number; focus: boolean } | null>(null)
+  /** The word whose card is open, and its top on screen when it was touched. */
+  const opened = useRef<{ el: HTMLElement; y: number } | null>(null)
+  const cardBox = useRef<HTMLElement | null>(null)
   if (key !== resetKey) {
     setKey(resetKey)
     setAt(null)
     setHelpsRead(false)
+    anchor.current = null
   }
   const touched: Touched | null = at ? { ...at, helps: helpsOfWord(data, at.abbreviation, at.place, glossary, at.verse) } : null
   const openNote =
@@ -567,18 +734,61 @@ export function useWordHelps({
           .flatMap((v) => v.notes)
           .find((n) => (bridge === 'TPS' ? n.gst : n.glt) === marked)
       : undefined
+
+  const close = () => {
+    const word = opened.current
+    const pane = word?.el.closest<HTMLElement>('.pane')
+    if (word && pane && word.el.isConnected) {
+      const seen = inSight(word.el.getBoundingClientRect(), paneView(pane))
+      const inCard = Boolean(cardBox.current?.contains(document.activeElement))
+      anchor.current = { el: word.el, y: seen ? word.el.getBoundingClientRect().top : word.y, focus: inCard }
+    }
+    setAt(null)
+  }
+
+  const shown = at ? `${at.abbreviation}|${at.verse}|${at.place}` : ''
+  useLayoutEffect(() => {
+    const word = anchor.current
+    anchor.current = null
+    const pane = word?.el.closest<HTMLElement>('.pane')
+    if (!word || !pane || !word.el.isConnected) {
+      if (!shown) opened.current = null
+      return
+    }
+    pane.scrollTop = keepPlace(pane.scrollTop, word.y, word.el.getBoundingClientRect().top)
+    if (!shown) {
+      opened.current = null
+      if (word.focus) word.el.focus({ preventScroll: true })
+      return
+    }
+    opened.current = { el: word.el, y: word.y }
+    const box = cardBox.current
+    if (!box) return
+    const view = paneView(pane)
+    const until = (box.querySelector('.word-help-paged-head') ?? box).getBoundingClientRect().bottom
+    pane.scrollTop += revealBelow({ paneTop: view.top, paneBottom: view.bottom, wordTop: word.el.getBoundingClientRect().top, until })
+  }, [shown])
+
   return {
-    lit: (abbreviation: string) => (touched ? litPlaces(touched, abbreviation) : new Set(openNote?.places[abbreviation] ?? [])),
-    touch: (abbreviation: string, verse: number, place: number) =>
-      setAt((now) => (now && now.abbreviation === abbreviation && now.place === place ? null : { abbreviation, verse, place, index: 0 })),
+    lit: (abbreviation: string): Lit =>
+      Object.assign(touched ? litPlaces(touched, abbreviation) : new Set(openNote?.places[abbreviation] ?? []), {
+        touched: touched && touched.abbreviation === abbreviation ? { verse: touched.verse, place: touched.place } : undefined,
+      }),
+    touch: (abbreviation: string, verse: number, place: number) => {
+      const el = takePressed()
+      if (at && at.abbreviation === abbreviation && at.place === place) return close()
+      anchor.current = el ? { el, y: el.getBoundingClientRect().top, focus: false } : null
+      setAt({ abbreviation, verse, place, index: 0 })
+    },
     card: (abbreviation: string, verse: number) =>
       touched && touched.abbreviation === abbreviation && touched.verse === verse ? (
         <WordHelpCard
           data={data}
           touched={touched}
           onIndex={(index) => setAt({ ...touched, index })}
-          onClose={() => setAt(null)}
+          onClose={close}
           onNote={onNote}
+          cardRef={(box) => (cardBox.current = box)}
           onGlossary={
             onGlossary &&
             (() =>
