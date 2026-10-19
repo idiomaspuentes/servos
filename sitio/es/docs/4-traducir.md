@@ -14,7 +14,7 @@ En el paso Traducción hay dos maneras de trabajar: **Traducir por escrito**, en
 Toque **Empezar** en **Traducir por escrito**. El editor muestra una sección a la vez, con **una caja por versículo**. Escriba en la caja; lo que escribe se guarda solo, en el aparato, mientras escribe.
 
 ![Las cajas de los versículos, vacías](editor-vacio.webp "Una caja por versículo")
-![Las cajas con la traducción](editor-con-texto.webp "La traducción de una sección")
+![Las cajas con la traducción](editor-con-texto.webp "Una sección traducida, en el ejemplo de la app")
 
 Arriba están las otras columnas: **TPL**, **TPS**, el original (**Hebreo** o **Griego**) y **Ayudas**. En el teléfono se pasa de una a otra **deslizando el dedo** a la izquierda o tocando su nombre; la caja en que escribía no pierde su lugar. En **Ayudas** están las notas, las preguntas y las palabras clave **del versículo en que está escribiendo**.
 
@@ -22,6 +22,8 @@ Arriba están las otras columnas: **TPL**, **TPS**, el original (**Hebreo** o **
 ![Las ayudas del versículo](editor-ayudas.webp "Las notas del versículo en que se escribe")
 
 Pase a la sección siguiente con **›**, abajo.
+
+> En las capturas con trabajo hecho se ve **el ejemplo que trae la app** («Ver el ejemplo como Ana»). Su equipo traduce al kichwa, pero la app no tiene una traducción real a ese idioma: en lugar de ella usa el texto de los textos puente, en español.
 
 ## El editor en la computadora
 
