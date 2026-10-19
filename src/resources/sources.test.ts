@@ -10,7 +10,7 @@ import { availability, languagesOnDevice, originalOf, sourcesFor, type DeviceInd
 
 const resource = (key: string, kind: ResourceKind, books: string[], inRelease = books, articles = false, subject = ''): ResourceHere => {
   const [owner, language, resourceId] = key.split('/')
-  return { key, owner, language, resourceId, kind, subject, title: key, books, inRelease, articles, stale: false, interrupted: false }
+  return { key, owner, language, resourceId, kind, subject, title: key, stamp: 'v1', books, inRelease, articles, stale: false, interrupted: false }
 }
 
 /** es-419 as its packs leave it: Ruth with everything, Esther with its literal text only, Genesis published elsewhere. */

@@ -371,6 +371,22 @@ Hecho en el prototipo (`outbox.ts`, `WaitingSheet`), probado con un Door43 de me
 - Al importar, la app dice qué trae y qué cambia antes de aplicarlo.
 - Un paquete de recursos más nuevo puede reemplazar a uno anterior; el trabajo hecho no se toca, pero la app avisa
   qué notas o textos cambiaron en los versículos ya traducidos.
+- **Saber que hay recursos nuevos** (acordado con Abel el 19 de octubre). Cada recurso lleva su versión,
+  `{etiqueta}#{publicado}`, y una sola comparación (`src/resources/freshness.ts`) dice, para otra copia, si es nueva
+  aquí, más nueva, la misma, más vieja u otra que no se puede ordenar (entonces no se adivina). La usan tres lugares:
+  - **Recibir textos y ayudas** (hecho): cada recurso del paquete lleva su etiqueta («Más nueva», «La misma», «Más
+    vieja: queda la de aquí»). Solo se reemplaza lo más nuevo, nunca se vuelve a una versión anterior; el botón dice
+    «Actualizar» cuando algo se reemplaza, y si el aparato ya tiene todo, igual o más nuevo, lo dice y deja «Abrir
+    igual» con borde (completa lo que falte). Un paquete de algunos libros no reemplaza un recurso del que el aparato
+    tiene más libros: un recurso es de una sola versión, y los otros libros quedarían con el texto viejo y sin las
+    citas de sus notas; se dice qué paquete hace falta. Antes, un paquete más nuevo se saltaba sin decir nada.
+  - **Compartir** llevará las versiones de las ayudas que usó quien manda el `.servos`, y Recibir dirá si un
+    compañero tiene algo más nuevo y a quién pedírselo.
+  - **Con internet**, de vez en cuando y nunca mientras se escribe, se comparará con lo marcado `tc-ready` en Door43
+    para el idioma de ayudas de cada proyecto, y una tarjeta en Inicio lo sugerirá una vez por versión, con «Bajar y
+    preparar» y «Ahora no».
+  - Después de actualizar, la app dirá en qué versículos ya traducidos cambió una nota o el texto puente, los marcará
+    en el editor y dejará por hacer la revisión de una nota que cambió.
 
 ## 8. Publicar
 

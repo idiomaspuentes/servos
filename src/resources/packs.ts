@@ -16,7 +16,8 @@ export interface PackSummary {
   kind: NonNullable<PackManifest['kind']>
   language: string
   books: string[]
-  resources: Array<{ key: string; title: string; subject: string; isOriginal: boolean; books: string[] }>
+  /** Its resources, with their release (`stamp`) and the books their release has. */
+  resources: Array<{ key: string; title: string; subject: string; isOriginal: boolean; stamp: string; books: string[] }>
   /** Originals the pack's quotes were built against. */
   needs: Array<{ key: string; stamp: string }>
   createdAt: string
@@ -53,6 +54,7 @@ export async function describePack(bytes: Uint8Array | ArrayBuffer): Promise<Pac
       title: r.title ?? r.key,
       subject: r.subject ?? '',
       isOriginal: r.role === 'original',
+      stamp: r.stamp,
       books: r.books ?? [],
     })),
     needs: manifest.requires ?? [],
@@ -89,8 +91,9 @@ function keepOpening(opening: Opening | null) {
 
 /**
  * Opens a pack: catalog rows, then each resource's rows, receipts last. What the device has stays unless replaced:
- * `replace` when the device's copy was made for an earlier version of the app (`ResourceHere.stale`). Its rows have
- * the same keys as the pack's, and kept they would stay unreadable.
+ * `replace` names the resources whose copy here the pack's takes the place of (`packAgainstDevice`): a newer release,
+ * or a copy made for an earlier version of the app (`ResourceHere.stale`), whose rows have the same keys as the
+ * pack's and kept would stay unreadable. A resource the device has in another release and not named stays as it is.
  *
  * Before writing, the pack and its resources are noted (`openingLeft`); when it ends they are crossed out. If the
  * app closes or the phone goes off halfway, the note stays: a resource whose receipt (written last) is not there is
@@ -99,7 +102,7 @@ function keepOpening(opening: Opening | null) {
 export async function openPack(
   stores: ResourceStores,
   bytes: Uint8Array | ArrayBuffer,
-  options: { replace?: boolean; file?: string; onProgress?: (done: number, total: number) => void } = {}
+  options: { replace?: readonly string[]; file?: string; onProgress?: (done: number, total: number) => void } = {}
 ): Promise<ImportPackResult> {
   const keys = (await readPackManifest(bytes)).resources.map((r) => r.key)
   const before = openingLeft()
