@@ -1,0 +1,51 @@
+{
+  "idioma": "Español",
+  "idiomas": "Idiomas",
+  "titulo": "Servos",
+  "descripcion": "Para traducir en su idioma, en equipo, con o sin internet.",
+  "nav": { "guia": "Guía", "abrir": "Abrir Servos" },
+  "pie": "Servos es de <a href=\"https://idiomaspuentes.org\">Idiomas Puentes</a>, con los recursos de traducción que prepara Taller. Su código es libre (licencia MIT) y está en <a href=\"https://github.com/idiomaspuentes/servos\">GitHub</a>.",
+  "inicio": {
+    "titulo": "Traducir la Biblia en su idioma, en equipo, con o sin internet",
+    "entrada": "Servos acompaña a un equipo de traductores desde el estudio del pasaje hasta la publicación: en el teléfono o en la computadora, en el pueblo o en el taller, aunque no haya señal por semanas.",
+    "abrir": "Abrir Servos",
+    "abrirNota": "Se abre en el navegador y queda guardada para usarla sin internet. También puede instalarla en Android o en Windows.",
+    "descargar": "Descargar las apps",
+    "capturaAlt": "Servos en un teléfono: el estudio de Jonás 1:1, con la palabra del hebreo y su nota.",
+    "puntos": [
+      { "titulo": "Sin internet", "texto": "Todo lo que el equipo necesita queda en el aparato: los textos puente, las notas, las palabras clave, los originales y el trabajo de cada uno. Internet hace falta solo para publicar." },
+      { "titulo": "En el teléfono y en la computadora", "texto": "La misma app en un teléfono Android, en una computadora con Windows o en el navegador. Cada persona entra con su nombre, y varias pueden usar el mismo aparato." },
+      { "titulo": "Los paquetes van de mano en mano", "texto": "Los recursos y el trabajo viajan en archivos por tarjeta, USB o Bluetooth. Al recibir, Servos dice qué trae y junta el trabajo versículo por versículo, sin perder nada." }
+    ],
+    "pasosTitulo": "Cómo trabaja un equipo",
+    "pasosEntrada": "Cada libro pasa por pasos, y en cada paso hay herramientas sencillas, una cosa a la vez.",
+    "pasos": [
+      { "titulo": "Estudio.", "texto": "Leer el pasaje en el Texto Puente Literal y el Simple, con sus introducciones, notas, preguntas y palabras clave, y anotar lo que se entendió." },
+      { "titulo": "Traducción.", "texto": "Escribir cada versículo en el idioma del pueblo con el texto puente al lado, o grabarlo de viva voz." },
+      { "titulo": "Revisión.", "texto": "Comprobar con las notas y con las palabras clave que el sentido quedó bien, leer cada pasaje con cuatro preguntas, y alinear la traducción con el original." },
+      { "titulo": "Publicación.", "texto": "Cuando hay internet, subir el libro a Door43 y marcar versiones." }
+    ],
+    "capturaAnchaAlt": "Servos en una computadora: el texto puente, la traducción y las ayudas en columnas.",
+    "capturaAnchaPie": "En la computadora, la traducción, el texto puente y las ayudas se ven lado a lado.",
+    "descargasTitulo": "Descargar",
+    "descargasEntrada": "Versión {version}, de prueba: puede tener errores. Lo que se escribe queda en el aparato; antes de borrar la app, comparta el trabajo. Puede pasar estos archivos a otros aparatos por tarjeta, USB o Bluetooth.",
+    "descargas": [
+      { "titulo": "Teléfono Android", "texto": "La app para Android 7 o más nuevo. No viene de la tienda: el teléfono preguntará si la deja instalar.", "archivos": ["android"], "guia": "instalar", "guiaTexto": "Cómo instalarla" },
+      { "titulo": "Computadora con Windows", "texto": "Para Windows 10 u 11. Se instala sin internet y sin permiso de administrador.", "archivos": ["windows"], "guia": "instalar", "guiaTexto": "Cómo instalarla" },
+      { "titulo": "Textos y ayudas", "texto": "Reciba los dos en Servos, primero los originales: el hebreo y el griego con sus léxicos, y los textos puente y las ayudas en español.", "archivos": ["originales", "es-419"], "guia": "primera-vez", "guiaTexto": "Cómo recibirlos" }
+    ],
+    "archivo": { "android": "Descargar para Android", "windows": "Descargar para Windows", "originales": "Hebreo y griego", "es-419": "Español" },
+    "libros": "Con todo listo en español: Jonás, Rut, Tito y 3 Juan. Ester y Nehemías tienen por ahora solo el Texto Puente Literal."
+  },
+  "guia": {
+    "titulo": "Guía de Servos",
+    "entrada": "Paso a paso, desde instalar la app hasta publicar el libro. Cada capítulo se lee en unos minutos, y la guía queda guardada para leerla sin internet.",
+    "capitulo": "Capítulo {n} de {total}",
+    "enEsta": "En esta página"
+  },
+  "noEsta": {
+    "titulo": "Esta página no está",
+    "texto": "Puede que la dirección esté mal escrita, o que la página se haya movido.",
+    "inicio": "Ir al inicio"
+  }
+}

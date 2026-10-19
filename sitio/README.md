@@ -1,0 +1,28 @@
+# El sitio de Servos
+
+Lo que se ve en `servos.idiomaspuentes.org` alrededor de la app: la página que presenta Servos (`/`) y la guía
+(`/docs/`). La app está en `/app/`. `npm run build` arma todo en `dist/` (`scripts/sitio.mjs`), sin bibliotecas.
+
+- `descargas.json`: la versión y dónde están los archivos para bajar (el APK, el instalador de Windows y los
+  paquetes). Se cambia en cada versión nueva.
+- `<idioma>/sitio.json`: los textos de la página de inicio, de la barra y del pie.
+- `<idioma>/docs/N-nombre.md`: un capítulo de la guía por archivo, en orden por su número; `nombre` es su dirección
+  (`/docs/nombre/`). Arriba, entre `---`, su `titulo` y su `resumen`. Se escribe en una parte pequeña de Markdown:
+  `##` y `###`, párrafos, listas con `-` o `1.`, `**negrita**`, `*cursiva*`, `[enlaces](/docs/otro/)`, avisos con
+  `>`, y capturas solas en su párrafo: `![lo que muestra](nombre.webp "el pie")`, una al lado de la otra si son
+  varias seguidas. Una captura que empieza con `computadora-` se muestra ancha.
+- `<idioma>/capturas/`: las capturas de la app, tomadas con `scripts/capturas-guia.mjs` (dice cómo correrlo).
+- `estilo.css`: el papel, la tinta y el musgo de la app (`src/app/styles.css`), con sus letras.
+- `sw.template.js`: el *service worker* de la raíz, que guarda el sitio para leerlo sin internet.
+
+## Otro idioma
+
+El español está en la raíz; otro idioma va en `/<idioma>/` en cuanto existe su carpeta (`pt/`, `en/`) con su
+`sitio.json` y sus capítulos con los mismos nombres de archivo, y el pie ofrece cambiar de idioma. Sus capturas se
+toman con la app en ese idioma: `node scripts/capturas-guia.mjs pt`, después de poner en `SAYS` las palabras de la
+app en portugués que el recorrido busca.
+
+## Al escribir
+
+- Se habla de «usted», en frases cortas, con los nombres de los botones tal como están en la app, en negrita.
+- Los títulos de las páginas (la pestaña y el historial) no dicen «Biblia»: ver `docs/PROPUESTA_NO_EXPONER.md`.

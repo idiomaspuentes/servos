@@ -13,3 +13,5 @@ dist-escritorio/
 dist-telefono/
 # The APK for phones (npm run telefono:compilar)
 dist-android/
+# wrangler pages dev (npx wrangler pages dev dist)
+.wrangler/

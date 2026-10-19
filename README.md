@@ -23,7 +23,17 @@ Estado: en diseño. Ver [`docs/DISENO.md`](docs/DISENO.md).
 
 - `npm run dev`: la app web en `http://localhost:5190`.
 - `npm test` y `npm run typecheck`.
-- `npm run build`: la app web, con su *service worker*, en `dist/`.
+- `npm run build`: el sitio entero en `dist/`, como se pone en línea: la página que presenta Servos en `/`, la guía
+  en `/docs/` (los dos escritos en [`sitio/`](sitio/README.md)) y la app web, con su *service worker*, en `/app/`.
+  `npx vite preview` sirve solo la app, en `http://localhost:4173/app/`; `npx wrangler pages dev dist`, todo.
+
+### El sitio en línea
+
+Se publica en Cloudflare Pages, proyecto `servos` (hoy en `servos-9gn.pages.dev`; el dominio será
+`servos.idiomaspuentes.org`), solo con el visto bueno de Abel: `npm run build`, luego
+`npx wrangler pages deploy dist --project-name servos`. Hasta octubre de 2026 la app estaba en la raíz; quien la
+instaló allí no pierde nada al pasar a `/app/` (lo que escribió está en el almacenamiento del sitio, que es el mismo),
+y el *service worker* nuevo de la raíz reemplaza al viejo (ver `sitio/sw.template.js`).
 
 ### La app para Windows (Tauri)
 
