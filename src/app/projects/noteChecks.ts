@@ -172,11 +172,27 @@ export function gatherCheck(mine: NoteCheck | null, theirs: NoteCheck, mineOn: b
 }
 
 /** Where a note's check stands now, against the verse as it is. */
-export type CheckState = 'pendiente' | 'bien' | 'despues' | 'cambio'
+export type CheckState = 'pendiente' | 'bien' | 'despues' | 'cambio' | 'elegir'
+
+const sameVerse = (a: string, b: string) => a.replace(/\s+/g, ' ').trim() === b.replace(/\s+/g, ' ').trim()
+
+/**
+ * The answers to choose from, when two were given apart on the verse as it is (`others`): the one here first, then
+ * each waiting beside it. Empty when there is nothing to choose.
+ */
+export function answersToChoose(check: NoteCheck | null, verseText: string): NoteCheck[] {
+  if (!check || !sameVerse(check.verseText, verseText)) return []
+  const waiting = (check.others ?? []).filter((o) => sameVerse(o.verseText, verseText))
+  if (!waiting.length) return []
+  const { others: _, ...here } = check
+  return [here, ...waiting]
+}
 
 export function stateOf(check: NoteCheck | null, verseText: string): CheckState {
   if (!check) return 'pendiente'
   // Answered for another text: whatever the answer, it is to be checked again.
   if (check.verseText.trim() !== verseText.trim()) return 'cambio'
+  // Two answers given apart on this same verse wait for a person to choose: not resolved until then.
+  if (answersToChoose(check, verseText).length) return 'elegir'
   return check.status
 }

@@ -74,7 +74,7 @@ export interface SharedBook {
   observations?: Record<string, Observation[]>
   studyNotes: Array<{ chapter: number; notes: StudyNote[] }>
   /** The recordings of each place, every take with its sound (base64; `withSounds` adds it). */
-  recordings?: Array<{ chapter: number; verse: number; chosen: string | null; takes: Array<Take & { sound?: string }> }>
+  recordings?: Array<{ chapter: number; verse: number; chosen: string | null; knew?: string[]; waiting?: string[]; takes: Array<Take & { sound?: string }> }>
 }
 
 export interface SharedFile {
@@ -368,7 +368,7 @@ export function receiveBook(book: SharedBook, isNew: boolean, from: Gathering): 
   for (const r of book.recordings ?? []) {
     const sounds = new Map(r.takes.filter((x) => x.sound).map((x) => [x.id, x.sound!]))
     const takes = r.takes.filter((x) => sounds.has(x.id)).map(({ sound: _, ...take }) => take)
-    for (const take of gatherTakes(code, r.chapter, r.verse, { takes, chosen: r.chosen })) {
+    for (const take of gatherTakes(code, r.chapter, r.verse, { takes, chosen: r.chosen, knew: r.knew, waiting: r.waiting })) {
       void keepSound(take.id, blobOf(sounds.get(take.id)!, take.mime)).catch(() => {})
       result.recordingsTaken++
     }

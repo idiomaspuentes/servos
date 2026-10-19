@@ -17,7 +17,7 @@ import { useWider } from '../../frame/Panes'
 import { Sheet } from '../../frame/Sheet'
 import { WordLines, wordsOf } from '../../frame/TouchWords'
 import { WordPicker } from '../../frame/WordPicker'
-import { readCheck, stateOf, wordsOfVerse, writeCheck, type CheckState, type NoteCheck } from '../../projects/noteChecks'
+import { answersToChoose, readCheck, stateOf, wordsOfVerse, writeCheck, type CheckState, type NoteCheck } from '../../projects/noteChecks'
 import { renderingOf } from '../../projects/wordChecks'
 import { textOf } from '../../projects/work'
 import type { MiniAppCenterProps, MiniAppContext, Position } from '../contract'
@@ -233,7 +233,7 @@ export function checkingCenter<I extends Checkable>(kind: CheckKind<I>) {
     const groups = (
         <div className="review-groups">
           {row({ kind: 'todas' }, t(k('todasVersiculos')))}
-          {(['despues', 'cambio'] as const).map((s) => all.some((c) => stateFor(c) === s) && row({ kind: 'estado', id: s }, t(k(`estado.${s}`))))}
+          {(['elegir', 'despues', 'cambio'] as const).map((s) => all.some((c) => stateFor(c) === s) && row({ kind: 'estado', id: s }, t(k(`estado.${s}`))))}
           {kind.groups
             .filter((g) => all.some((c) => c.group === g))
             .map((g) => {
@@ -430,6 +430,9 @@ function CheckSteps<I extends Checkable>({
   const [later, setLater] = useState(false)
   const [reason, setReason] = useState<'equipo' | 'investigar'>(before?.reason ?? 'equipo')
   const [comment, setComment] = useState(before?.comment ?? '')
+  // Two answers given apart on this verse: which stays is chosen first, as two versions of a verse are.
+  const options = answersToChoose(before, verseText)
+  const [choice, setChoice] = useState<number | null>(null)
   const chosen = notThere || picked.length > 0
   const correct = () => {
     leftAt.set(leftKey, { step, picked, notThere, verseText })
@@ -455,6 +458,15 @@ function CheckSteps<I extends Checkable>({
       by: person,
       at: new Date().toISOString(),
     })
+  // The answer chosen is the one shown from now on: its words marked, its reason and comment.
+  const keep = (o: NoteCheck) => {
+    setPicked(o.words)
+    setNotThere(Boolean(o.notThere))
+    setReason(o.reason ?? 'equipo')
+    setComment(o.comment ?? '')
+    setChoice(null)
+    onAnswer(o)
+  }
   const quote = <QuoteBox app={kind.app} data={data} places={item.places} quoteOf={(x) => kind.quoteOf(item, x)} shown={text} onShow={onRefText} />
   const props = { item, data, quote, lookup, context }
 
@@ -468,10 +480,12 @@ function CheckSteps<I extends Checkable>({
           : { label: k('traducirAhora'), run: correct, off: false }
         : // The third step's «right», the answer most given, stays at the foot like the steps before it; the others
           // (correct it, leave it for later) are in the screen under the comparison. Writing why it waits, that is
-          // the one thing.
+          // the one thing. With two answers to choose from, keeping the one touched is.
           later
           ? null
-          : { label: k('siBien'), run: () => answer('bien'), off: false }
+          : options.length
+            ? { label: k('quedarseCon'), run: () => choice !== null && keep(options[choice]), off: choice === null }
+            : { label: k('siBien'), run: () => answer('bien'), off: false }
 
   return (
     <>
@@ -526,7 +540,32 @@ function CheckSteps<I extends Checkable>({
           </>
         )}
 
-        {step === 3 && (
+        {step === 3 && options.length > 0 && (
+          <section className="versions" aria-label={t(k('elegirTitulo'))}>
+            <p className="versions-ask">{t(k('elegirPregunta'))}</p>
+            {options.map((o, i) => {
+              const marked = new Set(o.words)
+              return (
+                <button key={i} type="button" className={choice === i ? 'version is-on' : 'version'} aria-pressed={choice === i} onClick={() => setChoice(i)}>
+                  <span className="version-who">
+                    <span className="version-dot" aria-hidden="true" />
+                    {o.by}
+                  </span>
+                  <span className="version-text">
+                    <strong>{o.status === 'bien' ? t(k('siBien')) : t(k('paraDespues'), { razon: t(k(`razon.${o.reason ?? 'equipo'}`)), nombre: o.by })}</strong>
+                    {o.comment ? ` «${o.comment}»` : ''}
+                  </span>
+                  <span className="version-text quiet">
+                    {o.notThere ? t(k('marcoNoEsta')) : words.map((w, j) => <span key={j}>{j > 0 && ' '}{marked.has(j) ? <mark>{w}</mark> : w}</span>)}
+                  </span>
+                </button>
+              )
+            })}
+            <p className="quiet versions-after">{t(k('elegirDespues'))}</p>
+          </section>
+        )}
+
+        {step === 3 && !options.length && (
           <>
             <p className="review-instruction">{t(k(kind.question?.(item, all, renderingAt) ?? 'pregunta'))}</p>
             <section className="review-mine">
@@ -593,7 +632,7 @@ function CheckSteps<I extends Checkable>({
           <button type="button" className="button-primary" disabled={next.off} onClick={next.run}>
             {t(next.label)}
           </button>
-          {next.off && <p className="quiet review-hint">{t(k('primeroElija'))}</p>}
+          {next.off && step === 2 && <p className="quiet review-hint">{t(k('primeroElija'))}</p>}
         </div>
       )}
     </>
@@ -746,6 +785,11 @@ export const checkingTexts = {
     suTraduccion: 'Su traducción',
     aDecidir: 'Seguir',
     marcoNoEsta: 'Marcó que no está en su traducción.',
+    'estado.elegir': 'Respondidas de dos maneras',
+    elegirTitulo: 'Dos respuestas',
+    elegirPregunta: 'Se respondió de dos maneras, en aparatos distintos. ¿Cuál queda?',
+    quedarseCon: 'Quedarse con esta respuesta',
+    elegirDespues: 'La que quede se puede cambiar después, como cualquier respuesta.',
   },
   pt: {
     todas: 'Todas',
@@ -782,6 +826,11 @@ export const checkingTexts = {
     suTraduccion: 'Sua tradução',
     aDecidir: 'Seguir',
     marcoNoEsta: 'Marcou que não está na sua tradução.',
+    'estado.elegir': 'Respondidas de dois jeitos',
+    elegirTitulo: 'Duas respostas',
+    elegirPregunta: 'Foi respondida de dois jeitos, em aparelhos diferentes. Qual fica?',
+    quedarseCon: 'Ficar com esta resposta',
+    elegirDespues: 'A que ficar pode ser mudada depois, como qualquer resposta.',
   },
   en: {
     todas: 'All',
@@ -818,5 +867,10 @@ export const checkingTexts = {
     suTraduccion: 'Your translation',
     aDecidir: 'Continue',
     marcoNoEsta: 'You marked that it is not in your translation.',
+    'estado.elegir': 'Answered two ways',
+    elegirTitulo: 'Two answers',
+    elegirPregunta: 'It was answered two ways, on different devices. Which one stays?',
+    quedarseCon: 'Keep this answer',
+    elegirDespues: 'The one that stays can be changed later, as any answer.',
   },
 }

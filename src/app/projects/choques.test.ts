@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { readShared, receiveShared, shareProject } from './share'
-import { readCheck, writeCheck, type NoteCheck } from './noteChecks'
+import { readCheck, stateOf, writeCheck, type NoteCheck } from './noteChecks'
 import { addObservation, answer } from './passageReview'
 import { readGlossary, saveGlossaryEntry, type GlossaryEntry } from './glossary'
-import { addTake, chooseTake, chosenTake, takesOf } from './recordings'
+import { addTake, chooseTake, chosenTake, takesOf, takesToChoose } from './recordings'
 import { alignmentConflictAt, writeAlignment } from './alignment'
 import { bookStateOf, chooseVersion, forgetBooks, otherVersion, readDraft, studyNotesOf, writeDraft, writeStudyNote } from './work'
 import type { Project } from './model'
@@ -120,6 +120,8 @@ describe('7. Dos respuestas a la misma revisión de palabra', () => {
     writeCheck('jon', 'w1', check({ status: 'despues', reason: 'equipo', comment: '¿Tayta o Dios?', by: 'Bea', at: '2026-10-15T11:00:00Z' }), 'revisionPalabra')
     receive(share('Bea'), 'Ana')
     expect(readCheck('jon', 'w1', 'revisionPalabra')).toMatchObject({ by: 'Ana', others: [{ by: 'Bea', comment: '¿Tayta o Dios?' }] })
+    // It is not resolved while it waits: the reviewer shows it «answered two ways».
+    expect(stateOf(readCheck('jon', 'w1', 'revisionPalabra'), 'Taytaku rimarqa')).toBe('elegir')
     // On Bea's side, the same: hers stays, Ana's waits beside it.
     receive(share('Ana'), 'Bea')
     expect(readCheck('jon', 'w1', 'revisionPalabra')).toMatchObject({ by: 'Bea', others: [{ by: 'Ana' }] })
@@ -278,18 +280,37 @@ describe('11. Notas de estudio sobre los mismos versículos', () => {
 })
 
 describe('12. Grabaciones: la toma que cuenta', () => {
-  it('las tomas se juntan, ninguna se pierde; la que cuenta es la de aquí, aunque la otra sea más nueva (duda)', () => {
+  /** What `person` shares, with the sound of every take (withSounds reads it from IndexedDB; here, as if it had). */
+  const withSound = (person: string) => {
+    const file = share(person)
+    file.books[0].recordings = file.books[0].recordings!.map((r) => ({ ...r, takes: r.takes.map((x) => ({ ...x, sound: btoa('ok') })) }))
+    return file
+  }
+
+  it('elegidas por separado: ninguna toma se pierde, la de aquí sigue sonando y la otra espera a que alguien elija', () => {
     on('Ana')
     addTake('jon', 1, 1, { by: 'Ana', at: '2026-10-15T10:00:00Z', ms: 900, mime: 'audio/webm' }, 'ana1')
     on('Bea')
     addTake('jon', 1, 1, { by: 'Bea', at: '2026-10-15T11:00:00Z', ms: 900, mime: 'audio/webm' }, 'bea1')
-    chooseTake('jon', 1, 1, 'bea1')
-    const file = share('Bea')
-    // The sound travels with withSounds (IndexedDB); here, as if it had been read.
-    file.books[0].recordings = file.books[0].recordings!.map((r) => ({ ...r, takes: r.takes.map((x) => ({ ...x, sound: btoa('ok') })) }))
-    receive(file, 'Ana')
+    receive(withSound('Bea'), 'Ana')
     expect(takesOf('jon', 1, 1).map((x) => x.id)).toEqual(['ana1', 'bea1'])
     expect(chosenTake('jon', 1, 1)?.id).toBe('ana1')
+    expect(takesToChoose('jon', 1, 1).map((x) => x.id)).toEqual(['ana1', 'bea1'])
+    // Ana chooses Bea's: it counts, and the choice settles it on Bea's device too.
+    chooseTake('jon', 1, 1, 'bea1')
+    expect([chosenTake('jon', 1, 1)?.id, takesToChoose('jon', 1, 1)]).toEqual(['bea1', []])
+    receive(withSound('Ana'), 'Bea')
+    expect([chosenTake('jon', 1, 1)?.id, takesToChoose('jon', 1, 1)]).toEqual(['bea1', []])
+  })
+
+  it('una toma grabada o elegida sabiendo de la otra cuenta sin preguntar, aunque el reloj diga otra hora', () => {
+    on('Ana')
+    addTake('jon', 1, 1, { by: 'Ana', at: '2026-10-15T10:00:00Z', ms: 900, mime: 'audio/webm' }, 'ana1')
+    receive(withSound('Ana'), 'Bea')
+    on('Bea')
+    addTake('jon', 1, 1, { by: 'Bea', at: '2026-10-01T00:00:00Z', ms: 900, mime: 'audio/webm' }, 'bea1')
+    receive(withSound('Bea'), 'Ana')
+    expect([chosenTake('jon', 1, 1)?.id, takesToChoose('jon', 1, 1)]).toEqual(['bea1', []])
   })
 })
 

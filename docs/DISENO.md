@@ -369,11 +369,15 @@ Hecho en el prototipo (`outbox.ts`, `WaitingSheet`), probado con un Door43 de me
     queda por revisar, nunca borrada; de dos revisiones de una nota, de una palabra o de una pregunta de un pasaje
     queda la dada sobre el texto que queda; de dos sobre el mismo texto, la que se dio sabiendo de la otra, y dos
     dadas por separado que dicen cosas distintas quedan las dos: la de aquí sigue y la otra espera a su lado para que
-    una persona elija (responder otra vez es elegir; **por decidir** cómo se muestra la que espera). La fecha no decide (19 de octubre; sección 6.8). Un «sí» de un
+    una persona elija (responder otra vez es elegir). En el revisor, esa nota o palabra queda «respondida de dos
+    maneras», no como hecha; al abrirla se ven las dos respuestas, una debajo de la otra, con quién dio cada una, sus
+    palabras marcadas y su comentario, y se toca la que queda («Quedarse con esta respuesta»). La fecha no decide (19 de octubre; sección 6.8). Un «sí» de un
     pasaje dice siempre lo mismo: dos sobre el mismo texto son una sola respuesta; lo visto para mejorar se junta, y
     lo marcado mejorado sigue mejorado; el glosario se junta palabra por palabra (una traducción
     distinta queda como otra forma); dos notas de estudio distintas sobre los mismos versículos quedan las dos, cada
-    una con su autor.
+    una con su autor; de las grabaciones, ninguna toma se pierde, y la que suena sigue a las elecciones: la elegida
+    (o grabada) sabiendo de la otra cuenta, y dos elegidas por separado dejan sonar la de aquí mientras la otra
+    espera; en «Traducir de viva voz» se escuchan las dos y se toca la que queda (19 de octubre).
 - Al importar, la app dice qué trae y qué cambia antes de aplicarlo.
 - Un paquete de recursos más nuevo puede reemplazar a uno anterior; el trabajo hecho no se toca, pero la app avisa
   qué notas o textos cambiaron en los versículos ya traducidos.
