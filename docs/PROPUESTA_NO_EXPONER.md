@@ -12,7 +12,7 @@ encajan.
 comparte lleva en el nombre el proyecto, el libro y quién lo mandó («Biblia en kichwa — Tito — Ana — 2026-10-19.servos»)
 y, dentro, sin cifrar, el texto, los nombres de todo el equipo y sus voces. **Primer paso recomendado** (sección 4): lo
 barato que no estorba a nadie, y la página que explica en palabras simples qué protege la app y qué no. Después, el
-bloqueo con el de el propio teléfono y el «modo discreto».
+bloqueo del propio teléfono y el «modo discreto».
 
 ## 1. Lo que hoy queda a la vista
 
@@ -108,7 +108,7 @@ forma):
 
 Es poco código, no cambia nada para un equipo sin riesgo, y deja hecho el lugar donde después entran las opciones.
 
-**Después**, en este orden: el **bloqueo** con el de el propio teléfono (F), porque cubre el caso más común, el
+**Después**, en este orden: el **bloqueo** del propio teléfono (F), porque cubre el caso más común, el
 teléfono que alguien toma; el **modo discreto** con nombre de archivo discreto (D), sin capturas (E) y nombre e ícono
 (G); y el **`.servos` cerrado** (H), junto con las copias cifradas en la tarjeta, para que sea un solo formato y una
 sola frase.
