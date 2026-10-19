@@ -23,7 +23,7 @@
 
 import type { AlignmentGroup } from '@usfm-tools/types'
 import { gatherGlossary, readGlossary, saveGlossaryEntry, type GlossaryEntry } from './glossary'
-import type { BookEntry, Phase, Project } from './model'
+import { closer, privacyOf, type BookEntry, type Phase, type Project } from './model'
 import type { NoteCheck } from './noteChecks'
 import { blobOf, gatherTakes, keepSound, recordedPlaces, soundBase64, takesOf, type Take } from './recordings'
 import { placesOf, textKey, type BookState } from '../../core'
@@ -404,7 +404,9 @@ export function receiveShared(
     const name = books.find((b) => b.code === x.code)?.name
     return name ? { ...x, name } : x
   })
-  const updated: Project = { ...target, books: [...named, ...added] }
+  // Only the team, on either phone, stays only the team: receiving never opens up what someone closed.
+  const privacy = closer(privacyOf(target), privacyOf(file.project))
+  const updated: Project = { ...target, books: [...named, ...added], ...(privacy === 'equipo' ? { privacy } : {}) }
   const { gathered, changed } = gatherGlossary(readGlossary(updated.id), file.glossary ?? [])
   for (const entry of changed) saveGlossaryEntry(updated.id, entry)
   const next = destination.kind === 'join' ? projects.map((p) => (p.id === updated.id ? updated : p)) : [...projects, updated]

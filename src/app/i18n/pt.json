@@ -863,7 +863,7 @@
   "copias.conContrasenaRecomendada": "Com senha (recomendado)",
   "copias.conContrasenaQue": "Quem encontrar o cartão não pode ler a cópia nem saber o que é. Se esquecer a senha, a cópia não serve: ninguém pode abri-la, nem o Servos.",
   "copias.sinContrasena": "Sem senha",
-  "copias.sinContrasenaQue": "Qualquer pessoa com o cartão pode abrir a cópia e ver que é uma tradução da Bíblia. Escolha só se isso não puser ninguém em perigo.",
+  "copias.sinContrasenaQue": "Qualquer pessoa com o cartão pode abrir a cópia e ver o que é. Para equipes que não se importam que outros vejam seu trabalho.",
   "copias.conContrasena": "com senha",
   "copias.contrasena": "Senha",
   "copias.otraVez": "A senha outra vez",
@@ -903,5 +903,16 @@
   "copias.borrarAyuda.computadora": "Apaga só as cópias que o Servos fez; o trabalho neste computador fica.",
   "copias.menuAyuda.computadora": "Uma cópia do trabalho num pendrive, caso o computador se perca ou estrague",
   "copias.noProtegeTelefono.computadora": "A senha protege a cópia, não o computador: quem o tiver aberto pode abrir o Servos.",
-  "copias.sugerencia.computadora": "Há um pendrive no computador. Guardar nele uma cópia do trabalho, caso o computador se perca?"
+  "copias.sugerencia.computadora": "Há um pendrive no computador. Guardar nele uma cópia do trabalho, caso o computador se perca?",
+  "privacidad.pregunta": "Quem pode ver o trabalho desta equipe?",
+  "privacidad.equipo": "Só a equipe",
+  "privacidad.equipoQue": "As cópias e os arquivos compartilhados levam senha e não dizem o que são. Quem não é da equipe não pode lê-los.",
+  "privacidad.abierto": "Qualquer pessoa com o arquivo",
+  "privacidad.abiertoQue": "Mais simples: as cópias e os arquivos abrem sem senha.",
+  "privacidad.abrirPregunta": "Qualquer pessoa com o arquivo poderá ver o trabalho?",
+  "privacidad.abrirQue": "As novas cópias e arquivos deste projeto não terão mais senha. O que já foi guardado com senha continua com ela.",
+  "privacidad.abrirSi": "Sim, mudar",
+  "privacidad.abrirNo": "Manter só a equipe",
+  "copias.soloConContrasena": "Há projetos que só a equipe pode ver: suas cópias são guardadas sempre com senha.",
+  "copias.quedaFuera": "Sem senha não se copia o que só a equipe pode ver: {proyectos}. Para copiá-lo, deixe de fazer cópias e comece de novo com senha."
 }

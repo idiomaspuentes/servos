@@ -9,10 +9,13 @@
  * without one, it is the file «Share» makes, which anyone holding the card can open. The key drawn from the password is
  * kept on the phone, unable to leave it; the password is kept nowhere.
  *
+ * A project kept to its team (`Privacy`) is never copied open: with one such project on the phone, a copy is only
+ * offered with a password; and copies already being made without one leave that project out, and say so.
+ *
  * Only in the app for phones (`android/…/CopiesPlugin.java`); elsewhere none of it runs.
  */
 
-import { loadProjects, type Project } from '../projects/model'
+import { loadProjects, privacyOf, type Project } from '../projects/model'
 import { keyFrom, lock, type CopyKey } from '../projects/lockedCopy'
 import { shareProject, withSounds } from '../projects/share'
 import { whenNotTyping } from './online'
@@ -33,6 +36,8 @@ export interface CopiesState {
   at: string | null
   /** Why the last copy could not be written: the card is not there, or something else. */
   failed: 'missing' | 'other' | null
+  /** The projects kept to their team that open copies leave out, by name. */
+  leftOut?: string[]
 }
 
 interface Native {
@@ -64,6 +69,9 @@ const native = async (): Promise<{ plugin: Native }> => {
 
 /** Whether copies can be kept here: in the app for phones. */
 export const copiesHere = () => onPhone()
+
+/** Whether a copy may only be made with a password: some project here is kept to its team. */
+export const onlyLocked = (projects: Pick<Project, 'privacy'>[] = loadProjects()) => projects.some((p) => privacyOf(p) === 'equipo')
 
 // ---- what is remembered ----
 
@@ -210,7 +218,12 @@ async function copyChanged(person: string, always: boolean) {
   const { plugin } = await native()
   if (!(await plugin.ready({ folder: place.folder })).ready) return setState({ failed: 'missing' })
   let wrote = false
-  for (const project of loadProjects()) {
+  // Never open: a project kept to its team waits for copies with a password.
+  const all = loadProjects()
+  const leftOut = place.locked ? [] : all.filter((p) => privacyOf(p) === 'equipo').map((p) => p.name)
+  if (JSON.stringify(leftOut) !== JSON.stringify(copiesState().leftOut ?? [])) setState({ leftOut })
+  for (const project of all) {
+    if (!place.locked && privacyOf(project) === 'equipo') continue
     const print = await printOf(project, person, place)
     if (!always && localStorage.getItem(PRINT + project.id) === print) continue
     try {

@@ -12,7 +12,8 @@ import { MenuRow, Sheet } from '../frame/Sheet'
 import { useI18n, useT } from '../i18n/i18n'
 import { languageLabel, writtenRightToLeft } from '../projects/languages'
 import { helpsLanguagesHere } from '../projects/library'
-import { DEFAULT_MINI_APPS, EXAMPLE_PROJECT_ID, slug, type Project } from '../projects/model'
+import { DEFAULT_MINI_APPS, EXAMPLE_PROJECT_ID, slug, type Privacy, type Project } from '../projects/model'
+import { PrivacyChoice } from './PrivacyChoice'
 
 export function AddProjectSheet({ onClose, onBible, onReceive }: { onClose(): void; onBible(): void; onReceive(): void }) {
   const t = useT()
@@ -86,6 +87,8 @@ export function NewProject({ existing, onCancel, onCreate }: { existing: Project
   const [font, setFont] = useState(FONTS[0])
   const [versification, setVersification] = useState('eng')
   const [missing, setMissing] = useState(false)
+  // Kept to the team unless whoever coordinates says otherwise (philosophy, principle 9).
+  const [privacy, setPrivacy] = useState<Privacy>('equipo')
 
   return (
     <div className="screen">
@@ -122,6 +125,7 @@ export function NewProject({ existing, onCancel, onCreate }: { existing: Project
               versification,
               books: [],
               miniApps: DEFAULT_MINI_APPS,
+              privacy,
             })
           }}
         >
@@ -200,6 +204,9 @@ export function NewProject({ existing, onCancel, onCreate }: { existing: Project
               </label>
             </div>
           </details>
+
+          {/* Asked here, by whoever makes the project for the team, and carried with it (philosophy, principle 9). */}
+          <PrivacyChoice value={privacy} onChange={setPrivacy} />
 
           {missing && (
             <p className="notice" role="alert">

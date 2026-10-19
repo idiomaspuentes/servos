@@ -98,6 +98,15 @@ describe('compartir y recibir', () => {
     expect(projects[1].books.map((b) => b.code)).toEqual(['jon'])
   })
 
+  it('quién puede ver el trabajo viaja con el proyecto, y al juntar queda el más reservado', () => {
+    const closed = { ...beasFile(), project: { ...beasFile().project, privacy: 'equipo' as const } }
+    expect(receiveShared(closed, ['jon'], { kind: 'new' }, [], 'Ana').projects[0].privacy).toBe('equipo')
+    expect(receiveShared(closed, ['jon'], { kind: 'join', projectId: 'kichwa' }, [project], 'Ana').projects[0].privacy).toBe('equipo')
+    // Open from another phone does not open what is closed here.
+    expect(receiveShared(beasFile(), ['jon'], { kind: 'join', projectId: 'kichwa' }, [{ ...project, privacy: 'equipo' }], 'Ana').projects[0].privacy).toBe('equipo')
+    expect(receiveShared(beasFile(), ['jon'], { kind: 'join', projectId: 'kichwa' }, [project], 'Ana').projects[0].privacy).toBeUndefined()
+  })
+
   it('lo que alguien ya eligió no se vuelve a preguntar, aunque el archivo llegue otra vez', () => {
     const file = beasFile()
     writeDraft('jon', 1, 2, 'Ninive llaktaman rimay', 'Ana')

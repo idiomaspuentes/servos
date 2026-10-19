@@ -863,7 +863,7 @@
   "copias.conContrasenaRecomendada": "Con contraseña (recomendado)",
   "copias.conContrasenaQue": "Quien encuentre la tarjeta no puede leer la copia ni saber qué es. Si olvida la contraseña, la copia no sirve: nadie puede abrirla, tampoco Servos.",
   "copias.sinContrasena": "Sin contraseña",
-  "copias.sinContrasenaQue": "Cualquiera que tenga la tarjeta puede abrir la copia y ver que es una traducción de la Biblia. Elíjala solo si eso no pone en peligro a nadie.",
+  "copias.sinContrasenaQue": "Cualquiera que tenga la tarjeta puede abrir la copia y ver qué es. Para equipos a los que no les importa que otros vean su trabajo.",
   "copias.conContrasena": "con contraseña",
   "copias.contrasena": "Contraseña",
   "copias.otraVez": "La contraseña otra vez",
@@ -903,5 +903,16 @@
   "copias.borrarAyuda.computadora": "Borra solo las copias que hizo Servos; el trabajo en esta computadora queda.",
   "copias.menuAyuda.computadora": "Una copia del trabajo en una memoria USB, por si la computadora se pierde o se daña",
   "copias.noProtegeTelefono.computadora": "La contraseña protege la copia, no la computadora: quien la tenga abierta puede abrir Servos.",
-  "copias.sugerencia.computadora": "Hay una memoria USB puesta. ¿Guardar ahí una copia del trabajo, por si la computadora se pierde?"
+  "copias.sugerencia.computadora": "Hay una memoria USB puesta. ¿Guardar ahí una copia del trabajo, por si la computadora se pierde?",
+  "privacidad.pregunta": "¿Quién puede ver el trabajo de este equipo?",
+  "privacidad.equipo": "Solo el equipo",
+  "privacidad.equipoQue": "Las copias y los archivos que se comparten llevan contraseña y no dicen qué son. Quien no es del equipo no puede leerlos.",
+  "privacidad.abierto": "Cualquiera que tenga el archivo",
+  "privacidad.abiertoQue": "Más simple: las copias y los archivos se abren sin contraseña.",
+  "privacidad.abrirPregunta": "¿Que cualquiera con el archivo pueda ver el trabajo?",
+  "privacidad.abrirQue": "Las copias y los archivos nuevos de este proyecto ya no llevarán contraseña. Lo que ya se guardó con contraseña la sigue teniendo.",
+  "privacidad.abrirSi": "Sí, cambiar",
+  "privacidad.abrirNo": "Dejar solo el equipo",
+  "copias.soloConContrasena": "Hay proyectos que solo el equipo puede ver: sus copias se guardan siempre con contraseña.",
+  "copias.quedaFuera": "Sin contraseña no se copia lo que solo el equipo puede ver: {proyectos}. Para copiarlo, deje de hacer copias y empiece de nuevo con contraseña."
 }

@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from 'react'
 import { MenuRow, Sheet } from '../frame/Sheet'
-import { copiesState, copyNow, eraseCopies, onCopies, setUpCopies, stopCopies, type CopiesState } from '../frame/copies'
+import { copiesState, copyNow, eraseCopies, onCopies, onlyLocked, setUpCopies, stopCopies, type CopiesState } from '../frame/copies'
 import { useT } from '../i18n/i18n'
 
 /** The shortest password taken: long enough that guessing it takes years, short enough to remember. */
@@ -69,6 +69,9 @@ export function CopiesSheet({ person, onClose }: { person: string; onClose(): vo
             {working ? t('copias.copiando') : t('copias.ahora')}
           </button>
           {!place.locked && <p className="notice">{t('copias.sinContrasenaAviso')}</p>}
+          {!place.locked && (state.leftOut?.length ?? 0) > 0 && (
+            <p className="notice">{t('copias.quedaFuera', { proyectos: state.leftOut!.join(', ') })}</p>
+          )}
           <MenuRow
             label={t('copias.borrar')}
             description={t('copias.borrarAyuda')}
@@ -107,6 +110,8 @@ export function CopiesSheet({ person, onClose }: { person: string; onClose(): vo
     )
   }
 
+  // With a project kept to its team, a copy is only made with a password: the other way is not offered.
+  const mustLock = onlyLocked()
   const short = locked && password.length > 0 && password.length < SHORTEST
   const differ = locked && again.length > 0 && again !== password
   const ready = !locked || (password.length >= SHORTEST && again === password)
@@ -114,23 +119,26 @@ export function CopiesSheet({ person, onClose }: { person: string; onClose(): vo
     <Sheet title={t('copias.titulo')} onClose={onClose} dirty={password !== ''}>
       <div className="copies">
         <p>{t('copias.para')}</p>
-        <fieldset className="copies-choice">
+        <fieldset className="option-cards">
           <legend className="field-label">{t('copias.como')}</legend>
-          <label className={`copies-option${locked ? ' is-chosen' : ''}`}>
+          <label className={`option-card${locked ? ' is-chosen' : ''}`}>
             <input type="radio" name="copia-como" checked={locked} onChange={() => setLocked(true)} />
             <span>
               <strong>{t('copias.conContrasenaRecomendada')}</strong>
               <span className="quiet">{t('copias.conContrasenaQue')}</span>
             </span>
           </label>
-          <label className={`copies-option${!locked ? ' is-chosen' : ''}`}>
-            <input type="radio" name="copia-como" checked={!locked} onChange={() => setLocked(false)} />
-            <span>
-              <strong>{t('copias.sinContrasena')}</strong>
-              <span className="quiet">{t('copias.sinContrasenaQue')}</span>
-            </span>
-          </label>
+          {!mustLock && (
+            <label className={`option-card${!locked ? ' is-chosen' : ''}`}>
+              <input type="radio" name="copia-como" checked={!locked} onChange={() => setLocked(false)} />
+              <span>
+                <strong>{t('copias.sinContrasena')}</strong>
+                <span className="quiet">{t('copias.sinContrasenaQue')}</span>
+              </span>
+            </label>
+          )}
         </fieldset>
+        {mustLock && <p className="quiet">{t('copias.soloConContrasena')}</p>}
         {locked && (
           <>
             <label className="field">

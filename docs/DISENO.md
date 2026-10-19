@@ -527,6 +527,9 @@ grabó el teléfono.
     - **Recuperar** es «Recibir» con el archivo de la copia: pide la contraseña y se junta como cualquier trabajo
       compartido. Probado en el emulador: una copia hecha, la app desinstalada, y todo de vuelta en otra persona.
     - **Borrar las copias** borra solo los archivos con el nombre de las copias de Servos, nada más de la carpeta.
+    - **Sigue lo que eligió cada proyecto** («¿Quién puede ver el trabajo de este equipo?», al crearlo y en sus
+      ajustes; filosofía, principio 9): con un proyecto de «Solo el equipo» en el teléfono, la copia solo se
+      ofrece con contraseña, y unas copias ya hechas sin ella dejan fuera ese proyecto y lo dicen.
     - En la computadora, y una memoria USB en el teléfono, quedan para después.
   - **Sin internet** la app lo sabe: la WebView no sigue la red sola, y la app le dice cuándo hay y cuándo no, para
     que lo que espera internet (6.11) espere en modo avión en vez de intentar. Cuentan el Wi-Fi y los datos, no una

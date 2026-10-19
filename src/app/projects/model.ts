@@ -40,7 +40,23 @@ export interface Project {
   books: BookEntry[]
   /** For each step, the ids of the mini apps the project uses, in order. Chosen by whoever coordinates. */
   miniApps: Record<Phase, string[]>
+  /** Who may see the team's work in what the app leaves outside itself (`Privacy`). Chosen when the project is made. */
+  privacy?: Privacy
 }
+
+/**
+ * Who may see a team's work outside the app (philosophy, principle 9), chosen by whoever coordinates when the project
+ * is made, and carried with it wherever it is shared: «equipo», only the team (the copies and the files shared are
+ * sealed with a password and say nothing of what they are); «abierto», whoever has the file. Some teams need the
+ * first, most do not; the app speaks of it only as who can see the work.
+ */
+export type Privacy = 'equipo' | 'abierto'
+
+/** A project's choice; one made before it was asked is open, as everything was then. */
+export const privacyOf = (p: Pick<Project, 'privacy'>): Privacy => p.privacy ?? 'abierto'
+
+/** Of two choices for the same project (two phones that met), the one that keeps the work closer. */
+export const closer = (a: Privacy, b: Privacy): Privacy => (a === 'equipo' || b === 'equipo' ? 'equipo' : 'abierto')
 
 export const DEFAULT_MINI_APPS: Record<Phase, string[]> = {
   estudio: ['estudio'],

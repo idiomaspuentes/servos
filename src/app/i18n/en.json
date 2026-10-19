@@ -863,7 +863,7 @@
   "copias.conContrasenaRecomendada": "With a password (recommended)",
   "copias.conContrasenaQue": "Whoever finds the card cannot read the copy or tell what it is. If you forget the password, the copy is useless: no one can open it, not even Servos.",
   "copias.sinContrasena": "Without a password",
-  "copias.sinContrasenaQue": "Anyone who has the card can open the copy and see it is a Bible translation. Choose it only if that puts no one in danger.",
+  "copias.sinContrasenaQue": "Anyone who has the card can open the copy and see what it is. For teams who do not mind others seeing their work.",
   "copias.conContrasena": "with a password",
   "copias.contrasena": "Password",
   "copias.otraVez": "The password again",
@@ -903,5 +903,16 @@
   "copias.borrarAyuda.computadora": "Deletes only the copies Servos made; the work on this computer stays.",
   "copias.menuAyuda.computadora": "A copy of the work on a USB stick, in case the computer is lost or broken",
   "copias.noProtegeTelefono.computadora": "The password protects the copy, not the computer: whoever has it open can open Servos.",
-  "copias.sugerencia.computadora": "There is a USB stick in. Keep a copy of the work on it, in case the computer is lost?"
+  "copias.sugerencia.computadora": "There is a USB stick in. Keep a copy of the work on it, in case the computer is lost?",
+  "privacidad.pregunta": "Who can see this team's work?",
+  "privacidad.equipo": "Only the team",
+  "privacidad.equipoQue": "Copies and shared files carry a password and do not say what they are. Whoever is not on the team cannot read them.",
+  "privacidad.abierto": "Anyone who has the file",
+  "privacidad.abiertoQue": "Simpler: copies and files open without a password.",
+  "privacidad.abrirPregunta": "Let anyone with the file see the work?",
+  "privacidad.abrirQue": "New copies and files of this project will no longer carry a password. What was already kept with one keeps it.",
+  "privacidad.abrirSi": "Yes, change it",
+  "privacidad.abrirNo": "Keep it to the team",
+  "copias.soloConContrasena": "Some projects are for the team only: their copies are always kept with a password.",
+  "copias.quedaFuera": "Without a password, what only the team can see is not copied: {proyectos}. To copy it, stop making copies and start again with a password."
 }

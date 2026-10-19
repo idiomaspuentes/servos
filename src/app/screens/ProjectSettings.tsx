@@ -2,7 +2,7 @@
  * A project's settings, on its card as in translationCore 4 (`ProjectSettings.jsx`): its name, its language (searched in
  * Door43's list, as when it was created) and the direction it is written in, and — Servos's own — which mini apps each
  * step uses. Whoever coordinates chooses; every phone in the project then sees the same, so the person translating
- * never has to choose.
+ * never has to choose. So is who can see the team's work outside the app (`PrivacyChoice`).
  */
 
 import { useState } from 'react'
@@ -10,7 +10,8 @@ import { LanguageSearch } from '../frame/LanguageSearch'
 import { useT } from '../i18n/i18n'
 import { miniAppsFor } from '../miniapps/registry'
 import { writtenRightToLeft } from '../projects/languages'
-import { PHASES, type Phase, type Project } from '../projects/model'
+import { PHASES, privacyOf, type Phase, type Privacy, type Project } from '../projects/model'
+import { PrivacyChoice } from './PrivacyChoice'
 import { FONTS, HelpsChoice, VERSIFICATIONS } from './NewProject'
 import { ShareSheet } from './ShareSheet'
 
@@ -24,6 +25,7 @@ export function ProjectSettings({ project, person, onBack, onSave }: { project: 
   const [helps, setHelps] = useState(project.helpsLanguage)
   const [chosen, setChosen] = useState<Record<Phase, string[]>>(project.miniApps)
   const [missing, setMissing] = useState(false)
+  const [privacy, setPrivacy] = useState<Privacy>(privacyOf(project))
   const [sharing, setSharing] = useState(false)
   const toggle = (phase: Phase, id: string) =>
     setChosen((c) => ({ ...c, [phase]: c[phase].includes(id) ? c[phase].filter((x) => x !== id) : [...c[phase], id] }))
@@ -32,7 +34,7 @@ export function ProjectSettings({ project, person, onBack, onSave }: { project: 
       setMissing(true)
       return
     }
-    onSave({ ...project, name: name.trim(), languageName: language.name.trim(), languageCode: language.code.trim().toLowerCase(), direction, font, versification, helpsLanguage: helps, miniApps: chosen })
+    onSave({ ...project, name: name.trim(), languageName: language.name.trim(), languageCode: language.code.trim().toLowerCase(), direction, font, versification, helpsLanguage: helps, miniApps: chosen, privacy })
   }
 
   return (
@@ -97,6 +99,8 @@ export function ProjectSettings({ project, person, onBack, onSave }: { project: 
             </select>
           </label>
         </details>
+
+        <PrivacyChoice value={privacy} onChange={setPrivacy} ask />
 
         {project.books.length > 0 && (
           <section className="settings-share">

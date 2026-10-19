@@ -81,6 +81,11 @@ Lo normal no se anuncia. Un aviso aparece cuando hay algo que hacer o algo sali�
   - Lo más seguro es lo recomendado: una copia con contraseña, con un nombre que no dice nada.
   - Lo que la app deja fuera se puede borrar desde la app.
   - La app no promete lo que no hace: una contraseña protege la copia, no el teléfono desbloqueado en otras manos.
+- **Cada proyecto elige quién puede ver su trabajo**, al crearlo: «Solo el equipo» (elegido de entrada) o «Cualquiera
+  que tenga el archivo». La mayoría de los equipos no necesita lo primero, y no se le impone. La elección viaja con
+  el proyecto y, al juntar, queda la más reservada; cerrarlo es un toque, abrirlo pide confirmar.
+- **Se habla solo de quién puede ver el trabajo.** Nunca «riesgo», «peligro» ni «prohibido»: asustaría a quienes no
+  están en esa situación, y diría en la pantalla de los demás lo que conviene no decir (una prueba lo vigila).
 
 ### 10. Un marco para todas las mini apps
 
