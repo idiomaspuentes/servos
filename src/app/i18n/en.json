@@ -924,5 +924,9 @@
   "paquete.noCerrar.computadora": "Do not close the app or turn off the computer until it finishes. If it is interrupted, open the same file again and it completes.",
   "paquete.interrumpido": "{archivo} did not finish opening last time. Choose it again to complete it.",
   "paquete.unPaquete": "a pack",
-  "libro.paqueteInterrumpido": "The texts for {libro} did not finish opening. Receive the pack again to complete them."
+  "libro.paqueteInterrumpido": "The texts for {libro} did not finish opening. Receive the pack again to complete them.",
+  "ajustes.olvidarContrasena": "Forget the password on this phone",
+  "ajustes.olvidarContrasena.computadora": "Forget the password on this computer",
+  "ajustes.olvidarContrasenaAyuda": "The next time you share, receive or keep a copy, Servos will ask for it again.",
+  "ajustes.contrasenaOlvidada": "Forgotten. Servos will ask for it next time."
 }

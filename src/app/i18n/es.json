@@ -924,5 +924,9 @@
   "paquete.noCerrar.computadora": "No cierre la app ni apague la computadora hasta que termine. Si se interrumpe, vuelva a abrir el mismo archivo y se completa.",
   "paquete.interrumpido": "La última vez no se terminó de abrir {archivo}. Elíjalo de nuevo para completarlo.",
   "paquete.unPaquete": "un paquete",
-  "libro.paqueteInterrumpido": "Los textos de {libro} no se terminaron de abrir. Reciba el paquete de nuevo para completarlos."
+  "libro.paqueteInterrumpido": "Los textos de {libro} no se terminaron de abrir. Reciba el paquete de nuevo para completarlos.",
+  "ajustes.olvidarContrasena": "Olvidar la contraseña en este teléfono",
+  "ajustes.olvidarContrasena.computadora": "Olvidar la contraseña en esta computadora",
+  "ajustes.olvidarContrasenaAyuda": "La próxima vez que comparta, reciba o guarde una copia, Servos la pedirá otra vez.",
+  "ajustes.contrasenaOlvidada": "Se olvidó. Servos la pedirá la próxima vez."
 }

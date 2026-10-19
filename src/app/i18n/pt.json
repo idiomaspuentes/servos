@@ -924,5 +924,9 @@
   "paquete.noCerrar.computadora": "Não feche o app nem desligue o computador até terminar. Se for interrompido, abra o mesmo arquivo de novo e ele se completa.",
   "paquete.interrumpido": "Da última vez não terminou de abrir {archivo}. Escolha-o de novo para completá-lo.",
   "paquete.unPaquete": "um pacote",
-  "libro.paqueteInterrumpido": "Os textos de {libro} não terminaram de abrir. Receba o pacote de novo para completá-los."
+  "libro.paqueteInterrumpido": "Os textos de {libro} não terminaram de abrir. Receba o pacote de novo para completá-los.",
+  "ajustes.olvidarContrasena": "Esquecer a senha neste telefone",
+  "ajustes.olvidarContrasena.computadora": "Esquecer a senha neste computador",
+  "ajustes.olvidarContrasenaAyuda": "Da próxima vez que compartilhar, receber ou guardar uma cópia, o Servos a pedirá de novo.",
+  "ajustes.contrasenaOlvidada": "Esquecida. O Servos a pedirá da próxima vez."
 }
