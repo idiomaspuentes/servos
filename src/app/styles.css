@@ -881,7 +881,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 @media (max-width: 899.98px) {
   .review-scroll { order: 1; }
   .review-next { order: 2; }
-  .review-head { order: 3; border-block-end: 0; border-block-start: 1px solid var(--line); background: var(--surface); }
+  .review-head { order: 3; border-block-end: 0; border-block-start: 1px solid var(--line); background: var(--surface); padding-block-end: calc(0.5rem + env(safe-area-inset-bottom, 0px)); }
   .review > .review-empty { order: 1; flex: 1; }
   .main-fill:has(> .review, > .review-alone) { padding-block-end: 0; }
 }
