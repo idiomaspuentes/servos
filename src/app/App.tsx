@@ -485,7 +485,20 @@ export function App() {
         />
       )}
 
-      {screen.kind === 'receive' && <ReceivePack onBack={() => setScreen(screen.back)} onStudy={() => setScreen(screen.back)} />}
+      {screen.kind === 'receive' && (
+        <ReceivePack
+          onBack={() => setScreen(screen.back)}
+          onStudy={() => setScreen(screen.back)}
+          onOpenVerse={(projectId, book, chapter, verse) => {
+            // A verse whose helps the pack changed opens in the editor; back from it is its book.
+            setResume({ projectId, book })
+            // The place is kept as the project's: the receiving screen belongs to none.
+            inProject(projectId, () => setPosition({ book, chapter, verse }, 'editor'))
+            setScreen({ kind: 'app', projectId, book, id: 'editor' })
+            void loadBook(book, languageOf(projectId))
+          }}
+        />
+      )}
       {screen.kind === 'recibir' && (
         <ReceiveScreen
           key={screen.opened?.n ?? 0}

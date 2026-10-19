@@ -12,12 +12,16 @@ import {
   introsOf,
   notesOfVerse,
   readChapter,
+  readVerseHelps,
   referenceCovers,
   resourcesOnDevice,
   textQuoteOf,
   versesInLines,
   wordsInLines,
 } from './reading'
+import { packAgainstDevice } from './freshness'
+import { compareHelps } from '../app/projects/helpsChanges'
+import { deviceIndex } from './sources'
 import { RESOURCE_VERSIONS, openResourceStores } from './store'
 
 const GLT = 'es-419_gl/es-419/glt'
@@ -136,6 +140,75 @@ describe('abrir un paquete de recursos', () => {
     ])
     // The name comes from the text's 	oc2, the chapters from the prepared chapters: tc-study's table keeps only the last.
     expect(await booksOfText(stores, GLT)).toEqual([{ book: 'tit', name: 'Tito', chapters: [{ number: 1, verseCount: 2 }] }])
+  })
+})
+
+/**
+ * The same resources in other releases: the notes newer (one note says it otherwise), the text older. Every row that
+ * names a release names the new one.
+ */
+function laterSource(): PackSource {
+  const meta: Record<string, Record<string, unknown>> = {
+    [GLT]: { ...META[GLT], release: { tag_name: 'v41', published_at: '2026-01-05T10:00:00Z' } },
+    [TN]: { ...META[TN], release: { tag_name: 'v67', published_at: '2026-10-12T14:03:00Z' } },
+  }
+  let rows = JSON.stringify(ROWS)
+  for (const key of [GLT, TN]) rows = rows.split(stamp(key)).join(resourceContentStamp(meta[key]))
+  rows = rows.replace('Pablo se llama **siervo**.', 'Pablo se llama **esclavo**.')
+  const parsed = JSON.parse(rows) as typeof ROWS
+  return {
+    rowsByPrefix: async (prefix) => parsed.filter((r) => r.key.startsWith(prefix)),
+    catalogRow: async (key) => meta[key] ?? null,
+    catalogRows: async () => Object.values(meta),
+  }
+}
+
+describe('recibir otra versión de los recursos', () => {
+  it('un paquete con notas más nuevas y un texto más viejo cambia solo las notas', async () => {
+    const { stores } = await deviceWithPack()
+    const { bytes } = await buildLanguagePack({ source: laterSource(), language: 'es-419', versions: RESOURCE_VERSIONS })
+    const summary = await describePack(bytes)
+    const against = packAgainstDevice({ resources: summary.resources }, (await deviceIndex(stores)).resources)
+    expect(Object.fromEntries(against.resources.map((r) => [r.key, r.standing]))).toEqual({ [GLT]: 'older', [TN]: 'newer' })
+    expect(against.replace).toEqual([TN])
+
+    await openPack(stores, bytes, { replace: against.replace })
+    const notes = await notesOfVerse(stores, { notesKey: TN, textKey: GLT, book: 'tit', chapter: 1, verse: 1 })
+    expect(notes.find((n) => n.id === 'abcd')?.note).toContain('esclavo')
+    const here = (await deviceIndex(stores)).resources
+    expect(here.find((r) => r.key === TN)?.stamp).toBe('v67#2026-10-12T14_03_00Z')
+    expect(here.find((r) => r.key === GLT)?.stamp).toBe(stamp(GLT))
+  })
+
+  it('lo que se lee de un versículo antes y después dice qué nota cambió y qué decía', async () => {
+    const { stores } = await deviceWithPack()
+    const places = [{ chapter: 1, verse: 1 }, { chapter: 1, verse: 2 }]
+    const before = await readVerseHelps(stores, { literal: GLT, notes: TN }, 'tit', places)
+    expect(before[0]).toEqual({
+      chapter: 1,
+      verse: 1,
+      notes: [
+        { id: 'abcd', quote: 'δοῦλος Θεοῦ', note: 'Pablo se llama **siervo**.' },
+        { id: 'efgh', quote: 'κατὰ πίστιν', note: 'Para la fe.' },
+      ],
+      literal: 'Pablo, siervo de Dios y apóstol,',
+      simple: '',
+    })
+    const { bytes } = await buildLanguagePack({ source: laterSource(), language: 'es-419', versions: RESOURCE_VERSIONS })
+    await openPack(stores, bytes, { replace: [TN] })
+    const after = await readVerseHelps(stores, { literal: GLT, notes: TN }, 'tit', places)
+    expect(compareHelps(before, after, 'T')).toEqual([
+      { chapter: 1, verse: 1, at: 'T', notes: [{ id: 'abcd', kind: 'cambiada', quote: 'δοῦλος Θεοῦ', before: 'Pablo se llama **siervo**.' }], texts: [] },
+    ])
+  })
+
+  it('sin pedir reemplazar, el aparato se queda con lo suyo, como antes', async () => {
+    const { stores } = await deviceWithPack()
+    const { bytes } = await buildLanguagePack({ source: laterSource(), language: 'es-419', versions: RESOURCE_VERSIONS })
+    const result = await openPack(stores, bytes)
+    expect(result.skippedResources.map((r) => r.key).sort()).toEqual([GLT, TN])
+    const notes = await notesOfVerse(stores, { notesKey: TN, textKey: GLT, book: 'tit', chapter: 1, verse: 1 })
+    expect(notes.find((n) => n.id === 'abcd')?.note).toContain('siervo')
   })
 })
 

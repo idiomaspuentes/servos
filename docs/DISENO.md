@@ -371,6 +371,37 @@ Hecho en el prototipo (`outbox.ts`, `WaitingSheet`), probado con un Door43 de me
 - Al importar, la app dice qué trae y qué cambia antes de aplicarlo.
 - Un paquete de recursos más nuevo puede reemplazar a uno anterior; el trabajo hecho no se toca, pero la app avisa
   qué notas o textos cambiaron en los versículos ya traducidos.
+- **Saber que hay recursos nuevos** (acordado con Abel el 19 de octubre). Cada recurso lleva su versión,
+  `{etiqueta}#{publicado}`, y una sola comparación (`src/resources/freshness.ts`) dice, para otra copia, si es nueva
+  aquí, más nueva, la misma, más vieja u otra que no se puede ordenar (entonces no se adivina). La usan tres lugares:
+  - **Recibir textos y ayudas** (hecho): cada recurso del paquete lleva su etiqueta («Más nueva», «La misma», «Más
+    vieja: queda la de aquí»). Solo se reemplaza lo más nuevo, nunca se vuelve a una versión anterior; el botón dice
+    «Actualizar» cuando algo se reemplaza, y si el aparato ya tiene todo, igual o más nuevo, lo dice y deja «Abrir
+    igual» con borde (completa lo que falte). Un paquete de algunos libros no reemplaza un recurso del que el aparato
+    tiene más libros: un recurso es de una sola versión, y los otros libros quedarían con el texto viejo y sin las
+    citas de sus notas; se dice qué paquete hace falta. Antes, un paquete más nuevo se saltaba sin decir nada.
+  - **Compartir** llevará las versiones de las ayudas que usó quien manda el `.servos`, y Recibir dirá si un
+    compañero tiene algo más nuevo y a quién pedírselo.
+  - **Con internet**, de vez en cuando y nunca mientras se escribe, se comparará con lo marcado `tc-ready` en Door43
+    para el idioma de ayudas de cada proyecto, y una tarjeta en Inicio lo sugerirá una vez por versión, con «Bajar y
+    preparar» y «Ahora no».
+  - **Qué cambió en lo ya traducido** (hecho): antes de abrir un paquete que reemplaza algo, para cada proyecto cuyo
+    idioma de ayudas es el del paquete y cada libro suyo que el paquete trae, se leen sus versículos ya escritos (los
+    de un tramo unido, cada uno): las notas de cada uno (id, texto y cita) y su TPL y TPS. Hay que leerlo antes,
+    porque al reemplazar se escriben encima. Después de abrir se vuelven a leer y se comparan
+    (`src/app/projects/helpsChanges.ts`): nota nueva, nota cambiada (con lo que decía), nota quitada (con lo que
+    decía), y si cambió el TPL o el TPS. Lo que cambió se guarda por proyecto y libro (`servos.recursos.cambios`);
+    si llega otro paquete antes de que se vea, se junta, y cada nota guarda lo que decía primero.
+    - El último paso de Recibir dice «Cambió algo en N versículos que ya tradujo», una fila con › por versículo
+      (hasta ocho; el resto se cuenta y queda marcado en el editor) con lo que cambió dicho corto («Nota cambiada ·
+      TPL»), y el botón lleno lleva al primero en el editor. Si no cambió nada en lo traducido, no se dice nada
+      (principio 6).
+    - En el editor, bajo la caja de ese versículo, una sola fila: la etiqueta teñida «Ayudas cambiadas» con lo mismo
+      dicho corto, y ▾. Desplegada, dice lo que decía cada nota y cada texto, y el chip «✓ Ya lo vi» quita la fila.
+      Una fila y no más, para que las cajas de una sección sigan juntas. En Ayudas, la nota cambiada lleva «Nota
+      cambiada» y «Lo que decía antes ▾»; la nueva, «Nota nueva».
+    - Una revisión con las notas hecha antes de que su nota cambiara vuelve a quedar por hacer (`cambio`), aunque ya
+      se haya visto el cambio; se abre desde leer la nota, con las palabras que se marcaron, y dice por qué.
 
 ## 8. Publicar
 

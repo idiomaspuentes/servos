@@ -86,7 +86,7 @@ declare module '@bt-synergy/language-pack' {
     bytes: Uint8Array | ArrayBuffer
     target: PackTarget
     versions?: PackVersions
-    overwrite?: boolean
+    overwrite?: boolean | readonly string[]
     onProgress?: (done: number, total: number) => void
   }): Promise<ImportPackResult>
   export function buildLanguagePack(params: {

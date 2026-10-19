@@ -5,7 +5,7 @@
  * (philosophy, principle 8). Read from keys alone, never from the rows, which weigh megabytes.
  */
 
-import { readIngestReceiptMeta, scriptureIngestSchema } from '@bt-synergy/resource-catalog'
+import { readIngestReceiptMeta, resourceContentStamp, scriptureIngestSchema } from '@bt-synergy/resource-catalog'
 import { unwrapVersioned } from '@bt-synergy/resource-pipeline/cache/versionedEnvelope'
 import { SCRIPTURE_PREPARE_VERSION } from '@bt-synergy/resource-pipeline/scripture/scripturePreparer'
 import { USJ_PROCESSING_VERSION } from '@bt-synergy/usj-processor'
@@ -23,6 +23,8 @@ export interface ResourceHere {
   /** The catalog's subject: what tells the lexicons and MACULA apart, which are of no tc-study kind. */
   subject: string
   title: string
+  /** Its release, `{tag}#{published_at}` (`freshness.ts` compares it with a pack's). */
+  stamp: string
   /** Books prepared on this device (lowercase, Bible order). Empty for resources kept by article (words, academy). */
   books: string[]
   /** Books its release has, on this device or not (from the catalog). */
@@ -82,6 +84,7 @@ export async function deviceIndex(stores: ResourceStores, opening: ReadonlySet<s
       kind,
       subject: String(meta.subject ?? ''),
       title: String(meta.title ?? key),
+      stamp: resourceContentStamp(meta),
       books: inBibleOrder(books),
       inRelease: inBibleOrder(inRelease.map((b) => b.toLowerCase()).filter((b) => BIBLE_ORDER.includes(b))),
       articles: kind === 'scripture' || kind === 'original' || PREPARED[kind] ? false : (await keysUnder(stores, `${key}/`, 1)).length > 0,
