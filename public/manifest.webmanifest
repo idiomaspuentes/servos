@@ -3,6 +3,7 @@
   "short_name": "Servos",
   "description": "Para traducir en su idioma, en equipo, con o sin internet.",
   "lang": "es",
+  "id": "/",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -7,7 +7,9 @@
 
 const BUILD = '__BUILD__'
 const FILES = __FILES__
-const CACHE = `servos-${BUILD}`
+// `servos-app-`: the app's own kept versions. Before it moved to `/app/` they were `servos-<build>` at the root, and
+// are let go below as any older version is; the site's worker at the root keeps its pages apart (`sitio-`).
+const CACHE = `servos-app-${BUILD}`
 
 self.addEventListener('install', (event) => {
   // Each file asked anew (not from the browser's own cache), so the version kept is the one that was built.

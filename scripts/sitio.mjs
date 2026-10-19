@@ -1,0 +1,370 @@
+/**
+ * The site around the web app (`npm run build`, after `vite build` has put the app in `dist/app/`): the page that says
+ * what Servos is, at `/`, and the guide, at `/docs/`, written in `sitio/<idioma>/`. Spanish is at the root; another
+ * language is built under `/<idioma>/` as soon as its folder exists, with the same pages (`sitio/README.md`).
+ *
+ * A worker at the root keeps the site for reading without internet, as the app's own worker keeps the app under
+ * `/app/`; it also takes the place of the app's old worker, from when the app was at the root (`sitio/sw.template.js`).
+ *
+ * No libraries: the guide is written in a small part of Markdown (headings, paragraphs, lists, bold, links, notes and
+ * pictures), read here, so that translating it is writing text files.
+ */
+
+import { createHash } from 'node:crypto'
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { dirname, join, relative, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const HERE = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const SITE = join(HERE, 'sitio')
+const OUT = join(HERE, 'dist')
+const PUBLIC = join(HERE, 'public')
+const FIRST = 'es'
+
+if (!existsSync(join(OUT, 'app', 'index.html'))) {
+  console.error('Falta la app en dist/app: primero `vite build`.')
+  process.exit(1)
+}
+
+const written = []
+function write(path, text) {
+  const file = join(OUT, path)
+  mkdirSync(dirname(file), { recursive: true })
+  writeFileSync(file, text)
+  written.push(path)
+}
+function copy(from, path) {
+  const file = join(OUT, path)
+  mkdirSync(dirname(file), { recursive: true })
+  copyFileSync(from, file)
+  written.push(path)
+}
+
+// ── The site's own files: its sheet, its letters (only the Latin ones: the site is read, not typed in) and the mark ──
+
+const FONTS = {
+  'mulish-latin.woff2': '@fontsource-variable/mulish/files/mulish-latin-wght-normal.woff2',
+  'mulish-latin-ext.woff2': '@fontsource-variable/mulish/files/mulish-latin-ext-wght-normal.woff2',
+  'charis-latin-400.woff2': '@fontsource/charis-sil/files/charis-sil-latin-400-normal.woff2',
+  'charis-latin-400-italic.woff2': '@fontsource/charis-sil/files/charis-sil-latin-400-italic.woff2',
+  'charis-latin-700.woff2': '@fontsource/charis-sil/files/charis-sil-latin-700-normal.woff2',
+}
+for (const [name, from] of Object.entries(FONTS)) copy(join(HERE, 'node_modules', from), `sitio/letras/${name}`)
+for (const f of ['icon.svg', 'favicon-32.png', 'apple-touch-icon.png']) copy(join(PUBLIC, f), `sitio/${f}`)
+const sheet = readFileSync(join(SITE, 'estilo.css'), 'utf8')
+const sheetName = `sitio/estilo-${hash(sheet)}.css`
+write(sheetName, sheet)
+
+// The mark, drawn in the page so it takes the colour of the theme.
+const MARK = readFileSync(join(PUBLIC, 'icon.svg'), 'utf8')
+  .replace(/<style>.*<\/style>/, '')
+  .replace('<svg ', '<svg class="marca" aria-hidden="true" ')
+
+// ── The languages ──
+
+const languages = readdirSync(SITE).filter((d) => existsSync(join(SITE, d, 'sitio.json')))
+languages.sort((a, b) => (a === FIRST ? -1 : b === FIRST ? 1 : a.localeCompare(b)))
+const downloads = JSON.parse(readFileSync(join(SITE, 'descargas.json'), 'utf8'))
+
+for (const lang of languages) {
+  const root = lang === FIRST ? '/' : `/${lang}/`
+  const t = JSON.parse(readFileSync(join(SITE, lang, 'sitio.json'), 'utf8'))
+  const chapters = readdirSync(join(SITE, lang, 'docs'))
+    .filter((f) => f.endsWith('.md'))
+    .sort()
+    .map((f) => readChapter(join(SITE, lang, 'docs', f), f.replace(/^\d+-/, '').replace(/\.md$/, '')))
+
+  // The pictures of the guide, each language with its own (the app speaks it in them).
+  const shots = join(SITE, lang, 'capturas')
+  if (existsSync(shots)) for (const f of readdirSync(shots)) copy(join(shots, f), `${root.slice(1)}docs/capturas/${f}`)
+
+  const page = (path, title, body, { home = false } = {}) =>
+    write(
+      `${root.slice(1)}${path}index.html`,
+      frame({ lang, t, root, path, title, body, home, languages })
+    )
+
+  page('', t.titulo, landing(t, root, chapters), { home: true })
+  page('docs/', t.guia.titulo, guideIndex(t, root, chapters))
+  chapters.forEach((c, i) =>
+    page(`docs/${c.slug}/`, `${c.title} · Servos`, chapter(t, root, chapters, i))
+  )
+  if (lang === FIRST) {
+    write('404.html', frame({ lang, t, root, path: '404', title: 'Servos', body: notFound(t, root), languages }))
+  }
+}
+
+// ── The worker that keeps the site for reading offline ──
+
+const kept = ['/', ...written.filter((p) => p !== '404.html').map((p) => '/' + p.replace(/index\.html$/, ''))]
+const build = hash(
+  kept
+    .sort()
+    .map((p) => p + hash(readFileSync(join(OUT, p.endsWith('/') ? p + 'index.html' : p))))
+    .join('\n')
+)
+write(
+  'sw.js',
+  readFileSync(join(SITE, 'sw.template.js'), 'utf8')
+    .replace('__BUILD__', build)
+    .replace('__FILES__', JSON.stringify([...new Set(kept)], null, 2))
+)
+
+const size = written.reduce((n, p) => n + statSync(join(OUT, p)).size, 0)
+console.log(`Sitio: ${written.length} archivos (${(size / 1e6).toFixed(1)} MB), idiomas: ${languages.join(', ')}`)
+
+// ── Pages ──
+
+function frame({ lang, t, root, path, title, body, home, languages: langs }) {
+  const others = langs.length > 1
+    ? `<nav class="idiomas" aria-label="${t.idiomas}">${langs
+        .map((l) => {
+          const r = l === FIRST ? '/' : `/${l}/`
+          const name = JSON.parse(readFileSync(join(SITE, l, 'sitio.json'), 'utf8')).idioma
+          return l === lang
+            ? `<span aria-current="true">${name}</span>`
+            : `<a href="${r}${path === '404' ? '' : path}" hreflang="${l}" lang="${l}">${name}</a>`
+        })
+        .join('')}</nav>`
+    : ''
+  return `<!doctype html>
+<html lang="${lang}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(title)}</title>
+<meta name="description" content="${esc(t.descripcion)}">
+<meta name="theme-color" content="#f7f2e8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c1316" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" sizes="32x32" href="/sitio/favicon-32.png">
+<link rel="icon" type="image/svg+xml" href="/sitio/icon.svg">
+<link rel="apple-touch-icon" href="/sitio/apple-touch-icon.png">
+<link rel="preload" href="/sitio/letras/mulish-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/${sheetName}">
+${home ? `<script>
+// Servos installed from here when the app lived at the root opens here: it goes on to the app.
+if (matchMedia('(display-mode: standalone)').matches || navigator.standalone) location.replace('/app/')
+</script>
+` : ''}<script>
+if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}))
+</script>
+</head>
+<body${home ? ' class="inicio"' : ''}>
+<header class="barra">
+  <a class="nombre" href="${root}">${MARK}<span>Servos</span></a>
+  <nav class="enlaces">
+    <a href="${root}docs/"${path.startsWith('docs/') ? ' aria-current="page"' : ''}>${t.nav.guia}</a>
+    <a class="abrir" href="/app/">${t.nav.abrir}</a>
+  </nav>
+</header>
+<main>
+${body}
+</main>
+<footer class="pie">
+  ${others}
+  <p>${t.pie}</p>
+</footer>
+</body>
+</html>
+`
+}
+
+function landing(t, root, chapters) {
+  const i = t.inicio
+  const d = downloads.archivos
+  const file = (key) => `${downloads.base}${d[key].archivo}`
+  const pic = (name, alt, cls = '') =>
+    `<img class="${cls}" src="${root}docs/capturas/${name}" alt="${esc(alt)}" loading="lazy">`
+  return `
+<section class="portada">
+  <div class="portada-texto">
+    <h1>${i.titulo}</h1>
+    <p class="entrada">${i.entrada}</p>
+    <div class="acciones">
+      <a class="boton lleno" href="/app/">${i.abrir} →</a>
+      <a class="boton" href="#descargar">${i.descargar}</a>
+    </div>
+    <p class="nota-chica">${i.abrirNota}</p>
+  </div>
+  <figure class="telefono">${pic('estudio-palabra.webp', i.capturaAlt)}</figure>
+</section>
+
+<section class="tres">
+  ${i.puntos.map((p) => `<div><h2>${p.titulo}</h2><p>${p.texto}</p></div>`).join('\n  ')}
+</section>
+
+<section class="pasos">
+  <h2>${i.pasosTitulo}</h2>
+  <p class="entrada-chica">${i.pasosEntrada}</p>
+  <ol>
+    ${i.pasos.map((p) => `<li><strong>${p.titulo}</strong> ${p.texto}</li>`).join('\n    ')}
+  </ol>
+  <figure class="ancha">${pic('computadora-editor.webp', i.capturaAnchaAlt)}<figcaption>${i.capturaAnchaPie}</figcaption></figure>
+</section>
+
+<section class="descargas" id="descargar">
+  <h2>${i.descargasTitulo}</h2>
+  <p class="entrada-chica">${i.descargasEntrada.replace('{version}', downloads.version)}</p>
+  <div class="tarjetas">
+    ${i.descargas
+      .map(
+        (x) => `<div class="tarjeta">
+      <h3>${x.titulo}</h3>
+      <p>${x.texto}</p>
+      ${x.archivos
+        .map((k) => `<a class="boton" href="${file(k)}" download>${i.archivo[k]} <span>${d[k].tamano}</span></a><small class="archivo">${d[k].archivo}</small>`)
+        .join('\n      ')}
+      ${x.guia ? `<a class="seguir" href="${root}docs/${x.guia}/">${x.guiaTexto} →</a>` : ''}
+    </div>`
+      )
+      .join('\n    ')}
+  </div>
+  <p class="nota-chica">${i.libros}</p>
+</section>
+
+<section class="guia-corta">
+  <h2>${t.guia.titulo}</h2>
+  <p class="entrada-chica">${t.guia.entrada}</p>
+  ${chapterList(root, chapters)}
+</section>
+`
+}
+
+function guideIndex(t, root, chapters) {
+  return `
+<article class="texto">
+  <h1>${t.guia.titulo}</h1>
+  <p class="entrada">${t.guia.entrada}</p>
+  ${chapterList(root, chapters)}
+</article>
+`
+}
+
+function chapterList(root, chapters) {
+  return `<ol class="capitulos">
+    ${chapters
+      .map((c) => `<li><a href="${root}docs/${c.slug}/"><strong>${c.title}</strong><span>${c.summary}</span></a></li>`)
+      .join('\n    ')}
+  </ol>`
+}
+
+function chapter(t, root, chapters, i) {
+  const c = chapters[i]
+  const prev = chapters[i - 1]
+  const next = chapters[i + 1]
+  const html = markdown(c.body, `${root}docs/capturas/`)
+  const toc = c.sections.length > 2
+    ? `<nav class="indice" aria-label="${t.guia.enEsta}"><p>${t.guia.enEsta}</p><ul>${c.sections
+        .map((s) => `<li><a href="#${s.id}">${s.text}</a></li>`)
+        .join('')}</ul></nav>`
+    : ''
+  return `
+<div class="guia">
+  <nav class="lado" aria-label="${t.guia.titulo}">
+    <a class="lado-titulo" href="${root}docs/">${t.guia.titulo}</a>
+    <ol>${chapters
+      .map((x) => `<li><a href="${root}docs/${x.slug}/"${x === c ? ' aria-current="page"' : ''}>${x.title}</a></li>`)
+      .join('')}</ol>
+  </nav>
+  <article class="texto">
+    <p class="miga"><a href="${root}docs/">${t.guia.titulo}</a> · ${t.guia.capitulo.replace('{n}', i + 1).replace('{total}', chapters.length)}</p>
+    <h1>${c.title}</h1>
+    <p class="entrada">${c.summary}</p>
+    ${toc}
+    ${html}
+    <nav class="seguir-leyendo">
+      ${prev ? `<a class="boton" href="${root}docs/${prev.slug}/">← ${prev.title}</a>` : '<span></span>'}
+      ${next ? `<a class="boton lleno" href="${root}docs/${next.slug}/">${next.title} →</a>` : `<a class="boton lleno" href="/app/">${t.nav.abrir} →</a>`}
+    </nav>
+  </article>
+</div>
+`
+}
+
+function notFound(t, root) {
+  return `
+<article class="texto">
+  <h1>${t.noEsta.titulo}</h1>
+  <p class="entrada">${t.noEsta.texto}</p>
+  <p><a class="boton lleno" href="${root}">${t.noEsta.inicio}</a> <a class="boton" href="/app/">${t.nav.abrir}</a></p>
+</article>
+`
+}
+
+// ── The guide's chapters: a title, a summary, and Markdown ──
+
+function readChapter(file, slug) {
+  const text = readFileSync(file, 'utf8').replace(/\r\n/g, '\n')
+  const m = /^---\n([\s\S]*?)\n---\n/.exec(text)
+  if (!m) throw new Error(`${relative(HERE, file)}: falta el encabezado (---)`)
+  const meta = Object.fromEntries(
+    m[1].split('\n').map((l) => [l.slice(0, l.indexOf(':')).trim(), l.slice(l.indexOf(':') + 1).trim()])
+  )
+  const body = text.slice(m[0].length)
+  const sections = [...body.matchAll(/^## (.+)$/gm)].map((h) => ({ text: inline(h[1]), id: anchor(h[1]) }))
+  return { slug, title: meta.titulo, summary: inline(meta.resumen ?? ''), body, sections }
+}
+
+/** The part of Markdown the guide uses. Pictures alone in a paragraph become figures, side by side when several. */
+function markdown(text, pictures) {
+  const out = []
+  const blocks = text.trim().split(/\n{2,}/)
+  for (const block of blocks) {
+    const lines = block.split('\n')
+    if (/^#{2,3} /.test(block)) {
+      const level = block.startsWith('### ') ? 3 : 2
+      const title = block.replace(/^#+ /, '')
+      out.push(`<h${level} id="${anchor(title)}">${inline(title)}</h${level}>`)
+    } else if (lines.every((l) => /^\s*!\[/.test(l))) {
+      const figs = lines.map((l) => {
+        const [, alt, src, caption] = /!\[([^\]]*)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/.exec(l)
+        const wide = src.startsWith('computadora-')
+        return `<figure class="${wide ? 'ancha' : 'telefono'}"><img src="${pictures}${src}" alt="${esc(alt)}" loading="lazy">${caption ? `<figcaption>${inline(caption)}</figcaption>` : ''}</figure>`
+      })
+      out.push(figs.length > 1 ? `<div class="tira">${figs.join('')}</div>` : figs[0])
+    } else if (lines.every((l) => /^- /.test(l) || /^ {2}/.test(l))) {
+      out.push(`<ul>${items(lines, /^- /)}</ul>`)
+    } else if (/^\d+\. /.test(lines[0])) {
+      out.push(`<ol>${items(lines, /^\d+\. /)}</ol>`)
+    } else if (lines.every((l) => l.startsWith('>'))) {
+      out.push(`<aside class="aviso">${markdown(lines.map((l) => l.replace(/^> ?/, '')).join('\n'), pictures)}</aside>`)
+    } else {
+      out.push(`<p>${inline(lines.join(' '))}</p>`)
+    }
+  }
+  return out.join('\n')
+}
+
+function items(lines, marker) {
+  const list = []
+  for (const l of lines) {
+    if (marker.test(l)) list.push(l.replace(marker, ''))
+    else list[list.length - 1] += ' ' + l.trim()
+  }
+  return list.map((x) => `<li>${inline(x)}</li>`).join('')
+}
+
+function inline(s) {
+  return esc(s)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label, href) => `<a href="${href}">${label}</a>`)
+}
+
+function anchor(s) {
+  return s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
+function esc(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+function hash(text) {
+  return createHash('sha1').update(text).digest('hex').slice(0, 10)
+}
