@@ -28,11 +28,11 @@
     "capturaAnchaAlt": "Servos en una computadora: el texto puente, la traducción y las ayudas en columnas.",
     "capturaAnchaPie": "En la computadora, la traducción, el texto puente y las ayudas se ven lado a lado.",
     "descargasTitulo": "Descargar",
-    "descargasEntrada": "Versión {version}, de prueba: puede tener errores. Lo que se escribe queda en el aparato; antes de borrar la app, comparta el trabajo. Puede pasar estos archivos a otros aparatos por tarjeta, USB o Bluetooth.",
+    "descargasEntrada": "Versión {version}, de prueba: puede tener errores. Las apps todavía no están firmadas, y Android y Windows avisan antes de instalarlas: la guía dice qué tocar. Lo que se escribe queda en el aparato; antes de borrar la app, comparta el trabajo. Puede pasar estos archivos a otros aparatos por tarjeta, USB, Bluetooth o Xender.",
     "descargas": [
-      { "titulo": "Teléfono Android", "texto": "La app para Android 7 o más nuevo. No viene de la tienda: el teléfono preguntará si la deja instalar.", "archivos": ["android"], "guia": "instalar", "guiaTexto": "Cómo instalarla" },
-      { "titulo": "Computadora con Windows", "texto": "Para Windows 10 u 11. Se instala sin internet y sin permiso de administrador.", "archivos": ["windows"], "guia": "instalar", "guiaTexto": "Cómo instalarla" },
-      { "titulo": "Textos y ayudas", "texto": "Reciba los dos en Servos, primero los originales: el hebreo y el griego con sus léxicos, y los textos puente y las ayudas en español.", "archivos": ["originales", "es-419"], "guia": "primera-vez", "guiaTexto": "Cómo recibirlos" }
+      { "titulo": "Teléfono Android", "texto": "Para Android 7 o más nuevo, con los textos y las ayudas en español dentro. No viene de la tienda: el teléfono preguntará si la deja instalar.", "archivos": ["android"], "guia": "instalar", "guiaTexto": "Cómo instalarla" },
+      { "titulo": "Computadora con Windows", "texto": "Para Windows 10 u 11. Trae dentro los textos y las ayudas en español. Se instala sin internet y sin permiso de administrador.", "archivos": ["windows"], "guia": "instalar", "guiaTexto": "Cómo instalarla" },
+      { "titulo": "Textos y ayudas", "texto": "Las apps para Android y Windows ya los traen dentro. Estos paquetes son para Servos en el navegador, o para recibirlos otra vez: primero el hebreo y el griego, luego el español.", "archivos": ["originales", "es-419"], "guia": "primera-vez", "guiaTexto": "Cómo recibirlos" }
     ],
     "archivo": { "android": "Descargar para Android", "windows": "Descargar para Windows", "originales": "Hebreo y griego", "es-419": "Español" },
     "libros": "Con todo listo en español: Jonás, Rut, Tito y 3 Juan. Ester y Nehemías tienen por ahora solo el Texto Puente Literal."

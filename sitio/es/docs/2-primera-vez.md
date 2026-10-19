@@ -13,15 +13,19 @@ No hay contraseña ni cuenta. Si otras personas van a usar el mismo teléfono o 
 
 ¿Solo quiere conocer la app sin tocar nada? En la primera pantalla está **Ver el ejemplo como Ana**: un equipo que traduce Jonás, Tito y Rut.
 
+## Los textos y las ayudas
+
+**En el teléfono y en la computadora**, Servos trae dentro los textos puente en español (el Literal y el Simple), sus ayudas (notas, preguntas, palabras clave y la Academia de Traducción) y el hebreo y el griego con sus léxicos. La primera vez los prepara solo: en el inicio se lee **Preparando los textos y las ayudas que trae la app…** con cuánto va. En un teléfono tarda unos minutos; en una computadora, unos segundos. Mientras tanto puede seguir con el proyecto.
+
 ## Recibir los textos y las ayudas
 
-Servos no trae los textos puente ni las ayudas: llegan en paquetes, para que cada equipo lleve solo lo que usa. Son dos archivos, y se reciben una sola vez:
+Esto hace falta **solo en el navegador**, o cuando llega un paquete más nuevo o de otro idioma. Los paquetes son archivos que terminan en **.langpack.zip**:
 
 - **originals.langpack.zip**: el hebreo y el griego, con sus léxicos.
-- **es-419.langpack.zip**: los textos puente en español (el Literal y el Simple) y sus ayudas: notas, preguntas, palabras clave y la Academia de Traducción.
+- **es-419.langpack.zip**: los textos puente en español y sus ayudas.
 
 1. Toque su nombre, arriba a la derecha, y elija **Recibir textos y ayudas**.
-2. Toque **Elegir el archivo** y busque **originals.langpack.zip** en la tarjeta, el USB o la carpeta de Bluetooth.
+2. Toque **Elegir el archivo** y busque **originals.langpack.zip** en la tarjeta, el USB o la carpeta de Bluetooth o de Xender.
 3. Servos dice qué trae el paquete. Toque **Abrir el paquete** y espere el **Listo**.
 4. Haga lo mismo con **es-419.langpack.zip**.
 
@@ -29,7 +33,7 @@ Servos no trae los textos puente ni las ayudas: llegan en paquetes, para que cad
 ![Lo que trae el paquete en español](paquete-es.webp "Antes de abrirlo, Servos dice qué trae")
 ![El paquete ya está en el teléfono](paquete-listo.webp "Listo: ya se puede leer sin internet")
 
-> **Qué libros están listos.** Con todas las ayudas en español: **Jonás, Rut, Tito y 3 Juan**. **Ester y Nehemías** tienen por ahora solo el Texto Puente Literal. Cuando haya más, llegarán en un paquete nuevo, que se recibe igual.
+> **Qué libros están listos.** Con todas las ayudas en español: **Jonás, Rut, Tito y 3 Juan**. **Ester y Nehemías** tienen por ahora solo el Texto Puente Literal. Cuando haya más, llegarán en una versión nueva de la app o en un paquete nuevo, que se recibe igual.
 
 ## Agregar el proyecto del equipo
 
