@@ -44,7 +44,8 @@ describe('the book text has one door', () => {
       .filter((f) => kept.test(readFileSync(f, 'utf8')))
       .map((f) => relative(app, f))
     expect(others).toEqual([])
-  })
+    // It reads every source of the app: on a busy computer that took 11 s, past the 5 s a test is given.
+  }, 30_000)
 })
 
 describe('behind the door, the book is one USFM and its journal', () => {
