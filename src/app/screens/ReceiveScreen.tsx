@@ -4,6 +4,9 @@
  * is on this phone; if not, as a new project or into one of this phone's in the same language, two projects that
  * began apart, design 6.5); and which books, each saying what it would change here. Then it is gathered, nothing
  * written here overwritten without a choice (`projects/share.ts`), and it says what was done.
+ *
+ * A copy sealed with a password (kept on a memory card, `frame/copies.ts`) asks for it first; opened, it is received
+ * like any other file.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -12,6 +15,7 @@ import { useT } from '../i18n/i18n'
 import { bookName, type Project } from '../projects/model'
 import { previewBook, readShared, receiveShared, versesIn, type BookReceived, type Destination, type SharedFile } from '../projects/share'
 import { inProject } from '../projects/scope'
+import { isLocked, unlock } from '../projects/lockedCopy'
 
 export function ReceiveScreen({
   projects,
@@ -50,8 +54,20 @@ export function ReceiveScreen({
   const [chosen, setChosen] = useState<string[]>([])
   const [done, setDone] = useState<{ projectId: string; books: BookReceived[]; glossary: { added: number } } | null>(null)
   const picker = useRef<HTMLInputElement>(null)
+  // A sealed copy waiting for its password, what is typed, and whether the last one tried was not it.
+  const [sealed, setSealed] = useState<string | null>(null)
+  const [password, setPassword] = useState('')
+  const [notIt, setNotIt] = useState(false)
+  const [opening, setOpening] = useState(false)
 
   const open = (text: string) => {
+    if (isLocked(text)) {
+      setWrong(false)
+      setNotIt(false)
+      setPassword('')
+      return setSealed(text)
+    }
+    setSealed(null)
     const shared = readShared(text)
     if (!shared) return setWrong(true)
     setWrong(false)
@@ -133,6 +149,49 @@ export function ReceiveScreen({
     )
   }
 
+  if (!file && sealed !== null) {
+    const tryIt = async () => {
+      setOpening(true)
+      const text = await unlock(sealed, password)
+      setOpening(false)
+      if (text === null) return setNotIt(true)
+      setPassword('')
+      open(text)
+    }
+    return (
+      <div className="screen">
+        {header}
+        <main className="main">
+          <h1>{t('copias.cerradaTitulo')}</h1>
+          <p className="quiet">{t('copias.cerradaAyuda')}</p>
+          <form
+            className="copy-password"
+            onSubmit={(e) => {
+              e.preventDefault()
+              if (password && !opening) void tryIt()
+            }}
+          >
+            <label className="field">
+              <span className="field-label">{t('copias.contrasena')}</span>
+              <input type="password" autoComplete="off" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus />
+            </label>
+            {notIt && (
+              <p className="notice" role="alert">
+                {t('copias.noEsLaContrasena')}
+              </p>
+            )}
+            <button type="submit" className="button-primary" disabled={!password || opening}>
+              {opening ? t('copias.abriendo') : t('copias.abrir')}
+            </button>
+          </form>
+          <button type="button" className="button-secondary" onClick={() => setSealed(null)}>
+            {t('recibir.otroArchivo')}
+          </button>
+        </main>
+      </div>
+    )
+  }
+
   if (!file) {
     return (
       <div className="screen">
@@ -145,7 +204,7 @@ export function ReceiveScreen({
           <input
             ref={picker}
             type="file"
-            accept=".servos,application/json,text/plain"
+            accept=".servos,.dat,application/json,application/octet-stream,text/plain"
             hidden
             onChange={async (e) => {
               const chosenFile = e.target.files?.[0]

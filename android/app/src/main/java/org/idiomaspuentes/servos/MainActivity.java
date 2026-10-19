@@ -42,6 +42,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(FilesPlugin.class);
+        registerPlugin(CopiesPlugin.class);
         super.onCreate(savedInstanceState);
         connectivity = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkRequest outward = new NetworkRequest.Builder()

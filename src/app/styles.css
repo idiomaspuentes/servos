@@ -1004,6 +1004,18 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .suggestion p { margin: 0; font-weight: 600; }
 .pager-arrow { width: var(--touch); height: var(--touch); min-height: var(--touch); padding: 0; display: inline-grid; place-items: center; border: 0; border-radius: var(--radius); background: var(--accent-soft); color: var(--accent); font-size: 1.5rem; font-weight: 600; line-height: 1; }
 .button-danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 55%, transparent); }
+
+/* «Copia en la tarjeta»: the two ways of keeping it, each a choice that says what it means, the one chosen marked */
+.copies { display: flex; flex-direction: column; gap: 0.75rem; }
+.copies p { margin: 0; }
+.copies-choice { display: flex; flex-direction: column; gap: 0.5rem; margin: 0; padding: 0; border: 0; }
+.copies-option { display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.copies-option.is-chosen { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.copies-option input { width: auto; min-height: 0; margin-block-start: 0.2rem; accent-color: var(--accent); }
+.copies-option > span { display: flex; flex-direction: column; gap: 0.25rem; }
+.copies-confirm { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; border-radius: var(--radius); background: var(--surface-soft); }
+.copies-confirm-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.copy-password { display: flex; flex-direction: column; gap: 0.75rem; }
 .step-note { margin: 0; text-align: center; font-size: 0.85rem; }
 .publish-where-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .publish-where-head .chip { flex: none; white-space: nowrap; }

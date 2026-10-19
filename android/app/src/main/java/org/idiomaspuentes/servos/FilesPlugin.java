@@ -45,8 +45,8 @@ public class FilesPlugin extends Plugin {
 
     /** The page's word that files were opened (`src/app/frame/phone.ts`). */
     private static final String OPENED = "archivos-abiertos";
-    /** Shared work, or JSON or text that might be (`isShared` and `readable` in `frame/arriving.ts`). */
-    private static final Pattern READABLE = Pattern.compile("(?i).*[.](servos|servos[.]json|json|txt)$");
+    /** Shared work, a copy of it, or JSON or text that might be (`isShared` and `readable` in `frame/arriving.ts`). */
+    private static final Pattern READABLE = Pattern.compile("(?i)(.*[.](servos|servos[.]json|json|txt)|copia-[0-9a-f]{6}-[0-9]{8}-[0-9]{4}[.]dat)$");
     /** More than a whole Bible with its recordings is not a file Servos made. */
     private static final long MOST = 512L * 1024 * 1024;
 

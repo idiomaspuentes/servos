@@ -6,6 +6,8 @@ import { MenuRow, Sheet } from '../frame/Sheet'
 import { setTheme, themeOf, type Theme } from '../frame/theme'
 import { appLabel } from '../frame/version'
 import { accountOf, hostName } from '../projects/door43'
+import { copiesHere } from '../frame/copies'
+import { useCopies, whenCopied } from './CopiesSheet'
 
 export function PersonMenu({
   person,
@@ -17,6 +19,7 @@ export function PersonMenu({
   onLanguage,
   onTranslate,
   onDoor43,
+  onCopies,
 }: {
   person: string
   /** Who uses this phone. */
@@ -30,11 +33,14 @@ export function PersonMenu({
   onTranslate(): void
   /** Links (or shows) the person's Door43 account. */
   onDoor43(): void
+  /** The copy on a memory card (only in the app for phones). */
+  onCopies(): void
 }) {
   const t = useT()
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
   const [theme, setThemeState] = useState<Theme>(themeOf)
+  const copies = useCopies()
   return (
     <Sheet title={t('persona.menu', { nombre: person })} onClose={onClose} dirty={adding && name.trim() !== ''} menu>
       <MenuRow label={t('persona.recibir')} description={t('persona.recibirAyuda')} onClick={onReceive} />
@@ -75,6 +81,21 @@ export function PersonMenu({
         })()}
         onClick={onDoor43}
       />
+      {copiesHere() && (
+        <MenuRow
+          label={t('copias.titulo')}
+          description={
+            !copies.place
+              ? t('copias.menuAyuda')
+              : copies.failed
+                ? t('copias.avisoInicio')
+                : copies.at
+                  ? t('copias.ultima', { cuando: whenCopied(copies.at, document.documentElement.lang || 'es') })
+                  : t('copias.donde', { lugar: copies.place.label })
+          }
+          onClick={onCopies}
+        />
+      )}
       <h3 className="menu-heading">{t('persona.cambiar')}</h3>
       <p className="quiet">{t('persona.cambiarAyuda')}</p>
       <div className="people">
