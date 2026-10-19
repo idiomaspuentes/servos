@@ -4,15 +4,16 @@ import { setDestination } from './door43'
 import { fakeDoor43, TOKEN } from './fakeDoor43'
 import type { Project } from './model'
 import { ask, runErrand, sendWaiting, waiting } from './outbox'
-import { uploadProject } from './publishing'
+import { changedOnDoor43, fromDoor43, uploadProject } from './publishing'
 import { readShared, receiveShared, shareProject } from './share'
 import { setProject } from './scope'
-import { forgetBooks, writeDraft } from './work'
+import { forgetBooks, otherVersion, readDraft, writeDraft } from './work'
 
 /**
- * Two people upload the same book from two phones (design 6.10: «Git does not gather the USFM: Servos does»). What
- * one uploaded must not be replaced unseen by the other's upload, made without their work: today it is, because the
- * file's sha is read just before writing it. The `it.fails` state what should happen; they turn red once it does.
+ * Two people upload the same book from two phones (design 6.10: «Git does not gather the USFM: Servos does»). What one
+ * uploaded is not replaced unseen by the other's upload, made without their work: each phone remembers the version of
+ * the file it last saw on Door43, and finding another one there it stops, brings it in and gathers it (against that
+ * version, so only what changed on both sides is asked), and uploads after.
  */
 const project: Project = {
   id: 'kichwa',
@@ -92,19 +93,21 @@ describe('subir el mismo libro desde dos teléfonos', () => {
     expect(door.text(JON)).toMatch(/Shuk de Ana\.[\s\S]*Ishkay de Bea\./)
   })
 
-  it.fails('lo que Bea subió no desaparece cuando Ana sube sin haberlo recibido (hoy el archivo de Ana lo reemplaza)', async () => {
+  it('lo que Bea subió no desaparece cuando Ana sube sin haberlo recibido', async () => {
     const door = await beaUploadedFirst()
     await upload('Ana')
     expect(door.text(JON)).toContain('Ishkay de Bea.')
   })
 
-  it.fails('Ana no sube a ciegas: se le dice que en Door43 hay otra cosa (hoy dice «subido»)', async () => {
+  it('Ana no sube a ciegas: ese libro queda sin subir, porque en Door43 hay otra cosa', async () => {
     await beaUploadedFirst()
     const { results } = await upload('Ana')
-    expect(results.find((r) => r.path === '32-JON.usfm')?.state).not.toBe('written')
+    expect(results.find((r) => r.path === '32-JON.usfm')?.state).toBe('changed')
+    // The manifest goes all the same: it already gathers everyone's books.
+    expect(results.find((r) => r.path === 'manifest.yaml')?.state).not.toBe('failed')
   })
 
-  it.fails('una subida pedida sin internet, que sale después de la de Bea, tampoco la pisa', async () => {
+  it('una subida pedida sin internet, que sale después de la de Bea, tampoco la pisa: espera, con su motivo', async () => {
     const door = fakeDoor43(host)
     // Ana asks to upload without internet, before Bea uploads.
     on('Ana')
@@ -119,5 +122,66 @@ describe('subir el mismo libro desde dos teléfonos', () => {
     on('Ana')
     await sendWaiting(waiting(), (e) => runErrand(e, project, texts))
     expect(door.text(JON)).toContain('Ishkay de Bea.')
+    expect(waiting().map((e) => [e.kind, e.problem])).toEqual([['subir', 'changed']])
+  })
+})
+
+/** Brings from Door43 what changed there, on `name`'s phone, and gathers it as «Receive» does. */
+async function bring(name: string) {
+  on(name)
+  const account = { host, username: name.toLowerCase(), token: TOKEN }
+  const brought = await changedOnDoor43(account, to, project)
+  const file = readShared(JSON.stringify(fromDoor43(project, brought)))!
+  return receiveShared(file, file.books.map((b) => b.code), { kind: 'join', projectId: 'kichwa' }, [project], name).books
+}
+
+describe('traer lo de Door43 y juntarlo antes de subir', () => {
+  /** Ana uploads the shared start; Bea brings it (nothing to gather), writes verse 2 and uploads; Ana writes verse 1. */
+  async function bothFromDoor43() {
+    const door = fakeDoor43(host)
+    await upload('Ana')
+    expect((await bring('Bea'))[0].choices).toBe(0)
+    on('Bea')
+    writeDraft('jon', 1, 2, 'Ishkay de Bea.', 'Bea')
+    await upload('Bea')
+    expect(door.text(JON)).toContain('Ishkay de Bea.')
+    on('Ana')
+    writeDraft('jon', 1, 1, 'Shuk de Ana.', 'Ana')
+    return door
+  }
+
+  it('lo que cambió solo en Door43 entra, lo que cambió solo aquí queda; después se sube con los dos', async () => {
+    const door = await bothFromDoor43()
+    const [jon] = await bring('Ana')
+    expect([jon.taken, jon.choices]).toEqual([1, 0])
+    expect([readDraft('jon', 1, 1), readDraft('jon', 1, 2)]).toEqual(['Shuk de Ana.', 'Ishkay de Bea.'])
+    const { results } = await upload('Ana')
+    expect(results.find((r) => r.path === '32-JON.usfm')?.state).toBe('written')
+    expect(door.text(JON)).toMatch(/Shuk de Ana\.[\s\S]*Ishkay de Bea\./)
+  })
+
+  it('lo que cambió en los dos lados espera para elegir en «Juntar»; Door43 no se toca hasta subir', async () => {
+    const door = await bothFromDoor43()
+    on('Ana')
+    writeDraft('jon', 1, 2, 'Ishkay de Ana.', 'Ana')
+    const [jon] = await bring('Ana')
+    expect(jon.choices).toBe(1)
+    expect([readDraft('jon', 1, 2), otherVersion('jon', 1, 2)?.text]).toEqual(['Ishkay de Ana.', 'Ishkay de Bea.'])
+    expect(door.text(JON)).toContain('Ishkay de Bea.')
+  })
+
+  it('traer otra vez la misma versión no trae nada nuevo', async () => {
+    await bothFromDoor43()
+    await bring('Ana')
+    on('Ana')
+    expect(await changedOnDoor43({ host, username: 'ana', token: TOKEN }, to, project)).toEqual([])
+  })
+
+  it('sin haber visto nunca el libro en Door43: lo que Ana cambió desde el texto de allá queda; lo demás distinto se pregunta', async () => {
+    await beaUploadedFirst()
+    const [jon] = await bring('Ana')
+    expect(jon.choices).toBe(1)
+    expect([readDraft('jon', 1, 1), otherVersion('jon', 1, 1)]).toEqual(['Shuk de Ana.', null])
+    expect(otherVersion('jon', 1, 2)?.text).toBe('Ishkay de Bea.')
   })
 })

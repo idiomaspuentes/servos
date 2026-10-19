@@ -23,6 +23,7 @@
 
 import type { AlignmentGroup } from '@usfm-tools/types'
 import { gatherGlossary, readGlossary, saveGlossaryEntry, type GlossaryEntry } from './glossary'
+import { keepSeen } from './door43'
 import { closer, privacyOf, type BookEntry, type Phase, type Project } from './model'
 import type { NoteCheck } from './noteChecks'
 import { blobOf, gatherTakes, keepSound, recordedPlaces, soundBase64, takesOf, type Take } from './recordings'
@@ -73,6 +74,11 @@ export interface SharedBook {
   /** What was seen to improve, by `chapter.verse`. */
   observations?: Record<string, Observation[]>
   studyNotes: Array<{ chapter: number; notes: StudyNote[] }>
+  /**
+   * Brought from Door43 (`publishing.ts`, `fromDoor43`): the version of the book's file there. Once gathered, this phone
+   * has seen it, and may upload over it.
+   */
+  door43?: { sha: string; text: string }
   /** The recordings of each place, every take with its sound (base64; `withSounds` adds it). */
   recordings?: Array<{ chapter: number; verse: number; chosen: string | null; takes: Array<Take & { sound?: string }> }>
 }
@@ -407,6 +413,8 @@ export function receiveShared(
   // Only the team, on either phone, stays only the team: receiving never opens up what someone closed.
   const privacy = closer(privacyOf(target), privacyOf(file.project))
   const updated: Project = { ...target, books: [...named, ...added], ...(privacy === 'equipo' ? { privacy } : {}) }
+  // A book brought from Door43, once gathered: what this phone saw there, to upload over it next.
+  for (const b of books) if (b.door43) keepSeen(updated.id, b.code, b.door43)
   const { gathered, changed } = gatherGlossary(readGlossary(updated.id), file.glossary ?? [])
   for (const entry of changed) saveGlossaryEntry(updated.id, entry)
   const next = destination.kind === 'join' ? projects.map((p) => (p.id === updated.id ? updated : p)) : [...projects, updated]

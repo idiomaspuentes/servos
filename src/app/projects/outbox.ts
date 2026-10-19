@@ -134,6 +134,8 @@ export async function runErrand(
     const { results, books } = await uploadProject(account, to, project, e.person, texts.message)
     const failed = results.find((r) => r.state === 'failed')
     if (failed) return { problem: failed.problem ?? 'other' }
+    // Someone else uploaded a book meanwhile: it waits, to be brought in and gathered before it goes (no version either).
+    if (results.some((r) => r.state === 'changed')) return { problem: 'changed' }
     if (e.kind === 'subir') {
       const usfm = results.filter((r) => r.path.endsWith('.usfm'))
       return { sent: { kind: 'subir', written: usfm.filter((r) => r.state === 'written').length, same: usfm.filter((r) => r.state === 'same').length } }

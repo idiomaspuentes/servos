@@ -298,6 +298,17 @@ espera en el teléfono: subir el proyecto, marcar una versión, dejar el trabajo
 
 Hecho en el prototipo (`outbox.ts`, `WaitingSheet`), probado con un Door43 de mentira en la página y en las pruebas.
 
+**Subir no pisa lo que subió otro** (acordado con Abel el 19 de octubre). Cada teléfono recuerda, de cada libro, la
+última versión que vio en Door43 (la que subió o la que trajo), con su texto. Al subir, un libro se escribe solo si
+Door43 todavía tiene esa versión, o una cuyos versículos este teléfono ya tiene todos (el trabajo llegó por otro lado:
+una tarjeta, el trabajo del equipo). Si no, ese libro no se sube y se dice: «En Door43, Jonás tiene cambios de otra
+persona que no están en este teléfono. Para no borrarlos, no se subió». El botón lleno pasa a «Traer lo de Door43»,
+que abre «Recibir» con ese libro: qué trae y qué cambia, y nada se aplica antes del último paso. Se compara de a tres
+con lo último visto: lo que cambió solo en Door43 entra, lo que cambió solo aquí queda, y solo lo que cambió en los dos
+lados va a «Juntar». Después se sube otra vez. Una subida que esperaba internet hace lo mismo: no sube ese libro, sigue
+esperando con su motivo, y la hoja «Ya hay internet» ofrece «Traer lo de Door43» (`publishing.ts`, `door43Copy`,
+`knowsAll`; probado en `subirSinPisar.test.ts` y en la app con un Door43 de mentira).
+
 ## 7. Los paquetes
 
 | Paquete | Qué lleva | Quién lo hace |
