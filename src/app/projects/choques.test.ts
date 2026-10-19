@@ -215,7 +215,8 @@ describe('10. Alineaciones distintas del mismo texto', () => {
     expect(alignmentConflictAt('jon', 1, 1, 'UHB')).toMatchObject({ mine: { by: 'Ana' }, theirs: { by: 'Bea' } })
   })
 
-  it('dos «Ana» en dos aparatos cuentan como la misma persona: queda la más reciente, sin preguntar (duda: DISENO §5 dice que son dos)', () => {
+  // Decided with Abel on 19 October 2026: a name on another device may be another person, and the date never decides.
+  it.fails('dos «Ana» en dos aparatos son dos personas: se elige, no gana la más reciente (hoy gana la más reciente)', () => {
     on('Ana-teléfono')
     writeDraft('jon', 1, 1, 'Taytaku rimarqa', 'Ana')
     receive(share('Ana', 'Ana-teléfono'), 'Ana', 'Ana-aldea')
@@ -223,8 +224,8 @@ describe('10. Alineaciones distintas del mismo texto', () => {
     writeAlignment('jon', 1, 1, 'UHB', { groups: links('rimarqa') as never, text: 'Taytaku rimarqa', by: 'Ana', at: '2026-10-15T10:00:00Z' })
     on('Ana-aldea')
     writeAlignment('jon', 1, 1, 'UHB', { groups: links('Taytaku') as never, text: 'Taytaku rimarqa', by: 'Ana', at: '2026-10-15T11:00:00Z' })
-    expect(receive(share('Ana', 'Ana-aldea'), 'Ana', 'Ana-teléfono').books[0].alignmentChoices).toBe(0)
-    expect(alignmentConflictAt('jon', 1, 1, 'UHB')).toBeNull()
+    expect(receive(share('Ana', 'Ana-aldea'), 'Ana', 'Ana-teléfono').books[0].alignmentChoices).toBe(1)
+    expect(alignmentConflictAt('jon', 1, 1, 'UHB')).not.toBeNull()
   })
 })
 
