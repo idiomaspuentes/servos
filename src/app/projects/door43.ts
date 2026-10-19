@@ -256,11 +256,15 @@ export function titlesOf(yaml: string): Map<string, string> {
   return out
 }
 
-/** What happened to a file uploaded: written, the same as on Door43 already, or not uploaded (and why). */
-export type FileResult = { path: string; state: 'written' | 'same' | 'failed'; problem?: Problem }
+/**
+ * What happened to a file uploaded: written, the same as on Door43 already, not uploaded because Door43 has another
+ * text this phone has not seen (someone else uploaded it: it is brought and gathered first, `changed`), not uploaded
+ * because versions brought from Door43 still wait to be gathered here (`gather`), or not uploaded (and why). `sha` is the file's on Door43 after it, when known.
+ */
+export type FileResult = { path: string; state: 'written' | 'same' | 'changed' | 'gather' | 'failed'; problem?: Problem; sha?: string }
 
 /** Why something could not be done, said in the person's terms. */
-export type Problem = 'offline' | 'signin' | 'scope' | 'permission' | 'conflict' | 'other'
+export type Problem = 'offline' | 'signin' | 'scope' | 'permission' | 'conflict' | 'changed' | 'gather' | 'other'
 export function problemOf(e: unknown): Problem {
   if (e instanceof DcsApiError) {
     if (e.status === 401) return 'signin'
@@ -276,8 +280,11 @@ export function problemOf(e: unknown): Problem {
 
 /**
  * Uploads files to the project's repository, making the repository the first time. A file with the same text on
- * Door43 is left as it is (no empty commit); one that changed is updated with the sha it has there, so nobody's later
- * upload is overwritten unseen (a conflict is said, not forced).
+ * Door43 is left as it is (no empty commit); one that changed is updated with the sha it has there (two uploads at the
+ * same moment: a conflict is said, not forced). A file named in `seen` is written only if Door43 still has the version
+ * this phone last saw of it (its sha; `undefined`, none seen), or one whose every verse this phone already has
+ * (`knows`, the work having come another way): otherwise someone else uploaded another text, and it is left as it is,
+ * `changed`, for this phone to bring it in and gather it before uploading (design 6.10).
  */
 export async function publish(
   account: Door43Account,
@@ -286,7 +293,7 @@ export async function publish(
   files: Array<{ path: string; content: string } | { path: string; base64: string }>,
   message: string,
   /** A repository made private the first time (the team's work), not public (what it publishes). */
-  options: { private?: boolean } = {}
+  options: { private?: boolean; seen?: Record<string, string | undefined>; knows?(path: string, text: string): boolean } = {}
 ): Promise<FileResult[]> {
   const config = configOf(to.host)
   try {
@@ -314,12 +321,19 @@ export async function publish(
       }
       const same = 'base64' in file ? there?.content?.replace(/\s/g, '') === file.base64 : there?.content != null && decodeBase64(there.content) === file.content
       if (same) {
-        results.push({ path: file.path, state: 'same' })
+        results.push({ path: file.path, state: 'same', ...(there?.sha ? { sha: there.sha } : {}) })
         continue
       }
-      if ('base64' in file) await createOrUpdateBinaryContents(config, to.owner, to.repo, file.path, { contentBase64: file.base64, message, sha: there?.sha, token: account.token })
-      else await createOrUpdateContents(config, to.owner, to.repo, file.path, { content: file.content, message, sha: there?.sha, token: account.token })
-      results.push({ path: file.path, state: 'written' })
+      const textThere = () => (there?.content != null ? decodeBase64(there.content.replace(/\s/g, '')) : '')
+      if (there && options.seen && file.path in options.seen && options.seen[file.path] !== there.sha && !options.knows?.(file.path, textThere())) {
+        results.push({ path: file.path, state: 'changed', sha: there.sha })
+        continue
+      }
+      const made =
+        'base64' in file
+          ? await createOrUpdateBinaryContents(config, to.owner, to.repo, file.path, { contentBase64: file.base64, message, sha: there?.sha, token: account.token })
+          : await createOrUpdateContents(config, to.owner, to.repo, file.path, { content: file.content, message, sha: there?.sha, token: account.token })
+      results.push({ path: file.path, state: 'written', ...(made?.content?.sha ? { sha: made.content.sha } : {}) })
     } catch (e) {
       results.push({ path: file.path, state: 'failed', problem: problemOf(e) })
     }
@@ -354,6 +368,44 @@ export interface Uploaded {
 }
 export const uploadedOf = (projectId: string, code: string) => read<Uploaded>(`${KEY}.subido.${projectId}.${code}`)
 export const keepUploaded = (projectId: string, code: string, u: Uploaded) => write(`${KEY}.subido.${projectId}.${code}`, u)
+
+/**
+ * The last version of a book's file this phone saw on Door43, uploaded or brought in: its sha, and its text, the common
+ * start to weigh what changed there against what changed here (design 6.10).
+ */
+export interface Seen {
+  sha: string
+  text: string
+}
+export const seenOf = (projectId: string, code: string) => read<Seen>(`${KEY}.visto.${projectId}.${code}`)
+export const keepSeen = (projectId: string, code: string, seen: Seen) => write(`${KEY}.visto.${projectId}.${code}`, seen)
+
+/** A book's file on Door43 now, its text and sha; null when there is none. */
+export async function fileThere(account: Door43Account, to: Destination, path: string): Promise<Seen | null> {
+  try {
+    const got = await getContents(configOf(to.host), to.owner, to.repo, path, { token: account.token })
+    if (Array.isArray(got)) return null
+    const text = got.content != null ? decodeBase64(got.content.replace(/\s/g, '')) : new TextDecoder().decode(await rawBytes(account, to, path))
+    return { sha: got.sha, text }
+  } catch (e) {
+    if (e instanceof DcsApiError && e.status === 404) return null
+    throw e
+  }
+}
+
+/**
+ * Who last uploaded a file, as Door43 names the account (its full name, or its user name): what a version brought from
+ * there is signed with. Null when Door43 does not say.
+ */
+export async function uploaderOf(account: Door43Account, to: Destination, path: string): Promise<string | null> {
+  type Commit = { author?: { full_name?: string; login?: string } | null; commit?: { author?: { name?: string } } }
+  try {
+    const [last] = await call<Commit[]>(account, to, `/commits?path=${encodeURIComponent(path)}&limit=1`)
+    return last?.author?.full_name?.trim() || last?.author?.login || last?.commit?.author?.name || null
+  } catch {
+    return null
+  }
+}
 
 /** A short fingerprint of a text (to tell whether a book changed since it was uploaded, not to secure anything). */
 export function fingerprint(text: string): string {

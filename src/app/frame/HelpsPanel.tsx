@@ -4,10 +4,11 @@
  * marks its words in the verse.
  */
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { PrototypeData } from '../../prototype/data'
 import { useT } from '../i18n/i18n'
 import { entriesAbout, type GlossaryEntry } from '../projects/glossary'
+import { changedVerses, changesVersion, subscribeChanges } from '../projects/helpsChanges'
 import { studyNotesAbout } from '../projects/work'
 import { RowButton } from './Actions'
 import { Markdown } from './Markdown'
@@ -66,11 +67,16 @@ export function HelpsPanel({
   const [index, setIndex] = useState(0)
   const [answer, setAnswer] = useState(false)
   const [article, setArticle] = useState<{ title: string; markdown: string } | null>(null)
+  // What a newer pack changed in these verses, already translated (helpsChanges.ts): a changed note unfolds what it said.
+  useSyncExternalStore(subscribeChanges, changesVersion)
+  const changes = changedVerses(data.book.id, data.chapter).filter((c) => shown.includes(c.verse))
+  const [before, setBefore] = useState(false)
 
   useEffect(() => {
     setIndex(0)
     setAnswer(false)
-  }, [shown.join(','), tab]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [shown.join(','), tab])
+  useEffect(() => setBefore(false), [index, tab, shown.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps // eslint-disable-line react-hooks/exhaustive-deps
 
   const countOf = (id: Tab) =>
     id === 'glosario'
@@ -94,6 +100,7 @@ export function HelpsPanel({
   // In a section, which verse the help shown is on.
   const current = tab === 'notas' ? notes[index] : tab === 'preguntas' ? questions[index] : tab === 'palabras' ? words[index] : undefined
   const marked = note ? (textAbbreviation === 'TPS' ? note.gst : note.glt) : null
+  const noteChange = note ? changes.flatMap((c) => c.notes).find((n) => n.id === note.id && n.kind !== 'quitada') : undefined
   useEffect(() => onMark(marked), [marked, onMark])
   // In a pane, the next help starts at its first line, wherever the last one left the scroll.
   const self = useRef<HTMLElement>(null)
@@ -129,6 +136,7 @@ export function HelpsPanel({
 
         {note && (
           <>
+            {noteChange && <span className="badge badge-changed help-changed">{t(`cambios.etiqueta.${noteChange.kind}`)}</span>}
             {marked ? <p className="help-quote">{marked}</p> : <p className="quiet">{t('ayudas.noAlineada', { texto: textAbbreviation })}</p>}
             <p className="help-original">
               {t('ayudas.enElOriginalSolo')}{' '}
@@ -137,6 +145,16 @@ export function HelpsPanel({
               </span>
             </p>
             <Markdown text={note.note} />
+            {noteChange?.kind === 'cambiada' && (
+              <>
+                <RowButton kind="fold" label={t('cambios.loQueDecia')} expanded={before} onClick={() => setBefore((b) => !b)} />
+                {before && (
+                  <div className="helps-changed-before">
+                    <Markdown text={noteChange.before ?? ''} />
+                  </div>
+                )}
+              </>
+            )}
             {note.academy && data.academy[note.academy] && (
               <RowButton label={t('ayudas.leerArticulo', { titulo: data.academy[note.academy].title })} onClick={() => setArticle(data.academy[note.academy!])} />
             )}

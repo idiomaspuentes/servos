@@ -38,6 +38,7 @@ import {
 import { ChapterLines } from '../../frame/ChapterLines'
 import { TwoShapes, TwoVersions } from '../../frame/TwoVersions'
 import { VerseObservations } from '../revisor/revisor'
+import { HelpsChanged } from './HelpsChanged'
 import { LineFields, lineFieldId } from './LineFields'
 
 /** Lines of a poem (`\q`, `\q1`, `\q2`…), not the poem's headings or notes (`\qa`, `\qd`…). */
@@ -162,6 +163,7 @@ function Center({ context }: MiniAppCenterProps) {
   }, [])
 
   const bridge = data.texts.find((x) => x.abbreviation === textAbbreviation) ?? data.texts[0]
+  const original = data.texts.find((x) => x.original)
   const markersOf = (verse: number) => (bridge.lines[verse] ?? []).map((l) => l.marker)
   const anyPoem = shown.some((v) => markersOf(v).some(isPoemLine))
 
@@ -265,6 +267,10 @@ function Center({ context }: MiniAppCenterProps) {
             onEdge={(toward) => edge(unit, toward)}
           />
         )}
+        {/* What a newer pack changed in the helps of the verses said here, until the translator has seen it. */}
+        {unit.map((u) => (
+          <HelpsChanged key={u} book={position.book} chapter={position.chapter} verse={u} original={original} />
+        ))}
         {/* What a passage review saw to improve here, until someone marks it improved. */}
         <VerseObservations book={position.book} chapter={position.chapter} verse={v} person={context.person.name} />
       </div>

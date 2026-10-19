@@ -9,8 +9,8 @@
  * - one this copy has already taken in, or that the other started from, gives way to the newer;
  * - a choice somebody already made between two alignments is applied again; two choices made apart that keep
  *   different alignments are asked again (one made knowing the other replaces it);
- * - two alignments of the same text made apart: the latest, if one person made both; a conflict for a person, if two
- *   people did (decided on 14 October 2026).
+ * - two alignments made apart, when neither came from the other: a person chooses, whoever made them and whenever
+ *   (decided with Abel on 19 October 2026: the same name on two devices may be two people, and the date never decides).
  * An alignment that comes in made on another text than the one that stays is kept and said to need review: the links
  * of the words that stayed still hold, and nothing is lost in silence.
  */
@@ -65,8 +65,6 @@ export const emptyAlignmentLayer = (): AlignmentLayer => ({ current: {}, journal
 
 /** The key of an alignment's links. */
 export const alignmentKey = (groups: unknown): string => textKey(JSON.stringify(groups ?? []));
-
-const nameOf = (key: PersonKey) => key.slice(0, key.lastIndexOf("@"));
 
 function seenUpTo(layer: AlignmentLayer, by: PersonKey): number {
   let max = 0;
@@ -134,13 +132,11 @@ export function mergeAlignments(
       take(id, theirs);
       continue;
     }
-    if (!mineOn && !theirsOn) {
-      // Neither on the text that stays: the newer is kept, to be reviewed.
-      if (theirs.at > mine.at) take(id, theirs);
-      continue;
-    }
-    // Both on the text that stays. A choice already made between these two is applied; one made knowing an earlier one
-    // replaces it; two made apart that keep different alignments are not settled: a person chooses again.
+    // Both on the text that stays, or neither (then whichever stays is to be reviewed): the same links are nothing to
+    // choose between.
+    if (mine.key === theirs.key) continue;
+    // A choice already made between these two is applied; one made knowing an earlier one replaces it; two made apart
+    // that keep different alignments are not settled: a person chooses again.
     const over = decisions.filter((d) => alignmentPlaceId(d.place) === id && d.over?.includes(mine.key) && d.over.includes(theirs.key));
     const kept = new Set(over.filter((d) => !over.some((o) => o.after?.includes(d.id))).map((d) => d.key));
     if (kept.size === 1 && kept.has(mine.key)) {
@@ -167,12 +163,9 @@ export function mergeAlignments(
         continue;
       }
       if (mine.base === theirs.key) continue;
-      // Made apart: the latest, if one person made both; else a person chooses.
-      if (nameOf(mine.by) === nameOf(theirs.by)) {
-        if (theirs.at > mine.at) take(id, theirs);
-        continue;
-      }
     }
+    // Made apart, and nothing tells which came after: a person chooses. Not the date (a device's clock may be wrong),
+    // and not the name either: an Ana on another device may be another Ana (decided with Abel on 19 October 2026).
     const conflictId = `${id}:${[mine.key, theirs.key].sort().join("|")}`;
     if (pendingIds.has(conflictId)) continue;
     pendingIds.add(conflictId);

@@ -11,6 +11,8 @@
  */
 
 import type { PrototypeData, PrototypeNote } from '../../prototype/data'
+import { noteChangedAt } from './helpsChanges'
+import { textKey } from '../../core/textKey'
 import { scoped } from './scope'
 
 /**
@@ -95,7 +97,26 @@ export interface NoteCheck {
   verseText: string
   by: string
   at: string
+  /** Read back only: its note changed after it was answered (a newer pack), so it is to be checked again. */
+  noteChanged?: boolean
+  /**
+   * The answers this one was given knowing (by `checkKey`): the ones it replaced here, and those it came from. What
+   * tells which of two answers came after, between devices: never the date, which a device's clock may have wrong.
+   */
+  was?: string[]
+  /**
+   * Answers to the same check given apart on other devices, neither knowing the other: they wait here for a person to
+   * choose, nothing lost (decided with Abel on 19 October 2026). Answering again chooses.
+   */
+  others?: NoteCheck[]
 }
+
+/** What an answer says, not who gave it or when: two answers that say the same are one. */
+export const checkKey = (c: NoteCheck): string =>
+  textKey(JSON.stringify([c.status, c.words, Boolean(c.notThere), c.reason ?? '', c.comment ?? '', c.verseText.replace(/\s+/g, ' ').trim()]))
+
+/** Every answer a check knows of: the ones it came after, and the ones waiting beside it. */
+const knownBy = (c: NoteCheck): string[] => [...(c.was ?? []), ...(c.others ?? []).flatMap((o) => [...(o.was ?? []), checkKey(o)])]
 
 /** The words of a verse as the translator touches them: what spaces part. */
 export const wordsOfVerse = (text: string) => text.split(/\s+/).filter(Boolean)
@@ -105,27 +126,80 @@ export const wordsOfVerse = (text: string) => text.split(/\s+/).filter(Boolean)
 const key = (book: string, id: string, store: string) => `servos.prototipo.${store}.${scoped(book)}.${id}`
 
 export function readCheck(book: string, id: string, store = 'revisionNota'): NoteCheck | null {
+  let check: NoteCheck | null
   try {
-    return JSON.parse(localStorage.getItem(key(book, id, store)) ?? 'null') as NoteCheck | null
+    check = JSON.parse(localStorage.getItem(key(book, id, store)) ?? 'null') as NoteCheck | null
   } catch {
     return null
   }
+  // An answer to a note that said something else then is not an answer to it now (helpsChanges.ts).
+  const changed = check && store === 'revisionNota' ? noteChangedAt(book, id) : null
+  return check && changed && check.at < changed ? { ...check, noteChanged: true } : check
 }
 
+/**
+ * Keeps an answer. It is given knowing the one there was and any waiting beside it (`others`): those are now behind it,
+ * so answering again is also choosing among answers given apart.
+ */
 export function writeCheck(book: string, id: string, check: NoteCheck, store = 'revisionNota') {
+  const before = readCheck(book, id, store)
+  const { noteChanged: _changed, others: _others, ...answer } = check
+  const was = [...new Set([...(answer.was ?? []), ...(before ? [...knownBy(before), checkKey(before)] : [])])].filter((k) => k !== checkKey(answer))
   try {
-    localStorage.setItem(key(book, id, store), JSON.stringify(check))
+    localStorage.setItem(key(book, id, store), JSON.stringify(was.length ? { ...answer, was } : answer))
   } catch {
     /* kept on screen for this visit */
   }
 }
 
+/**
+ * A check received from another device, gathered with the one here (`mine`): what to keep, or null when nothing
+ * changes. `mineOn`/`theirsOn` say whether each was given on the verse as it stands now. The one given on the verse as
+ * it stands wins; else the one given knowing the other; and two given apart, saying different things, are both kept:
+ * the one here stays, the other waits beside it for a person to choose. The date decides nothing.
+ */
+export function gatherCheck(mine: NoteCheck | null, theirs: NoteCheck, mineOn: boolean, theirsOn: boolean): NoteCheck | null {
+  if (!mine) return theirs
+  const m = checkKey(mine)
+  const t = checkKey(theirs)
+  const takeTheirs =
+    m !== t && ((theirsOn && !mineOn) || (theirsOn === mineOn && Boolean(theirs.was?.includes(m)) && !mine.was?.includes(t)))
+  const keepMine = m === t || (mineOn && !theirsOn) || (theirsOn === mineOn && Boolean(mine.was?.includes(t)))
+  const winner = takeTheirs ? theirs : mine
+  const apart = !takeTheirs && !keepMine
+  const behind = new Set([...(winner.was ?? []), checkKey(winner)])
+  const others: NoteCheck[] = []
+  for (const o of [...(mine.others ?? []), ...(theirs.others ?? []), ...(apart ? [theirs] : [])]) {
+    const k = checkKey(o)
+    if (!behind.has(k) && !others.some((x) => checkKey(x) === k)) others.push(o)
+  }
+  const { others: _, ...answer } = winner
+  const kept = others.length ? { ...answer, others } : answer
+  return JSON.stringify(kept) === JSON.stringify(mine) ? null : kept
+}
+
 /** Where a note's check stands now, against the verse as it is. */
-export type CheckState = 'pendiente' | 'bien' | 'despues' | 'cambio'
+export type CheckState = 'pendiente' | 'bien' | 'despues' | 'cambio' | 'elegir'
+
+const sameVerse = (a: string, b: string) => a.replace(/\s+/g, ' ').trim() === b.replace(/\s+/g, ' ').trim()
+
+/**
+ * The answers to choose from, when two were given apart on the verse as it is (`others`): the one here first, then
+ * each waiting beside it. Empty when there is nothing to choose.
+ */
+export function answersToChoose(check: NoteCheck | null, verseText: string): NoteCheck[] {
+  if (!check || !sameVerse(check.verseText, verseText)) return []
+  const waiting = (check.others ?? []).filter((o) => sameVerse(o.verseText, verseText))
+  if (!waiting.length) return []
+  const { others: _, ...here } = check
+  return [here, ...waiting]
+}
 
 export function stateOf(check: NoteCheck | null, verseText: string): CheckState {
   if (!check) return 'pendiente'
   // Answered for another text: whatever the answer, it is to be checked again.
-  if (check.verseText.trim() !== verseText.trim()) return 'cambio'
+  if (check.verseText.trim() !== verseText.trim() || check.noteChanged) return 'cambio'
+  // Two answers given apart on this same verse wait for a person to choose: not resolved until then.
+  if (answersToChoose(check, verseText).length) return 'elegir'
   return check.status
 }

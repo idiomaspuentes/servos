@@ -213,9 +213,12 @@ sabe hasta dónde incorporó a cada persona, y las decisiones viajan dentro de l
   alineación, porque se hizo sobre ese mismo texto. Si el texto que queda no es exactamente aquel sobre el que se
   alineó (porque alguien lo reescribió al decidir), la alineación de ese versículo queda **por revisar**, no se
   borra en silencio. Taller hace lo mismo con su huella de alineación.
-- Dos alineaciones distintas del mismo texto con la misma referencia (decidido el 14 de octubre): si las hizo la
-  misma persona, queda la más reciente; si las hicieron personas distintas, es un choque de alineación y se decide
-  como los de texto.
+- Dos alineaciones distintas del mismo texto con la misma referencia, hechas por separado (ninguna sabiendo de la
+  otra): es un choque de alineación y se decide como los de texto. **Decidido con Abel el 19 de octubre**, en lugar
+  de lo acordado el 14: el mismo nombre en dos aparatos puede ser otra persona (una Ana en un aparato y otra Ana en
+  otro), así que no se da por hecho que es la misma; y **la fecha no decide un choque, lo decide la elección que
+  hace una persona** (el reloj de un aparato sin internet puede estar mal). Lo mismo cuando ninguna de las dos se
+  hizo sobre el texto que quedó: se elige, y la elegida queda por revisar.
 - **Hecho** (16 de octubre de 2026): la capa está en el corazón (`src/core/alignment.ts`) y dentro de cada libro; el
   choque de alineación se elige en el alineador («Bea alineó este versículo de otra manera. ¿Cuál queda?»).
 - **La alineación alimenta el glosario** (idea del 15 de octubre, para la mini app de revisión «Alineación»): al
@@ -298,6 +301,20 @@ espera en el teléfono: subir el proyecto, marcar una versión, dejar el trabajo
 
 Hecho en el prototipo (`outbox.ts`, `WaitingSheet`), probado con un Door43 de mentira en la página y en las pruebas.
 
+**Subir no pisa lo que subió otro** (acordado con Abel el 19 de octubre). Cada teléfono recuerda, de cada libro, la
+última versión que vio en Door43 (la que subió o la que trajo), con su texto. Al subir, un libro se escribe solo si
+Door43 todavía tiene esa versión, o una cuyos versículos este teléfono ya tiene todos (el trabajo llegó por otro lado:
+una tarjeta, el trabajo del equipo). Si no, ese libro no se sube y se dice: «En Door43, Jonás tiene cambios de otra
+persona que no están en este teléfono. Para no borrarlos, no se subió». El botón lleno pasa a «Traer lo de Door43»,
+que abre «Recibir» con ese libro: qué trae y qué cambia, y nada se aplica antes del último paso. Se compara de a tres
+con lo último visto: lo que cambió solo en Door43 entra, lo que cambió solo aquí queda, y solo lo que cambió en los dos
+lados va a «Juntar». Después se sube otra vez. Una subida que esperaba internet hace lo mismo: no sube ese libro, sigue
+esperando con su motivo, y la hoja «Ya hay internet» ofrece «Traer lo de Door43». Lo traído va firmado con quien lo
+subió, como lo nombra Door43 (su nombre completo o su usuario; «Door43» si no lo dice). Y mientras un libro tiene
+versiones traídas de Door43 esperando en «Juntar», no se sube: subirlo pondría la versión de aquí sobre la otra antes
+de elegir. Se dice, con «Ir a juntar» (`publishing.ts`, `door43Copy`, `knowsAll`, `waitsFromDoor43`; probado en
+`subirSinPisar.test.ts` y en la app con un Door43 de mentira).
+
 ## 7. Los paquetes
 
 | Paquete | Qué lleva | Quién lo hace |
@@ -364,13 +381,51 @@ Hecho en el prototipo (`outbox.ts`, `WaitingSheet`), probado con un Door43 de me
     aplica sin preguntar; lo que dos personas cambiaron por separado desde el mismo texto queda como dos versiones
     para elegir (o, si unieron versículos de otra manera, como un tramo para elegir entero); la alineación entra si se hizo sobre el texto que queda, y si no
     queda por revisar, nunca borrada; de dos revisiones de una nota, de una palabra o de una pregunta de un pasaje
-    queda la dada sobre el texto que queda (de dos sobre el mismo, la más reciente); lo visto para mejorar se junta, y
+    queda la dada sobre el texto que queda; de dos sobre el mismo texto, la que se dio sabiendo de la otra, y dos
+    dadas por separado que dicen cosas distintas quedan las dos: la de aquí sigue y la otra espera a su lado para que
+    una persona elija (responder otra vez es elegir). En el revisor, esa nota o palabra queda «respondida de dos
+    maneras», no como hecha; al abrirla se ven las dos respuestas, una debajo de la otra, con quién dio cada una, sus
+    palabras marcadas y su comentario, y se toca la que queda («Quedarse con esta respuesta»). La fecha no decide (19 de octubre; sección 6.8). Un «sí» de un
+    pasaje dice siempre lo mismo: dos sobre el mismo texto son una sola respuesta; lo visto para mejorar se junta, y
     lo marcado mejorado sigue mejorado; el glosario se junta palabra por palabra (una traducción
     distinta queda como otra forma); dos notas de estudio distintas sobre los mismos versículos quedan las dos, cada
-    una con su autor.
+    una con su autor; de las grabaciones, ninguna toma se pierde, y la que suena sigue a las elecciones: la elegida
+    (o grabada) sabiendo de la otra cuenta, y dos elegidas por separado dejan sonar la de aquí mientras la otra
+    espera; en «Traducir de viva voz» se escuchan las dos y se toca la que queda (19 de octubre).
 - Al importar, la app dice qué trae y qué cambia antes de aplicarlo.
 - Un paquete de recursos más nuevo puede reemplazar a uno anterior; el trabajo hecho no se toca, pero la app avisa
   qué notas o textos cambiaron en los versículos ya traducidos.
+- **Saber que hay recursos nuevos** (acordado con Abel el 19 de octubre). Cada recurso lleva su versión,
+  `{etiqueta}#{publicado}`, y una sola comparación (`src/resources/freshness.ts`) dice, para otra copia, si es nueva
+  aquí, más nueva, la misma, más vieja u otra que no se puede ordenar (entonces no se adivina). La usan tres lugares:
+  - **Recibir textos y ayudas** (hecho): cada recurso del paquete lleva su etiqueta («Más nueva», «La misma», «Más
+    vieja: queda la de aquí»). Solo se reemplaza lo más nuevo, nunca se vuelve a una versión anterior; el botón dice
+    «Actualizar» cuando algo se reemplaza, y si el aparato ya tiene todo, igual o más nuevo, lo dice y deja «Abrir
+    igual» con borde (completa lo que falte). Un paquete de algunos libros no reemplaza un recurso del que el aparato
+    tiene más libros: un recurso es de una sola versión, y los otros libros quedarían con el texto viejo y sin las
+    citas de sus notas; se dice qué paquete hace falta. Antes, un paquete más nuevo se saltaba sin decir nada.
+  - **Compartir** llevará las versiones de las ayudas que usó quien manda el `.servos`, y Recibir dirá si un
+    compañero tiene algo más nuevo y a quién pedírselo.
+  - **Con internet**, de vez en cuando y nunca mientras se escribe, se comparará con lo marcado `tc-ready` en Door43
+    para el idioma de ayudas de cada proyecto, y una tarjeta en Inicio lo sugerirá una vez por versión, con «Bajar y
+    preparar» y «Ahora no».
+  - **Qué cambió en lo ya traducido** (hecho): antes de abrir un paquete que reemplaza algo, para cada proyecto cuyo
+    idioma de ayudas es el del paquete y cada libro suyo que el paquete trae, se leen sus versículos ya escritos (los
+    de un tramo unido, cada uno): las notas de cada uno (id, texto y cita) y su TPL y TPS. Hay que leerlo antes,
+    porque al reemplazar se escriben encima. Después de abrir se vuelven a leer y se comparan
+    (`src/app/projects/helpsChanges.ts`): nota nueva, nota cambiada (con lo que decía), nota quitada (con lo que
+    decía), y si cambió el TPL o el TPS. Lo que cambió se guarda por proyecto y libro (`servos.recursos.cambios`);
+    si llega otro paquete antes de que se vea, se junta, y cada nota guarda lo que decía primero.
+    - El último paso de Recibir dice «Cambió algo en N versículos que ya tradujo», una fila con › por versículo
+      (hasta ocho; el resto se cuenta y queda marcado en el editor) con lo que cambió dicho corto («Nota cambiada ·
+      TPL»), y el botón lleno lleva al primero en el editor. Si no cambió nada en lo traducido, no se dice nada
+      (principio 6).
+    - En el editor, bajo la caja de ese versículo, una sola fila: la etiqueta teñida «Ayudas cambiadas» con lo mismo
+      dicho corto, y ▾. Desplegada, dice lo que decía cada nota y cada texto, y el chip «✓ Ya lo vi» quita la fila.
+      Una fila y no más, para que las cajas de una sección sigan juntas. En Ayudas, la nota cambiada lleva «Nota
+      cambiada» y «Lo que decía antes ▾»; la nueva, «Nota nueva».
+    - Una revisión con las notas hecha antes de que su nota cambiara vuelve a quedar por hacer (`cambio`), aunque ya
+      se haya visto el cambio; se abre desde leer la nota, con las palabras que se marcaron, y dice por qué.
 
 ## 8. Publicar
 

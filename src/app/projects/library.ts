@@ -14,7 +14,7 @@ import { readLexiconEntry, readMacula } from '../../resources/companions'
 import { booksOfText } from '../../resources/reading'
 import { chapterData } from '../../resources/screenData'
 import { sectionStartsOf } from '../../resources/sections'
-import { availability, deviceIndex, languagesOnDevice, sourcesFor, type Availability, type DeviceIndex } from '../../resources/sources'
+import { availability, deviceIndex, languagesOnDevice, sourcesFor, type Availability, type DeviceIndex, type ResourceHere } from '../../resources/sources'
 import { openResourceStores, type ResourceStores } from '../../resources/store'
 import { openingLeft } from '../../resources/packs'
 import type { Project } from './model'
@@ -119,6 +119,9 @@ export function bookIsHere(book: string, language: string): boolean {
 
 /** Whether a resource's copy on this device was made for an earlier version of the app (a pack has to replace it). */
 export const staleOnDevice = (key: string): boolean => Boolean(index?.resources.some((r) => r.key === key && r.stale))
+
+/** This device's copy of each resource, with its release and books, to compare with a pack's (`freshness.ts`). */
+export const copiesOnDevice = (): ResourceHere[] => index?.resources ?? []
 
 /** Whether a resource (a text, the originals, articles) is on this device. */
 export const onDevice = (key: string): boolean => Boolean(index?.resources.some((r) => r.key === key && (r.books.length > 0 || r.articles)))

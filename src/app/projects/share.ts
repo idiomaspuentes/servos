@@ -10,10 +10,10 @@
  * itself, a change already taken here (or older) stays out, a choice someone already made is applied, and what two
  * people changed apart from the same text waits for a person; the choice goes into the journal and is not asked again
  * wherever the book goes. The conflicts waiting on a phone stay there (they are not shared). The alignment follows its
- * text (design, 6.8, `mergeAlignments`): the one made on the text that stays wins; two of the same text made apart are
- * the latest when one person made both, a choice when two did. Each other layer follows its text too: of a check, or a
- * passage's «yes», the one given on the text that stays here wins over one given on another, and of two on the same
- * text the latest; what was seen to improve in a passage is gathered, none lost, and one marked improved anywhere
+ * text (design, 6.8, `mergeAlignments`): the one made on the text that stays wins; two made apart, neither from the
+ * other, are a choice for a person. Each other layer follows its text too: of a check, or a passage's «yes», the one
+ * given on the text that stays here wins over one given on another; of two checks on the same text, the one given
+ * knowing the other, and two given apart wait side by side for a person to choose (the date decides nothing); what was seen to improve in a passage is gathered, none lost, and one marked improved anywhere
  * comes in improved; the glossary is gathered word by word; two study notes on the same verses stay both; recordings
  * take by take, none lost.
  *
@@ -23,8 +23,9 @@
 
 import type { AlignmentGroup } from '@usfm-tools/types'
 import { gatherGlossary, readGlossary, saveGlossaryEntry, type GlossaryEntry } from './glossary'
+import { keepSeen } from './door43'
 import { closer, privacyOf, type BookEntry, type Phase, type Project } from './model'
-import type { NoteCheck } from './noteChecks'
+import { gatherCheck, type NoteCheck } from './noteChecks'
 import { blobOf, gatherTakes, keepSound, recordedPlaces, soundBase64, takesOf, type Take } from './recordings'
 import { placesOf, textKey, type BookState } from '../../core'
 import { inProject, scoped } from './scope'
@@ -73,8 +74,13 @@ export interface SharedBook {
   /** What was seen to improve, by `chapter.verse`. */
   observations?: Record<string, Observation[]>
   studyNotes: Array<{ chapter: number; notes: StudyNote[] }>
+  /**
+   * Brought from Door43 (`publishing.ts`, `fromDoor43`): the version of the book's file there. Once gathered, this phone
+   * has seen it, and may upload over it.
+   */
+  door43?: { sha: string; text: string }
   /** The recordings of each place, every take with its sound (base64; `withSounds` adds it). */
-  recordings?: Array<{ chapter: number; verse: number; chosen: string | null; takes: Array<Take & { sound?: string }> }>
+  recordings?: Array<{ chapter: number; verse: number; chosen: string | null; knew?: string[]; waiting?: string[]; takes: Array<Take & { sound?: string }> }>
 }
 
 export interface SharedFile {
@@ -293,15 +299,15 @@ export function receiveBook(book: SharedBook, isNew: boolean, from: Gathering): 
   // The verses as they say now, after the text was gathered: what an answer was given on is weighed against them.
   const now = new Set(writtenVerses(code).map((v) => v.text.replace(/\s+/g, ' ').trim()))
   const onText = (verseText: string) => now.has(verseText.replace(/\s+/g, ' ').trim())
-  /** Of two answers, the one to keep: given on the text that stays, else the latest. */
-  const wins = <T extends { at?: string }>(mine: T | null | undefined, theirs: T, mineOn: boolean, theirsOn: boolean) =>
-    !mine || (theirsOn && !mineOn) || (theirsOn === mineOn && (mine.at ?? '') < (theirs.at ?? ''))
+  // A check follows its text, then its history: two answers given apart wait side by side for a person to choose. The
+  // date decides nothing (decided with Abel on 19 October 2026): a device's clock may be wrong.
   for (const [store, byId] of Object.entries(book.checks)) {
     for (const [id, check] of Object.entries(byId)) {
       const k = `${P}.${store}.${scoped(code)}.${id}`
       const mine = json<NoteCheck>(k)
-      if (wins(mine, check, mine ? onText(mine.verseText) : false, onText(check.verseText))) {
-        set(k, JSON.stringify(check))
+      const kept = gatherCheck(mine, check, mine ? onText(mine.verseText) : false, onText(check.verseText))
+      if (kept) {
+        set(k, JSON.stringify(kept))
         result.checksTaken++
       }
     }
@@ -325,7 +331,9 @@ export function receiveBook(book: SharedBook, isNew: boolean, from: Gathering): 
     for (const [criterion, theirs] of Object.entries(byCriterion) as Array<[Criterion, PassageAnswer]>) {
       const here = mine[criterion]
       if (here?.key === theirs.key && here.at === theirs.at) continue
-      if (wins(here, theirs, here ? sectionOn(chapter, first, here.key) : false, sectionOn(chapter, first, theirs.key))) {
+      // A «yes» says one thing: two on the same text are the same answer, whoever gave it and whenever. Only one given on
+      // the section as it stands comes in over one given on another text.
+      if (!here || (sectionOn(chapter, first, theirs.key) && !sectionOn(chapter, first, here.key))) {
         mine[criterion] = theirs
         changed = true
         result.checksTaken++
@@ -366,7 +374,7 @@ export function receiveBook(book: SharedBook, isNew: boolean, from: Gathering): 
   for (const r of book.recordings ?? []) {
     const sounds = new Map(r.takes.filter((x) => x.sound).map((x) => [x.id, x.sound!]))
     const takes = r.takes.filter((x) => sounds.has(x.id)).map(({ sound: _, ...take }) => take)
-    for (const take of gatherTakes(code, r.chapter, r.verse, { takes, chosen: r.chosen })) {
+    for (const take of gatherTakes(code, r.chapter, r.verse, { takes, chosen: r.chosen, knew: r.knew, waiting: r.waiting })) {
       void keepSound(take.id, blobOf(sounds.get(take.id)!, take.mime)).catch(() => {})
       result.recordingsTaken++
     }
@@ -407,6 +415,8 @@ export function receiveShared(
   // Only the team, on either phone, stays only the team: receiving never opens up what someone closed.
   const privacy = closer(privacyOf(target), privacyOf(file.project))
   const updated: Project = { ...target, books: [...named, ...added], ...(privacy === 'equipo' ? { privacy } : {}) }
+  // A book brought from Door43, once gathered: what this phone saw there, to upload over it next.
+  for (const b of books) if (b.door43) keepSeen(updated.id, b.code, b.door43)
   const { gathered, changed } = gatherGlossary(readGlossary(updated.id), file.glossary ?? [])
   for (const entry of changed) saveGlossaryEntry(updated.id, entry)
   const next = destination.kind === 'join' ? projects.map((p) => (p.id === updated.id ? updated : p)) : [...projects, updated]
