@@ -49,12 +49,18 @@ public class FilesPlugin extends Plugin {
     private static final Pattern READABLE = Pattern.compile("(?i)(.*[.](servos|servos[.]json|json|txt)|copia-[0-9a-f]{6}-[0-9]{8}-[0-9]{4}[.]dat)$");
     /** More than a whole Bible with its recordings is not a file Servos made. */
     private static final long MOST = 512L * 1024 * 1024;
+    /**
+     * A file written for the share sheet stays only while the app it went to may still be reading it (Bluetooth sends
+     * it slowly): older, it is deleted, so the phone does not keep a copy of everything ever shared (principle 9).
+     */
+    private static final long KEPT_MS = 15L * 60 * 1000;
 
     private final List<JSObject> waiting = new ArrayList<>();
 
     @Override
     public void load() {
         take(getActivity().getIntent());
+        new Thread(() -> clearShared(sharedFolder())).start();
     }
 
     @Override
@@ -93,8 +99,9 @@ public class FilesPlugin extends Plugin {
             return;
         }
         try {
-            File folder = new File(getContext().getCacheDir(), "compartir");
+            File folder = sharedFolder();
             if (!folder.isDirectory() && !folder.mkdirs()) throw new Exception("No folder");
+            clearShared(folder);
             File file = new File(folder, name);
             try (FileOutputStream out = new FileOutputStream(file)) {
                 out.write(text.getBytes(StandardCharsets.UTF_8));
@@ -142,6 +149,21 @@ public class FilesPlugin extends Plugin {
             call.resolve(answer);
         } catch (Exception e) {
             call.reject("Not saved", e);
+        }
+    }
+
+    /** Where a file waits for the app it is shared to, inside Servos's own cache. */
+    private File sharedFolder() {
+        return new File(getContext().getCacheDir(), "compartir");
+    }
+
+    /** Deletes what was shared long enough ago that the app it went to has it already. */
+    private static void clearShared(File folder) {
+        File[] files = folder.listFiles();
+        if (files == null) return;
+        long now = System.currentTimeMillis();
+        for (File file : files) {
+            if (now - file.lastModified() > KEPT_MS) file.delete();
         }
     }
 
