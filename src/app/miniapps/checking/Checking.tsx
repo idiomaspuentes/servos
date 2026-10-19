@@ -1,19 +1,21 @@
 /**
  * Checking a translation against one kind of help at a time, the notes or the words: each thing to check (a note, a
- * use of a word) in three steps shown one at a time, each with one thing to do and one button on. Read what the help
- * says; find it in the translation (touch the words that say it); answer whether it is right: yes; improve it now (in
- * the editor the verse was written in, and back here); or improve it later (with the team, or after looking into
- * it). Only «yes» resolves it, and only while the verse stays as it was, as translationCore 3 and 4 and Taller do.
+ * use of a word) in four steps shown one at a time, each with one thing to do and one button on. Read the source text,
+ * its words lit; understand what the help says of them; mark the words of the translation that say them; and confirm
+ * that they say it right (for a word, comparing with how it was translated elsewhere): yes; improve it now (in the
+ * editor the verse was written in, and back here); or leave it for later (with the team, or after looking into it).
+ * Only «yes» resolves it, and only while the verse stays as it was, as translationCore 3 and 4 and Taller do.
  *
  * What differs between the kinds is given by a `CheckKind`: what there is to check, how it is grouped, what is read
- * in the first step and what the marked words are weighed against in the third.
+ * in the second step and what the marked words are weighed against in the fourth.
  */
 
 import { useEffect, useLayoutEffect, useRef, useState, type ComponentType, type ReactNode } from 'react'
 import { chapterOf, type Places, type PrototypeData, type PrototypeText } from '../../../prototype/data'
 import { useT } from '../../i18n/i18n'
+import { RowButton } from '../../frame/Actions'
 import { KEYS, useKey } from '../../frame/keys'
-import { useWider } from '../../frame/Panes'
+import { useWide, useWider } from '../../frame/Panes'
 import { Sheet } from '../../frame/Sheet'
 import { WordLines, wordsOf } from '../../frame/TouchWords'
 import { WordPicker } from '../../frame/WordPicker'
@@ -43,10 +45,17 @@ export interface Lookup {
 export interface StepProps<I extends Checkable> {
   item: I
   data: PrototypeData
-  /** What the help is about, in the text chosen (tabs and a swipe change it). */
+  /** What the help is about, lit, in the source text chosen in the first step. */
   quote: ReactNode
   lookup: Lookup
   context: MiniAppContext
+  /**
+   * In a wide window, from the third step: `Read` is the column of what was read, without asking for anything; and
+   * `Against` stands beside that column, so what is in it need not be said again.
+   */
+  aside?: boolean
+  /** For a kind whose reading must be done before going on (`gated`): whether it is. */
+  onReady?(ready: boolean): void
 }
 
 export interface AgainstProps<I extends Checkable> extends StepProps<I> {
@@ -56,6 +65,13 @@ export interface AgainstProps<I extends Checkable> extends StepProps<I> {
   /** What was marked at another place, while its verse is as it was then. */
   renderingAt(item: I): string | null
   go(item: I): void
+  book: string
+}
+
+/** What is asked in the last step: a text key of the kind's, with what fills it. */
+export interface Question {
+  key: string
+  values?: Record<string, string>
 }
 
 export interface CheckKind<I extends Checkable> {
@@ -71,20 +87,20 @@ export interface CheckKind<I extends Checkable> {
   subgroupName(item: I, lookup: Lookup): string
   /** What the help is about in a text where its words are not known. */
   quoteOf(item: I, text: PrototypeText): string
-  /** Where a check not answered starts: reading, or (a word read at another place) finding it. */
-  firstStep?(item: I, all: I[], answered: (item: I) => boolean): Step
-  /**
-   * The third step's question, a text key of its own (`pregunta` when not given): words ask to compare with the other
-   * places only once there are some checked to compare with.
-   */
-  question?(item: I, all: I[], renderingAt: (item: I) => string | null): string
-  /** The first step: what the help says. */
+  /** Words of the source shown on each side of what is lit when it is recalled: a word is told from its others by them. */
+  around?: number
+  /** Whether the second step must be read through (an article unfolded) before going on. */
+  gated?: boolean
+  /** The last step's question. */
+  question(item: I, at: { all: I[]; renderingAt: (item: I) => string | null; here: string; notThere: boolean; lookup: Lookup; language: string }): Question
+  /** The second step: what the help says. */
   Read: ComponentType<StepProps<I>>
-  /** The third step, under the words marked: what they are weighed against. */
+  /** The last step, under the words marked: what they are weighed against. */
   Against: ComponentType<AgainstProps<I>>
 }
 
-type Step = 1 | 2 | 3
+type Step = 1 | 2 | 3 | 4
+const STEPS = [1, 2, 3, 4] as const
 
 /** What the things are gone through by: all, a group, a subgroup, or those left in a state. */
 type Filter = { kind: 'todas' } | { kind: 'categoria'; id: string } | { kind: 'figura'; id: string } | { kind: 'estado'; id: CheckState }
@@ -254,19 +270,20 @@ export function checkingCenter<I extends Checkable>(kind: CheckKind<I>) {
         {groups}
       </Sheet>
     )
-    // The reviewer, with the groups beside it where the window is wide enough.
-    const withGroups = (body: ReactNode) =>
-      wider ? (
-        <div className="review-with-groups">
+    // The reviewer, with the groups beside it where the window is wide enough. The same elements at every width (the
+    // narrow wrapper is `display: contents`): a window widened or narrowed past 1280 px keeps the step and the words
+    // marked, rather than starting the check again.
+    const withGroups = (body: ReactNode) => (
+      <div className={wider ? 'review-with-groups' : 'review-alone'}>
+        {wider ? (
           <nav className="review-side" aria-label={t(k('revisarPor'))}>
             <h2 className="pane-side-title">{t(k('revisarPor'))}</h2>
             {groups}
           </nav>
-          {body}
-        </div>
-      ) : (
-        body
-      )
+        ) : null}
+        {body}
+      </div>
+    )
 
     if (finished) {
       const missing = all.filter((c) => stateFor(c) !== 'bien')
@@ -340,7 +357,6 @@ export function checkingCenter<I extends Checkable>(kind: CheckKind<I>) {
           refText={refText}
           onRefText={setRefText}
           scroller={scroller}
-          answered={(c) => Boolean(checkOf(c))}
           renderingAt={(c) => {
             const check = checkOf(c)
             const text = verseTextOf(book, c.chapter, c.verse)
@@ -378,7 +394,6 @@ function CheckSteps<I extends Checkable>({
   refText,
   onRefText,
   scroller,
-  answered,
   renderingAt,
   go,
   onAnswer,
@@ -395,7 +410,6 @@ function CheckSteps<I extends Checkable>({
   refText: string
   onRefText(abbreviation: string): void
   scroller: React.RefObject<HTMLDivElement>
-  answered(item: I): boolean
   renderingAt(item: I): string | null
   go(item: I): void
   onAnswer(check: NoteCheck): void
@@ -410,7 +424,7 @@ function CheckSteps<I extends Checkable>({
   const state = stateOf(before, verseText)
   // The words chosen before still point at the same words only while the verse is the same.
   const kept = before && state !== 'cambio' ? before : null
-  // Back from the editor: at the step it was opened from, with the words marked, if the verse is the same; at finding
+  // Back from the editor: at the step it was opened from, with the words marked, if the verse is the same; at marking
   // the words again if it was changed. Then it is as any other.
   const [back] = useState(() => {
     const left = leftAt.get(leftKey)
@@ -422,11 +436,11 @@ function CheckSteps<I extends Checkable>({
   }, [leftKey])
   const [picked, setPicked] = useState<number[]>(back ? (back.same ? back.picked : []) : (kept?.words ?? []))
   const [notThere, setNotThere] = useState(back ? back.same && back.notThere : Boolean(kept?.notThere))
-  // Answered, it opens at its answer; its verse changed, at finding the words again; else where the kind says.
-  const [step, setStep] = useState<Step>(
-    back ? (back.same ? back.step : 2) : kept ? 3 : state === 'cambio' ? 2 : (kind.firstStep?.(item, all, answered) ?? 1)
-  )
+  // Answered, it opens at its answer; its verse changed, at marking the words again; else at reading the source.
+  const [step, setStep] = useState<Step>(back ? (back.same ? back.step : 3) : kept ? 4 : state === 'cambio' ? 3 : 1)
   const [reached, setReached] = useState<Step>(step)
+  // The second step of a kind that asks it read through is not done until it says so.
+  const [ready, setReady] = useState(!kind.gated)
   const [later, setLater] = useState(false)
   const [reason, setReason] = useState<'equipo' | 'investigar'>(before?.reason ?? 'equipo')
   const [comment, setComment] = useState(before?.comment ?? '')
@@ -437,14 +451,26 @@ function CheckSteps<I extends Checkable>({
   }
   const goStep = (s: Step) => {
     setStep(s)
+    setLater(false)
     setReached((r) => (s > r ? s : r))
   }
   // Each step is read from its top.
   useLayoutEffect(() => {
     if (scroller.current) scroller.current.scrollTop = 0
   }, [step, scroller])
+  // Why it waits is asked under what was compared: brought into sight when asked.
+  const laterBox = useRef<HTMLElement>(null)
+  useEffect(() => {
+    if (later) laterBox.current?.scrollIntoView({ block: 'nearest' })
+  }, [later])
+  // From the third step on, a wide window keeps what was read beside what is done (principle 13).
+  const wide = useWide()
+  const beside = wide && step >= 3
 
-  const text = data.texts.find((x) => x.abbreviation === refText) ?? data.texts[0]
+  // The source is a bridge text: the original is read in the study.
+  const sources = data.texts.filter((x) => !x.original)
+  const shown = sources.find((x) => x.abbreviation === refText) ?? sources[0] ?? data.texts[0]
+  const name = kind.subgroupName(item, lookup)
   const answer = (status: NoteCheck['status']) =>
     onAnswer({
       status,
@@ -455,34 +481,152 @@ function CheckSteps<I extends Checkable>({
       by: person,
       at: new Date().toISOString(),
     })
-  const quote = <QuoteBox app={kind.app} data={data} places={item.places} quoteOf={(x) => kind.quoteOf(item, x)} shown={text} onShow={onRefText} />
-  const props = { item, data, quote, lookup, context }
+  const lit = (around: number) => (
+    <Lit text={shown} verse={item.verse} places={item.places[shown.abbreviation]} around={around} fallback={kind.quoteOf(item, shown)} />
+  )
+  const props = { item, data, quote: lit(0), lookup, context }
+  const source = (
+    <SourceBox
+      app={kind.app}
+      texts={sources}
+      shown={shown}
+      onShow={onRefText}
+      chapter={item.chapter}
+      verse={item.verse}
+      places={item.places}
+      section={data.sections.find((s) => s.includes(item.verse))}
+    />
+  )
+  const here = notThere ? '' : renderingOf(words, picked)
+  const question = kind.question(item, { all, renderingAt, here, notThere, lookup, language: context.project.languageName })
+  const mine = (
+    <p className="review-mine-verse">
+      {words.map((w, i) => (
+        <span key={i}>
+          {i > 0 && ' '}
+          {picked.includes(i) && !notThere ? <mark>{w}</mark> : w}
+        </span>
+      ))}
+    </p>
+  )
 
-  // The one button on, at the foot: what leads to the next step. The third step's answers are its own buttons.
-  const next =
+  // The one button on, at the foot: what leads to the next step; at the last, the answer most given. While writing why
+  // it waits, saving that is the one thing.
+  const foot: { label: string; run(): void; off: boolean; hint?: string } =
     step === 1
-      ? { label: k('aBuscar'), run: () => goStep(2), off: false }
+      ? { label: t(k('aEntender'), { palabra: name }), run: () => goStep(2), off: false }
       : step === 2
-        ? words.length
-          ? { label: k('aDecidir'), run: () => goStep(3), off: !chosen }
-          : { label: k('traducirAhora'), run: correct, off: false }
-        : // The third step's «right», the answer most given, stays at the foot like the steps before it; the others
-          // (correct it, leave it for later) are in the screen under the comparison. Writing why it waits, that is
-          // the one thing.
-          later
-          ? null
-          : { label: k('siBien'), run: () => answer('bien'), off: false }
+        ? { label: t(k('aBuscar')), run: () => goStep(3), off: !ready, hint: t(k('primeroArticulo')) }
+        : step === 3
+          ? words.length
+            ? { label: t(k('aDecidir')), run: () => goStep(4), off: !chosen, hint: t(k('primeroElija')) }
+            : { label: t(k('traducirAhora')), run: correct, off: false }
+          : later
+            ? {
+                label: t(k('guardarDespues')),
+                run: () => {
+                  answer('despues')
+                  setLater(false)
+                },
+                off: false,
+              }
+            : { label: t(k('siBien')), run: () => answer('bien'), off: false }
+
+  const read = (
+    <>
+      <p className="review-instruction">{t(k('leaTexto'))}</p>
+      {source}
+    </>
+  )
+  const mark = (
+    <>
+      <p className="review-instruction">{t(k('marqueAqui'))}</p>
+      {/* What to look for, in a line: beside the source in a wide window, it is not needed. */}
+      {!beside && (
+        <p className="review-recall">
+          <span className="review-recall-text">{shown.abbreviation}</span>
+          {lit(kind.around ?? 0)}
+        </p>
+      )}
+      {state === 'cambio' && <p className="notice">{t(k('cambio'))}</p>}
+      {words.length === 0 ? (
+        <p className="notice">{t(k('sinTraducir'))}</p>
+      ) : (
+        <>
+          <WordPicker
+            words={words}
+            picked={picked}
+            off={notThere}
+            onChange={(now) => {
+              setNotThere(false)
+              setPicked(now)
+            }}
+          />
+          <label className="check">
+            <input type="checkbox" checked={notThere} onChange={(e) => setNotThere(e.target.checked)} />
+            {t(k('noEsta'))}
+          </label>
+        </>
+      )}
+    </>
+  )
+  const confirm = (
+    <>
+      <p className="review-instruction">{t(k(question.key), question.values)}</p>
+      <dl className="review-pair">
+        <dt>{shown.abbreviation}</dt>
+        <dd>{lit(kind.around ?? 0)}</dd>
+        <dt>{context.project.languageName}</dt>
+        <dd>{notThere ? <span className="quiet">{t(k('marcoNoEsta'))}</span> : <mark className="review-pair-mine">{here}</mark>}</dd>
+      </dl>
+      <kind.Against {...props} aside={beside} here={here} all={all} renderingAt={renderingAt} go={go} book={book} />
+      <Fold label={t(k('verVersiculo'))}>{mine}</Fold>
+      {state === 'bien' && before && <p className="review-done">✓ {t(k('quedoBien'), { nombre: before.by })}</p>}
+      {state === 'despues' && before && (
+        <p className="status">
+          {t(k('paraDespues'), { razon: t(k(`razon.${before.reason ?? 'equipo'}`)), nombre: before.by })}
+          {before.comment ? ` «${before.comment}»` : ''}
+        </p>
+      )}
+      {/* The other answers, under what they answer: the foot keeps only the one most given, so what is compared has the
+          room of the screen. */}
+      {!later && (
+        <div className="review-other-answers">
+          <button type="button" className="button-secondary" onClick={correct}>
+            {t(k('corregirAhora'))}
+          </button>
+          <button type="button" className="button-secondary" onClick={() => setLater(true)}>
+            {t(k('corregirDespues'))}
+          </button>
+        </div>
+      )}
+      {later && (
+        <section className="review-later" ref={laterBox} aria-label={t(k('porQue'))}>
+          <RowButton label={t(k('corregirDespues'))} kind="fold" expanded onClick={() => setLater(false)} />
+          <div className="unit-switch" role="radiogroup" aria-label={t(k('porQue'))}>
+            {(['equipo', 'investigar'] as const).map((r) => (
+              <button key={r} type="button" role="radio" aria-checked={reason === r} className="unit-switch-option" onClick={() => setReason(r)}>
+                {t(k(`razon.${r}`))}
+              </button>
+            ))}
+          </div>
+          <textarea rows={2} value={comment} onChange={(e) => setComment(e.target.value)} placeholder={t(k('queVio'))} />
+        </section>
+      )}
+    </>
+  )
+  const body = step === 1 ? read : step === 2 ? <kind.Read {...props} onReady={setReady} /> : step === 3 ? mark : confirm
 
   return (
     <>
       <div className="review-scroll" ref={scroller}>
         <ol className="review-stepper">
-          {([1, 2, 3] as const).map((s) => (
+          {STEPS.map((s) => (
             <li key={s}>
               <button
                 type="button"
                 aria-current={s === step ? 'step' : undefined}
-                className={s < reached || (s === 3 && state === 'bien') ? 'is-done' : undefined}
+                className={s < reached || (s === 4 && state === 'bien') ? 'is-done' : undefined}
                 disabled={s > reached}
                 onClick={() => goStep(s)}
               >
@@ -492,157 +636,140 @@ function CheckSteps<I extends Checkable>({
             </li>
           ))}
         </ol>
-
-        {step === 1 && <kind.Read {...props} />}
-
-        {step === 2 && (
-          <>
-            {/* The verse it is in, its words lit, in the box the quote is in (tabs, or a swipe, change the text): it is
-                seen where it stands, and the translation comes right under it. */}
-            <QuoteBox app={kind.app} data={data} places={item.places} quoteOf={(x) => kind.quoteOf(item, x)} shown={text} onShow={onRefText} verse={item.verse} />
-            <section className="review-mine">
-              <h3>{t(k('marqueAqui'))}</h3>
-              {state === 'cambio' && <p className="notice">{t(k('cambio'))}</p>}
-              {words.length === 0 ? (
-                <p className="notice">{t(k('sinTraducir'))}</p>
-              ) : (
-                <>
-                  <WordPicker
-                    words={words}
-                    picked={picked}
-                    off={notThere}
-                    onChange={(now) => {
-                      setNotThere(false)
-                      setPicked(now)
-                    }}
-                  />
-                  <label className="check">
-                    <input type="checkbox" checked={notThere} onChange={(e) => setNotThere(e.target.checked)} />
-                    {t(k('noEsta'))}
-                  </label>
-                </>
-              )}
+        {beside ? (
+          <div className="review-beside">
+            <section className="review-read" aria-label={t(k('loLeido'))}>
+              {source}
+              <kind.Read {...props} aside />
             </section>
-          </>
-        )}
-
-        {step === 3 && (
-          <>
-            <p className="review-instruction">{t(k(kind.question?.(item, all, renderingAt) ?? 'pregunta'))}</p>
-            <section className="review-mine">
-              <h3>{t(k('suTraduccion'))}</h3>
-              {notThere ? (
-                <p className="quiet">{t(k('marcoNoEsta'))}</p>
-              ) : (
-                <p className="review-mine-verse">
-                  {words.map((w, i) => (
-                    <span key={i}>
-                      {i > 0 && ' '}
-                      {picked.includes(i) ? <mark>{w}</mark> : w}
-                    </span>
-                  ))}
-                </p>
-              )}
-            </section>
-            <kind.Against {...props} here={notThere ? '' : renderingOf(words, picked)} all={all} renderingAt={renderingAt} go={go} />
-            {state === 'bien' && before && <p className="review-done">✓ {t(k('quedoBien'), { nombre: before.by })}</p>}
-            {state === 'despues' && before && (
-              <p className="status">
-                {t(k('paraDespues'), { razon: t(k(`razon.${before.reason ?? 'equipo'}`)), nombre: before.by })}
-                {before.comment ? ` «${before.comment}»` : ''}
-              </p>
-            )}
-            <section className="review-answer">
-              <p className="quiet review-answer-other">{t(k('siNo'))}</p>
-              <div className="glossary-actions">
-                <button type="button" className="button-secondary" onClick={correct}>
-                  {t(k('corregirAhora'))}
-                </button>
-                <button type="button" className="button-secondary" aria-expanded={later} onClick={() => setLater((l) => !l)}>
-                  {t(k('corregirDespues'))}
-                </button>
-              </div>
-              {later && (
-                <div className="review-later">
-                  <div className="unit-switch" role="radiogroup" aria-label={t(k('porQue'))}>
-                    {(['equipo', 'investigar'] as const).map((r) => (
-                      <button key={r} type="button" role="radio" aria-checked={reason === r} className="unit-switch-option" onClick={() => setReason(r)}>
-                        {t(k(`razon.${r}`))}
-                      </button>
-                    ))}
-                  </div>
-                  <textarea rows={2} value={comment} onChange={(e) => setComment(e.target.value)} placeholder={t(k('queVio'))} />
-                  <button
-                    type="button"
-                    className="button-primary"
-                    onClick={() => {
-                      answer('despues')
-                      setLater(false)
-                    }}
-                  >
-                    {t(k('guardarDespues'))}
-                  </button>
-                </div>
-              )}
-            </section>
-          </>
+            <section className="review-do">{body}</section>
+          </div>
+        ) : (
+          body
         )}
       </div>
-      {next && (
-        <div className="review-next">
-          <button type="button" className="button-primary" disabled={next.off} onClick={next.run}>
-            {t(next.label)}
-          </button>
-          {next.off && <p className="quiet review-hint">{t(k('primeroElija'))}</p>}
-        </div>
-      )}
+      <div className="review-next">
+        <button type="button" className="button-primary" disabled={foot.off} onClick={foot.run}>
+          {foot.label}
+        </button>
+        {foot.off && foot.hint && <p className="quiet review-hint">{foot.hint}</p>}
+      </div>
     </>
   )
 }
 
+/** Something more to read, unfolded here: a row with ▾, and what it holds under it. */
+export function Fold({ label, open: initially = false, onOpen, children }: { label: ReactNode; open?: boolean; onOpen?(): void; children: ReactNode }) {
+  const [open, setOpen] = useState(initially)
+  return (
+    <div className="review-fold">
+      <RowButton
+        label={label}
+        kind="fold"
+        expanded={open}
+        onClick={() => {
+          if (!open) onOpen?.()
+          setOpen(!open)
+        }}
+      />
+      {open && <div className="review-fold-body">{children}</div>}
+    </div>
+  )
+}
+
 /**
- * What a help is about, in one text at a time, or the verse it is in with its words lit: small tabs choose the text,
- * and a finger slid sideways over the box takes the words along with it and brings the next text in from the side it
- * goes to, as the panes do. One going up or down still scrolls (touch-action: pan-y).
+ * What a help is about, lit, in a source text: its words alone, or with a few on each side (`around`), so one use of
+ * a word is told from another in the same verse. Where its words in this text are not known, what the help says.
  */
-export function QuoteBox({
+export function Lit({ text, verse, places, around, fallback }: { text: PrototypeText; verse: number; places: number[] | undefined; around: number; fallback: string }) {
+  const lit = new Set(places ?? [])
+  const pieces = (text.lines[verse] ?? []).flatMap((line, i) => (i > 0 ? [{ text: ' ' }, ...line.pieces] : line.pieces))
+  const at = pieces.flatMap((p, i) => (p.word !== undefined && lit.has(p.word) ? [i] : []))
+  if (!at.length) {
+    const said = wordsOf(text, places) || fallback
+    return said ? (
+      <span className="review-lit" lang={text.lang} dir={text.dir ?? 'ltr'}>
+        <mark>{said}</mark>
+      </span>
+    ) : null
+  }
+  // From `around` words before the first lit to as many after the last.
+  const reach = (from: number, by: -1 | 1) => {
+    let i = from
+    for (let n = 0; n < around; ) {
+      const next = i + by
+      if (next < 0 || next >= pieces.length) break
+      i = next
+      if (pieces[i].word !== undefined) n++
+    }
+    return i
+  }
+  const first = reach(at[0], -1)
+  const last = reach(at[at.length - 1], 1)
+  const shown = pieces.slice(first, last + 1)
+  // The words alone: those left out between two lit ones are said by «…», as everywhere else.
+  if (!around) {
+    return (
+      <span className="review-lit" lang={text.lang} dir={text.dir ?? 'ltr'}>
+        <mark>{wordsOf(text, places)}</mark>
+      </span>
+    )
+  }
+  return (
+    <span className="review-lit" lang={text.lang} dir={text.dir ?? 'ltr'}>
+      {first > 0 && '… '}
+      {shown.map((p, i) => (p.word !== undefined && lit.has(p.word) ? <mark key={i}>{p.text}</mark> : <span key={i}>{p.text}</span>))}
+      {last < pieces.length - 1 && ' …'}
+    </span>
+  )
+}
+
+/**
+ * The source text of a verse, its words lit: pills choose the bridge text, and a finger slid sideways over the box
+ * takes the words along with it and brings the next text in from the side it goes to, as the panes do. One going up
+ * or down still scrolls (touch-action: pan-y). The rest of its section unfolds under it, the verse lit among them.
+ */
+export function SourceBox({
   app,
-  data,
-  places,
-  quoteOf,
+  texts,
   shown,
   onShow,
+  chapter,
   verse,
+  places,
+  section,
 }: {
   app: string
-  data: PrototypeData
-  places: Places
-  /** The words, in a text where their places are not known. */
-  quoteOf(text: PrototypeText): string
+  texts: PrototypeText[]
   shown: PrototypeText
   onShow(abbreviation: string): void
-  /** Show the whole verse, the words lit in it, rather than the words alone. */
-  verse?: number
+  chapter: number
+  verse: number
+  places: Places
+  /** The verses of the section the verse is in. */
+  section?: number[]
 }) {
   const t = useT()
   const [drag, setDrag] = useState(0)
   const [enter, setEnter] = useState<'next' | 'back' | null>(null)
+  const [whole, setWhole] = useState(false)
   const start = useRef<{ x: number; y: number; on: boolean } | null>(null)
-  // A swipe begun on a tab ends in a click on it, which is not a choice of its own.
+  // A swipe begun on a pill ends in a click on it, which is not a choice of its own.
   const swiped = useRef(false)
-  const at = data.texts.indexOf(shown)
+  const at = texts.indexOf(shown)
   const show = (to: number) => {
-    const x = data.texts[to]
+    const x = texts[to]
     if (!x || to === at) return
     setEnter(to > at ? 'next' : 'back')
     onShow(x.abbreviation)
   }
-  const quote = wordsOf(shown, places[shown.abbreviation]) || quoteOf(shown)
-  const missing = <span className="quiet">{t(`${app}.sinAlinear`, { texto: shown.abbreviation })}</span>
+  const lit = new Set(places[shown.abbreviation] ?? [])
+  const others = section && section.length > 1 ? section : null
+  const verses = whole && others ? others : [verse]
   return (
     <section
       className="review-quote"
-      aria-label={t(`${app}.cita`)}
+      aria-label={t(`${app}.textoFuente`)}
       onPointerDown={(e) => {
         start.current = { x: e.clientX, y: e.clientY, on: false }
         swiped.current = false
@@ -654,7 +781,7 @@ export function QuoteBox({
         if (!s.on && Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(e.clientY - s.y)) s.on = true
         if (!s.on) return
         // Past the first or the last text, the words only give a little.
-        const edge = (dx > 0 && at === 0) || (dx < 0 && at === data.texts.length - 1)
+        const edge = (dx > 0 && at === 0) || (dx < 0 && at === texts.length - 1)
         setDrag(edge ? dx / 4 : dx)
       }}
       onPointerUp={(e) => {
@@ -671,40 +798,46 @@ export function QuoteBox({
         setDrag(0)
       }}
     >
-      <div className="review-quote-switch" role="radiogroup" aria-label={t(`${app}.textoReferencia`)}>
-        {data.texts.map((x, i) => (
-          <button
-            key={x.abbreviation}
-            type="button"
-            role="radio"
-            aria-checked={x === shown}
-            onClick={() => {
-              if (swiped.current) swiped.current = false
-              else show(i)
-            }}
-          >
-            {x.original ? t(`estudio.lengua.${x.lang ?? 'original'}`) : x.abbreviation}
-          </button>
-        ))}
-      </div>
+      {texts.length > 1 && (
+        <div className="review-quote-switch" role="radiogroup" aria-label={t(`${app}.textoFuente`)}>
+          {texts.map((x, i) => (
+            <button
+              key={x.abbreviation}
+              type="button"
+              role="radio"
+              aria-checked={x === shown}
+              onClick={() => {
+                if (swiped.current) swiped.current = false
+                else show(i)
+              }}
+            >
+              {x.abbreviation}
+            </button>
+          ))}
+        </div>
+      )}
       <div
         key={shown.abbreviation}
-        className={['review-quote-text', verse !== undefined && 'is-verse', shown.original && 'is-original', enter && `is-entering-${enter}`]
-          .filter(Boolean)
-          .join(' ')}
+        className={['review-quote-text', 'is-verse', enter && `is-entering-${enter}`].filter(Boolean).join(' ')}
         dir={shown.dir ?? 'ltr'}
         lang={shown.lang}
         style={drag ? { transform: `translateX(${drag}px)`, opacity: 1 - Math.min(Math.abs(drag) / 400, 0.4), transition: 'none' } : undefined}
       >
-        {verse !== undefined ? (
-          <>
-            <WordLines lines={shown.lines[verse] ?? []} verse={verse} lit={new Set(places[shown.abbreviation] ?? [])} onWord={() => {}} />
-            {!places[shown.abbreviation]?.length && <p className="quiet">{t(`${app}.sinAlinear`, { texto: shown.abbreviation })}</p>}
-          </>
-        ) : (
-          quote || missing
-        )}
+        {verses.map((v) => (
+          <div key={v} className={v === verse ? 'review-verse' : 'review-verse is-context'}>
+            <WordLines lines={shown.lines[v] ?? []} verse={v} lit={v === verse ? lit : new Set()} onWord={() => {}} tabbable={false} />
+          </div>
+        ))}
+        {!lit.size && <p className="quiet">{t(`${app}.sinAlinear`, { texto: shown.abbreviation })}</p>}
       </div>
+      {others && (
+        <RowButton
+          label={t(`${app}.seccion`, { lugar: `${chapter}:${others[0]}–${others[others.length - 1]}` })}
+          kind="fold"
+          expanded={whole}
+          onClick={() => setWhole(!whole)}
+        />
+      )}
     </section>
   )
 }
@@ -712,6 +845,18 @@ export function QuoteBox({
 /** The texts both reviewers share; each adds what is its own, and may say these its own way. */
 export const checkingTexts = {
   es: {
+    paso1: 'Leer',
+    paso2: 'Entender',
+    paso3: 'Marcar',
+    paso4: 'Confirmar',
+    leaTexto: 'Lea el texto con especial atención en lo resaltado.',
+    textoFuente: 'Texto fuente',
+    seccion: 'Leer toda la sección ({lugar})',
+    marqueAqui: 'Toque o deslice el dedo sobre las palabras de su traducción que dicen esto:',
+    'marqueAqui.computadora': 'Haga clic o arrastre el ratón sobre las palabras de su traducción que dicen esto:',
+    verVersiculo: 'Ver el versículo entero',
+    loLeido: 'Lo que leyó',
+    primeroArticulo: 'Primero despliegue el artículo entero.',
     todas: 'Todas',
     revisarPor: 'Revisar por',
     hechas: '{hechas} de {total}',
@@ -719,35 +864,44 @@ export const checkingTexts = {
     ningunaAqui: 'Este versículo no tiene nada que revisar aquí.',
     ningunaDelGrupo: 'Este versículo no tiene nada de «{grupo}».',
     irSiguiente: 'Ir al siguiente ({lugar})',
-    siNo: '¿No está bien?',
     listas: 'Quedaron revisadas todas: {n}.',
     grupoListo: 'Quedaron revisadas todas las de «{grupo}»: {n}.',
     seguirFaltan: 'Seguir con las que faltan ({n})',
     verUltima: 'Volver a la última',
-    textoReferencia: 'Texto de referencia',
     sinAlinear: 'No se sabe qué palabras del {texto} son.',
     noEsta: 'No está en mi traducción',
     sinTraducir: 'Este versículo todavía no está traducido.',
     primeroElija: 'Primero marque las palabras de su traducción, o que no está.',
     corregirAhora: 'Mejorarla ahora',
     traducirAhora: 'Traducirlo ahora',
-    corregirDespues: 'Mejorarla después',
+    corregirDespues: 'Dejarla para después',
     porQue: 'Por qué después',
     'razon.equipo': 'Con el equipo',
     'razon.investigar': 'Investigarlo',
     queVio: 'Qué vio (opcional)',
-    guardarDespues: 'Dejarla para después',
+    guardarDespues: 'Guardar para después',
     paraDespues: 'Para mejorar después: {razon} ({nombre}).',
     cambio: 'El versículo cambió desde que se revisó: revíselo otra vez.',
     'estado.despues': 'Para mejorar después',
     'estado.cambio': 'Por revisar otra vez',
     'estado.pendiente': 'Sin revisar',
     'estado.bien': 'Quedaron bien',
-    suTraduccion: 'Su traducción',
     aDecidir: 'Seguir',
     marcoNoEsta: 'Marcó que no está en su traducción.',
   },
   pt: {
+    paso1: 'Ler',
+    paso2: 'Entender',
+    paso3: 'Marcar',
+    paso4: 'Confirmar',
+    leaTexto: 'Leia o texto com atenção especial ao destacado.',
+    textoFuente: 'Texto fonte',
+    seccion: 'Ler toda a seção ({lugar})',
+    marqueAqui: 'Toque ou deslize o dedo sobre as palavras da sua tradução que dizem isto:',
+    'marqueAqui.computadora': 'Clique ou arraste o mouse sobre as palavras da sua tradução que dizem isto:',
+    verVersiculo: 'Ver o versículo inteiro',
+    loLeido: 'O que leu',
+    primeroArticulo: 'Primeiro abra o artigo inteiro.',
     todas: 'Todas',
     revisarPor: 'Revisar por',
     hechas: '{hechas} de {total}',
@@ -755,35 +909,44 @@ export const checkingTexts = {
     ningunaAqui: 'Este versículo não tem nada para revisar aqui.',
     ningunaDelGrupo: 'Este versículo não tem nada de «{grupo}».',
     irSiguiente: 'Ir para o próximo ({lugar})',
-    siNo: 'Não está bem?',
     listas: 'Ficaram todas revisadas: {n}.',
     grupoListo: 'Ficaram revisadas todas as de «{grupo}»: {n}.',
     seguirFaltan: 'Seguir com as que faltam ({n})',
     verUltima: 'Voltar à última',
-    textoReferencia: 'Texto de referência',
     sinAlinear: 'Não se sabe que palavras do {texto} são.',
     noEsta: 'Não está na minha tradução',
     sinTraducir: 'Este versículo ainda não está traduzido.',
     primeroElija: 'Primeiro marque as palavras da sua tradução, ou que não está.',
     corregirAhora: 'Melhorar agora',
     traducirAhora: 'Traduzir agora',
-    corregirDespues: 'Melhorar depois',
+    corregirDespues: 'Deixar para depois',
     porQue: 'Por que depois',
     'razon.equipo': 'Com a equipe',
     'razon.investigar': 'Pesquisar',
     queVio: 'O que viu (opcional)',
-    guardarDespues: 'Deixar para depois',
+    guardarDespues: 'Guardar para depois',
     paraDespues: 'Para melhorar depois: {razon} ({nombre}).',
     cambio: 'O versículo mudou desde que foi revisado: revise-o de novo.',
     'estado.despues': 'Para melhorar depois',
     'estado.cambio': 'Para revisar de novo',
     'estado.pendiente': 'Sem revisar',
     'estado.bien': 'Ficaram bem',
-    suTraduccion: 'Sua tradução',
     aDecidir: 'Seguir',
     marcoNoEsta: 'Marcou que não está na sua tradução.',
   },
   en: {
+    paso1: 'Read',
+    paso2: 'Understand',
+    paso3: 'Mark',
+    paso4: 'Confirm',
+    leaTexto: 'Read the text with special attention to what is highlighted.',
+    textoFuente: 'Source text',
+    seccion: 'Read the whole section ({lugar})',
+    marqueAqui: 'Touch or slide your finger over the words of your translation that say this:',
+    'marqueAqui.computadora': 'Click or drag the mouse over the words of your translation that say this:',
+    verVersiculo: 'See the whole verse',
+    loLeido: 'What you read',
+    primeroArticulo: 'First open the whole article.',
     todas: 'All',
     revisarPor: 'Check by',
     hechas: '{hechas} of {total}',
@@ -791,31 +954,28 @@ export const checkingTexts = {
     ningunaAqui: 'This verse has nothing to check here.',
     ningunaDelGrupo: 'This verse has nothing of «{grupo}».',
     irSiguiente: 'Go to the next ({lugar})',
-    siNo: 'Not right?',
     listas: 'All checked: {n}.',
     grupoListo: 'All of «{grupo}» checked: {n}.',
     seguirFaltan: 'Go on with the ones left ({n})',
     verUltima: 'Back to the last one',
-    textoReferencia: 'Reference text',
     sinAlinear: 'Which words of the {texto} these are is unknown.',
     noEsta: 'It is not in my translation',
     sinTraducir: 'This verse is not translated yet.',
     primeroElija: 'First mark the words of your translation, or that it is not there.',
     corregirAhora: 'Improve it now',
     traducirAhora: 'Translate it now',
-    corregirDespues: 'Improve it later',
+    corregirDespues: 'Leave it for later',
     porQue: 'Why later',
     'razon.equipo': 'With the team',
     'razon.investigar': 'Look into it',
     queVio: 'What you saw (optional)',
-    guardarDespues: 'Leave it for later',
+    guardarDespues: 'Save for later',
     paraDespues: 'To improve later: {razon} ({nombre}).',
     cambio: 'The verse changed since it was checked: check it again.',
     'estado.despues': 'To improve later',
     'estado.cambio': 'To check again',
     'estado.pendiente': 'Not checked',
     'estado.bien': 'Right',
-    suTraduccion: 'Your translation',
     aDecidir: 'Continue',
     marcoNoEsta: 'You marked that it is not in your translation.',
   },
