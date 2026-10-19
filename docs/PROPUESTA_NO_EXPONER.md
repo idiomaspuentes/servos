@@ -46,7 +46,7 @@ Revisado en `main` (020b587) y en la rama de Android (`claude/determined-kilby-0
 | 9 | **Notificaciones** | Ninguna hoy (bien). «Ya hay internet» es una hoja dentro de la app | — |
 | 10 | **El teclado** | Gboard o el teclado de Samsung aprenden las palabras que se escriben y luego las sugieren en otras apps («Jesús», nombres bíblicos en la lengua) | Quien escribe en ese teléfono en cualquier app |
 | 11 | **Door43** | El repositorio publicado `{idioma}_reg` es **público** (`door43.ts:299`), con el nombre de la organización y de la cuenta de quien sube; el del trabajo del equipo (`{repo}-servos`) es privado. La llave de Door43 se guarda sin cifrar en el almacenamiento de la app | Cualquiera en internet; quien revisa el teléfono a fondo |
-| 12 | **La PWA en el navegador** | El nombre del sitio en el historial y en las pestañas (si se usa `servos.bible`, la palabra *bible* va en cada visita) | Quien abre el historial; la red |
+| 12 | **La PWA en el navegador** | El nombre del sitio en el historial y en las pestañas (con `servos.idiomaspuentes.org`, decidido, no dice *bible*) | Quien abre el historial; la red |
 | 13 | **Lo guardado en el aparato** | localStorage e IndexedDB sin cifrar (en Windows, en `%LOCALAPPDATA%\org.idiomaspuentes.servos`). Android no lo copia a la nube (`allowBackup="false"`, bien) | Herramientas forenses; en Windows, quien abre esa carpeta |
 | 14 | **Los instaladores** | `Servos-0.1.0-rc.1.apk` y el instalador de Windows quedan en Descargas después de instalar | Quien abre Descargas |
 | 15 | **El permiso de micrófono** | Android muestra el punto verde y lista «Servos» en los permisos de micrófono | Poco; se nombra para no olvidarlo |
@@ -71,8 +71,8 @@ Lo que no cambia nada para quien trabaja y deja menos a la vista. No depende del
 |---|---|---|---|---|
 | E | **Compartir cerrado**: el `.servos` va con contraseña, con **el mismo cifrado de las copias** (AES-GCM, rama `claude/copia-en-tarjeta`). La contraseña se acuerda en persona; Recibir la pide y puede recordarla para ese proyecto | Siempre con contraseña, sin preguntar. Con «Cualquiera…», como hoy | Mediano (el cifrado ya está; falta Recibir) | Quien sabe la contraseña; una contraseña olvidada deja ese archivo sin abrir (el trabajo sigue en el teléfono que lo mandó) |
 | F | **Nombre que no dice nada**: «copia-18-10.servos» en lugar del proyecto, el libro y la persona; es también lo que muestra la hoja de compartir. Quien recibe ve de quién es al abrirlo en Recibir, después de la contraseña. El modo viaja **dentro** del archivo cerrado | Siempre. Con «Cualquiera…», el nombre de hoy | Chico | Que alguien sepa que es un archivo de Servos (la extensión) |
-| G | **Bloqueo de la app con el del propio teléfono**: al abrir Servos, y al volver a él después de unos minutos, pide la huella, la cara o el PIN del teléfono (Android `BiometricPrompt` con credencial del aparato; Windows Hello). Nada nuevo que recordar ni que perder. En la PWA, donde no hay eso, un PIN de la app | Se ofrece una vez (sección 4); se enciende o apaga en Ajustes. Es del aparato, no del proyecto: basta que un proyecto sea «Solo el equipo» para ofrecerlo | Mediano | El teléfono que se entrega con Servos ya abierto; quien obliga a abrirlo; el teléfono sin bloqueo propio (la app lo dice y no lo ofrece); herramientas forenses (lo guardado no se cifra) |
-| H | **Sin capturas mientras está abierto un proyecto «Solo el equipo»** (`FLAG_SECURE` en Android, `contentProtected` en la ventana de Tauri): la pantalla sale negra en capturas, en grabaciones, al compartir la pantalla y en apps recientes, también en Android 12 o menos | Al abrir un proyecto con ese modo; se quita al salir de él | Chico | Una foto de la pantalla con otro teléfono. Estorba a quien manda capturas para pedir ayuda: Ajustes debe poder apagarlo |
+| G | **Bloqueo de la app con el del propio teléfono**: al abrir Servos y al volver a él (cuándo, en la sección 6), pide la huella, la cara o el PIN del teléfono (Android `BiometricPrompt` con credencial del aparato; Windows Hello). Nada nuevo que recordar ni que perder. En la PWA, donde no hay eso, un PIN de la app | Se ofrece una vez (sección 4); se enciende o apaga en Ajustes. Es del aparato, no del proyecto: basta que un proyecto sea «Solo el equipo» para ofrecerlo | Mediano | El teléfono que se entrega con Servos ya abierto; quien obliga a abrirlo; el teléfono sin bloqueo propio (la app lo dice y no lo ofrece); herramientas forenses (lo guardado no se cifra) |
+| H | **Sin capturas** (`FLAG_SECURE` en Android, `contentProtected` en la ventana de Tauri): la pantalla de Servos sale negra en capturas, en grabaciones, al compartir la pantalla y en apps recientes, también en Android 12 o menos | **Lo decide cada quien para sí**, en Ajustes de la app, en «Al abrir Servos», junto al bloqueo (Abel, 18 de octubre). Apagado de entrada; la tarjeta del bloqueo lo ofrece en una fila más. Vale para todo Servos en ese aparato, no por proyecto | Chico | Una foto de la pantalla con otro teléfono |
 | I | **Nombre e ícono discretos**: «Cuaderno» o «Notas», con un ícono neutro (Android `activity-alias`, uno por nombre). La primera pantalla tampoco dice Servos hasta pasar el bloqueo | Se ofrece una vez, junto con el bloqueo; se cambia en Ajustes. Es del aparato | Mediano en Android; en Windows, renombrar el acceso del menú Inicio; en la PWA no se puede | El nombre del paquete (`org.idiomaspuentes.servos`) en Ajustes › Apps; cambiarlo haría perder el trabajo. Algunos lanzadores quitan el acceso de la pantalla de inicio |
 | J | **Después de recibir**: «El archivo sigue en Descargas. ¿Lo borro?» cuando Android da permiso; si no, dice dónde está | Solo en un proyecto «Solo el equipo» | Chico a mediano | Copias en WhatsApp o en su nube |
 | K | **Al publicar en Door43**: el repositorio se crea privado, y hacerlo público es una decisión aparte, con su confirmación | Con «Solo el equipo». Con «Cualquiera…», público como hoy | Chico | Lo que ya se hizo público |
@@ -97,7 +97,8 @@ de amenazas.
 - **El bloqueo y el nombre discreto se ofrecen una vez**, en una tarjeta neutra con su acción y «Ahora no»
   (principio 12), la primera vez que se abre un proyecto «Solo el equipo» en ese aparato: «Solo el equipo puede ver
   este proyecto. ¿Quieres que Servos pida la huella o el PIN de este teléfono al abrirse?» › «Pedir al abrir». Debajo,
-  en la misma tarjeta, una fila: «Mostrar Servos con otro nombre en el teléfono ›». Si el teléfono no tiene bloqueo:
+  en la misma tarjeta, dos filas: «Mostrar Servos con otro nombre en el teléfono ›» y «Que no se puedan hacer
+  capturas de Servos ›». Si el teléfono no tiene bloqueo:
   «Este teléfono se abre sin PIN. Para que Servos lo pida, primero ponle un PIN al teléfono».
 - **Al subir el modo**, en Ajustes del proyecto: un toque, y la línea que dice lo que cambia: «Desde ahora, los archivos
   que compartas y las copias llevan contraseña».
@@ -109,7 +110,9 @@ de amenazas.
 - **Al recibir en un proyecto con un modo más abierto**: el proyecto pasa a «Solo el equipo», y la pantalla final de
   Recibir lo dice en una línea: «Este proyecto ahora es solo para el equipo, como el que llegó».
 - **En Ajustes de la app**, una fila de dos líneas, **«Al abrir Servos»** — «Pedir la huella o el PIN, otro nombre en
-  el teléfono, capturas», donde se encienden y apagan el bloqueo, el nombre discreto y las capturas. Es donde se
+  el teléfono, capturas», donde cada quien enciende y apaga para sí el bloqueo (y cuándo vuelve a pedirse), el
+  nombre discreto y las capturas: «Si lo enciendes, nadie puede hacer capturas ni grabar la pantalla de Servos en
+  este teléfono, tampoco tú». Es donde se
   cambian, no una ayuda que haya que leer antes.
 - **Nunca más de lo cierto.** La app no dice «seguro» ni «protegido» a secas. Dice qué evita y, en otra frase, qué no:
   «Con esto, quien tome el teléfono no puede abrir Servos sin tu huella o tu PIN. No sirve si Servos ya está abierto».
@@ -127,22 +130,39 @@ de amenazas.
 Es lo que más deja a la vista hoy (el archivo que se encuentra en Descargas o en una tarjeta), usa lo que ya está hecho
 para las copias, y no cambia nada en los proyectos «Cualquiera que tenga el archivo».
 
-**Después**, en este orden: el **bloqueo** (G) con su tarjeta, porque cubre el teléfono que alguien toma; **sin
-capturas** (H); el repositorio privado al publicar (K) y la línea de Door43 (D); y al final el **nombre e ícono
+**Después**, en este orden: el **bloqueo** (G) con su tarjeta y la opción **sin capturas** (H), porque cubren el
+teléfono que alguien toma; el repositorio privado al publicar (K) y la línea de Door43 (D); y al final el **nombre e ícono
 discretos** (I) y lo de después de recibir (J).
 
-## 6. Para decidir
+## 6. Decidido con Abel (18 de octubre)
 
-1. **¿Cuántos minutos fuera de Servos antes de volver a pedir el bloqueo?** Propongo 5, y que al apagar la pantalla
-   se pida siempre.
-2. **¿Sin capturas encendido de entrada con «Solo el equipo», o solo ofrecido?** Recomiendo encendido, con la opción de
-   apagarlo en Ajustes para quien manda capturas a quien le ayuda.
-3. **¿Recibir recuerda la contraseña del proyecto?** Recordarla ahorra escribirla cada vez; no recordarla deja el
-   teléfono con menos. Recomiendo recordarla, porque lo guardado en el teléfono ya está a la vista de quien abre
-   Servos, y para eso está el bloqueo.
-4. **¿Qué nombres e íconos discretos?** Propongo nombres neutros y verdaderos («Cuaderno», «Notas»), no disfrazarse de
-   calculadora: si alguien descubre el disfraz, se ve peor.
-5. **¿Qué dominio para la PWA?** `servos.bible` todavía no está apartado; *bible* queda en el historial del navegador.
+1. **Cuándo vuelve a pedirse el bloqueo: por lo que pasa, no solo por minutos.** Lo que Abel pidió investigar. Las
+   apps que hacen lo mismo no dan un número único: WhatsApp ofrece «al instante», «después de 1 minuto» y «después de
+   30 minutos» ([XDA](https://www.xda-developers.com/whatsapp-for-android-now-supports-fingerprint-unlock/),
+   [Android Central](https://www.androidcentral.com/whatsapp-finally-adds-fingerprint-lock-its-android-app)); Signal
+   deja elegir el tiempo y además cerrar a mano ([Signal](https://support.signal.org/hc/articles/360007059572)). OWASP
+   no fija un número: pide volver a pedirlo al pasar la app al fondo o tras un rato sin uso, y deja el intervalo a cada
+   app ([MASWE-0024](https://mas.owasp.org/MASWE/MASVS-AUTH/MASWE-0024/)). Lo que importa es en qué momento el teléfono
+   puede cambiar de manos, y eso son tres cosas:
+   - **Al apagarse la pantalla, siempre**, sin espera: es cuando el teléfono se deja sobre la mesa o se guarda.
+   - **Al salir de Servos a otra app, después de un margen**, para que mirar el diccionario, contestar un mensaje o una
+     llamada no obligue a poner la huella cada vez. De entrada, **1 minuto**; en Ajustes se elige entre «Al salir»,
+     «Después de 1 minuto» y «Después de 5 minutos». Tres opciones y no un selector libre, para que se entienda sin
+     pensar.
+   - **En la computadora, también con Servos delante**: tras **5 minutos** sin teclado ni ratón, y al bloquearse
+     Windows. Una computadora se deja abierta en una mesa más que un teléfono, que apaga solo su pantalla.
+
+   Y una fila en el menú de la persona, **«Cerrar Servos ahora»**, que lo bloquea de un toque, como el cierre a mano de
+   Signal.
+2. **Sin capturas lo decide cada quien para sí** (Abel), en Ajustes de la app, no el modo del proyecto (H).
+3. **Recibir recuerda la contraseña del proyecto** en ese aparato (recomendación aceptada). Escribirla cada vez lleva a
+   contraseñas cortas o anotadas en papel junto al teléfono, que dejan más a la vista que guardarla dentro de Servos,
+   detrás del bloqueo. Se guarda por proyecto, la misma para Compartir y para las copias; una fila en Ajustes del
+   proyecto, «Olvidar la contraseña en este teléfono», la quita.
+4. **Nombres e íconos discretos neutros y verdaderos** («Cuaderno», «Notas»), sin disfrazarse de otra app
+   (recomendación aceptada).
+5. **El dominio es `servos.idiomaspuentes.org`** (Abel): no dice *bible* en el historial ni en las pestañas, y es de
+   la organización. Anotado también en el diseño (sección 13) y en el README.
 
 ## 7. El principio 9, aplicado
 

@@ -571,4 +571,5 @@ Propuesta de etapas, para conversar:
 - PIN opcional por persona (sección 5).
 - A dónde va cada proyecto en Door43 (sección 8).
 - Paquete compartido con Taller o copia adaptada (sección 11).
-- El nombre de dominio `servos.bible` todavía no está apartado.
+- El dominio es `servos.idiomaspuentes.org` (decidido el 18 de octubre): no dice *bible* en el historial del
+  navegador.
