@@ -137,8 +137,8 @@ contraseña: `projects/teamKeys.ts`) y guarda el archivo cerrado (`SVs1`, el cif
 abrirlo. Recibir abre solo un archivo cerrado con una llave que ya está en el aparato; si no, pide «la contraseña que
 acordó el equipo» y guarda la llave para el proyecto donde entra. «✎ Cambiar la contraseña» en Compartir. Y para todos:
 los textos del sistema sin «Biblia» (A), lo de `cache/compartir` se borra pasados 15 minutos, al abrir la app y al
-compartir (B), y las apps recientes sin foto (C). Falta «Olvidar la contraseña en este teléfono» en Ajustes del
-proyecto.
+compartir (B), y las apps recientes sin foto (C). En Ajustes del proyecto, «Olvidar la contraseña en este
+teléfono» (solo cuando el aparato la tiene): lo próximo que se comparta, reciba o copie la pide otra vez.
 
 **Después**, en este orden: el **bloqueo** (G) con su tarjeta y la opción **sin capturas** (H), porque cubren el
 teléfono que alguien toma; el repositorio privado al publicar (K) y la línea de Door43 (D); y al final el **nombre e ícono

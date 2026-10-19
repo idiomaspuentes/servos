@@ -923,5 +923,9 @@
   "recibir.cerradoTitulo": "A file only for the team",
   "recibir.cerradoAyuda": "Type the password the team agreed on.",
   "recibir.noEsLaContrasena": "That is not the password. Ask whoever sent you the file.",
-  "recibir.abrirArchivo": "Open the file"
+  "recibir.abrirArchivo": "Open the file",
+  "ajustes.olvidarContrasena": "Forget the password on this phone",
+  "ajustes.olvidarContrasena.computadora": "Forget the password on this computer",
+  "ajustes.olvidarContrasenaAyuda": "The next time you share, receive or keep a copy, Servos will ask for it again.",
+  "ajustes.contrasenaOlvidada": "Forgotten. Servos will ask for it next time."
 }

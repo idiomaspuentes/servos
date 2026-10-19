@@ -923,5 +923,9 @@
   "recibir.cerradoTitulo": "Um arquivo só para a equipe",
   "recibir.cerradoAyuda": "Escreva a senha que a equipe combinou.",
   "recibir.noEsLaContrasena": "Essa não é a senha. Peça-a a quem lhe mandou o arquivo.",
-  "recibir.abrirArchivo": "Abrir o arquivo"
+  "recibir.abrirArchivo": "Abrir o arquivo",
+  "ajustes.olvidarContrasena": "Esquecer a senha neste telefone",
+  "ajustes.olvidarContrasena.computadora": "Esquecer a senha neste computador",
+  "ajustes.olvidarContrasenaAyuda": "Da próxima vez que compartilhar, receber ou guardar uma cópia, o Servos a pedirá de novo.",
+  "ajustes.contrasenaOlvidada": "Esquecida. O Servos a pedirá da próxima vez."
 }
