@@ -493,21 +493,27 @@ grabó el teléfono.
     de Android 13), y al abrir se ve el mismo libro sobre el musgo.
   - **El teclado** achica la app por encima de él, como Chrome: el editor sigue igual que en el navegador, con la
     caja y la barra del pasaje a la vista, y se desliza entre la caja y el texto sin perder el foco. Probado en
-    Android 14 y 15 (edge-to-edge).
+    Android 14 y 15 en el emulador y en Android 16 en un Galaxy A56 (WebView 155).
+  - **La app se dibuja bajo las barras del teléfono** (la hora arriba, los botones abajo): la cabecera llega hasta
+    debajo de la hora, y con el teclado arriba las pestañas quedan bajo ella; las barras escriben en claro u oscuro
+    según el fondo de la app, aunque la persona haya elegido un tema distinto del teléfono.
   - **El botón Atrás** baja primero el teclado; después cierra la hoja de arriba, luego vuelve una pantalla; en
     Inicio deja la app detrás de las demás, tal como estaba.
   - **Un archivo `.servos` llega** con «Abrir con» (desde Archivos o una descarga) o con «Compartir» (desde WhatsApp,
     Bluetooth u otra app): se abre «Recibir» con el archivo ya leído, también con Servos cerrado.
   - **Guardar** (Compartir, el libro en USFM, el glosario, la traducción de la interfaz) abre la hoja de compartir
-    del teléfono: un mensaje, Bluetooth, o una carpeta donde guardarlo. Como Android no dice adónde fue, la app no
-    dice «se guardó».
+    del teléfono, con el archivo y su tipo: WhatsApp, Bluetooth, Quick Share… y, primero, **«Guardar en el
+    teléfono»**, que pregunta la carpeta (Descargas, la tarjeta) y deja el archivo con su nombre. Muchos teléfonos no
+    ofrecen otra manera de guardar un archivo de un tipo que no conocen. Guardado ahí, la app dice dónde quedó; si fue
+    a otra app, no dice nada, porque Android no lo cuenta.
   - **El micrófono** se pide la primera vez que alguien graba en «Traducir de viva voz».
   - **Lo guardado** queda en la WebView, en los datos de la app: Android no lo borra para hacer lugar, pero se pierde
     al desinstalar. No se copia a la nube ni a otro teléfono (las copias de Android están apagadas): el trabajo
     viaja con Compartir y Recibir. Por eso el APK lleva la firma propia de Servos, fuera del repositorio: una
     versión nueva se instala encima solo si está firmada con la misma llave.
   - **Sin internet** la app lo sabe: la WebView no sigue la red sola, y la app le dice cuándo hay y cuándo no, para
-    que lo que espera internet (6.11) espere en modo avión en vez de intentar.
+    que lo que espera internet (6.11) espere en modo avión en vez de intentar. Cuentan el Wi-Fi y los datos, no una
+    VPN, que sigue encendida en modo avión.
   - **Se instala** desde el APK (por cable o como archivo), sin tienda. Faltan la tienda, el iPhone y la capa de
     `platform-adapters`.
 - **Almacenamiento** por la capa de `platform-adapters` de `usfm-ast`, que ya abstrae la web, Tauri y Capacitor.

@@ -412,7 +412,7 @@ export function BookScreen({
               label={t('libro.usfm')}
               description={t('libro.usfmAyuda')}
               onClick={async () => {
-                const saved = await saveFile(`${book.code.toUpperCase()}.usfm`, bookUsfm(book.code, project.name, chapters, 'TPL', book.name, true), 'text/plain')
+                const saved = await saveFile(`${book.code.toUpperCase()}.usfm`, bookUsfm(book.code, project.name, chapters, 'TPL', book.name, true), 'text/plain', t('compartir.guardarEnTelefono'))
                 setSaidMore(saved.state === 'saved' ? t('compartir.guardado', { archivo: saved.name }) : saved.state === 'failed' ? t('compartir.noGuardado') : null)
               }}
             />

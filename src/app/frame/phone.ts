@@ -17,20 +17,29 @@ type Native = { isNativePlatform?(): boolean; getPlatform?(): string }
 export const onPhone = () =>
   typeof window !== 'undefined' && Boolean((window as unknown as { Capacitor?: Native }).Capacitor?.isNativePlatform?.())
 
-/** The app's word that files were opened (`android/…/ArrivalsPlugin.java`). */
+/** The app's word that files were opened (`android/…/FilesPlugin.java`). */
 const OPENED = 'archivos-abiertos'
 
-interface Arrivals {
+/** Files between Servos and the rest of the phone (`android/…/FilesPlugin.java`). */
+interface Files {
   opened(): Promise<{ files: Arrived[] }>
+  share(file: { name: string; text: string; type: string; keepHere: string }): Promise<{ saved?: string }>
   addListener(event: string, listener: () => void): Promise<unknown>
+}
+
+// Registered once. Handed back inside an object: the plugin answers to any method name, `then` too, so a promise that
+// resolved to it would take it for another promise and call it.
+let plugin: Files | undefined
+const files = async (): Promise<{ plugin: Files }> => {
+  plugin ??= (await import('@capacitor/core')).registerPlugin<Files>('ServosFiles')
+  return { plugin }
 }
 
 /** Files opened with Servos go to be received: the one it was started with, and each opened or shared later. */
 export function receiveArrivingFiles() {
   if (!onPhone()) return
   void (async () => {
-    const { registerPlugin } = await import('@capacitor/core')
-    const arrivals = registerPlugin<Arrivals>('ServosArrivals')
+    const { plugin: arrivals } = await files()
     // Each is taken once, whether it was said or was already waiting.
     const take = async () => (await arrivals.opened()).files.forEach(arrive)
     await arrivals.addListener(OPENED, () => void take())
@@ -56,20 +65,42 @@ export function keepBackButton() {
     .catch(() => {})
 }
 
+/** Whether a CSS colour (`rgb(…)`) is light enough to want dark writing on it. */
+export function isLight(colour: string): boolean {
+  const [r, g, b] = (colour.match(/\d+(\.\d+)?/g) ?? []).map(Number)
+  if (r === undefined || g === undefined || b === undefined) return true
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 140
+}
+
 /**
- * Sends a file out by the phone's share sheet, under the name given: to WhatsApp, Bluetooth, or «Guardar en…» a
- * folder. Gives back whether the sheet was left without choosing; Android does not say where the file went.
+ * The phone's bars (the clock above, the buttons below) are drawn over the app: their writing follows the app's own
+ * ground, which a person may have chosen apart from the phone's (light on a dark phone, «modo sol»).
  */
-export async function shareOnPhone(name: string, text: string): Promise<'shared' | 'declined'> {
-  const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
-  const { Share } = await import('@capacitor/share')
-  // Written where the app keeps what it lets go of; the next file of the same name takes its place.
-  const { uri } = await Filesystem.writeFile({ path: `compartir/${name}`, data: text, directory: Directory.Cache, encoding: Encoding.UTF8, recursive: true })
-  try {
-    await Share.share({ files: [uri], title: name })
-    return 'shared'
-  } catch (e) {
-    if (/cancel/i.test(String((e as { message?: string }).message ?? e))) return 'declined'
-    throw e
-  }
+export function followTheme() {
+  if (!onPhone()) return
+  void import('@capacitor/core')
+    .then(({ SystemBars, SystemBarsStyle }) => {
+      let was = ''
+      const follow = () => {
+        const style = isLight(getComputedStyle(document.body).backgroundColor) ? SystemBarsStyle.Light : SystemBarsStyle.Dark
+        if (style === was) return
+        was = style
+        void SystemBars.setStyle({ style })
+      }
+      follow()
+      new MutationObserver(follow).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', follow)
+    })
+    .catch(() => {})
+}
+
+/**
+ * Sends a file out by the phone's share sheet, under the name given and with its type (an app refuses a file whose type
+ * it is not told): to WhatsApp, Bluetooth, or kept on the phone itself, in a folder the person chooses, the first place
+ * on the sheet, named `keepHere`. Gives back the name it was kept under on the phone; elsewhere, nothing: Android does
+ * not say where it went, nor whether the sheet was left without choosing.
+ */
+export async function shareOnPhone(name: string, text: string, type: string, keepHere: string): Promise<string | null> {
+  const { saved } = await (await files()).plugin.share({ name, text, type, keepHere })
+  return saved ?? null
 }

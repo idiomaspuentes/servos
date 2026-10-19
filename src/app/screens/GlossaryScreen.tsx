@@ -91,7 +91,7 @@ export function GlossaryScreen({
   }
   const save = async () => {
     // A file to pass on (a memory stick, a message). Only a file saved counts as shared.
-    const saved = await saveFile(fileName, toShare())
+    const saved = await saveFile(fileName, toShare(), 'application/json', t('compartir.guardarEnTelefono'))
     if (saved.state === 'declined' || saved.state === 'failed') return setSaid(saved.state === 'declined' ? null : t('compartir.noGuardado'))
     shared()
     // Shared from a phone, it went where the person chose, which the phone does not say.

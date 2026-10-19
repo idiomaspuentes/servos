@@ -29,32 +29,32 @@ describe('saving a file in the app for computers', () => {
   })
 })
 
-const { writeFile, share } = vi.hoisted(() => ({ writeFile: vi.fn(), share: vi.fn() }))
-vi.mock('@capacitor/filesystem', () => ({ Filesystem: { writeFile }, Directory: { Cache: 'CACHE' }, Encoding: { UTF8: 'utf8' } }))
-vi.mock('@capacitor/share', () => ({ Share: { share } }))
+const { share } = vi.hoisted(() => ({ share: vi.fn() }))
+// As Capacitor's plugins do, it answers to `then` too: taken for a promise, it would fail.
+vi.mock('@capacitor/core', () => ({ registerPlugin: () => ({ share, then: () => Promise.reject(new Error('"ServosFiles.then()" is not implemented')) }) }))
 
 describe('saving a file in the app for phones', () => {
   beforeEach(() => {
-    writeFile.mockReset().mockResolvedValue({ uri: 'file:///cache/compartir/Jonás.servos' })
     share.mockReset()
     vi.stubGlobal('window', { Capacitor: { isNativePlatform: () => true } })
   })
   afterEach(() => vi.unstubAllGlobals())
 
-  it('hands the file, under the name the app gave it, to the phone\'s share sheet', async () => {
+  it("hands the file, under the name the app gave it and with its type, to the phone's share sheet", async () => {
     share.mockResolvedValue({})
-    expect(await saveFile('Jonás.servos', '{}')).toEqual({ state: 'shared', name: 'Jonás.servos' })
-    expect(writeFile).toHaveBeenCalledWith(expect.objectContaining({ path: 'compartir/Jonás.servos', data: '{}' }))
-    expect(share).toHaveBeenCalledWith({ files: ['file:///cache/compartir/Jonás.servos'], title: 'Jonás.servos' })
+    expect(await saveFile('Jonás.servos', '{}', 'application/json', 'Guardar en el teléfono')).toEqual({ state: 'shared', name: 'Jonás.servos' })
+    expect(share).toHaveBeenCalledWith({ name: 'Jonás.servos', text: '{}', type: 'application/json', keepHere: 'Guardar en el teléfono' })
+    await saveFile('JON.usfm', '\\id JON', 'text/plain')
+    expect(share).toHaveBeenLastCalledWith({ name: 'JON.usfm', text: '\\id JON', type: 'text/plain', keepHere: '' })
   })
 
-  it('takes the sheet left without choosing as no answer, not as a failure', async () => {
-    share.mockRejectedValue(new Error('Share canceled'))
-    expect(await saveFile('JON.usfm', '\id JON', 'text/plain')).toEqual({ state: 'declined', name: 'JON.usfm' })
+  it('says the name it was kept under when it was kept on the phone', async () => {
+    share.mockResolvedValue({ saved: 'Jonás (1).servos' })
+    expect(await saveFile('Jonás.servos', '{}', 'application/json', 'Guardar en el teléfono')).toEqual({ state: 'saved', name: 'Jonás (1).servos' })
   })
 
   it('says it could not when the file could not be written', async () => {
-    writeFile.mockRejectedValue(new Error('No space left'))
+    share.mockRejectedValue(new Error('No space left'))
     expect(await saveFile('Jonás.servos', '{}')).toEqual({ state: 'failed', name: 'Jonás.servos' })
   })
 })

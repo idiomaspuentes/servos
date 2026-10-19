@@ -191,7 +191,10 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .header {
   display: grid; grid-template-columns: minmax(var(--touch), 1fr) auto minmax(var(--touch), 1fr); align-items: center; gap: 0.5rem;
   padding: 0.25rem 0.75rem; border-block-end: 1px solid var(--line); background: var(--surface);
-  position: sticky; inset-block-start: env(safe-area-inset-top, 0px); z-index: 2;
+  /* Where the app is drawn under the phone's status bar (the app for Android), the header reaches up under it: what
+     scrolls never shows behind the clock. */
+  padding-block-start: calc(0.25rem + env(safe-area-inset-top, 0px));
+  position: sticky; inset-block-start: 0; z-index: 2;
 }
 .header > :first-child { justify-self: start; }
 .header > :last-child { justify-self: end; }
@@ -567,6 +570,8 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 /* Writing on a phone: the header and the filled button step aside for the keyboard */
 .screen-fill.is-writing .header, .screen-fill.is-writing .main-fill > .button-primary, .screen-fill.is-writing .edit-hint { display: none; }
 .screen-fill.is-writing .main-fill { padding-block-end: 0; }
+/* …and where the app is drawn under the status bar, what comes first instead (the panes' tabs) stays below it. */
+.screen-fill.is-writing { padding-block-start: env(safe-area-inset-top, 0px); }
 .edit-hint { margin: 0; font-size: 0.85rem; color: var(--text-soft); }
 
 /* A verse or a section at a time: two choices side by side, the chosen one filled in quietly */

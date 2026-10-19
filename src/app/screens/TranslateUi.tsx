@@ -251,7 +251,7 @@ export function TranslateUi({ onBack }: { onBack(): void }) {
                 type="button"
                 className="button-secondary"
                 onClick={async () => {
-                  const saved = await saveFile(`servos-interfaz-${target}.json`, JSON.stringify(packageOf(target)))
+                  const saved = await saveFile(`servos-interfaz-${target}.json`, JSON.stringify(packageOf(target)), 'application/json', t('compartir.guardarEnTelefono'))
                   setShared(saved.state === 'saved' ? t('compartir.guardado', { archivo: saved.name }) : saved.state === 'failed' ? t('compartir.noGuardado') : null)
                 }}
               >

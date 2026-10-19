@@ -1,11 +1,11 @@
 /**
  * Saving a file the app made (a book shared, the glossary) where the person keeps it. In the app for computers it is
  * the system's save dialog, where the person chooses the folder (closing it is no failure: nothing is said). In the
- * app for phones it is the phone's share sheet, to send it in a message or by Bluetooth or keep it in a folder; where
- * it went the phone does not say, so nothing is said either. In a browser, on a phone or a computer, it is a download. The prototype, shared as one page inside Claude, cannot
- * download by itself: there the page asks the viewer to accept the file (its `downloads` capability), and the
- * extensions it may give are a fixed list, so a `.servos` file goes as `.servos.json`, which «Receive» opens all the
- * same.
+ * app for phones it is the phone's share sheet, to send it in a message or by Bluetooth, or to keep it on the phone in
+ * a folder the person chooses; that is said, but where else it went the phone does not say, so nothing is. In a browser, on a phone or a computer, it is a download.
+ * The prototype, shared as one page inside Claude, cannot download by itself: there the page asks the viewer to accept
+ * the file (its `downloads` capability), and the extensions it may give are a fixed list, so a `.servos` file goes as
+ * `.servos.json`, which «Receive» opens all the same.
  */
 
 import { onDesktop, saveOnDesktop } from './desktop'
@@ -21,7 +21,8 @@ const ALLOWED = /\.(json|txt|md|csv|html|zip)$/i
 /** The extension a file gets where its own is not allowed: data opens as JSON, a text (USFM) as plain text. */
 const fallbackFor = (filename: string) => (/\.servos$/i.test(filename) ? '.json' : '.txt')
 
-export async function saveFile(filename: string, text: string, type = 'application/json'): Promise<Saved> {
+/** `keepHere` names, in the app's language, the place on a phone's share sheet that keeps the file on the phone itself. */
+export async function saveFile(filename: string, text: string, type = 'application/json', keepHere = ''): Promise<Saved> {
   if (onDesktop()) {
     try {
       const name = await saveOnDesktop(filename, text)
@@ -32,7 +33,8 @@ export async function saveFile(filename: string, text: string, type = 'applicati
   }
   if (onPhone()) {
     try {
-      return { state: await shareOnPhone(filename, text), name: filename }
+      const kept = await shareOnPhone(filename, text, type, keepHere)
+      return kept ? { state: 'saved', name: kept } : { state: 'shared', name: filename }
     } catch {
       return { state: 'failed', name: filename }
     }
