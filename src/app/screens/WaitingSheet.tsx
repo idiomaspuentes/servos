@@ -7,7 +7,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Sheet } from '../frame/Sheet'
 import { useT } from '../i18n/i18n'
-import { workRepoOf, type Problem } from '../projects/door43'
+import { accountOf, destinationOf, problemOf, workRepoOf, type Problem } from '../projects/door43'
+import { arrive } from '../frame/arriving'
+import { bringFromDoor43 } from '../projects/publishing'
 import type { Project } from '../projects/model'
 import { drop, errandNow, runErrand, sendWaiting, versionToMark, type Errand, type Sent } from '../projects/outbox'
 
@@ -65,6 +67,25 @@ export function WaitingSheet({
     setSending(false)
   }
   const brought = list.find((e) => e.kind === 'traer' && results?.has(e.id) && 'sent' in results.get(e.id)!)
+  // An upload that found another text on Door43 (someone else uploaded): brought into «Receive» to gather it first.
+  const behind = list.find((e) => results?.get(e.id) && 'problem' in results.get(e.id)! && (results.get(e.id) as { problem: Problem }).problem === 'changed')
+  const [bringing, setBringing] = useState(false)
+  const [notBrought, setNotBrought] = useState<Problem | null>(null)
+  const bring = async (e: Errand) => {
+    const account = accountOf(e.person)
+    const to = destinationOf(e.projectId)
+    if (!account || !to) return
+    setBringing(true)
+    try {
+      const file = await bringFromDoor43(account, to, projectOf(e.projectId)!)
+      if (file) arrive({ name: 'Door43', text: JSON.stringify(file) })
+      onClose()
+    } catch (err) {
+      setNotBrought(problemOf(err))
+    } finally {
+      setBringing(false)
+    }
+  }
   const failed = results !== null && list.some((e) => !results.has(e.id) || 'problem' in results.get(e.id)!)
 
   // The books as they are now, read once for each errand (a whole book is written out to be read).
@@ -153,6 +174,13 @@ export function WaitingSheet({
               </button>
               <button type="button" className="button-quiet" disabled={sending} onClick={onClose}>
                 {t('espera.ahoraNo')}
+              </button>
+            </>
+          ) : behind ? (
+            <>
+              {notBrought && <p className="waiting-problem">{t(`door43.problema.${notBrought}`)}</p>}
+              <button type="button" className="button-primary" disabled={bringing} onClick={() => void bring(behind)}>
+                {bringing ? t('publicar.trayendo') : t('publicar.traerDoor43')}
               </button>
             </>
           ) : brought ? (

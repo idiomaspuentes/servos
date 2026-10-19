@@ -708,6 +708,8 @@
   "door43.problema.scope": "La llave de Door43 que guarda este teléfono no permite hacer esto (es de antes). Vincule la cuenta otra vez.",
   "door43.problema.permission": "Door43 no da permiso para esto con esta cuenta. Pida a quien coordina que la agregue a la organización.",
   "door43.problema.conflict": "Alguien subió cambios a Door43 mientras tanto. Pruebe subir otra vez.",
+  "door43.problema.changed": "Alguien subió a Door43 otros cambios de este libro. Tráigalos y júntelos aquí antes de subir.",
+  "door43.problema.gather": "Este libro tiene versiones traídas de Door43 que esperan en «Juntar». Júntelas y se subirá.",
   "door43.problema.other": "Door43 respondió con un error. Pruebe otra vez más tarde.",
   "versiones.formaTitulo": "Versículos unidos de otra manera",
   "versiones.formaPregunta": "Aquí estos versículos están {aqui}. {nombre} los mandó {alla}. ¿Cuál queda para todo el pasaje?",

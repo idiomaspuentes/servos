@@ -708,6 +708,8 @@
   "door43.problema.scope": "A chave do Door43 que este telefone guarda não permite fazer isto (é de antes). Vincule a conta de novo.",
   "door43.problema.permission": "O Door43 não dá permissão para isto com esta conta. Peça a quem coordena que a adicione à organização.",
   "door43.problema.conflict": "Alguém enviou mudanças ao Door43 enquanto isso. Tente enviar de novo.",
+  "door43.problema.changed": "Alguém enviou ao Door43 outras mudanças deste livro. Traga-as e junte-as aqui antes de enviar.",
+  "door43.problema.gather": "Este livro tem versões trazidas do Door43 que esperam em «Juntar». Junte-as e ele será enviado.",
   "door43.problema.other": "O Door43 respondeu com um erro. Tente de novo mais tarde.",
   "versiones.formaTitulo": "Versículos unidos de outro jeito",
   "versiones.formaPregunta": "Aqui estes versículos estão {aqui}. {nombre} os mandou {alla}. Qual fica para toda a passagem?",
