@@ -419,6 +419,9 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 
 /* Add a book */
 .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); gap: 0.4rem; }
+/* A pack being opened: how far, and what not to do meanwhile. */
+.pack-opening { display: grid; gap: 0.75rem; }
+.pack-opening .progress-bar { height: 0.5rem; }
 .book-chip { font-size: 0.9rem; text-align: start; padding-inline: 0.6rem; }
 /* A book whose texts are on this device: it can be started at once. */
 .book-chip.has-texts { font-weight: 700; }

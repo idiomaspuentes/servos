@@ -918,5 +918,11 @@
   "copias.comoAmbos": "Lo que solo el equipo puede ver se guarda con la contraseña del equipo; lo demás, sin contraseña, como al compartir.",
   "copias.faltaContrasena": "«{proyecto}» es solo del equipo, y este aparato todavía no sabe su contraseña: sin ella no se copia.",
   "copias.guardarContrasena": "Usar esta contraseña",
-  "copias.carpetaAyuda": "Android pide una carpeta: cree una en la tarjeta (por ejemplo «Copias») y elíjala."
+  "copias.carpetaAyuda": "Android pide una carpeta: cree una en la tarjeta (por ejemplo «Copias») y elíjala.",
+  "paquete.abriendoPct": "Abriendo el paquete: {pct} %",
+  "paquete.noCerrar": "No cierre la app ni apague el teléfono hasta que termine. Si se interrumpe, vuelva a abrir el mismo archivo y se completa.",
+  "paquete.noCerrar.computadora": "No cierre la app ni apague la computadora hasta que termine. Si se interrumpe, vuelva a abrir el mismo archivo y se completa.",
+  "paquete.interrumpido": "La última vez no se terminó de abrir {archivo}. Elíjalo de nuevo para completarlo.",
+  "paquete.unPaquete": "un paquete",
+  "libro.paqueteInterrumpido": "Los textos de {libro} no se terminaron de abrir. Reciba el paquete de nuevo para completarlos."
 }

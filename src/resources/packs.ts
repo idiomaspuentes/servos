@@ -61,16 +61,61 @@ export async function describePack(bytes: Uint8Array | ArrayBuffer): Promise<Pac
   }
 }
 
+const OPENING = 'servos.paquete.abriendo'
+
+/** The packs whose opening did not end (the app closed, the phone went off), and their resources. */
+export interface Opening {
+  files: string[]
+  keys: string[]
+}
+
+export function openingLeft(): Opening | null {
+  try {
+    const raw = localStorage.getItem(OPENING)
+    return raw ? (JSON.parse(raw) as Opening) : null
+  } catch {
+    return null
+  }
+}
+
+function keepOpening(opening: Opening | null) {
+  try {
+    if (opening && opening.keys.length) localStorage.setItem(OPENING, JSON.stringify(opening))
+    else localStorage.removeItem(OPENING)
+  } catch {
+    /* without storage, an interrupted opening is not told */
+  }
+}
+
 /**
  * Opens a pack: catalog rows, then each resource's rows, receipts last. What the device has stays unless replaced:
  * `replace` when the device's copy was made for an earlier version of the app (`ResourceHere.stale`). Its rows have
  * the same keys as the pack's, and kept they would stay unreadable.
+ *
+ * Before writing, the pack and its resources are noted (`openingLeft`); when it ends they are crossed out. If the
+ * app closes or the phone goes off halfway, the note stays: a resource whose receipt (written last) is not there is
+ * then known as interrupted, and opening the same pack again fills what is missing.
  */
-export async function openPack(stores: ResourceStores, bytes: Uint8Array | ArrayBuffer, options: { replace?: boolean } = {}): Promise<ImportPackResult> {
-  return importLanguagePack({
+export async function openPack(
+  stores: ResourceStores,
+  bytes: Uint8Array | ArrayBuffer,
+  options: { replace?: boolean; file?: string; onProgress?: (done: number, total: number) => void } = {}
+): Promise<ImportPackResult> {
+  const keys = (await readPackManifest(bytes)).resources.map((r) => r.key)
+  const before = openingLeft()
+  keepOpening({
+    files: [...new Set([...(before?.files ?? []), options.file ?? ''])].filter(Boolean),
+    keys: [...new Set([...(before?.keys ?? []), ...keys])],
+  })
+  const result = await importLanguagePack({
     bytes,
     target: packTargetFrom({ cache: stores.cache, catalog: stores.catalog }),
     versions: RESOURCE_VERSIONS,
     overwrite: options.replace ?? false,
+    onProgress: options.onProgress,
   })
+  const now = openingLeft()
+  const left = (now?.keys ?? []).filter((k) => !keys.includes(k))
+  keepOpening(left.length ? { files: (now?.files ?? []).filter((f) => f !== options.file), keys: left } : null)
+  return result
 }

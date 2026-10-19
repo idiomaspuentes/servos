@@ -918,5 +918,11 @@
   "copias.comoAmbos": "O que só a equipe pode ver é guardado com a senha da equipe; o resto, sem senha, como ao compartilhar.",
   "copias.faltaContrasena": "«{proyecto}» é só da equipe, e este aparelho ainda não sabe sua senha: sem ela não é copiado.",
   "copias.guardarContrasena": "Usar esta senha",
-  "copias.carpetaAyuda": "O Android pede uma pasta: crie uma no cartão (por exemplo «Cópias») e escolha-a."
+  "copias.carpetaAyuda": "O Android pede uma pasta: crie uma no cartão (por exemplo «Cópias») e escolha-a.",
+  "paquete.abriendoPct": "Abrindo o pacote: {pct} %",
+  "paquete.noCerrar": "Não feche o app nem desligue o telefone até terminar. Se for interrompido, abra o mesmo arquivo de novo e ele se completa.",
+  "paquete.noCerrar.computadora": "Não feche o app nem desligue o computador até terminar. Se for interrompido, abra o mesmo arquivo de novo e ele se completa.",
+  "paquete.interrumpido": "Da última vez não terminou de abrir {archivo}. Escolha-o de novo para completá-lo.",
+  "paquete.unPaquete": "um pacote",
+  "libro.paqueteInterrumpido": "Os textos de {libro} não terminaram de abrir. Receba o pacote de novo para completá-los."
 }

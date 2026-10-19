@@ -918,5 +918,11 @@
   "copias.comoAmbos": "What only the team can see is kept with the team's password; the rest without one, as when sharing.",
   "copias.faltaContrasena": "«{proyecto}» is for the team only, and this device does not know its password yet: without it, it is not copied.",
   "copias.guardarContrasena": "Use this password",
-  "copias.carpetaAyuda": "Android asks for a folder: make one on the card (for example «Copies») and choose it."
+  "copias.carpetaAyuda": "Android asks for a folder: make one on the card (for example «Copies») and choose it.",
+  "paquete.abriendoPct": "Opening the pack: {pct} %",
+  "paquete.noCerrar": "Do not close the app or turn off the phone until it finishes. If it is interrupted, open the same file again and it completes.",
+  "paquete.noCerrar.computadora": "Do not close the app or turn off the computer until it finishes. If it is interrupted, open the same file again and it completes.",
+  "paquete.interrumpido": "{archivo} did not finish opening last time. Choose it again to complete it.",
+  "paquete.unPaquete": "a pack",
+  "libro.paqueteInterrumpido": "The texts for {libro} did not finish opening. Receive the pack again to complete them."
 }

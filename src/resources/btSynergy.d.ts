@@ -87,6 +87,7 @@ declare module '@bt-synergy/language-pack' {
     target: PackTarget
     versions?: PackVersions
     overwrite?: boolean
+    onProgress?: (done: number, total: number) => void
   }): Promise<ImportPackResult>
   export function buildLanguagePack(params: {
     source: PackSource

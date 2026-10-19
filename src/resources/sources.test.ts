@@ -10,7 +10,7 @@ import { availability, languagesOnDevice, originalOf, sourcesFor, type DeviceInd
 
 const resource = (key: string, kind: ResourceKind, books: string[], inRelease = books, articles = false, subject = ''): ResourceHere => {
   const [owner, language, resourceId] = key.split('/')
-  return { key, owner, language, resourceId, kind, subject, title: key, books, inRelease, articles, stale: false }
+  return { key, owner, language, resourceId, kind, subject, title: key, books, inRelease, articles, stale: false, interrupted: false }
 }
 
 /** es-419 as its packs leave it: Ruth with everything, Esther with its literal text only, Genesis published elsewhere. */
@@ -99,6 +99,20 @@ describe('qué tiene cada idioma en este teléfono', () => {
     // The Greek is not Ruth's original: Ruth opens.
     expect(availability(old('unfoldingWord/el-x-koine/ugnt'), 'es-419', 'rut')).toMatchObject({ here: true, stale: false })
     expect(availability(index, 'es-419', 'rut').stale).toBe(false)
+  })
+
+  it('un libro cuyo paquete no se terminó de abrir no se abre, y se dice: hay que recibirlo de nuevo', () => {
+    const cut = { ...index, resources: index.resources.map((r) => (r.key === 'es-419_gl/es-419/tn' ? { ...r, interrupted: true } : r)) }
+    expect(availability(cut, 'es-419', 'rut')).toMatchObject({ here: false, interrupted: true })
+    expect(availability(index, 'es-419', 'rut').interrupted).toBe(false)
+    // The language's pack cut halfway, even in a resource cut before its first article (a lexicon): every book of the
+    // language says so. The Greek cut halfway: only the New Testament's.
+    const lexicon = { ...index, resources: index.resources.map((r) => (r.key === 'es-419_gl/es-419/uhl' ? { ...r, interrupted: true, articles: false } : r)) }
+    expect(availability(lexicon, 'es-419', 'rut').interrupted).toBe(true)
+    expect(availability(lexicon, 'es-419', 'tit').interrupted).toBe(true)
+    const greek = { ...index, resources: index.resources.map((r) => (r.key === 'unfoldingWord/el-x-koine/ugnt' ? { ...r, interrupted: true } : r)) }
+    expect(availability(greek, 'es-419', 'tit').interrupted).toBe(true)
+    expect(availability(greek, 'es-419', 'rut').interrupted).toBe(false)
   })
 })
 
