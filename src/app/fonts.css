@@ -1,7 +1,10 @@
 /* Servos's letters, as translationCore 4 sets them (src/ds/tokens/fonts.css there), inside the app so they are there
    without internet: Mulish for the interface (tC4's stand-in for unfoldingWord's Avenir), one variable face; Charis SIL
    for the scripture and for what the team writes (the projects' font by default), 400 and 700, upright and italic.
-   Every subset is kept, as in tC4, because they show text a translator types; woff2 only. */
+   Every subset is kept, as in tC4, because they show text a translator types; woff2 only.
+   Charis SIL as published has no Greek, so the Greek New Testament fell to the system's letters, and Georgia (Windows)
+   draws a vowel with a grave as the bare vowel and a spacing grave beside it («κατα` πίστιν»). Its Greek is taken
+   from Gentium Plus, its sibling from SIL made for polytonic Greek, under the same name. */
 
 @font-face { font-family: "Mulish"; font-style: normal; font-weight: 200 1000; font-display: swap;
   src: url("../../node_modules/@fontsource-variable/mulish/files/mulish-cyrillic-ext-wght-normal.woff2") format("woff2");
@@ -78,3 +81,27 @@
 @font-face { font-family: "Charis SIL"; font-style: italic; font-weight: 700; font-display: swap;
   src: url("../../node_modules/@fontsource/charis-sil/files/charis-sil-latin-700-italic.woff2") format("woff2");
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family: "Charis SIL"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("../../node_modules/@fontsource/gentium-plus/files/gentium-plus-greek-ext-400-normal.woff2") format("woff2");
+  unicode-range: U+1F00-1FFF; }
+@font-face { font-family: "Charis SIL"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("../../node_modules/@fontsource/gentium-plus/files/gentium-plus-greek-400-normal.woff2") format("woff2");
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF; }
+@font-face { font-family: "Charis SIL"; font-style: normal; font-weight: 700; font-display: swap;
+  src: url("../../node_modules/@fontsource/gentium-plus/files/gentium-plus-greek-ext-700-normal.woff2") format("woff2");
+  unicode-range: U+1F00-1FFF; }
+@font-face { font-family: "Charis SIL"; font-style: normal; font-weight: 700; font-display: swap;
+  src: url("../../node_modules/@fontsource/gentium-plus/files/gentium-plus-greek-700-normal.woff2") format("woff2");
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF; }
+@font-face { font-family: "Charis SIL"; font-style: italic; font-weight: 400; font-display: swap;
+  src: url("../../node_modules/@fontsource/gentium-plus/files/gentium-plus-greek-ext-400-italic.woff2") format("woff2");
+  unicode-range: U+1F00-1FFF; }
+@font-face { font-family: "Charis SIL"; font-style: italic; font-weight: 400; font-display: swap;
+  src: url("../../node_modules/@fontsource/gentium-plus/files/gentium-plus-greek-400-italic.woff2") format("woff2");
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF; }
+@font-face { font-family: "Charis SIL"; font-style: italic; font-weight: 700; font-display: swap;
+  src: url("../../node_modules/@fontsource/gentium-plus/files/gentium-plus-greek-ext-700-italic.woff2") format("woff2");
+  unicode-range: U+1F00-1FFF; }
+@font-face { font-family: "Charis SIL"; font-style: italic; font-weight: 700; font-display: swap;
+  src: url("../../node_modules/@fontsource/gentium-plus/files/gentium-plus-greek-700-italic.woff2") format("woff2");
+  unicode-range: U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF; }
