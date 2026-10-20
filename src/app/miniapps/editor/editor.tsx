@@ -117,15 +117,17 @@ function Center({ context }: MiniAppCenterProps) {
     setOthers(readOthers(position.book, position.chapter, starts))
   }
 
-  // The cursor waits in the first line of the verse or section open: as soon as the editor opens and at every verse or
+  // The cursor waits in the first line of the verse being written: as soon as the editor opens and at every verse or
   // section it goes on to, so the person writes without looking for where (asked by Abel, 18 October), on a phone too,
-  // though the keyboard comes up with it. A click on a row not open (on a computer) asks for the box of that row.
+  // though the keyboard comes up with it. Opened where the person left it, in the box of that verse, not the section's
+  // first (Jonah 1:3 opened at 1:1). A click on a row not open (on a computer) asks for the box of that row.
   const asked = useRef<number | null>(null)
   const fieldsId = (verse: number) => `editor-v${verse}`
   useLayoutEffect(() => {
     const verse = asked.current
     asked.current = null
-    const box = document.getElementById(lineFieldId(fieldsId(verse ?? shown[0]), 0)) as HTMLTextAreaElement | null
+    const at = units.find((u) => u.includes(position.verse))?.[0] ?? shown[0]
+    const box = document.getElementById(lineFieldId(fieldsId(verse ?? at), 0)) as HTMLTextAreaElement | null
     box?.focus()
     box?.setSelectionRange(box.value.length, box.value.length)
   }, [openKey]) // eslint-disable-line react-hooks/exhaustive-deps
