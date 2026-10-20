@@ -166,21 +166,29 @@ function readingsOfWord(data: PrototypeData, abbreviation: string, place: number
 
 export function helpsOfWord(data: PrototypeData, abbreviation: string, place: number, glossary: GlossaryEntry[] = [], verse?: number): WordHelp[] {
   const out: WordHelp[] = [...readingsOfWord(data, abbreviation, place), ...glossaryOf(data, abbreviation, place, glossary), ...otherBridges(data, abbreviation, place)]
+  // What is about the word touched comes first: its key words, then its notes, each from the narrowest (the word
+  // alone) to the widest (a phrase or clause holding it): «Jehová» before «la palabra de Jehová», a note on «Jehová»
+  // before one on «the word of Jehová came». A stable sort: helps as wide keep the resources' order.
+  const narrowest = (x: WordHelp, y: WordHelp) => (x.places[abbreviation]?.length ?? 0) - (y.places[abbreviation]?.length ?? 0)
   const seen = new Set<string>()
-  for (const verse of data.verses) {
-    for (const note of verse.notes) {
-      if (seen.has(note.id) || !note.places[abbreviation]?.includes(place)) continue
-      seen.add(note.id)
-      out.push({ kind: 'nota', id: note.id, places: note.places, note })
-    }
-  }
+  const words: WordHelp[] = []
   for (const verse of data.verses) {
     for (const word of verse.words) {
       if (seen.has(word.id) || !word.places[abbreviation]?.includes(place)) continue
       seen.add(word.id)
-      out.push({ kind: 'palabra', id: word.id, places: word.places, original: word.original, article: word.article, keyTerm: word.keyTerm })
+      words.push({ kind: 'palabra', id: word.id, places: word.places, original: word.original, article: word.article, keyTerm: word.keyTerm })
     }
   }
+  out.push(...words.sort(narrowest))
+  const notes: WordHelp[] = []
+  for (const verse of data.verses) {
+    for (const note of verse.notes) {
+      if (seen.has(note.id) || !note.places[abbreviation]?.includes(place)) continue
+      seen.add(note.id)
+      notes.push({ kind: 'nota', id: note.id, places: note.places, note })
+    }
+  }
+  out.push(...notes.sort(narrowest))
   if (verse !== undefined) out.push(...lexiconOfWord(data, abbreviation, place, verse))
   return out
 }
