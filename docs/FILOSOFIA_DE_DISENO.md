@@ -150,7 +150,7 @@ acción toma la forma de su papel:
   cuarta opción, «Sol». El fondo es blanco y la tinta casi negra (#15141a, 18.3:1, el mínimo que un estudio propone
   para leer afuera); el texto suave queda a 12.5:1 y las líneas a 7.5:1. Las tarjetas y los mosaicos se separan por
   una línea, no por un tono, que al sol desaparece, y la píldora elegida lleva un borde oscuro. La interfaz sube un
-  peso (Mulish 500 en el texto, 600 en las líneas chicas) y la Escritura un tamaño, porque Charis no tiene pesos
+  peso (Onest 500 en el texto, 600 en las líneas chicas) y la Escritura un tamaño, porque Charis no tiene pesos
   intermedios. El musgo se oscurece (#2e612e, 7.3:1) y los estados también: «hecho» en #0950b3, «peligro» en #9c167b
   y el aviso en #8f3000, todos a 7.2:1 o más, elegidos para que se distingan con protanopía, deuteranopía y
   tritanopía mejor que los del día (CIEDE2000 de 8.5 o más entre dos cualesquiera; el día llega a 5.2). Por eso, al
@@ -159,9 +159,14 @@ acción toma la forma de su papel:
   automático, el desenfoque gasta la batería de un teléfono barato y baja la lectura del texto. El carácter viene de
   lo que la app es: el papel, la tinta, la letra de la Escritura, el puente. Un solo campo de musgo en Inicio,
   «Siga donde quedó», que es lo primero que se toca.
-- **Las letras de translationCore 4** (17 de octubre; guardadas dentro de la app, con todos sus alfabetos, para que
-  estén también sin internet): la interfaz en Mulish, la que tC4 usa en lugar de Avenir, la de unfoldingWord, gruesa
-  en lo que nombra y en lo que actúa (títulos 850–900, botones, pestañas y nombres 800); la Escritura en Charis SIL,
+- **Una letra propia para la interfaz, Onest** (19 de octubre; guardada dentro de la app, con todos sus alfabetos, para
+  que esté también sin internet). Es redonda y ordenada, se siente conocida sin ser fría y está hecha para pantallas;
+  se lee bien a 375 px en español y portugués, con números claros («Jonás 1:10»), y trae el latín extendido, el
+  cirílico y el vietnamita. Su I mayúscula recuerda la del logo de Idiomas Puentes, lo que ata la app a su casa. Antes
+  era Mulish, la letra de translationCore 4, y con sus pesos de 850 a 900 Servos hablaba con la voz de unfoldingWord;
+  ahora los títulos van en 800 y los botones, pestañas y nombres en 700, un paso menos que negro, para que la pantalla
+  se lea tranquila. Se compararon Manrope y Andika, de SIL; se dejó fuera el subconjunto «math» de Onest, que trae las
+  letras griegas sin acentos y partiría una palabra griega en dos letras. La Escritura sigue en Charis SIL,
   con los números de versículo en el musgo, como los de color de una Biblia impresa. Charis es también la letra por defecto de lo que
   escribe el equipo. Se probaron antes Atkinson Hyperlegible (su cero con raya hacía leer «Jonás 1:1Ø»), Figtree y
   Literata. Los títulos se distinguen por tamaño y peso, no por gris, y ninguno deja una palabra sola en un renglón.
@@ -170,7 +175,7 @@ acción toma la forma de su papel:
   (el libro abierto solo, el de antes, decía «leer»). El primer dibujo se veía de aficionado: muchas piezas sueltas,
   renglones grises, barras finas en ocre, todo metido en un cuadrado. Ahora es **una sola forma rellena, de un
   color**, con dos renglones recortados de una página y tres barras de voz recortadas de la otra, todos del mismo
-  ancho y con puntas planas, como las de Mulish; se dibujó en negro sobre una retícula de 48 y se eligió mirándolo a
+  ancho y con puntas planas, como los trazos de la letra de la interfaz; se dibujó en negro sobre una retícula de 48 y se eligió mirándolo a
   16 px. En la pantalla va solo, en el musgo, junto a «Servos» (`BrandMark`); el ícono del teléfono no es la marca en
   un cuadrado sino el libro blanco sobre un campo de musgo (`public/`, de `design/logo/render-icons.js`). En la
   pestaña del navegador va el libro solo, en musgo (musgo claro con el navegador oscuro), redibujado a 16 px con cada

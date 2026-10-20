@@ -101,7 +101,7 @@
   .side-switch {
     display: inline-flex; align-items: center; gap: 0.35rem; width: auto; min-height: var(--touch); padding: 0.2rem 0.95rem;
     border: 1px dashed color-mix(in srgb, var(--accent) 55%, transparent); border-radius: 999px; background: none;
-    color: var(--text-soft); font-size: 0.95rem; font-weight: 800;
+    color: var(--text-soft); font-size: 0.95rem; font-weight: 700;
   }
   .side-switch::before { content: '+'; color: var(--accent); }
   .side-switch.is-on { border: 1px solid var(--line); background: var(--pill); color: var(--text); box-shadow: var(--shadow-raised); }
@@ -116,7 +116,7 @@
   /* The texts' names over their columns, in sight under the switches while the chapter scrolls */
   .side-row.is-head {
     position: sticky; top: calc(var(--touch) + 0.7rem + 1px); z-index: 1; padding-block: 0.35rem; border-block-start: 0;
-    background: var(--bg); font-family: var(--font); font-size: 0.9rem; font-weight: 800;
+    background: var(--bg); font-family: var(--font); font-size: 0.9rem; font-weight: 700;
   }
   .side-head { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .side-row.is-here { background: color-mix(in srgb, var(--accent-soft) 65%, transparent); box-shadow: inset 3px 0 0 var(--accent); }

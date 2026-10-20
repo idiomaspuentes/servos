@@ -43,8 +43,8 @@ function copy(from, path) {
 // ── The site's own files: its sheet, its letters (only the Latin ones: the site is read, not typed in) and the mark ──
 
 const FONTS = {
-  'mulish-latin.woff2': '@fontsource-variable/mulish/files/mulish-latin-wght-normal.woff2',
-  'mulish-latin-ext.woff2': '@fontsource-variable/mulish/files/mulish-latin-ext-wght-normal.woff2',
+  'onest-latin.woff2': '@fontsource-variable/onest/files/onest-latin-wght-normal.woff2',
+  'onest-latin-ext.woff2': '@fontsource-variable/onest/files/onest-latin-ext-wght-normal.woff2',
   'charis-latin-400.woff2': '@fontsource/charis-sil/files/charis-sil-latin-400-normal.woff2',
   'charis-latin-400-italic.woff2': '@fontsource/charis-sil/files/charis-sil-latin-400-italic.woff2',
   'charis-latin-700.woff2': '@fontsource/charis-sil/files/charis-sil-latin-700-normal.woff2',
@@ -139,7 +139,7 @@ function frame({ lang, t, root, path, title, body, home, languages: langs }) {
 <link rel="icon" type="image/png" sizes="32x32" href="/sitio/favicon-32.png">
 <link rel="icon" type="image/svg+xml" href="/sitio/icon.svg">
 <link rel="apple-touch-icon" href="/sitio/apple-touch-icon.png">
-<link rel="preload" href="/sitio/letras/mulish-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/sitio/letras/onest-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/${sheetName}">
 ${home ? `<script>
 // Servos installed from here when the app lived at the root opens here: it goes on to the app.

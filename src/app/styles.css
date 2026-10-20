@@ -40,10 +40,10 @@
   --field-kicker: #f2cf8f;
   --field-button: #f7f2e8;
   --field-button-text: #2f5a26;
-  /* translationCore 4's letters (fonts.css): Charis SIL for the scripture, drawn for long reading of Latin and Cyrillic
-     scripts; Mulish for the interface (tC4's stand-in for unfoldingWord's Avenir), heavy in headings and buttons. */
+  /* Servos's letters (fonts.css): Charis SIL for the scripture, drawn for long reading of Latin and Cyrillic scripts;
+     Onest for the interface, round and calm, firm in headings (800) and in what acts (700), never black. */
   --serif: 'Charis SIL', 'PT Serif', Georgia, 'Times New Roman', serif;
-  --font: 'Mulish', 'Avenir Next', 'Avenir', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font: 'Onest', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   /* Movement: short, easing out, so what is touched answers at once. */
   --ease: cubic-bezier(0.2, 0, 0, 1);
   --quick: 140ms;
@@ -167,8 +167,8 @@ body {
   -webkit-tap-highlight-color: color-mix(in srgb, var(--accent) 14%, transparent);
 }
 /* Headings by size and weight, not by grey: heavier and a little tighter than the text, never one word alone on a line */
-h1 { font-size: 1.75rem; line-height: 1.2; letter-spacing: -0.015em; margin-block: 0.25rem 1rem; font-weight: 900; text-wrap: balance; }
-h2 { font-size: 1.15rem; line-height: 1.3; letter-spacing: -0.006em; margin: 0; font-weight: 850; text-wrap: balance; }
+h1 { font-size: 1.75rem; line-height: 1.2; letter-spacing: -0.015em; margin-block: 0.25rem 1rem; font-weight: 800; text-wrap: balance; }
+h2 { font-size: 1.15rem; line-height: 1.3; letter-spacing: -0.006em; margin: 0; font-weight: 800; text-wrap: balance; }
 h3 { font-size: 1rem; margin-block: 1.25rem 0.5rem; font-weight: 800; text-wrap: balance; }
 h4 { font-size: 0.95rem; margin-block: 1rem 0.25rem; font-weight: 800; }
 p { margin-block: 0 0.75rem; text-wrap: pretty; }
@@ -685,18 +685,18 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .word-help-gloss { color: var(--text-soft); }
 .word-help-texts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.1rem 0.6rem; align-items: baseline; margin: 0.3rem 0 0; }
 .word-help-texts > div { display: contents; }
-.word-help-texts dt { font-size: 0.8rem; font-weight: 800; color: var(--text-soft); }
+.word-help-texts dt { font-size: 0.8rem; font-weight: 700; color: var(--text-soft); }
 .word-help-texts dd { margin: 0; font-size: 1.05rem; }
 .word-help-texts dd bdi[dir='rtl'] { font-size: 1.2rem; }
 .word-help-part { border-block-start: 1px solid var(--line); margin-block-start: 0.7rem; padding-block-start: 0.6rem; }
 .word-help-team { display: flex; flex-direction: column; gap: 0.4rem; }
-.word-help-label { display: flex; flex-wrap: wrap; align-items: center; gap: 0.15rem 0.5rem; font-size: 0.85rem; font-weight: 800; color: var(--text-soft); }
+.word-help-label { display: flex; flex-wrap: wrap; align-items: center; gap: 0.15rem 0.5rem; font-size: 0.85rem; font-weight: 700; color: var(--text-soft); }
 .word-help-label .badge { margin: 0; }
 .word-help-label .word-help-soft { font-weight: 600; }
 .word-help-decided { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .word-help-decided > p { min-width: 0; }
 .word-help-decided .chip { flex: none; white-space: nowrap; }
-.word-help-rendering { font-size: 1.2rem; font-weight: 800; overflow-wrap: anywhere; }
+.word-help-rendering { font-size: 1.2rem; font-weight: 700; overflow-wrap: anywhere; }
 .word-help-soft { color: var(--text-soft); font-size: 0.95rem; }
 .word-help-team-note { color: var(--text-soft); font-size: 0.95rem; white-space: pre-line; }
 .word-help-paged-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-height: var(--touch); }
@@ -707,7 +707,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .word-help-paged .markdown, .word-help-paged > p:not(.word-help-quote):not(.word-help-quote-original) { margin-block-start: 0.4rem; }
 .word-help-paged .row-button { margin-block-start: 0.4rem; }
 .word-help-more { border-block-start: 1px solid var(--line); margin-block-start: 0.7rem; }
-.word-help-more > summary, .word-help-other > summary { min-height: var(--touch); display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-weight: 800; cursor: pointer; list-style: none; }
+.word-help-more > summary, .word-help-other > summary { min-height: var(--touch); display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-weight: 700; cursor: pointer; list-style: none; }
 .word-help-more > summary::-webkit-details-marker, .word-help-other > summary::-webkit-details-marker { display: none; }
 .word-help-more > summary::after, .word-help-other > summary::after { content: '▾'; font-size: 1rem; transition: transform var(--quick) var(--ease); }
 .word-help-more[open] > summary::after, .word-help-other[open] > summary::after { transform: rotate(180deg); }
@@ -720,7 +720,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .word-help-more .word-facts dd { display: inline; }
 .word-help-more > summary .word-help-scripture { font-weight: 400; font-size: 1.15rem; }
 .word-help-more .word-referents { margin-block: 0.5rem; }
-.word-referents-ask { font-size: 0.85rem; font-weight: 800; color: var(--text-soft); }
+.word-referents-ask { font-size: 0.85rem; font-weight: 700; color: var(--text-soft); }
 .word-referents-text, .word-facts-original { font-family: var(--serif); font-size: 1.15rem; }
 .word.is-touched { text-decoration: underline solid var(--accent) 2px; text-underline-offset: 0.25em; }
 @media (prefers-reduced-motion: reduce) { .word-help-more > summary::after, .word-help-other > summary::after { transition: none; } }
@@ -835,10 +835,10 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .review-lit { font-family: var(--serif); }
 /* What to look for, recalled in a line above the words to mark */
 .review-recall { margin: 0; display: flex; gap: 0.6rem; align-items: baseline; padding: 0.5rem 0.75rem; border-radius: var(--radius); background: var(--surface-soft); font-size: 1.05rem; line-height: 1.5; }
-.review-recall-text { flex: none; font-size: 0.8rem; font-weight: 800; color: var(--text-soft); }
+.review-recall-text { flex: none; font-size: 0.8rem; font-weight: 700; color: var(--text-soft); }
 /* The source's words and the translation's, one over the other */
 .review-pair { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.5rem 0.75rem; align-items: baseline; padding: 0.75rem; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-card); }
-.review-pair dt { font-size: 0.8rem; font-weight: 800; color: var(--text-soft); }
+.review-pair dt { font-size: 0.8rem; font-weight: 700; color: var(--text-soft); }
 .review-pair dd { margin: 0; font-family: var(--serif); font-size: 1.1rem; line-height: 1.5; }
 .review-pair-mine { font-family: var(--project-font, var(--serif)); }
 .review-fold-body { display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; padding-block: 0.25rem 0.5rem; }
@@ -995,7 +995,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .welcome .main { padding-block: 3rem 2rem; gap: 1.75rem; }
 .welcome-brand { display: flex; flex-direction: column; gap: 0.75rem; }
 .welcome-brand .brand-mark { width: 3.75rem; }
-.welcome-title { margin: 0; font-size: 3.1rem; line-height: 1; font-weight: 900; letter-spacing: -0.025em; }
+.welcome-title { margin: 0; font-size: 3.1rem; line-height: 1; font-weight: 800; letter-spacing: -0.025em; }
 .welcome-what { margin: 0; font-size: 1.15rem; color: var(--text-soft); max-width: 26rem; }
 .welcome .field { gap: 0.5rem; }
 .welcome-name { display: flex; flex-direction: column; gap: 0.75rem; }
@@ -1296,11 +1296,11 @@ button, .file-button, summary, input, select, textarea {
     .chapter-cell, .verse-cell, .file-button):active { transform: none; }
 }
 
-/* As translationCore 4: the scripture in Charis SIL, its verse numbers in the accent as a printed Bible's; the
-   interface in Mulish, heavy in what names and what acts (headings 850-900, buttons, tabs and names 800). What the team
-   writes is in the project's font. */
+/* The scripture in Charis SIL, its verse numbers in the accent as a printed Bible's; the interface in Onest, firm in
+   what names and what acts (headings 800; buttons, tabs and names 700), a step short of black so a screen reads calm.
+   What the team writes is in the project's font. */
 .chapter-lines { font-family: var(--serif); }
-:is(.button-primary, .button-secondary, .header-app, .header-brand, .book-tile-name, .tool-card-name, .book-resume-what, .panes-tab, .book-step, .helps-tab) { font-weight: 800; }
+:is(.button-primary, .button-secondary, .header-app, .header-brand, .book-tile-name, .tool-card-name, .book-resume-what, .panes-tab, .book-step, .helps-tab) { font-weight: 700; }
 :is(.chapter-lines, .verse) .verse-number { color: var(--accent); font-weight: 700; }
 
 /* Home's «go on where you left off» as a field of moss: the first thing touched, and home's own anchor */
@@ -1313,7 +1313,7 @@ button, .file-button, summary, input, select, textarea {
   .book-resume.is-field .button-primary:not(:disabled):hover { background: color-mix(in srgb, var(--field-button) 88%, var(--field-ink)); border-color: color-mix(in srgb, var(--field-button) 88%, var(--field-ink)); }
 }
 
-/* Sun: what its tokens cannot say alone (top of this sheet). Mulish a step heavier, 500 for the text and 600 for the
+/* Sun: what its tokens cannot say alone (top of this sheet). Onest a step heavier, 500 for the text and 600 for the
    small grey lines; the scripture a step larger instead, as Charis SIL has no weight between 400 and 700. The tiles
    that were a tint are drawn with a line, the outlined buttons and chips with the dark line, a notice with its own
    edge, the box being written with a thicker moss edge, and a box's hint in a grey that still reads. */

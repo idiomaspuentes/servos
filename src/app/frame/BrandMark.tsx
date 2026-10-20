@@ -2,7 +2,7 @@
  * Servos's mark, drawn here so it needs no file (the page shared inside Claude has none): the book that speaks, one
  * solid open book in one colour, its left page written (two lines cut out of it) and its right page spoken (three
  * voice bars cut out of it). Translating, written and by voice. Every cut is as wide as the others and square-ended,
- * as Mulish's strokes are; the shape is one path with holes, so it stays one silhouette at 16 px. It takes the
+ * as the interface's letters' strokes are; the shape is one path with holes, so it stays one silhouette at 16 px. It takes the
  * accent's colour (moss by day, light moss by night). The app's icons (public/) are the same book, white on moss,
  * drawn by design/logo/render-icons.js from the same path: change both. The browser tab's icon is this book redrawn
  * on a 16 grid (MICRO there), so a change here is redrawn there too.

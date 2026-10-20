@@ -77,4 +77,4 @@ Servos es de Idiomas Puentes, con licencia MIT. Su forma de revisar con notas y 
 los paquetes de [tc-study](https://github.com/unfoldingWord/tc-study) (bt-synergy). No lleva código de translationCore.
 Los textos y las ayudas no van en este repositorio: llegan en paquetes, cada uno con su autor y su licencia (la mayoría
 CC BY-SA 4.0), y la app los nombra en «Acerca de Servos», en el menú de la persona. Las letras son Charis SIL, de SIL
-International, y Mulish, las dos con licencia OFL.
+International, y Onest, las dos con licencia OFL.

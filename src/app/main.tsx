@@ -13,7 +13,7 @@ import { loadProjects } from './projects/model'
 import { moveWorkToProjects } from './projects/scope'
 import { I18nProvider } from './i18n/i18n'
 import './miniapps/registry'
-// The app's letters, inside it so they are there without internet: Mulish and Charis SIL, as translationCore 4.
+// The app's letters, inside it so they are there without internet: Onest for the interface, Charis SIL for the scripture.
 import './fonts.css'
 import './styles.css'
 // What a wide window changes (principle 13), after the phone's sheet so it wins where they meet.

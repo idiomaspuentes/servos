@@ -19,6 +19,29 @@ const faces: Face[] = [...css.matchAll(/@font-face\s*\{([^}]*)\}/g)].map(([, bod
 
 const covers = (face: Face, ch: string) => face.ranges.some(([a, b]) => ch.codePointAt(0)! >= a && ch.codePointAt(0)! <= b)
 
+describe('the interface letters', () => {
+  it('are Onest, the face the styles ask for', () => {
+    const styles = readFileSync(resolve(HERE, 'styles.css'), 'utf8')
+    expect(styles.match(/--font:\s*'([^']+)'/)?.[1]).toBe('Onest')
+  })
+
+  // Spanish, Portuguese and the letters of the languages being translated, Cyrillic and Vietnamese, and the marks the
+  // interface draws (← → ✓), all inside the app.
+  it('draws every script a translator types, from files inside the app', () => {
+    const own = faces.filter((f) => f.family === 'Onest')
+    for (const ch of ['a', 'ñ', 'ã', 'ŋ', 'ɨ', 'ʼ', 'ꞌ', 'Ɛ', 'Ж', 'ё', 'ң', 'ệ', 'ơ', '→', '✓', '…']) {
+      const face = own.find((f) => covers(f, ch))
+      expect(face, `${ch} U+${ch.codePointAt(0)!.toString(16)}`).toBeDefined()
+      const file = face!.src.match(/url\("([^"]+)"\)/)![1]
+      expect(existsSync(resolve(HERE, file)), file).toBe(true)
+    }
+  })
+
+  it('leaves Greek whole to other letters, not half to Onest', () => {
+    for (const ch of ['π', 'ί', 'Θ']) expect(faces.filter((f) => f.family === 'Onest' && covers(f, ch))).toEqual([])
+  })
+})
+
 describe('the scripture letters', () => {
   // Titus 1:1 «δὲ … κατὰ … Θεὸς»: with no Greek of its own, Charis SIL left these to the system, and Georgia (Windows)
   // draws a vowel with varia as the bare vowel and a spacing grave beside it.
