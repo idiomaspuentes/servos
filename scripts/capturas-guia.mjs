@@ -104,10 +104,16 @@ async function receivePacks(page, who, pictures) {
   }
 }
 
+// Home lists the other books as rows; the book worked on last is the field on top, whose button may go straight
+// back into the mini app it was left in, so from there the frame's «Volver a …» leads to the book.
 async function openBook(page, book) {
   await page.goto(APP)
   await page.waitForTimeout(1500)
-  await click(page, text(page, book), 2000)
+  const row = page.getByRole('listitem').getByRole('button', { name: new RegExp(`^${book}`) })
+  if (await row.count()) return click(page, row, 2000)
+  await click(page, page.getByRole('region', { name: book }).getByRole('button'), 2500)
+  const back = button(page, `${s.volverA.source} ${book}`)
+  if (await back.count()) await click(page, back, 2000)
 }
 
 async function receiveWork(page, who) {
@@ -174,6 +180,9 @@ if (part('ejemplo')) {
   await shot(page, 'editor-tpl')
   await click(page, text(page, s.ayudas), 1200)
   await shot(page, 'editor-ayudas')
+  await page.goto(APP)
+  await page.waitForTimeout(1500)
+  await shot(page, 'inicio')
   await openBook(page, s.tito)
   await click(page, text(page, s.revision), 1500)
   await shot(page, 'revision')
@@ -207,6 +216,9 @@ if (part('computadora')) {
   await openBook(page, s.tito)
   await click(page, button(page, s.empezarOContinuar), 3500)
   await shot(page, 'computadora-editor')
+  await page.goto(APP)
+  await page.waitForTimeout(1500)
+  await shot(page, 'computadora-inicio')
   await page.context().close()
 }
 

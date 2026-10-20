@@ -50,7 +50,7 @@ Un proyecto es la traducción a un idioma. Lo crea una vez quien coordina, y lo 
 
 ## Agregar un libro
 
-1. En el proyecto, toque **Agregar un libro** y luego **Empezar un libro en blanco**.
+1. Al crear la Biblia, Servos ofrece enseguida el primer libro: toque **Empezar un libro en blanco**. (Si cerró ese paso, en el inicio toque **Agregar un libro →**.)
 2. Arriba están los libros **listos en este teléfono**, los que llegaron en el paquete. Elija uno, por ejemplo **Jonás** o **Rut**.
 3. Toque **Crear Jonás** (o el libro que eligió).
 
@@ -60,3 +60,12 @@ Un proyecto es la traducción a un idioma. Lo crea una vez quien coordina, y lo 
 El libro se abre en su primer paso, **Estudio**. Arriba están los pasos del libro: Estudio, Traducción, Revisión, Comunidad y Publicar. Servos también pregunta **cómo se dice el nombre del libro** en el idioma del pueblo: así aparece en la app y al publicar. Puede escribirlo ahora o después, en **Más › Nombre del libro**.
 
 Si el libro ya está empezado en otra app (Paratext, translationCore), elija **Desde un archivo USFM** en lugar de un libro en blanco.
+
+## El inicio
+
+Al abrir Servos, arriba está el nombre del proyecto y, en el recuadro verde, el libro en que trabajó la última vez: en qué paso va, de los cinco, y el botón para seguir donde quedó. Debajo están los otros libros, cada uno con su paso, y al final **+ Agregar un libro**. Abajo, **Ajustes** del proyecto y **+ Otro proyecto**.
+
+Si el equipo tiene más de un proyecto, toque el nombre del proyecto, arriba, para pasar a otro. En la computadora, los proyectos están en una columna a la izquierda.
+
+![El inicio](inicio.webp "El libro de la última vez, y los demás debajo")
+![El inicio en una computadora](computadora-inicio.webp "En la computadora, los proyectos a la izquierda")
