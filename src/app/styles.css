@@ -685,17 +685,20 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .word { display: inline; border: 0; background: none; padding: 0.1em 0; margin: 0; min-height: 0; font: inherit; color: inherit; cursor: pointer; border-radius: 3px; text-align: inherit; }
 .word:hover { background: var(--surface-soft); }
 .word.is-lit { background: var(--mark); }
-/* Words lit side by side read as one phrase: the word before a space reaches over it to the next lit word (a shadow
-   of its own height: a lit space is a text box, taller than a word), and their inner corners square. The shadow goes
-   the line's way, so a Hebrew phrase joins from the right. */
-.word-group:has(+ .word-space + .word-group > .word.is-lit:first-child) > .word.is-lit:last-child { box-shadow: 0.3em 0 0 var(--mark); }
-[dir='rtl'] .word-group:has(+ .word-space + .word-group > .word.is-lit:first-child) > .word.is-lit:last-child { box-shadow: -0.3em 0 0 var(--mark); }
+/* Words lit side by side read as one phrase: both words reach into the space between them and cross in its middle (a
+   shadow of their own height: a lit space is a text box, taller than a word), so no seam shows on a scaled screen;
+   their inner corners square. A word inside the phrase reaches both ways. The shadows go the line's way, so a Hebrew
+   phrase joins from the right. */
+.word.is-lit { --lit-on: 0 0 transparent; --lit-back: 0 0 transparent; --way: 1; box-shadow: var(--lit-on), var(--lit-back); }
+[dir='rtl'] .word.is-lit { --way: -1; }
+.word-group:has(+ .word-space + .word-group > .word.is-lit:first-child) > .word.is-lit:last-child { --lit-on: calc(0.3em * var(--way)) 0 0 var(--mark); }
+.word-group:has(> .word.is-lit:last-child) + .word-space + .word-group > .word.is-lit:first-child { --lit-back: calc(-0.2em * var(--way)) 0 0 var(--mark); }
 .word-group:has(> .word.is-lit:last-child) + .word-space + .word-group > .word.is-lit:first-child,
 .word.is-lit + .word.is-lit { border-start-start-radius: 0; border-end-start-radius: 0; }
 .word-group:has(+ .word-space + .word-group > .word.is-lit:first-child) > .word.is-lit:last-child,
 .word.is-lit:has(+ .word.is-lit) { border-start-end-radius: 0; border-end-end-radius: 0; }
 /* Words bound by a maqaf: the first reaches over it (the maqaf drawn on top), the corners between them square */
-[dir='rtl'] .word.is-lit:has(+ span + .word.is-lit) { box-shadow: -0.4em 0 0 var(--mark); border-start-end-radius: 0; border-end-end-radius: 0; }
+[dir='rtl'] .word.is-lit:has(+ span + .word.is-lit) { --lit-on: -0.5em 0 0 var(--mark); border-start-end-radius: 0; border-end-end-radius: 0; }
 .word.is-lit + span + .word.is-lit { border-start-start-radius: 0; border-end-start-radius: 0; }
 /* A word the glossary has an entry for: a decision is there to read */
 /* The masora's circle over a ketiv: the text has a note on how it is read. */
