@@ -207,6 +207,8 @@ function Center({ context }: MiniAppCenterProps) {
   })
   const hint = t('editor.toquePalabra')
   const [textSeen, setTextSeen] = useState(readTextSeen)
+  // A pane asked for by the line over the boxes («… en el TPL ›»).
+  const [openPane, setOpenPane] = useState<{ id: string } | undefined>(undefined)
 
   const write = (verse: number, value: string) => {
     setDrafts((now) => ({ ...now, [verse]: value }))
@@ -301,7 +303,21 @@ function Center({ context }: MiniAppCenterProps) {
       {/* While the section has nothing written, what to write and where the text to translate is (on a phone it is
           another pane, a swipe away). It goes as soon as something is written. */}
       {!wide && units.every((u) => !(drafts[u[0]] ?? '').trim()) && (
-        <p className={textSeen ? 'edit-where' : 'edit-where is-first'}>{t('editor.comoEmpezar', { idioma: context.project.languageName, texto: bridge.abbreviation })}</p>
+        <p className={textSeen ? 'edit-where' : 'edit-where is-first'}>
+          {/* The text to translate named there is a way to it: a touch opens its pane (on a phone, a swipe away). */}
+          {t('editor.comoEmpezar', { idioma: context.project.languageName, texto: '\uE000' })
+            .split('\uE000')
+            .flatMap((part, i) =>
+              i === 0
+                ? [part]
+                : [
+                    <button key={i} type="button" className="edit-where-go" onClick={() => setOpenPane({ id: bridge.abbreviation })}>
+                      {bridge.abbreviation} ›
+                    </button>,
+                    part,
+                  ]
+            )}
+        </p>
       )}
       <div className="edit-fields">
         {units.map((unit) => (
@@ -420,6 +436,7 @@ function Center({ context }: MiniAppCenterProps) {
         fixed={wide ? 'textos' : 'suyo'}
         side="ayudas"
         sideOpen={helpsOn}
+        open={openPane}
         onPane={(id) => {
           if (id === 'ayudas') helpsShown(true)
           if (!textSeen && data.texts.some((x) => x.abbreviation === id)) {
@@ -507,10 +524,10 @@ export const editor: MiniApp = {
       nombre: 'Traducción escrita',
       descripcion: 'Escribir cada pasaje en su idioma, con el texto puente al lado',
       textoPuente: 'Texto puente: {texto}',
-      comoEmpezar: 'Escriba cada versículo en {idioma}. Lo que va a traducir está en el {texto}, a la derecha.',
+      comoEmpezar: 'Escriba cada versículo en {idioma}. Lo que va a traducir está en el {texto}.',
       escribaEn: 'Escriba en {idioma}',
       escribirAqui: 'Escribir el {v}',
-      'comoEmpezar.computadora': 'Escriba cada versículo en {idioma}. Lo que va a traducir está en el {texto}, a la derecha.',
+      'comoEmpezar.computadora': 'Escriba cada versículo en {idioma}. Lo que va a traducir está en el {texto}.',
       glosario: 'Glosario',
       glosarioSinOriginal: '«{palabra}» no está alineada con el original: no se sabe de qué palabra es.',
       comoSeTraduce: 'Cómo se traduce',
@@ -544,10 +561,10 @@ export const editor: MiniApp = {
       nombre: 'Tradução escrita',
       descripcion: 'Escrever cada passagem no seu idioma, com o texto ponte ao lado',
       textoPuente: 'Texto ponte: {texto}',
-      comoEmpezar: 'Escreva cada versículo em {idioma}. O que vai traduzir está no {texto}, à direita.',
+      comoEmpezar: 'Escreva cada versículo em {idioma}. O que vai traduzir está no {texto}.',
       escribaEn: 'Escreva em {idioma}',
       escribirAqui: 'Escrever o {v}',
-      'comoEmpezar.computadora': 'Escreva cada versículo em {idioma}. O que vai traduzir está no {texto}, à direita.',
+      'comoEmpezar.computadora': 'Escreva cada versículo em {idioma}. O que vai traduzir está no {texto}.',
       glosario: 'Glossário',
       glosarioSinOriginal: '«{palabra}» não está alinhada com o original: não se sabe de que palavra é.',
       comoSeTraduce: 'Como se traduz',
@@ -581,10 +598,10 @@ export const editor: MiniApp = {
       nombre: 'Written translation',
       descripcion: 'Write each passage in your language, with the bridge text beside it',
       textoPuente: 'Bridge text: {texto}',
-      comoEmpezar: 'Write each verse in {idioma}. What you will translate is in the {texto}, to the right.',
+      comoEmpezar: 'Write each verse in {idioma}. What you will translate is in the {texto}.',
       escribaEn: 'Write in {idioma}',
       escribirAqui: 'Write verse {v}',
-      'comoEmpezar.computadora': 'Write each verse in {idioma}. What you will translate is in the {texto}, to the right.',
+      'comoEmpezar.computadora': 'Write each verse in {idioma}. What you will translate is in the {texto}.',
       glosario: 'Glossary',
       glosarioSinOriginal: '«{palabra}» is not aligned to the original: which word it stands for is unknown.',
       comoSeTraduce: 'How it is translated',

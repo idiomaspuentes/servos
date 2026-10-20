@@ -75,6 +75,9 @@ export function useWidest(): boolean {
   return useMedia(WIDEST)
 }
 
+/** Kept once the row has peeked at the next pane on this device (it shows that the panes slide). */
+const PEEKED = 'servos.prototipo.paneles.asomado'
+
 /** How far a finger moves before it counts as a swipe, and how far (of the width) to go to the next pane. */
 const SLOP = 10
 const ENOUGH = 0.2
@@ -140,6 +143,32 @@ export function Panes({
     el.style.transition = moving ? 'none' : ''
     el.style.transform = `translateX(calc(${-current * 100}% + ${dx}px))`
   }
+
+  // That the panes slide is shown once on this device, the first time some are side by side in one window: the row
+  // peeks at the next pane and comes back, as if a finger nudged it. Nothing stays over the text to say it.
+  const sliding = panes.length > 1
+  useEffect(() => {
+    if (!sliding || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    try {
+      if (localStorage.getItem(PEEKED)) return
+    } catch {
+      return
+    }
+    const out = window.setTimeout(() => place(-56, false), 700)
+    // Kept once it has peeked: a screen left before then shows it the next time.
+    const back = window.setTimeout(() => {
+      place(0, false)
+      try {
+        localStorage.setItem(PEEKED, '1')
+      } catch {
+        /* shown again next time */
+      }
+    }, 1350)
+    return () => {
+      window.clearTimeout(out)
+      window.clearTimeout(back)
+    }
+  }, [sliding]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (holdFocus) keepFocus(event)
@@ -225,18 +254,6 @@ export function Panes({
             </section>
           ))}
         </div>
-        {/* What is beside, said at the window's foot: the next pane at the right, the one before at the left. Its name
-            and the way it lies tell that the window slides; a touch goes there. */}
-        {current < panes.length - 1 && (
-          <button type="button" className="panes-edge is-next" onClick={() => go(current + 1)}>
-            {panes[current + 1].label} ›
-          </button>
-        )}
-        {current > 0 && (
-          <button type="button" className="panes-edge is-prev" onClick={() => go(current - 1)}>
-            ‹ {panes[current - 1].label}
-          </button>
-        )}
       </div>
     </div>
   )
