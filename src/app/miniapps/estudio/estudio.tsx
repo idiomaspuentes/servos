@@ -3,10 +3,11 @@
  * its sections (or verses, as the person chooses), the way translationCore 4's study goes.
  *
  * A section is read alone, its words to touch: a word brings its helps under its verse (the other bridge text's words,
- * the notes, the translation words), so there is no separate list of helps to go through. The texts and the team's
- * note on the section are panes side by side, the tabs at the foot on a phone; one button leads from reading to the
- * note (the keyboard up), and from the note to the next section. The text's comprehension questions, which no word
- * leads to, are read with the other helps under it. On a wide screen the text stays on the left and the note on the right.
+ * the notes, the translation words), so there is no separate list of helps to go through. Under each verse wait,
+ * folded, only what no word leads to: the notes on the whole verse and the comprehension questions. The texts and
+ * the team's note on the section are panes side by side, the tabs at the foot on a phone; one button leads from
+ * reading to the note (the keyboard up), and from the note to the next section. On a wide screen the text stays on
+ * the left and the note on the right.
  */
 
 import { Fragment, useLayoutEffect, useRef, useState } from 'react'
@@ -23,7 +24,7 @@ import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type MiniAppCenterProps } from
 import { StudyNotes, withLine } from './StudyNotes'
 
 function Center({ context }: MiniAppCenterProps) {
-  const { position, data, t, marked, textAbbreviation, frame, shown, person } = context
+  const { position, data, t, marked, textAbbreviation, shown, person } = context
   const wide = useWide()
   // From 1280 px the texts can be read side by side, up to three, the team's own among them (principle 13).
   const wider = useWider()
@@ -70,7 +71,7 @@ function Center({ context }: MiniAppCenterProps) {
     (data.texts.find((x) => x.original)?.words ?? []).map((w) => w.strong)
   )
   const glossed = glossedPlaces(data, glossary)
-  const { lit, touch, card, helpsShown } = useWordHelps({
+  const { lit, touch, card } = useWordHelps({
     data,
     resetKey: unitKey,
     marked,
@@ -92,25 +93,41 @@ function Center({ context }: MiniAppCenterProps) {
     )
   }
 
-  // Notes on a whole verse quote no words, so no word leads to them: they wait folded under their verse.
+  // What no word leads to waits folded under its verse: the notes on a whole verse, which quote no words (and any
+  // whose words were not found in this text, with its quote), and the comprehension questions.
   const general = (verse: number, abbreviation: string) => {
-    const notes = data.verses.find((v) => v.verse === verse)?.notes.filter((n) => !n.places[abbreviation]?.length) ?? []
-    if (!notes.length) return null
+    const at = data.verses.find((v) => v.verse === verse)
+    const notes = at?.notes.filter((n) => !n.places[abbreviation]?.length) ?? []
+    const questions = at?.questions ?? []
+    if (!notes.length && !questions.length) return null
     return (
-      <details className="general-notes">
-        <summary>{t('estudio.notasGenerales', { n: notes.length })}</summary>
-        {notes.map((n) => (
-          <Markdown key={n.id} text={n.note} />
-        ))}
-      </details>
+      <>
+        {notes.length > 0 && (
+          <details className="general-notes">
+            <summary>{t('estudio.notasGenerales', { n: notes.length })}</summary>
+            {notes.map((n) => (
+              <Fragment key={n.id}>
+                {n.quote.trim() && <p className="general-quote">{n.quote}</p>}
+                <Markdown text={n.note} />
+              </Fragment>
+            ))}
+          </details>
+        )}
+        {questions.length > 0 && (
+          <details className="general-notes">
+            <summary>{t('estudio.preguntas', { n: questions.length })}</summary>
+            {questions.map((q) => (
+              <div key={q.id} className="general-question">
+                <p className="help-question">{q.question}</p>
+                <p>{q.response}</p>
+              </div>
+            ))}
+          </details>
+        )}
+      </>
     )
   }
   const hint = t('estudio.toquePalabra')
-  const inShown = data.verses.filter((v) => shown.includes(v.verse))
-  const notesCount = inShown.reduce((n, v) => n + v.notes.length, 0)
-  const wordsCount = inShown.reduce((n, v) => n + v.words.length, 0)
-  const questionsCount = inShown.reduce((n, v) => n + v.questions.length, 0)
-  const helpsCount = notesCount + wordsCount + questionsCount
   const others = studyNotesAbout(position.book, position.chapter, shown).filter((n) => n.verses.join(',') !== shown.join(','))
   const texts: Pane[] = data.texts.map(
     (x): Pane => ({
@@ -135,20 +152,11 @@ function Center({ context }: MiniAppCenterProps) {
             </>
           )}
         />
-        {/* The helps reached by touching words, also all together and counted, folded under the text: whoever does
-            not know which words to touch sees that there are notes, and goes through them one at a time. */}
         {/* The note on the section, offered where the reading ends (principle 5): not the one thing to do. */}
         {!x.original && !wide && !note.text.trim() && (
           <button type="button" className="button-secondary study-write" onClick={() => toNote()}>
             ✎ {t('estudio.escribirNota')}
           </button>
-        )}
-        {!x.original && helpsCount > 0 && (
-          // Open, the note shown lights its words in the text above, as in the editor; folded, none.
-          <details className="advanced study-helps" onToggle={(e) => helpsShown(e.currentTarget.open)}>
-            <summary>{t('estudio.ayudasAqui', { notas: notesCount, palabras: wordsCount, preguntas: questionsCount })}</summary>
-            {frame.helps(shown, { comments: false, glossary })}
-          </details>
         )}
         </>
       ),
@@ -181,7 +189,7 @@ function Center({ context }: MiniAppCenterProps) {
         onWord={(id, verse, place) => touch(id, verse, place)}
         under={(ids, verse) => {
           const cards = ids.map((id) => [id, card(id, verse)] as const).filter(([, c]) => c).map(([id, c]) => <Fragment key={id}>{c}</Fragment>)
-          // The notes on a whole verse, once, from the first bridge text shown.
+          // What no word leads to, once, from the first bridge text shown.
           const bridge = ids.find((id) => data.texts.some((x) => x.abbreviation === id && !x.original))
           const notes = bridge ? general(verse, bridge) : null
           return cards.length || notes ? (
@@ -191,14 +199,6 @@ function Center({ context }: MiniAppCenterProps) {
             </>
           ) : null
         }}
-        after={
-          helpsCount > 0 && (
-            <details className="advanced study-helps" onToggle={(e) => helpsShown(e.currentTarget.open)}>
-              <summary>{t('estudio.ayudasAqui', { notas: notesCount, palabras: wordsCount, preguntas: questionsCount })}</summary>
-              {frame.helps(shown, { comments: false, glossary })}
-            </details>
-          )
-        }
       />
     ),
   }
@@ -249,10 +249,10 @@ export const estudio: MiniApp = {
       escribirNota: 'Escribir mi nota',
       miNota: 'Mi nota',
       notasGenerales: 'Notas sobre todo el versículo ({n})',
+      preguntas: 'Preguntas para pensar ({n})',
       guardarSeguir: 'Guardar y seguir',
       toquePalabra: 'toque una palabra para ver sus notas',
       'toquePalabra.computadora': 'haga clic en una palabra para ver sus notas',
-      ayudasAqui: 'Todas las notas ({notas}), palabras clave ({palabras}) y preguntas ({preguntas}) de estos versículos',
       loQueEntendi: 'Lo que entendí de {pasaje}',
       paraQue: 'Lo verá su equipo al traducir estos versículos.',
       pista: '¿Qué dice? ¿Quién habla, a quién? ¿Qué será difícil de traducir?',
@@ -272,10 +272,10 @@ export const estudio: MiniApp = {
       escribirNota: 'Escrever minha nota',
       miNota: 'Minha nota',
       notasGenerales: 'Notas sobre todo o versículo ({n})',
+      preguntas: 'Perguntas para pensar ({n})',
       guardarSeguir: 'Salvar e seguir',
       toquePalabra: 'toque uma palavra para ver suas notas',
       'toquePalabra.computadora': 'clique numa palavra para ver suas notas',
-      ayudasAqui: 'Todas as notas ({notas}), palavras-chave ({palabras}) e perguntas ({preguntas}) destes versículos',
       loQueEntendi: 'O que entendi de {pasaje}',
       paraQue: 'Sua equipe verá isto ao traduzir estes versículos.',
       pista: 'O que diz? Quem fala, a quem? O que será difícil de traduzir?',
@@ -295,10 +295,10 @@ export const estudio: MiniApp = {
       escribirNota: 'Write my note',
       miNota: 'My note',
       notasGenerales: 'Notes on the whole verse ({n})',
+      preguntas: 'Questions to think on ({n})',
       guardarSeguir: 'Save and continue',
       toquePalabra: 'touch a word to see its notes',
       'toquePalabra.computadora': 'click a word to see its notes',
-      ayudasAqui: 'All the notes ({notas}), key words ({palabras}), and questions ({preguntas}) of these verses',
       loQueEntendi: 'What I understood of {pasaje}',
       paraQue: 'Your team will see it when translating these verses.',
       pista: 'What does it say? Who speaks, to whom? What will be hard to translate?',

@@ -771,6 +771,10 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .general-notes summary::after { content: '▾'; font-size: 1rem; transition: transform 0.15s; }
 .general-notes[open] > summary::after { transform: rotate(180deg); }
 .general-notes { margin-block: 0.25rem 0.5rem; padding-inline: 0.75rem; border-inline-start: 3px solid var(--line); font-family: var(--font); font-size: 1rem; line-height: 1.5; }
+/* A note whose words were not found in this text says which they are; each question sits a group apart from the next */
+.general-quote { margin-block: 0.75rem 0; font-weight: 600; }
+.general-question { display: flex; flex-direction: column; gap: 0.25rem; padding-block-end: 0.75rem; }
+.general-question p { margin: 0; }
 
 /* The glossary: adding a word from the editor, and the project's list */
 .glossary-form { display: flex; flex-direction: column; gap: 0.75rem; }
