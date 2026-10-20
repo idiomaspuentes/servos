@@ -59,7 +59,11 @@ export function VerseExtras({
             : questions.map((q) => (
                 <div key={q.id} className="general-question">
                   <p className="help-question">{q.question}</p>
-                  <p>{q.response}</p>
+                  {/* Folded: the person thinks before seeing the answer. */}
+                  <details className="verse-extra-answer">
+                    <summary>{t('estudio.verRespuesta')}</summary>
+                    <p>{q.response}</p>
+                  </details>
                 </div>
               ))}
         </div>
