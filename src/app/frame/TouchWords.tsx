@@ -778,6 +778,9 @@ export interface GlossaryTarget {
  * are seen while it is read. Closed, the word stays where it is; when reading the card took it out of sight, it comes
  * back to where it was when touched. The focus goes back to the word only when it was in the card: in the editor the
  * box being written keeps it, and the keyboard stays up.
+ *
+ * With `aside` (a computer's window, where the texts have a column beside them), the card is not drawn under its
+ * verse but in that column (`cardAside`): the text does not move when a word is touched, nor the reading break.
  */
 export function useWordHelps({
   data,
@@ -788,6 +791,7 @@ export function useWordHelps({
   onNote,
   glossary = [],
   onGlossary,
+  aside = false,
 }: {
   data: PrototypeData
   resetKey: string
@@ -803,6 +807,8 @@ export function useWordHelps({
   glossary?: GlossaryEntry[]
   /** Offered on each card, for a mini app where the person decides how words are translated (the editor). */
   onGlossary?(target: GlossaryTarget): void
+  /** The card in a column of its own beside the texts, not under its verse (`cardAside`). */
+  aside?: boolean
 }) {
   const [at, setAt] = useState<Omit<Touched, 'helps'> | null>(null)
   const [helpsRead, setHelpsRead] = useState(false)
@@ -856,6 +862,12 @@ export function useWordHelps({
     opened.current = { el: word.el, y: word.y }
     const box = cardBox.current
     if (!box) return
+    if (aside) {
+      // In its column: the column shows the card from its start; the text stays as it was.
+      const column = box.closest<HTMLElement>('.pane')
+      if (column && column !== pane) column.scrollTop += box.getBoundingClientRect().top - column.getBoundingClientRect().top - 8
+      return
+    }
     const view = paneView(pane)
     const until = (box.querySelector('.word-help-paged-head') ?? box).getBoundingClientRect().bottom
     pane.scrollTop += revealBelow({ paneTop: view.top, paneBottom: view.bottom, wordTop: word.el.getBoundingClientRect().top, until })
@@ -872,27 +884,34 @@ export function useWordHelps({
       anchor.current = el ? { el, y: el.getBoundingClientRect().top, focus: false } : null
       setAt({ abbreviation, verse, place, index: 0 })
     },
-    card: (abbreviation: string, verse: number) =>
-      touched && touched.abbreviation === abbreviation && touched.verse === verse ? (
-        <WordHelpCard
-          data={data}
-          touched={touched}
-          onIndex={(index) => setAt({ ...touched, index })}
-          onClose={close}
-          onNote={onNote}
-          cardRef={(box) => (cardBox.current = box)}
-          onGlossary={
-            onGlossary &&
-            (() =>
-              onGlossary({
-                originals: originalsOfWord(data, touched.abbreviation, touched.place),
-                word: wordAt(data.texts.find((x) => x.abbreviation === touched.abbreviation)!, touched.place),
-                abbreviation: touched.abbreviation,
-                verse: touched.verse,
-              }))
-          }
-        />
-      ) : null,
+    card: (abbreviation: string, verse: number) => (!aside && touched && touched.abbreviation === abbreviation && touched.verse === verse ? cardOf(touched) : null),
+    /** With `aside`, the card of the word touched, for the column beside the texts; none while no word is. */
+    cardAside: () => (aside && touched ? cardOf(touched) : null),
+    /** Whether a word's card is open. */
+    open: Boolean(touched),
     helpsShown: (on: boolean) => setHelpsRead(on),
+  }
+
+  function cardOf(touched: Touched) {
+    return (
+      <WordHelpCard
+        data={data}
+        touched={touched}
+        onIndex={(index) => setAt({ ...touched, index })}
+        onClose={close}
+        onNote={onNote}
+        cardRef={(box) => (cardBox.current = box)}
+        onGlossary={
+          onGlossary &&
+          (() =>
+            onGlossary({
+              originals: originalsOfWord(data, touched.abbreviation, touched.place),
+              word: wordAt(data.texts.find((x) => x.abbreviation === touched.abbreviation)!, touched.place),
+              abbreviation: touched.abbreviation,
+              verse: touched.verse,
+            }))
+        }
+      />
+    )
   }
 }

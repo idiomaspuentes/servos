@@ -759,6 +759,8 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 
 /* The team's note on what is studied: a box that grows with what is written */
 .study-notes { display: flex; flex-direction: column; gap: 0.75rem; }
+/* On a computer a touched word's card sits over the note, in its column: a group apart from it */
+.word-help + .study-notes { margin-block-start: 1.5rem; }
 .study-note-head { display: flex; flex-direction: column; gap: 0.25rem; }
 .study-note-head p { margin: 0; }
 .study-note-title { margin: 0; font-size: 1.15rem; font-weight: 600; text-wrap: balance; }

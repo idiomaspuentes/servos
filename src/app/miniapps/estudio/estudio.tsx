@@ -83,7 +83,9 @@ function Center({ context }: MiniAppCenterProps) {
   const glossed = glossedPlaces(data, glossary)
   // Where touching a word brings a note or a key word: marked lightly in the texts.
   const helped = helpedPlaces(data)
-  const { lit, touch, card } = useWordHelps({
+  // On a computer a touched word's card is in the column beside the texts, over the note, not under its verse: the
+  // text does not move when a word is touched.
+  const { lit, touch, card, cardAside } = useWordHelps({
     data,
     resetKey: unitKey,
     marked,
@@ -91,6 +93,7 @@ function Center({ context }: MiniAppCenterProps) {
     verses: shown,
     onNote: noteWord,
     glossary,
+    aside: wide,
   })
 
   const intro = introOf === 'libro' ? data.bookIntro : introOf === 'capitulo' ? data.intro : undefined
@@ -237,14 +240,17 @@ function Center({ context }: MiniAppCenterProps) {
       id: 'nota',
       label: t('estudio.miNota'),
       content: (
-        <StudyNotes
-          ref={box}
-          passage={passageOf(context.bookTitle, position.chapter, shown, t)}
-          text={note.text}
-          by={note.by}
-          others={others}
-          onChange={write}
-        />
+        <>
+          {cardAside()}
+          <StudyNotes
+            ref={box}
+            passage={passageOf(context.bookTitle, position.chapter, shown, t)}
+            text={note.text}
+            by={note.by}
+            others={others}
+            onChange={write}
+          />
+        </>
       ),
     },
   ]

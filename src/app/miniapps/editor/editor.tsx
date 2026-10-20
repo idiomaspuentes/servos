@@ -183,7 +183,13 @@ function Center({ context }: MiniAppCenterProps) {
   const glossed = glossedPlaces(data, glossary)
   // Where touching a word brings a note or a key word: marked lightly in the texts.
   const helped = helpedPlaces(data)
-  const { lit, touch, card, helpsShown } = useWordHelps({
+  // On a computer a touched word's card is in the helps column, beside the texts, not under its verse, while the
+  // column is in sight; put away (a narrower window), the card stays under its verse rather than the texts shrinking
+  // to make room for it.
+  const wide = useWide()
+  const wider = useWider()
+  const [helpsOn, setHelpsOn] = useState(readHelpsOn)
+  const { lit, touch, card, cardAside, helpsShown } = useWordHelps({
     data,
     resetKey: openKey,
     marked,
@@ -191,9 +197,9 @@ function Center({ context }: MiniAppCenterProps) {
     verses: [position.verse],
     glossary,
     onGlossary: setAdding,
+    aside: wide && (wider || helpsOn),
   })
   const hint = t('editor.toquePalabra')
-  const wide = useWide()
   const [textSeen, setTextSeen] = useState(readTextSeen)
 
   const write = (verse: number, value: string) => {
@@ -309,8 +315,6 @@ function Center({ context }: MiniAppCenterProps) {
   // From 1280 px the helps are a column of their own, in sight beside the text (principle 13); on a narrower computer
   // window, where the person puts them. In sight, the note read there lights its words in the text, as once the helps
   // pane is opened on a phone.
-  const wider = useWider()
-  const [helpsOn, setHelpsOn] = useState(readHelpsOn)
   const helpsInSight = wide && (wider || helpsOn)
   useEffect(() => {
     // On a phone the helps are a pane apart: once opened, their note keeps its words lit in the texts beside.
@@ -393,7 +397,8 @@ function Center({ context }: MiniAppCenterProps) {
       />
     ),
   }
-  const helps: Pane = { id: 'ayudas', label: t('editor.panelAyudas'), content: frame.helps(undefined, { glossary }) }
+  // A word's card takes the helps' place in their column while it is open; closed, the verse's helps are back.
+  const helps: Pane = { id: 'ayudas', label: t('editor.panelAyudas'), content: cardAside() ?? frame.helps(undefined, { glossary }) }
   const panes: Pane[] = wide
     ? helpsInSight
       ? [rows, helps]
