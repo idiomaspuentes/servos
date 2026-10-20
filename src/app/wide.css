@@ -107,6 +107,12 @@
   .side-switch.is-on { border: 1px solid var(--line); background: var(--pill); color: var(--text); box-shadow: var(--shadow-raised); }
   .side-switch.is-on::before { content: '✓'; }
   .side-hint { margin: 0; font-size: 0.85rem; color: var(--text-soft); }
+  /* One bar on a computer: the way back, the mini app and who works, where the person is with its arrows, «More».
+     The position line takes the middle; the title keeps one line beside the way back. */
+  .header.has-position { grid-template-columns: auto auto minmax(0, 1fr) auto; column-gap: 1rem; }
+  .header.has-position .header-title { flex-direction: row; align-items: baseline; gap: 0.5rem; text-align: start; }
+  .header.has-position .position { justify-self: center; padding: 0; background: none; }
+  .header.has-position > :last-child { grid-column: 4; }
 
   .side-rows { display: flex; flex-direction: column; font-family: var(--serif); }
   .side-row {

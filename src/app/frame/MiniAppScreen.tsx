@@ -11,7 +11,7 @@ import { useProjectFont } from './fonts'
 import type { MiniApp, MiniAppContext, Position, Unit } from '../miniapps/contract'
 import { HelpsPanel } from './HelpsPanel'
 import { KEYS, useKey } from './keys'
-import { keepFocus } from './Panes'
+import { keepFocus, useWide } from './Panes'
 import { PlacePicker, passageOf, stopsOf } from './PlacePicker'
 import { MenuRow, Sheet } from './Sheet'
 
@@ -245,12 +245,37 @@ export function MiniAppScreen({
   // Going back to the mini app this one was opened from is the filled button («Done: back»); the header's ‹ then only
   // says it to a screen reader, so the title keeps its room. To the book, its short name is said.
   const returning = Boolean(backLabel && app.primary?.returning)
+  const wide = useWide()
+  // Where the person is, with the arrows on: on a computer in the header's row, so the texts have its height (a
+  // second bar is a line of the source text less on screen); on a phone at the foot, under the thumb.
+  const positionLine = app.positionLine !== false && (
+    <nav className="position" aria-label={passage}>
+      <button type="button" className="pager-arrow position-arrow" aria-label={previousLabel} title={t('marco.conAtajo', { accion: previousLabel, atajo: KEYS.previous })} disabled={atStart} onPointerDown={keep} onClick={previous}>
+        ‹
+      </button>
+      <button type="button" className="position-label" onClick={() => setVerseList(true)}>
+        {/* Which unit it goes by is said, so the person knows there is another (chosen in the sheet this opens). */}
+        <strong>{passage}</strong>
+        {shown[0] > 0 && ` · ${t(app.sections && unit === 'section' ? 'marco.posicionSeccion' : 'marco.posicion', { n: counted.indexOf(shown) + 1, total: counted.length })}`}
+      </button>
+      {atEnd && !backLabel ? (
+        // At the book's last verse the way on is back to the book: said, where the arrow was.
+        <button type="button" className="position-done" onPointerDown={keep} onClick={finish}>
+          {t('marco.listo')}
+        </button>
+      ) : (
+        <button type="button" className="pager-arrow position-arrow" aria-label={nextLabel} title={t('marco.conAtajo', { accion: nextLabel, atajo: KEYS.next })} disabled={atEnd} onPointerDown={keep} onClick={following}>
+          ›
+        </button>
+      )}
+    </nav>
+  )
 
   return (
     // While writing on a phone the header and the filled button step aside: the keyboard leaves room for little more
     // than the box and the text it translates, and the arrows of the position line still move on.
     <div className={`screen screen-app${app.fills ? ' screen-fill' : ''}${app.fills && keyboard ? ' is-writing' : ''}`} style={box}>
-      <header className="header">
+      <header className={wide && positionLine ? 'header has-position' : 'header'}>
         <button
           type="button"
           className={returning ? 'button-quiet header-back is-icon' : 'button-quiet header-back'}
@@ -268,6 +293,7 @@ export function MiniAppScreen({
             {app.writes && saved === 'guardado' && ` · ${t('marco.guardadoAqui')}`}
           </span>
         </div>
+        {wide && positionLine}
         {/* «More» only when the mini app has something there: an empty or make-believe menu is not offered. */}
         {offered.length ? (
           <button type="button" className="button-quiet header-more" onClick={() => setMore(true)}>
@@ -278,28 +304,7 @@ export function MiniAppScreen({
         )}
       </header>
 
-      {app.positionLine !== false && (
-        <nav className="position" aria-label={passage}>
-          <button type="button" className="pager-arrow position-arrow" aria-label={previousLabel} title={t('marco.conAtajo', { accion: previousLabel, atajo: KEYS.previous })} disabled={atStart} onPointerDown={keep} onClick={previous}>
-            ‹
-          </button>
-          <button type="button" className="position-label" onClick={() => setVerseList(true)}>
-            {/* Which unit it goes by is said, so the person knows there is another (chosen in the sheet this opens). */}
-            <strong>{passage}</strong>
-            {shown[0] > 0 && ` · ${t(app.sections && unit === 'section' ? 'marco.posicionSeccion' : 'marco.posicion', { n: counted.indexOf(shown) + 1, total: counted.length })}`}
-          </button>
-          {atEnd && !backLabel ? (
-            // At the book's last verse the way on is back to the book: said, where the arrow was.
-            <button type="button" className="position-done" onPointerDown={keep} onClick={finish}>
-              {t('marco.listo')}
-            </button>
-          ) : (
-            <button type="button" className="pager-arrow position-arrow" aria-label={nextLabel} title={t('marco.conAtajo', { accion: nextLabel, atajo: KEYS.next })} disabled={atEnd} onPointerDown={keep} onClick={following}>
-              ›
-            </button>
-          )}
-        </nav>
-      )}
+      {!wide && positionLine}
       <p className="position-crossed" role="status" aria-live="polite">
         {crossed !== null && <span>{t('marco.capituloNuevo', { libro: title, capitulo: crossed })}</span>}
       </p>

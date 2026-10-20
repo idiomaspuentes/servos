@@ -172,20 +172,15 @@ export function SideBySide({
   // One text alone is drawn as the mini app draws it, when it has a way to (the team's own text has none: a row each).
   // Where the team writes, always rows: the box stays at the end of its verse's row.
   const alone = shown.length === 1 && !writing ? single?.(shown[0].id) : null
-  // With one text on: that another fits beside it. With the column beside on and room for one text, nothing: the
-  // switches say it when asked (their titles), and a text touched there takes the place of the one on.
-  const lone = max === 1 && aside?.on ? null : <p className="side-hint">{t('marco.lado.ayuda', { n: max })}</p>
   return (
     <div className="side-by-side" data-n={shown.length}>
       {switches}
+      {/* What the switches do is said by them when asked (their titles), not in a line always in sight: on a
+          computer every line above the texts is one of the source text less on screen. */}
       {alone !== null && alone !== undefined ? (
-        <>
-          {lone}
-          {alone}
-        </>
+        alone
       ) : (
         <>
-          {writing && shown.length === 1 && lone}
           {writing?.hint}
           <Rows texts={shown} verses={verses} open={open} at={at} line={line} lit={lit} glossed={glossed} helped={helped} onWord={onWord} under={under} writing={writing} />
           {after}
