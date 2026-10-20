@@ -303,6 +303,8 @@ textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
 .verse-cell { position: relative; }
 /* Done: a quiet fill; begun: a mark at its foot. The current place keeps the accent fill. */
 .verse-cell.is-done:not(.is-current) { background: var(--done-soft); }
+/* Done or read: a ✓ in its corner, in every theme, so it is not told by a shade alone */
+.verse-cell.is-done:not(.is-current)::before { content: '✓'; content: '✓' / ''; position: absolute; inset-block-start: 2px; inset-inline-start: 4px; color: var(--done); font-size: 0.65rem; font-weight: 800; }
 .verse-cell.is-some:not(.is-current) { box-shadow: inset 0 -3px 0 var(--accent-soft); }
 .verse-cell-by { position: absolute; inset-block-start: 2px; inset-inline-end: 4px; font-size: 0.65rem; color: var(--text-soft); }
 .verse-cell.is-current .verse-cell-by { color: inherit; }
@@ -1368,9 +1370,6 @@ button, .file-button, summary, input, select, textarea {
    where one is, a moss line and heavier letters; a word or piece picked, a dark edge; a button that cannot be touched
    yet, dashed, with its words still readable (they often say what to do first). */
 :root[data-theme='sun'] .verse-cell.is-done:not(.is-current) { background: var(--surface); border-color: var(--done); box-shadow: inset 0 0 0 1px var(--done); color: var(--done); font-weight: 800; }
-:root[data-theme='sun'] .verse-cell.is-done:not(.is-current)::before {
-  content: '✓'; content: '✓' / ''; position: absolute; inset-block-start: 2px; inset-inline-start: 4px; font-size: 0.65rem;
-}
 :root[data-theme='sun'] .verse-cell.is-some:not(.is-current) { box-shadow: inset 0 -3px 0 var(--accent); }
 :root[data-theme='sun'] .chapter-cell.is-done { background: var(--surface); }
 :root[data-theme='sun'] .chapter-cell.is-done:not(.is-open) { border-color: var(--done); box-shadow: inset 0 0 0 1px var(--done); }
