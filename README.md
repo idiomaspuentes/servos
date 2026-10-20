@@ -69,3 +69,12 @@ están puestos.
   compilación se detiene antes de dar un APK sin firmar.
 
 Dominio: `servos.idiomaspuentes.org` (decidido el 18 de octubre).
+
+## Créditos
+
+Servos es de Idiomas Puentes, con licencia MIT. Su forma de revisar con notas y palabras, y de alinear, viene de
+[translationCore](https://github.com/unfoldingWord/translationCore4), de unfoldingWord (GPL), y lee los recursos con
+los paquetes de [tc-study](https://github.com/unfoldingWord/tc-study) (bt-synergy). No lleva código de translationCore.
+Los textos y las ayudas no van en este repositorio: llegan en paquetes, cada uno con su autor y su licencia (la mayoría
+CC BY-SA 4.0), y la app los nombra en «Acerca de Servos», en el menú de la persona. Las letras son Charis SIL, de SIL
+International, y Mulish, las dos con licencia OFL.

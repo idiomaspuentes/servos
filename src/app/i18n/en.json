@@ -54,6 +54,8 @@
   "persona.idiomaAyuda": "The language of the app's buttons and texts",
   "persona.traducir": "Translate the app",
   "persona.traducirAyuda": "Put the app in your language, with your own words",
+  "persona.acerca": "About Servos",
+  "persona.acercaAyuda": "Who makes it and where the texts come from",
   "paquete.titulo": "Receive texts and helps",
   "paquete.elegir": "Choose the file",
   "paquete.elegirAyuda": "Look for the file ending in .langpack.zip on the card, the USB drive, or the Bluetooth folder.",
@@ -971,5 +973,17 @@
   "cambios.textoCambio": "The {texto} says something else.",
   "cambios.visto": "Seen",
   "cambios.loQueDecia": "What it said before",
-  "cambios.revisionNota": "This note changed after you checked it. Read it again and see whether your translation still fits."
+  "cambios.revisionNota": "This note changed after you checked it. Read it again and see whether your translation still fits.",
+  "acerca.titulo": "About Servos",
+  "acerca.servos": "Idiomas Puentes makes it so that each team can translate the Bible into its language, without internet too. It is free: anyone can use it and improve it (MIT license).",
+  "acerca.recursos": "The texts and helps on this phone",
+  "acerca.recursos.computadora": "The texts and helps on this computer",
+  "acerca.ninguno": "No texts or helps have reached this phone yet. The example uses those of Idiomas Puentes, made from the work of unfoldingWord (CC BY-SA 4.0).",
+  "acerca.ninguno.computadora": "No texts or helps have reached this computer yet. The example uses those of Idiomas Puentes, made from the work of unfoldingWord (CC BY-SA 4.0).",
+  "acerca.aPartirDe": "{quien}, from the work of {otros}",
+  "acerca.sinLicencia": "the license did not come in the pack",
+  "acerca.lexicoGriego": "Greek lexicon",
+  "acerca.lexicoHebreo": "Hebrew lexicon",
+  "acerca.gracias": "Thanks",
+  "acerca.graciasTexto": "The way of checking and aligning comes from translationCore, by unfoldingWord. The letters are Charis SIL, by SIL International, and Mulish, both free (OFL license)."
 }

@@ -54,6 +54,8 @@
   "persona.idiomaAyuda": "Em que idioma aparecem os botões e os textos do app",
   "persona.traducir": "Traduzir o app",
   "persona.traducirAyuda": "Colocar o app no seu idioma, com suas próprias palavras",
+  "persona.acerca": "Sobre o Servos",
+  "persona.acercaAyuda": "Quem o faz e de onde vêm os textos",
   "paquete.titulo": "Receber textos e ajudas",
   "paquete.elegir": "Escolher o arquivo",
   "paquete.elegirAyuda": "Procure o arquivo que termina em .langpack.zip no cartão, no USB ou na pasta do Bluetooth.",
@@ -971,5 +973,17 @@
   "cambios.textoCambio": "O {texto} diz outra coisa.",
   "cambios.visto": "Já vi",
   "cambios.loQueDecia": "O que dizia antes",
-  "cambios.revisionNota": "Esta nota mudou depois que você a revisou. Leia-a de novo e veja se sua tradução continua bem."
+  "cambios.revisionNota": "Esta nota mudou depois que você a revisou. Leia-a de novo e veja se sua tradução continua bem.",
+  "acerca.titulo": "Sobre o Servos",
+  "acerca.servos": "É feito pela Idiomas Puentes para que cada equipe traduza a Bíblia na sua língua, também sem internet. É livre: qualquer pessoa pode usá-lo e melhorá-lo (licença MIT).",
+  "acerca.recursos": "Os textos e as ajudas deste telefone",
+  "acerca.recursos.computadora": "Os textos e as ajudas deste computador",
+  "acerca.ninguno": "Ainda não chegaram textos nem ajudas a este telefone. O exemplo usa os da Idiomas Puentes, feitos a partir da obra da unfoldingWord (CC BY-SA 4.0).",
+  "acerca.ninguno.computadora": "Ainda não chegaram textos nem ajudas a este computador. O exemplo usa os da Idiomas Puentes, feitos a partir da obra da unfoldingWord (CC BY-SA 4.0).",
+  "acerca.aPartirDe": "{quien}, a partir da obra de {otros}",
+  "acerca.sinLicencia": "a licença não veio no pacote",
+  "acerca.lexicoGriego": "Léxico grego",
+  "acerca.lexicoHebreo": "Léxico hebraico",
+  "acerca.gracias": "Obrigado",
+  "acerca.graciasTexto": "A forma de revisar e de alinhar vem do translationCore, da unfoldingWord. As letras são Charis SIL, da SIL International, e Mulish, as duas livres (licença OFL)."
 }

@@ -4,7 +4,7 @@
   "titulo": "Servos",
   "descripcion": "Para traducir en su idioma, en equipo, con o sin internet.",
   "nav": { "guia": "Guía", "abrir": "Abrir Servos" },
-  "pie": "Servos es de <a href=\"https://idiomaspuentes.org\">Idiomas Puentes</a>, con los recursos de traducción que prepara Taller. Su código es libre (licencia MIT) y está en <a href=\"https://github.com/idiomaspuentes/servos\">GitHub</a>.",
+  "pie": "Servos es de <a href=\"https://idiomaspuentes.org\">Idiomas Puentes</a>, con los recursos de traducción que prepara Taller. Su código es libre (licencia MIT) y está en <a href=\"https://github.com/idiomaspuentes/servos\">GitHub</a>. Su forma de revisar y de alinear viene de translationCore, de <a href=\"https://www.unfoldingword.org\">unfoldingWord</a>; los textos y las ayudas son de quienes los publican, cada uno con su licencia (la mayoría CC BY-SA 4.0), y la app los nombra en «Acerca de Servos».",
   "inicio": {
     "titulo": "Traducir la Biblia en su idioma, en equipo, con o sin internet",
     "entrada": "Servos acompaña a un equipo de traductores desde el estudio del pasaje hasta la publicación: en el teléfono o en la computadora, en el pueblo o en el taller, aunque no haya señal por semanas.",

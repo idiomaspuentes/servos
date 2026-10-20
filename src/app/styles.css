@@ -292,6 +292,12 @@ textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
 .menu-row-label { font-weight: 600; }
 .menu-row-description { color: var(--text-soft); font-size: 0.9rem; }
 .menu-heading { color: var(--text-soft); font-size: 0.85rem; text-transform: none; }
+/* «Acerca de Servos»: a page of reading, the credits one under another, divided by hairlines, nothing in a box */
+.about { display: flex; flex-direction: column; gap: 0.75rem; max-width: 40rem; }
+.about .menu-heading { margin: 0.75rem 0 0; }
+.credits { list-style: none; margin: 0; padding: 0; }
+.credits li { display: flex; flex-direction: column; gap: 0.1rem; padding-block: 0.6rem; border-block-end: 1px solid var(--hair); }
+.credit-titles { font-weight: 600; }
 .verse-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--touch), 1fr)); gap: 0.5rem; }
 .verse-grid.is-sections { grid-template-columns: repeat(auto-fill, minmax(5rem, 1fr)); }
 .verse-cell { position: relative; }

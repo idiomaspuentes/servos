@@ -20,6 +20,7 @@ export function PersonMenu({
   onTranslate,
   onDoor43,
   onCopies,
+  onAbout,
 }: {
   person: string
   /** Who uses this phone. */
@@ -35,6 +36,8 @@ export function PersonMenu({
   onDoor43(): void
   /** The copy on a memory card (only in the app for phones). */
   onCopies(): void
+  /** Who makes Servos and who the texts on this device are by. */
+  onAbout(): void
 }) {
   const t = useT()
   const [adding, setAdding] = useState(false)
@@ -126,6 +129,7 @@ export function PersonMenu({
           + {t('persona.agregar')}
         </button>
       )}
+      <MenuRow label={t('persona.acerca')} description={t('persona.acercaAyuda')} onClick={onAbout} />
       {/* Which Servos this is, for whoever reports something. */}
       <p className="quiet menu-version">{appLabel()}</p>
     </Sheet>

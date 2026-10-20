@@ -27,6 +27,7 @@ import { Home, type Resume } from './screens/Home'
 import { Language, TestModeBar } from './screens/Language'
 import { AddProjectSheet, NewProject } from './screens/NewProject'
 import { PersonMenu } from './screens/PersonMenu'
+import { AboutSheet } from './screens/AboutSheet'
 import { Door43AccountSheet } from './screens/Door43Account'
 import { Welcome } from './screens/Welcome'
 import { EXAMPLE_PEOPLE, addPerson, loadPeople, savePeople, type People } from './projects/people'
@@ -88,6 +89,7 @@ export function App() {
   const person = people?.current ?? EXAMPLE_PEOPLE[0]
   const setPerson = (name: string) => people && setPeople({ ...people, current: name })
   const [personMenu, setPersonMenu] = useState(false)
+  const [about, setAbout] = useState(false)
   const [copiesSheet, setCopiesSheet] = useState(false)
   // A copy on the memory card, while someone works (frame/copies.ts): who is working is read when it is made.
   const working = useRef<string | null>(null)
@@ -611,8 +613,13 @@ export function App() {
             setPersonMenu(false)
             setCopiesSheet(true)
           }}
+          onAbout={() => {
+            setPersonMenu(false)
+            setAbout(true)
+          }}
         />
       )}
+      {about && <AboutSheet onClose={() => setAbout(false)} />}
       {copiesSheet && <CopiesSheet person={person} onClose={() => setCopiesSheet(false)} />}
       {door43 && <Door43AccountSheet person={person} onClose={() => setDoor43(false)} />}
       {asking && (
