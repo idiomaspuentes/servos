@@ -94,12 +94,14 @@
   .side-by-side { display: flex; flex-direction: column; gap: 0.5rem; }
   /* The switches stick to the very top of their pane: under its padding the rows would show through as they scroll */
   .pane:has(> .side-by-side) { padding-block-start: 0; }
+  /* The switches' height, which the rows under them stick below: a finger's on a touch screen, less with a mouse */
+  .side-by-side { --switch-h: var(--touch); }
   .side-switches {
     position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: 0.35rem;
     margin: 0 -1rem; padding: 0.35rem 1rem; background: var(--bg); border-block-end: 1px solid var(--hair);
   }
   .side-switch {
-    display: inline-flex; align-items: center; gap: 0.35rem; width: auto; min-height: var(--touch); padding: 0.2rem 0.95rem;
+    display: inline-flex; align-items: center; gap: 0.35rem; width: auto; min-height: var(--switch-h); padding: 0.2rem 0.95rem;
     border: 1px dashed color-mix(in srgb, var(--accent) 55%, transparent); border-radius: 999px; background: none;
     color: var(--text-soft); font-size: 0.95rem; font-weight: 700;
   }
@@ -111,7 +113,9 @@
      The position line takes the middle; the title keeps one line beside the way back. */
   .header.has-position { grid-template-columns: auto auto minmax(0, 1fr) auto; column-gap: 1rem; }
   .header.has-position .header-title { flex-direction: row; align-items: baseline; gap: 0.5rem; text-align: start; }
-  .header.has-position .position { justify-self: center; padding: 0; background: none; }
+  /* The passage with its two arrows together after it, as one control */
+  .header.has-position .position { display: flex; align-items: center; gap: 0.25rem; justify-self: center; padding: 0; background: none; }
+  .header.has-position .position-label { order: -1; margin-inline-end: 0.25rem; }
   .header.has-position > :last-child { grid-column: 4; }
 
   .side-rows { display: flex; flex-direction: column; font-family: var(--serif); }
@@ -121,7 +125,7 @@
   }
   /* The texts' names over their columns, in sight under the switches while the chapter scrolls */
   .side-row.is-head {
-    position: sticky; top: calc(var(--touch) + 0.7rem + 1px); z-index: 1; padding-block: 0.35rem; border-block-start: 0;
+    position: sticky; top: calc(var(--switch-h) + 0.7rem + 1px); z-index: 1; padding-block: 0.35rem; border-block-start: 0;
     background: var(--bg); font-family: var(--font); font-size: 0.9rem; font-weight: 700;
   }
   .side-head { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -129,7 +133,7 @@
   .side-row.is-here { box-shadow: inset 3px 0 0 var(--accent); }
   /* A touched word's card open under a row: the row stays in sight under the texts' names while the card scrolls */
   .side-verse:has(> .side-row.is-under .word-help) > .side-row:first-child {
-    position: sticky; top: calc(var(--touch) + 0.7rem + 1px + 2.15rem); z-index: 1; background-color: var(--bg);
+    position: sticky; top: calc(var(--switch-h) + 0.7rem + 1px + 2.15rem); z-index: 1; background-color: var(--bg);
   }
   .side-verse:has(> .side-row.is-here) + .side-verse > .side-row.is-here { border-block-start-color: transparent; }
   .side-num { font-family: var(--font); font-size: 0.85rem; font-weight: 700; line-height: 1.9; color: var(--accent); font-variant-numeric: tabular-nums; }
@@ -267,4 +271,16 @@
 
 @media (prefers-reduced-motion: reduce) {
   .sheet, .sheet.is-menu { animation: none; }
+}
+
+/* On a computer with a mouse: the bar's controls at a pointer's size, not a finger's, so the source text has the
+   height; and the passage in the middle of the window, not of the room left between the title and «More» (from where
+   the title has room beside it). */
+@media (min-width: 900px) and (hover: hover) and (pointer: fine) {
+  .side-by-side { --switch-h: 2rem; }
+  .header.has-position .pager-arrow { width: 2rem; height: 2rem; min-height: 2rem; font-size: 1.2rem; }
+  .header.has-position .position-label { min-height: 2rem; }
+}
+@media (min-width: 1100px) {
+  .header.has-position .position { position: absolute; inset-inline-start: 50%; transform: translateX(-50%); }
 }
