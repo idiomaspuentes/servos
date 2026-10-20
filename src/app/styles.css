@@ -265,7 +265,7 @@ textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
 .helps-tab[data-empty]:not([aria-selected='true']) { opacity: 0.55; }
 .helps-tab[aria-selected='true'] { background: var(--pill); color: var(--text); font-weight: 700; box-shadow: var(--shadow-raised); }
 .helps-card { padding: 0.75rem 1rem; }
-.help-verse { margin: 0 0 0.25rem; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-soft); }
+.help-verse { margin: 0 0 0.25rem; font-size: 0.85rem; font-weight: 700; color: var(--text-soft); }
 .help-quote { font-weight: 600; font-size: 1.05rem; margin-block-end: 0.25rem; }
 /* The team's decision on a word, under the words it is about */
 .help-decision { margin-block: 0.75rem 0.25rem; }
@@ -782,7 +782,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .word-referents-text, .word-facts-original { font-family: var(--serif); font-size: 1.15rem; }
 .word.is-touched { text-decoration: underline solid var(--accent) 2px; text-underline-offset: 0.25em; }
 @media (prefers-reduced-motion: reduce) { .word-help-more > summary::after, .word-help-other > summary::after { transition: none; } }
-.word-help-kind { margin: 0; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-soft); display: flex; gap: 0.5rem; align-items: center; }
+.word-help-kind { margin: 0; font-size: 0.85rem; font-weight: 700; color: var(--text-soft); display: flex; gap: 0.5rem; align-items: center; }
 
 /* The team's note on what is studied: a box that grows with what is written */
 .study-notes { display: flex; flex-direction: column; gap: 0.75rem; }
