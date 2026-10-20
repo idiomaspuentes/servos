@@ -382,23 +382,34 @@ textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
 .translate-row { padding-block: 0.75rem; border-block-start: 1px dashed var(--line); display: flex; flex-direction: column; gap: 0.35rem; }
 .translate-original { margin: 0; display: flex; flex-direction: column; }
 
-/* Home: «Continue», projects and their books (translationCore 4's Home) */
-/* A card is lifted by tone and a soft shadow, not drawn round (three tones, principle 12) */
-.project-card { background: var(--surface); border-radius: 14px; box-shadow: var(--shadow-card); padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
-.project-card h2 { text-wrap: balance; }
-.project-card p { margin: 0; }
-.book-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: 0.5rem; }
-.book-tile { display: flex; flex-direction: column; align-items: stretch; gap: 0.2rem; text-align: start; border-color: transparent; background: var(--surface-soft); }
-.book-tile-name { font-weight: 600; }
-.book-tile-phase { font-size: 0.85rem; color: var(--text-soft); font-variant-numeric: tabular-nums; }
-/* A project's card: its name with its settings beside it, its books, and one more tile to add a book */
-.project-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
-.project-settings { flex: none; width: auto; min-height: var(--touch); padding: 0.2rem 0.85rem; border: 1px solid var(--line); border-radius: 999px; background: none; color: var(--text-soft); font-size: 0.9rem; }
-/* Adding, always dashed and in the accent: a tile among the books, a card after the projects */
-.add-tile { flex-direction: row; align-items: center; justify-content: center; gap: 0.4rem; min-height: 3.5rem; border: 1px dashed var(--accent); background: none; color: var(--accent); font-weight: 600; text-wrap: balance; }
-.add-tile-plus { font-size: 1.3rem; line-height: 1; font-weight: 600; }
-.add-card { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; width: 100%; padding: 0.9rem 1rem; border: 1px dashed var(--accent); border-radius: var(--radius); background: none; color: var(--accent); text-align: center; }
-.add-card-title { font-weight: 600; }
+/* Home: the project as its title, the book worked on last as the moss field (with the book's five steps), the others
+   as one-line rows in one card that ends with adding a book, and two chips at the foot. Three shapes, no more. */
+.home-open { display: flex; flex-direction: column; gap: 0.75rem; min-width: 0; }
+.home-title { display: flex; flex-direction: column; gap: 0.1rem; }
+.home-title h1, .home-title p { margin: 0; }
+/* With two or more projects, on a phone the title opens their list */
+.home-title-pick { display: inline; width: auto; min-height: var(--touch); padding: 0; border: 0; border-radius: 0; background: none; font-weight: inherit; text-align: start; }
+.home-current .home-current-book { font-size: 1.45rem; line-height: 1.15; font-weight: 800; overflow-wrap: anywhere; }
+.home-current .home-current-where { color: var(--on-field-soft); }
+/* The five steps: those done in the field's gold, the one it is in in the field's light, those ahead faint */
+.step-track { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; max-width: 16rem; margin-block-start: 0.45rem; }
+.step-track > span { height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--on-field) 24%, transparent); }
+.step-track > .is-done { background: var(--field-kicker); }
+.step-track > .is-now { background: var(--on-field); }
+.home-current .home-current-step { color: var(--on-field-soft); font-size: 0.85rem; }
+.home-current > .button-primary { margin-block-start: 0.6rem; }
+/* The other books, a row each with its step in words, and adding one as the last row, in the accent */
+.home-books { list-style: none; margin: 0; padding: 0; border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-card); overflow: hidden; }
+.home-books > li + li { border-block-start: 1px solid var(--hair); }
+.home-book { display: flex; align-items: center; gap: 0.75rem; width: 100%; min-height: 3.25rem; padding: 0.6rem 1rem; border: 0; border-radius: 0; background: none; color: var(--text); text-align: start; }
+.home-book:focus-visible { outline-offset: -3px; }
+.home-book::after { content: '›'; color: var(--text-soft); font-size: 1.25rem; line-height: 1; }
+.home-book-name { flex: 1; min-width: 0; font-weight: 700; overflow-wrap: anywhere; }
+.home-book-step { color: var(--text-soft); font-size: 0.9rem; text-align: end; font-variant-numeric: tabular-nums; }
+.home-book.is-add { gap: 0.4rem; color: var(--accent); font-weight: 600; }
+.home-book.is-add::after { content: none; }
+.home-plus { color: var(--accent); font-weight: 800; }
+.home-chip { display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 600; }
 /* Sharing and receiving */
 .share { display: flex; flex-direction: column; gap: 0.6rem; }
 .settings-share { display: flex; flex-direction: column; gap: 0.5rem; }
@@ -1132,7 +1143,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 
 /* Cards on the ground, all alike (principle 12, three tones): lifted by tone and a soft shadow, no drawn edge; a card
    that says a state keeps its coloured edge at the start. */
-.project-card, .translate-card, .receive-books li, .settings-phase, .glossary-entry, .review-renderings li, .usfm-found,
+.translate-card, .receive-books li, .settings-phase, .glossary-entry, .review-renderings li, .usfm-found,
 .publish-where, .publish-book, .passage-text, .voice-source, .study-other-note {
   border: 0; border-radius: 14px; box-shadow: var(--shadow-card);
 }
@@ -1268,18 +1279,17 @@ button, .file-button, summary, input, select, textarea {
   transition: background-color var(--quick) var(--ease), border-color var(--quick) var(--ease), color var(--quick) var(--ease),
     box-shadow var(--quick) var(--ease), transform 90ms var(--ease), opacity var(--quick) var(--ease);
 }
-:is(.button-primary, .button-secondary, .chip, .choice, .book-tile, .add-tile, .add-card, .project-settings, .person,
+:is(.button-primary, .button-secondary, .chip, .choice, .person,
   .header-person-chip, .position-arrow, .position-done, .decision, .option, .book-chip, .language-result, .catalog-card,
   .chapter-cell, .verse-cell, .file-button):not(:disabled):active { transform: scale(0.97); }
-:is(.row-button, .menu-row, .destination-org, .tool-chapter, .chapter-row):not(:disabled):active { background-color: var(--accent-soft); }
+:is(.row-button, .menu-row, .home-book, .home-project, .destination-org, .tool-chapter, .chapter-row):not(:disabled):active { background-color: var(--accent-soft); }
 @media (hover: hover) and (pointer: fine) {
   .button-primary:not(:disabled):hover { background-color: color-mix(in srgb, var(--accent) 88%, var(--bg)); border-color: color-mix(in srgb, var(--accent) 88%, var(--bg)); }
-  :is(.button-secondary, .chip, .project-settings, .person:not(.is-current), .header-person-chip, .language-result, .catalog-card, .option:not(.is-on), .book-chip:not(.is-on), .file-button):not(:disabled):hover {
+  :is(.button-secondary, .chip, .person:not(.is-current), .header-person-chip, .language-result, .catalog-card, .option:not(.is-on), .book-chip:not(.is-on), .file-button):not(:disabled):hover {
     background-color: color-mix(in srgb, var(--accent) 6%, var(--surface)); border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
   }
-  :is(.book-tile, .chapter-cell, .verse-cell:not(.is-current)):not(:disabled):hover { background-color: color-mix(in srgb, var(--accent) 9%, var(--surface-soft)); }
-  :is(.add-tile, .add-card):hover { background-color: var(--accent-soft); }
-  :is(.row-button, .menu-row, .destination-org, .tool-chapter, .chapter-row):not(:disabled):hover { background-color: color-mix(in srgb, var(--accent) 5%, transparent); }
+  :is(.chapter-cell, .verse-cell:not(.is-current)):not(:disabled):hover { background-color: color-mix(in srgb, var(--accent) 9%, var(--surface-soft)); }
+  :is(.row-button, .menu-row, .home-book, .home-project:not([aria-current]), .destination-org, .tool-chapter, .chapter-row):not(:disabled):hover { background-color: color-mix(in srgb, var(--accent) 5%, transparent); }
   :is(.panes-tab, .book-step, .helps-tab, .choice-row > .choice):not([aria-selected='true'], [aria-checked='true'], .is-on):hover { color: var(--text); }
 }
 
@@ -1291,7 +1301,7 @@ button, .file-button, summary, input, select, textarea {
 @media (prefers-reduced-motion: reduce) {
   .sheet, .sheet-backdrop { animation: none; }
   button, .file-button, summary, input, select, textarea { transition: none; }
-  :is(.button-primary, .button-secondary, .chip, .choice, .book-tile, .add-tile, .add-card, .project-settings, .person,
+  :is(.button-primary, .button-secondary, .chip, .choice, .person,
     .header-person-chip, .position-arrow, .position-done, .decision, .option, .book-chip, .language-result, .catalog-card,
     .chapter-cell, .verse-cell, .file-button):active { transform: none; }
 }
@@ -1300,7 +1310,7 @@ button, .file-button, summary, input, select, textarea {
    what names and what acts (headings 800; buttons, tabs and names 700), a step short of black so a screen reads calm.
    What the team writes is in the project's font. */
 .chapter-lines { font-family: var(--serif); }
-:is(.button-primary, .button-secondary, .header-app, .header-brand, .book-tile-name, .tool-card-name, .book-resume-what, .panes-tab, .book-step, .helps-tab) { font-weight: 700; }
+:is(.button-primary, .button-secondary, .header-app, .header-brand, .home-title-pick, .tool-card-name, .book-resume-what, .panes-tab, .book-step, .helps-tab) { font-weight: 700; }
 :is(.chapter-lines, .verse) .verse-number { color: var(--accent); font-weight: 700; }
 
 /* Home's «go on where you left off» as a field of moss: the first thing touched, and home's own anchor */
@@ -1319,13 +1329,14 @@ button, .file-button, summary, input, select, textarea {
    edge, the box being written with a thicker moss edge, and a box's hint in a grey that still reads. */
 :root[data-theme='sun'] body { font-weight: 500; -webkit-font-smoothing: auto; }
 :root[data-theme='sun'] :is(.quiet, .field-label, .menu-row-description, .center-label, .edit-where, .edit-hint,
-  .book-tile-phase, .chapter-row-count, .tool-chapter-count, .row-button-meta, .catalog-description, .help-original,
+  .home-book-step, .chapter-row-count, .tool-chapter-count, .row-button-meta, .catalog-description, .help-original,
   .header-person, .book-step-state, .lexicon-definition, .book-resume-project) { font-weight: 600; }
 :root[data-theme='sun'] .chapter-lines { font-size: 1.1rem; }
 :root[data-theme='sun'] .chapter-lines.is-alone { font-size: 1.25rem; }
 :root[data-theme='sun'] .verse-large { font-size: 1.4rem; }
-:root[data-theme='sun'] .book-tile { background: var(--surface); border-color: var(--line); }
-:root[data-theme='sun'] :is(.button-secondary, .chip, .project-settings) { border-color: var(--line); }
+:root[data-theme='sun'] :is(.button-secondary, .chip) { border-color: var(--line); }
+/* The steps ahead, on the moss field, still seen in the sun */
+:root[data-theme='sun'] .step-track > span:not(.is-done, .is-now) { background: color-mix(in srgb, var(--on-field) 42%, transparent); }
 :root[data-theme='sun'] .notice { box-shadow: inset 0 0 0 1.5px var(--warn-text); }
 :root[data-theme='sun'] :is(.line-field:focus, .line-field:focus-visible) { box-shadow: 0 0 0 2px var(--accent); }
 :root[data-theme='sun'] .position { background: var(--surface); }
@@ -1373,10 +1384,10 @@ button, .file-button, summary, input, select, textarea {
 :root[data-theme='sun'] .menu-row:disabled { opacity: 1; color: var(--text-disabled); }
 :root[data-theme='sun'] .menu-row:disabled .menu-row-description { color: inherit; }
 /* Sun keeps the tint under the mouse (principle 13): the lines above, later and as specific as the hover rules, would
-   hide it on a tile, a done cell and an outlined button. */
+   hide it on a done cell and an outlined button. */
 @media (hover: hover) and (pointer: fine) {
-  :root[data-theme='sun'] :is(.book-tile, .chapter-cell, .verse-cell:not(.is-current)):not(:disabled):hover {
+  :root[data-theme='sun'] :is(.chapter-cell, .verse-cell:not(.is-current)):not(:disabled):hover {
     background-color: color-mix(in srgb, var(--accent) 9%, var(--surface-soft));
   }
-  :root[data-theme='sun'] :is(.button-secondary, .chip, .project-settings):not(:disabled):hover { border-color: var(--accent); }
+  :root[data-theme='sun'] :is(.button-secondary, .chip):not(:disabled):hover { border-color: var(--accent); }
 }
