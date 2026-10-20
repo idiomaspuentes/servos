@@ -646,11 +646,12 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .chapter-lines { display: flex; flex-direction: column; }
 .chapter-lines-title { margin: 0 0 0.25rem; font-size: 0.85rem; color: var(--text-soft); }
 .chapter-verse { padding: 0.375rem 0.5rem; color: var(--text-soft); }
-/* The verses being translated: one band for them all, a line at its left, not a card each */
-.chapter-verse.is-current { background: color-mix(in srgb, var(--accent-soft) 65%, transparent); color: var(--text); border-radius: 0; border-inline-start: 3px solid var(--accent); }
+/* The verses being translated: a line at their left and their text in full colour, the others' soft; no ground, so
+   the section does not weigh more than the words in it */
+.chapter-verse.is-current { color: var(--text); border-radius: 0; border-inline-start: 3px solid var(--accent); }
 /* The line the person is translating: apart from the rest of its verse, a mark at its start and a deeper ground.
    background-color only, so a poem line keeps its rule (drawn as a background image). */
-.usfm-line.is-writing-line { background-color: color-mix(in srgb, var(--accent) 22%, transparent); box-shadow: inset 3px 0 0 var(--accent); border-radius: 4px; }
+.usfm-line.is-writing-line { background-color: color-mix(in srgb, var(--accent) 10%, transparent); box-shadow: inset 3px 0 0 var(--accent); border-radius: 4px; }
 /* Its ground reaches out to the verse's band (`.chapter-verse`, 0.5rem in), so its mark joins the band's line, thicker
    where the person writes, instead of being drawn over the verse's number; the text stays where it was (as much
    margin taken as padding given), and a poem's rule with it. */
@@ -664,8 +665,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .chapter-lines.is-alone .chapter-verse.is-current { background: none; border-inline-start: 0; padding-inline: 0; }
 /* A touched word's card open: its verse stays at the pane's top while the card scrolls under it, so whatever its
    length the card is read beside its words. Its own ground over the page's, as nothing shows through it. */
-.chapter-lines > div:has(> .word-help) > .chapter-verse { position: sticky; inset-block-start: 0; z-index: 1; background-color: var(--bg); background-image: linear-gradient(color-mix(in srgb, var(--accent-soft) 65%, transparent), color-mix(in srgb, var(--accent-soft) 65%, transparent)); }
-.chapter-lines.is-alone > div:has(> .word-help) > .chapter-verse { background-image: none; }
+.chapter-lines > div:has(> .word-help) > .chapter-verse { position: sticky; inset-block-start: 0; z-index: 1; background-color: var(--bg); }
 .word-help-note { justify-self: start; padding-inline: 0; }
 /* The lexicon: the lemma, a short meaning, the senses of this verse */
 .lexicon-lemma { font-size: 1.15rem; margin: 0; }

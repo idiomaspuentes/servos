@@ -119,13 +119,11 @@
     background: var(--bg); font-family: var(--font); font-size: 0.9rem; font-weight: 700;
   }
   .side-head { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .side-row.is-here { background: color-mix(in srgb, var(--accent-soft) 65%, transparent); box-shadow: inset 3px 0 0 var(--accent); }
+  /* The section's rows: a line at their left and their text in full colour, no ground (as in the phone's texts) */
+  .side-row.is-here { box-shadow: inset 3px 0 0 var(--accent); }
   /* A touched word's card open under a row: the row stays in sight under the texts' names while the card scrolls */
   .side-verse:has(> .side-row.is-under .word-help) > .side-row:first-child {
     position: sticky; top: calc(var(--touch) + 0.7rem + 1px + 2.15rem); z-index: 1; background-color: var(--bg);
-  }
-  .side-verse:has(> .side-row.is-under .word-help) > .side-row.is-here:first-child {
-    background-image: linear-gradient(color-mix(in srgb, var(--accent-soft) 65%, transparent), color-mix(in srgb, var(--accent-soft) 65%, transparent));
   }
   .side-verse:has(> .side-row.is-here) + .side-verse > .side-row.is-here { border-block-start-color: transparent; }
   .side-num { font-family: var(--font); font-size: 0.85rem; font-weight: 700; line-height: 1.9; color: var(--accent); font-variant-numeric: tabular-nums; }
