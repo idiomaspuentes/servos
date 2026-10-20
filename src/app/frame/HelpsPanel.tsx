@@ -1,7 +1,10 @@
 /**
- * The helps of the open verse, one at a time, right under it (philosophy, principle 4). The same panel for every mini
- * app: a mini app only says whether it wants it. Each tab says how many there are («Notas 3»); the note being read
- * marks its words in the verse.
+ * The helps of the open verse that no word leads to, one at a time (philosophy, principle 4): what the team decided
+ * for its words (glossary) and understood of it (the study's notes, the chapter's, the book's), the notes on the
+ * whole verse, and the comprehension questions, read here to check the translation against. Notes on words and key
+ * words are what touching a word brings, beside its text, and are not listed again; but a note a newer pack changed
+ * stays, with its label, since the verse's row says to read it here. Only the tabs with something are shown, each
+ * saying how many («Glosario 2»).
  */
 
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
@@ -16,7 +19,7 @@ import { rangeOf } from './PlacePicker'
 import { showInPane } from './Panes'
 import { Sheet } from './Sheet'
 
-type Tab = 'glosario' | 'notas' | 'preguntas' | 'palabras' | 'comentarios'
+type Tab = 'glosario' | 'comentarios' | 'notas' | 'preguntas'
 
 /** Each help once, though it covers several of the verses shown (a note on 3–4 is in both), with its first verse. */
 function once<T extends { id: string }>(lists: Array<{ verse: number; items: T[] }>): Array<T & { verse: number }> {
@@ -49,9 +52,7 @@ export function HelpsPanel({
   const original = data.texts.find((x) => x.original)
   const shown = verses?.length ? verses : [verse]
   const of = data.verses.filter((v) => shown.includes(v.verse))
-  const notes = once(of.map((v) => ({ verse: v.verse, items: v.notes })))
   const questions = once(of.map((v) => ({ verse: v.verse, items: v.questions })))
-  const words = once(of.map((v) => ({ verse: v.verse, items: v.words })))
   const several = shown.length > 1
   // The team's notes from the study: on these verses, then on the chapter's introduction and on the book's, which
   // hold for every verse of them (last, so the verse's own come first).
@@ -79,6 +80,10 @@ export function HelpsPanel({
   useSyncExternalStore(subscribeChanges, changesVersion)
   const changes = changedVerses(data.book.id, data.chapter).filter((c) => shown.includes(c.verse))
   const [before, setBefore] = useState(false)
+  // The notes no word of the text being read leads to (on the whole verse, or whose words were not found in it), and
+  // those a newer pack changed.
+  const changed = new Set(changes.flatMap((c) => c.notes).filter((n) => n.kind !== 'quitada').map((n) => n.id))
+  const notes = once(of.map((v) => ({ verse: v.verse, items: v.notes.filter((n) => !n.places[textAbbreviation]?.length || changed.has(n.id)) })))
 
   useEffect(() => {
     setIndex(0)
@@ -86,27 +91,18 @@ export function HelpsPanel({
   }, [shown.join(','), tab])
   useEffect(() => setBefore(false), [index, tab, shown.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps // eslint-disable-line react-hooks/exhaustive-deps
 
-  const countOf = (id: Tab) =>
-    id === 'glosario'
-      ? decided.length
-      : id === 'notas'
-        ? notes.length
-        : id === 'preguntas'
-          ? questions.length
-          : id === 'palabras'
-            ? words.length
-            : studyNotes.length
+  const countOf = (id: Tab) => (id === 'glosario' ? decided.length : id === 'notas' ? notes.length : id === 'preguntas' ? questions.length : studyNotes.length)
   const count = countOf(tab)
   // A verse opens on a tab with something in it: another verse may have no notes but questions, or no decisions
   // (its glossary tab gone). A tab the person chose stays while it has something.
-  const order: Tab[] = ['glosario', 'notas', 'preguntas', 'palabras', 'comentarios']
+  const order: Tab[] = ['glosario', 'comentarios', 'notas', 'preguntas']
   const firstFull = order.find((id) => countOf(id) > 0) ?? 'notas'
   useEffect(() => {
     if (countOf(tab) === 0 && firstFull !== tab) setTab(firstFull)
   }, [shown.join(','), firstFull]) // eslint-disable-line react-hooks/exhaustive-deps
   const note = tab === 'notas' ? notes[index] : undefined
   // In a section, which verse the help shown is on.
-  const current = tab === 'notas' ? notes[index] : tab === 'preguntas' ? questions[index] : tab === 'palabras' ? words[index] : undefined
+  const current = tab === 'notas' ? notes[index] : tab === 'preguntas' ? questions[index] : undefined
   const marked = note ? (textAbbreviation === 'TPS' ? note.gst : note.glt) : null
   const noteChange = note ? changes.flatMap((c) => c.notes).find((n) => n.id === note.id && n.kind !== 'quitada') : undefined
   useEffect(() => onMark(marked), [marked, onMark])
@@ -114,15 +110,13 @@ export function HelpsPanel({
   const self = useRef<HTMLElement>(null)
   useLayoutEffect(() => showInPane(self.current), [index, tab])
 
+  // What the team decided and understood first; then what the verse says as a whole, and what to check it against.
   const tabs: Array<{ id: Tab; label: string }> = [
-    // What the team decided comes first, when it decided anything about these verses.
-    ...(decided.length ? [{ id: 'glosario' as const, label: t('ayudas.glosarioN', { n: decided.length }) }] : []),
-    { id: 'notas', label: t('ayudas.notas', { n: notes.length }) },
-    { id: 'preguntas', label: t('ayudas.preguntas', { n: questions.length }) },
-    { id: 'palabras', label: t('ayudas.palabras', { n: words.length }) },
-    // What the team noted while studying these verses: there only when someone did.
-    ...(studyNotes.length ? [{ id: 'comentarios' as const, label: t('ayudas.comentarios', { n: studyNotes.length }) }] : []),
-  ]
+    { id: 'glosario' as const, label: t('ayudas.glosarioN', { n: decided.length }) },
+    { id: 'comentarios' as const, label: t('ayudas.comentarios', { n: studyNotes.length }) },
+    { id: 'notas' as const, label: t('ayudas.sobreVersiculo', { n: notes.length }) },
+    { id: 'preguntas' as const, label: t('ayudas.paraComprobar', { n: questions.length }) },
+  ].filter((x) => countOf(x.id) > 0)
 
   return (
     <section ref={self} className="helps" aria-label={tabs.map((x) => x.label).join(', ')}>
@@ -136,22 +130,21 @@ export function HelpsPanel({
 
       <div className="helps-card" role="tabpanel">
         {several && current && <p className="help-verse">{t('ayudas.versiculo', { v: current.verse })}</p>}
-        {count === 0 && (
-          <p className="quiet">
-            {t(tab === 'notas' ? 'ayudas.sinNotas' : tab === 'preguntas' ? 'ayudas.sinPreguntas' : 'ayudas.sinPalabras')}
-          </p>
-        )}
+        {tabs.length === 0 && <p className="quiet">{t('ayudas.nadaMas')}</p>}
 
         {note && (
           <>
             {noteChange && <span className="badge badge-changed help-changed">{t(`cambios.etiqueta.${noteChange.kind}`)}</span>}
-            {marked ? <p className="help-quote">{marked}</p> : <p className="quiet">{t('ayudas.noAlineada', { texto: textAbbreviation })}</p>}
-            <p className="help-original">
-              {t('ayudas.enElOriginalSolo')}{' '}
-              <span lang={original?.lang} dir={original?.dir}>
-                {note.quote}
-              </span>
-            </p>
+            {/* A note on the whole verse quotes no words; one whose words this text does not have says them in the original. */}
+            {marked && <p className="help-quote">{marked}</p>}
+            {note.quote.trim() && (
+              <p className="help-original">
+                {t('ayudas.enElOriginalSolo')}{' '}
+                <span lang={original?.lang} dir={original?.dir}>
+                  {note.quote}
+                </span>
+              </p>
+            )}
             <Markdown text={note.note} />
             {noteChange?.kind === 'cambiada' && (
               <>
@@ -191,29 +184,16 @@ export function HelpsPanel({
           </>
         )}
 
+        {/* While translating, the comprehension questions check what was written: does it answer this? The answer
+            expected, once the person has looked. */}
         {tab === 'preguntas' && questions[index] && (
           <>
+            <p className="quiet">{t('ayudas.comprobarAyuda')}</p>
             <p className="help-question">{questions[index].question}</p>
             {answer ? (
               <p>{questions[index].response}</p>
             ) : (
-              <RowButton kind="fold" label={t('ayudas.verRespuesta')} expanded={false} onClick={() => setAnswer(true)} />
-            )}
-          </>
-        )}
-
-        {tab === 'palabras' && words[index] && (
-          <>
-            <p className="help-quote">{data.words[words[index].article]?.title ?? words[index].article}</p>
-            <p className="help-original">
-              {t('ayudas.enElOriginalSolo')}{' '}
-              <span lang={original?.lang} dir={original?.dir}>
-                {words[index].original}
-              </span>
-              {words[index].keyTerm && <span className="badge">{t('ayudas.palabraClave')}</span>}
-            </p>
-            {data.words[words[index].article] && (
-              <RowButton label={t('ayudas.leerArticulo', { titulo: data.words[words[index].article].title })} onClick={() => setArticle(data.words[words[index].article])} />
+              <RowButton kind="fold" label={t('ayudas.verRespuestaEsperada')} expanded={false} onClick={() => setAnswer(true)} />
             )}
           </>
         )}
