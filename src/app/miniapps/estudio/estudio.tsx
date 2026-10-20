@@ -25,6 +25,9 @@ import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type MiniAppCenterProps } from
 import { StudyNotes, withLine } from './StudyNotes'
 import { VerseExtras } from './VerseExtras'
 
+/** How long a section stays on screen before moving on past it counts as having read it. */
+export const READ_SECONDS = 5
+
 function Center({ context }: MiniAppCenterProps) {
   const { position, data, t, marked, textAbbreviation, shown, person } = context
   const wide = useWide()
@@ -263,7 +266,11 @@ export const estudio: MiniApp = {
   intros: true,
   // A verse is studied once it was read through (the person moved on past its section), or has a note on it.
   done: (at) => studiedIn(at.book, at.chapter).includes(at.verse) || studyNotesAbout(at.book, at.chapter, [at.verse]).length > 0,
-  passed: (at) => markStudied(at.book, at.chapter, at.verses),
+  // Read, not skipped: no section is read in less than a few seconds, and arrows pressed one after another are a
+  // person finding their place. A floor, not a measure of the section's length, so a fast reader is never left out.
+  passed: (at) => {
+    if (at.seconds >= READ_SECONDS) markStudied(at.book, at.chapter, at.verses)
+  },
   helps: false,
   fills: true,
   writes: false,

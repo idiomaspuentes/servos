@@ -158,9 +158,10 @@ export interface MiniApp {
   done?(at: Position): boolean
   /**
    * Told when the person moves on past what was shown (the next arrow, or «Done» at the book's end), not back: for a
-   * mini app whose work on a verse is to go through it (the study).
+   * mini app whose work on a verse is to go through it (the study). `seconds`: how long it was on screen, the app in
+   * sight, so arrows pressed one after another to find a place are not taken for reading.
    */
-  passed?(at: { book: string; chapter: number; verses: number[] }): void
+  passed?(at: { book: string; chapter: number; verses: number[]; seconds: number }): void
   /**
    * Whether the frame's position line (‹ Jonah 1:2 ›) is shown: not for a mini app that goes by something else than
    * verses and has its own way on (the reviewers go note by note), so the foot has one way on, not two.

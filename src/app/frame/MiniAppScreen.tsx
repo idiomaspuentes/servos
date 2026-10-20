@@ -4,7 +4,7 @@
  * the helps panel under the verse. The mini app draws only its center.
  */
 
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { PrototypeData } from '../../prototype/data'
 import { useT } from '../i18n/i18n'
 import { useProjectFont } from './fonts'
@@ -154,8 +154,27 @@ export function MiniAppScreen({
     setCrossed(chapter)
   }
   const previous = () => (at > 0 ? goStop(at - 1) : before !== null && cross(before, true))
+  // How long what is shown has been on screen, only while the app is in sight (not behind another app, or the phone
+  // asleep): counted again for each verse or section.
+  const shownKey = `${position.book}.${position.chapter}.${shown.join(',')}`
+  const onScreen = useRef({ ms: 0, since: 0 })
+  useEffect(() => {
+    const now = () => (document.visibilityState === 'visible' ? performance.now() : 0)
+    onScreen.current = { ms: 0, since: now() }
+    const seen = () => {
+      const o = onScreen.current
+      if (document.visibilityState === 'visible') o.since ||= performance.now()
+      else if (o.since) onScreen.current = { ms: o.ms + performance.now() - o.since, since: 0 }
+    }
+    document.addEventListener('visibilitychange', seen)
+    return () => document.removeEventListener('visibilitychange', seen)
+  }, [shownKey])
+  const secondsShown = () => {
+    const o = onScreen.current
+    return (o.ms + (o.since ? performance.now() - o.since : 0)) / 1000
+  }
   // Moving on past what was shown tells the mini app it was gone through (`MiniApp.passed`).
-  const passed = () => app.passed?.({ book: position.book, chapter: position.chapter, verses: shown })
+  const passed = () => app.passed?.({ book: position.book, chapter: position.chapter, verses: shown, seconds: secondsShown() })
   const following = () => {
     passed()
     if (at < stops.length - 1) goStop(at + 1)
