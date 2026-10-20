@@ -255,7 +255,7 @@ function groups(pieces: WordLine['pieces'], word: (place: number, text: string, 
       if (!part) return
       if (/^\s+$/.test(part)) {
         close()
-        out.push(<span key={`s${i}-${j}`}>{part}</span>)
+        out.push(<span key={`s${i}-${j}`} className="word-space">{part}</span>)
       } else group.push(<span key={`t${i}-${j}`}>{part}</span>)
     })
   })
