@@ -9,7 +9,7 @@ import type { PrototypeData } from '../../prototype/data'
 import { useT } from '../i18n/i18n'
 import { entriesAbout, type GlossaryEntry } from '../projects/glossary'
 import { changedVerses, changesVersion, subscribeChanges } from '../projects/helpsChanges'
-import { studyNotesAbout } from '../projects/work'
+import { BOOK_NOTE_CHAPTER, introNoteOn, studyNotesAbout } from '../projects/work'
 import { RowButton } from './Actions'
 import { Markdown } from './Markdown'
 import { rangeOf } from './PlacePicker'
@@ -53,7 +53,15 @@ export function HelpsPanel({
   const questions = once(of.map((v) => ({ verse: v.verse, items: v.questions })))
   const words = once(of.map((v) => ({ verse: v.verse, items: v.words })))
   const several = shown.length > 1
-  const studyNotes = comments ? studyNotesAbout(data.book.id, data.chapter, shown) : []
+  // The team's notes from the study: on these verses, then on the chapter's introduction and on the book's, which
+  // hold for every verse of them (last, so the verse's own come first).
+  const studyNotes = comments
+    ? [
+        ...studyNotesAbout(data.book.id, data.chapter, shown).map((n) => ({ ...n, about: t('ayudas.comentarioDe', { versiculos: rangeOf(n.verses), nombre: n.by }) })),
+        ...[introNoteOn(data.book.id, data.chapter)].filter((n) => n !== null).map((n) => ({ ...n, about: t('ayudas.comentarioCapitulo', { capitulo: data.chapter, nombre: n.by }) })),
+        ...[introNoteOn(data.book.id, BOOK_NOTE_CHAPTER)].filter((n) => n !== null).map((n) => ({ ...n, about: t('ayudas.comentarioLibro', { nombre: n.by }) })),
+      ]
+    : []
   // The team's decisions on the words of these verses, in the order the words come.
   const decided = (() => {
     const original = data.texts.find((x) => x.original)
@@ -178,7 +186,7 @@ export function HelpsPanel({
 
         {tab === 'comentarios' && studyNotes[index] && (
           <>
-            <p className="help-verse">{t('ayudas.comentarioDe', { versiculos: rangeOf(studyNotes[index].verses), nombre: studyNotes[index].by })}</p>
+            <p className="help-verse">{studyNotes[index].about}</p>
             <p className="study-other-text">{studyNotes[index].text}</p>
           </>
         )}

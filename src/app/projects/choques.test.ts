@@ -5,7 +5,7 @@ import { addObservation, answer } from './passageReview'
 import { readGlossary, saveGlossaryEntry, type GlossaryEntry } from './glossary'
 import { addTake, chooseTake, chosenTake, takesOf, takesToChoose } from './recordings'
 import { alignmentConflictAt, writeAlignment } from './alignment'
-import { bookStateOf, chooseVersion, forgetBooks, otherVersion, readDraft, studyNotesOf, writeDraft, writeStudyNote } from './work'
+import { BOOK_NOTE_CHAPTER, bookStateOf, chooseVersion, forgetBooks, introNoteOn, otherVersion, readDraft, studyNotesAbout, studyNotesOf, writeDraft, writeIntroNote, writeStudyNote } from './work'
 import type { Project } from './model'
 import { setProject } from './scope'
 
@@ -256,6 +256,18 @@ describe('11. Notas de estudio sobre los mismos versículos', () => {
     writeStudyNote('jon', 1, [1], 'Jonás no quiere ir', 'Bea')
     receive(share('Bea'), 'Ana')
     expect(studyNotesOf('jon', 1)[0].text).toBe('Dios habla primero\n\n— Bea: Jonás no quiere ir')
+  })
+
+  it('las notas de las introducciones viajan con el trabajo y no se mezclan con las de un versículo', () => {
+    on('Ana')
+    writeIntroNote('jon', BOOK_NOTE_CHAPTER, 'El título: «Jonás»', 'Ana')
+    writeIntroNote('jon', 1, 'Jonás huye de Dios', 'Ana')
+    writeStudyNote('jon', 1, [1], 'Dios habla primero', 'Ana')
+    receive(share('Ana'), 'Bea')
+    on('Bea')
+    expect(introNoteOn('jon', BOOK_NOTE_CHAPTER)?.text).toBe('El título: «Jonás»')
+    expect(introNoteOn('jon', 1)?.text).toBe('Jonás huye de Dios')
+    expect(studyNotesAbout('jon', 1, [1, 2, 3]).map((n) => n.text)).toEqual(['Dios habla primero'])
   })
 
   it.fails('una nota corregida reemplaza la que corrigió (hoy la vieja queda pegada encima)', () => {

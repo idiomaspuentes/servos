@@ -755,6 +755,8 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 /* An introduction in the study, read whole across the screen */
 .study-intro { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-block: 0.75rem 1.5rem; }
 .study-intro h3:first-child { margin-block-start: 0.25rem; }
+/* In its pane beside the note, the pane scrolls it */
+.pane .study-intro { flex: none; overflow: visible; }
 
 /* The study: the texts and the note as panes, one button leading on */
 .study { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.5rem; }
@@ -1153,6 +1155,8 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .helps-steps { display: flex; align-items: center; justify-content: center; gap: 0.9rem; }
 .review-more-places { min-height: var(--touch); }
 .study-write { margin-block-start: 1rem; }
+.book-note { display: flex; flex-direction: column; gap: 0.5rem; margin-block-start: 1.5rem; }
+.book-note p { margin: 0; }
 /* Scroll bars thin where text scrolls, not to compete with the text */
 .pane, .edit-fields, .review-scroll, .publish, .sheet-body, .study-intro { scrollbar-width: thin; }
 

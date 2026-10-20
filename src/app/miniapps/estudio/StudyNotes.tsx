@@ -22,22 +22,27 @@ export const StudyNotes = forwardRef<
     text: string
     by: string | null
     others: StudyNote[]
+    /** What the note is for, while nobody has written it (an introduction's is read across a chapter or the book). */
+    about?: string
+    /** The questions to think on, in the empty box. */
+    hint?: string
     onChange(text: string): void
   }
->(function StudyNotes({ passage, text, by, others, onChange }, box) {
+>(function StudyNotes({ passage, text, by, others, about, hint, onChange }, box) {
   const t = useT()
   return (
     <div className="study-notes">
       <div className="study-note-head">
         <h3 className="study-note-title">{t('estudio.loQueEntendi', { pasaje: passage })}</h3>
-        <p className="quiet">{by ? t('estudio.notaGuardada', { nombre: by }) : t('estudio.paraQue')}</p>
+        <p className="quiet">{by && `${t('estudio.notaGuardada', { nombre: by })} `}
+          {about ?? t('estudio.paraQue')}</p>
       </div>
       <textarea
         ref={box}
         className="study-note-field"
         aria-label={t('estudio.loQueEntendi', { pasaje: passage })}
         value={text}
-        placeholder={t('estudio.pista')}
+        placeholder={hint ?? t('estudio.pista')}
         onChange={(e) => onChange(e.target.value)}
       />
       {others.length > 0 && (

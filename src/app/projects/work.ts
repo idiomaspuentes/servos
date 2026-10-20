@@ -151,3 +151,11 @@ export function writeStudyNote(book: string, chapter: number, verses: number[], 
   const notes = text.trim() ? [...others, { verses, text, by }].sort((a, b) => a.verses[0] - b.verses[0]) : others
   write(studyKey(book, chapter), notes.length ? JSON.stringify(notes) : null)
 }
+
+/**
+ * The note on an introduction: a chapter's is its note on verse 0, the book's that of chapter 0. They are kept, shared
+ * and taken in as any other note, and no verse is ever 0, so `studyNotesAbout` a verse never brings them.
+ */
+export const BOOK_NOTE_CHAPTER = 0
+export const introNoteOn = (book: string, chapter: number): StudyNote | null => studyNoteOn(book, chapter, [0])
+export const writeIntroNote = (book: string, chapter: number, text: string, by: string) => writeStudyNote(book, chapter, [0], text, by)

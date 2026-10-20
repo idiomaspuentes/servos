@@ -19,7 +19,7 @@ import { passageOf } from '../../frame/PlacePicker'
 import { SideBySide, type SideText } from '../../frame/SideBySide'
 import { glossedPlaces, useWordHelps } from '../../frame/TouchWords'
 import { readGlossaryFor } from '../../projects/glossary'
-import { joinStartOf, studyNoteOn, studyNotesAbout, textOf, writeStudyNote } from '../../projects/work'
+import { BOOK_NOTE_CHAPTER, introNoteOn, joinStartOf, studyNoteOn, studyNotesAbout, textOf, writeIntroNote, writeStudyNote } from '../../projects/work'
 import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type MiniAppCenterProps } from '../contract'
 import { StudyNotes, withLine } from './StudyNotes'
 import { VerseExtras } from './VerseExtras'
@@ -30,7 +30,10 @@ function Center({ context }: MiniAppCenterProps) {
   // From 1280 px the texts can be read side by side, up to three, the team's own among them (principle 13).
   const wider = useWider()
   const unitKey = `${position.book}.${position.chapter}.${shown.join(',')}`
-  const read = () => studyNoteOn(position.book, position.chapter, shown)
+  // An introduction has its note too: the chapter's, or the book's (`introNoteOn`).
+  const introOf = position.verse === BOOK_INTRO ? 'libro' : position.verse === CHAPTER_INTRO ? 'capitulo' : null
+  const introChapter = introOf === 'libro' ? BOOK_NOTE_CHAPTER : position.chapter
+  const read = () => (introOf ? introNoteOn(position.book, introChapter) : studyNoteOn(position.book, position.chapter, shown))
   const [key, setKey] = useState(unitKey)
   const [note, setNote] = useState(() => ({ text: read()?.text ?? '', by: read()?.by ?? null }))
   const [, setPane] = useState('')
@@ -49,7 +52,8 @@ function Center({ context }: MiniAppCenterProps) {
     root.current?.querySelectorAll<HTMLElement>('.study-intro, .pane').forEach((el) => (el.scrollTop = 0))
   }, [unitKey])
   const write = (text: string) => {
-    writeStudyNote(position.book, position.chapter, shown, text, person.name)
+    if (introOf) writeIntroNote(position.book, introChapter, text, person.name)
+    else writeStudyNote(position.book, position.chapter, shown, text, person.name)
     setNote({ text, by: text.trim() ? person.name : null })
   }
   // To the note, the keyboard up: at once, so the box takes the focus while the touch lasts (a phone opens its
@@ -82,14 +86,49 @@ function Center({ context }: MiniAppCenterProps) {
     glossary,
   })
 
-  const intro = position.verse === BOOK_INTRO ? data.bookIntro : position.verse === CHAPTER_INTRO ? data.intro : undefined
-  if (intro !== undefined) {
-    // An introduction is read whole, across the screen: it is about the book or the chapter, not about words in it.
+  const intro = introOf === 'libro' ? data.bookIntro : introOf === 'capitulo' ? data.intro : undefined
+  if (introOf && intro !== undefined) {
+    // An introduction is read whole, across its pane: it is about the book or the chapter, not about words in it. Its
+    // note keeps what the team decides for all of it (the title, the names that come back), read again while
+    // translating any verse of it.
+    const label = t(introOf === 'libro' ? 'marco.introLibro' : 'marco.introCapitulo')
+    const panes: Pane[] = [
+      {
+        id: 'introduccion',
+        label,
+        content: (
+          <>
+            <article className="study-intro" aria-label={label}>
+              <Markdown text={intro} />
+            </article>
+            {!wide && !note.text.trim() && (
+              <button type="button" className="button-secondary study-write" onClick={() => toNote()}>
+                ✎ {t('estudio.escribirNota')}
+              </button>
+            )}
+          </>
+        ),
+      },
+      {
+        id: 'nota',
+        label: t('estudio.miNota'),
+        content: (
+          <StudyNotes
+            ref={box}
+            passage={introOf === 'libro' ? context.bookTitle : `${context.bookTitle} ${position.chapter}`}
+            text={note.text}
+            by={note.by}
+            others={[]}
+            about={t(introOf === 'libro' ? 'estudio.paraQueLibro' : 'estudio.paraQueCapitulo')}
+            hint={t(introOf === 'libro' ? 'estudio.pistaLibro' : 'estudio.pistaCapitulo')}
+            onChange={write}
+          />
+        ),
+      },
+    ]
     return (
       <div className="study" ref={root}>
-        <article className="study-intro" aria-label={t(position.verse === BOOK_INTRO ? 'marco.introLibro' : 'marco.introCapitulo')}>
-          <Markdown text={intro} />
-        </article>
+        <Panes panes={panes} label={t('estudio.paneles')} fixed="nota" open={open} onPane={setPane} holdFocus={false} />
       </div>
     )
   }
@@ -233,8 +272,12 @@ export const estudio: MiniApp = {
       paraQue: 'Lo verá su equipo al traducir estos versículos.',
       pista: '¿Qué dice? ¿Quién habla, a quién? ¿Qué será difícil de traducir?',
       paneles: 'Lo que se lee',
-      notaGuardada: 'Guardada en este teléfono · la escribió {nombre}. Se verá al traducir estos versículos.',
-      'notaGuardada.computadora': 'Guardada en esta computadora · la escribió {nombre}. Se verá al traducir estos versículos.',
+      notaGuardada: 'Guardada en este teléfono · la escribió {nombre}.',
+      paraQueLibro: 'Lo verá su equipo al traducir cualquier versículo del libro.',
+      paraQueCapitulo: 'Lo verá su equipo al traducir cualquier versículo de este capítulo.',
+      pistaLibro: '¿De qué trata el libro? ¿Cómo traducirán el título? ¿Qué nombres o palabras se repetirán?',
+      pistaCapitulo: '¿Qué pasa en este capítulo? ¿Qué será difícil de traducir?',
+      'notaGuardada.computadora': 'Guardada en esta computadora · la escribió {nombre}.',
       otrasNotas: 'Otras notas sobre estos versículos',
       notaSobre: 'Versículos {versiculos} · {nombre}',
       'lengua.hbo': 'Hebreo',
@@ -259,8 +302,12 @@ export const estudio: MiniApp = {
       paraQue: 'Sua equipe verá isto ao traduzir estes versículos.',
       pista: 'O que diz? Quem fala, a quem? O que será difícil de traduzir?',
       paneles: 'O que se lê',
-      notaGuardada: 'Salva neste telefone · escrita por {nombre}. Será vista ao traduzir estes versículos.',
-      'notaGuardada.computadora': 'Salva neste computador · escrita por {nombre}. Será vista ao traduzir estes versículos.',
+      notaGuardada: 'Salva neste telefone · escrita por {nombre}.',
+      paraQueLibro: 'Sua equipe verá isto ao traduzir qualquer versículo do livro.',
+      paraQueCapitulo: 'Sua equipe verá isto ao traduzir qualquer versículo deste capítulo.',
+      pistaLibro: 'Do que trata o livro? Como vão traduzir o título? Que nomes ou palavras vão se repetir?',
+      pistaCapitulo: 'O que acontece neste capítulo? O que será difícil de traduzir?',
+      'notaGuardada.computadora': 'Salva neste computador · escrita por {nombre}.',
       otrasNotas: 'Outras notas sobre estes versículos',
       notaSobre: 'Versículos {versiculos} · {nombre}',
       'lengua.hbo': 'Hebraico',
@@ -285,8 +332,12 @@ export const estudio: MiniApp = {
       paraQue: 'Your team will see it when translating these verses.',
       pista: 'What does it say? Who speaks, to whom? What will be hard to translate?',
       paneles: 'What is read',
-      notaGuardada: 'Saved on this phone · written by {nombre}. It will be seen when these verses are translated.',
-      'notaGuardada.computadora': 'Saved on this computer · written by {nombre}. It will be seen when these verses are translated.',
+      notaGuardada: 'Saved on this phone · written by {nombre}.',
+      paraQueLibro: 'Your team will see it when translating any verse of the book.',
+      paraQueCapitulo: 'Your team will see it when translating any verse of this chapter.',
+      pistaLibro: 'What is the book about? How will you translate its title? What names or words will come back?',
+      pistaCapitulo: 'What happens in this chapter? What will be hard to translate?',
+      'notaGuardada.computadora': 'Saved on this computer · written by {nombre}.',
       otrasNotas: 'Other notes on these verses',
       notaSobre: 'Verses {versiculos} · {nombre}',
       'lengua.hbo': 'Hebrew',

@@ -24,7 +24,7 @@ import { PHASES, bookName, titleOf, type BookEntry, type Phase, type Project } f
 import { doneIn as doneInBook, percent as pct, placeLabel, stepPercent, versesOf } from '../projects/progress'
 import { namesTogether } from '../projects/mix'
 import { sectionsToGather, versesToChoose, versionsFrom } from '../projects/versions'
-import { workOf } from '../projects/work'
+import { BOOK_NOTE_CHAPTER, introNoteOn, workOf } from '../projects/work'
 import { saveFile } from '../frame/saveFile'
 import { bookUsfm } from '../projects/usfmExport'
 import { ShareSheet } from './ShareSheet'
@@ -103,6 +103,7 @@ export function BookScreen({
   const [shown, setShown] = useState<Phase>(current?.phase ?? book.phase)
   const [byChapter, setByChapter] = useState<string | null>(null)
   const [more, setMore] = useState(false)
+  const [bookNoteOpen, setBookNoteOpen] = useState(false)
   const [sharing, setSharing] = useState(false)
   const [saidMore, setSaidMore] = useState<string | null>(null)
 
@@ -370,6 +371,23 @@ export function BookScreen({
             <p className="quiet step-note">{t('libro.pasoNota', { paso: t(`pasos.${shown}`) })}</p>
           </>
         )}
+
+        {(() => {
+          // What the team understood of the whole book, written on its introduction: folded, under the work.
+          const bookNote = introNoteOn(book.code, BOOK_NOTE_CHAPTER)
+          if (!bookNote) return null
+          return (
+            <section className="book-note">
+              <RowButton kind="fold" label={t('libro.loQueEntendimos', { libro: name })} expanded={bookNoteOpen} onClick={() => setBookNoteOpen((o) => !o)} />
+              {bookNoteOpen && (
+                <>
+                  <p className="study-other-text">{bookNote.text}</p>
+                  <p className="quiet">{t('libro.notaDe', { nombre: bookNote.by })}</p>
+                </>
+              )}
+            </section>
+          )
+        })()}
 
         {!book.name && !declined && chapters.length > 0 && (
           // Once, after the work, until the team names the book or says not now (principle 12).
