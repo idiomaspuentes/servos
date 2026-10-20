@@ -126,55 +126,68 @@ export function SideBySide({
     keep(app, next)
   }
 
+  const switchOf = (x: SideText) => {
+    const on = shownIds.includes(x.id)
+    const lone = on && shownIds.length === 1
+    return (
+      <button
+        key={x.id}
+        type="button"
+        className={on ? 'side-switch is-on' : 'side-switch'}
+        aria-pressed={on}
+        disabled={!on && full}
+        // The last one on stays (a touch leaves it): it is not offered as something to take away.
+        title={
+          !on && full
+            ? t('marco.lado.lleno', { n: max })
+            : lone
+              ? undefined
+              : on
+                ? t('marco.lado.quitar', { texto: x.label })
+                : t(max === 1 ? 'marco.lado.cambiar' : 'marco.lado.poner', { texto: x.label })
+        }
+        onClick={() => touch(x.id)}
+      >
+        {x.label}
+      </button>
+    )
+  }
+  const asideSwitch = aside && (
+    <button
+      type="button"
+      className={aside.on ? 'side-switch is-aside is-on' : 'side-switch is-aside'}
+      aria-pressed={aside.on}
+      // Why one text only fits beside it is said here, where it is asked, not in a line always in sight.
+      title={aside.on && max === 1 ? t('marco.lado.conAyudas') : t(aside.on ? 'marco.lado.quitar' : 'marco.lado.poner', { texto: aside.label })}
+      onClick={() => aside.onChange(!aside.on)}
+    >
+      {aside.label}
+    </button>
+  )
   const switches = (
     <div className="side-switches" role="group" aria-label={t('marco.lado.textos')}>
-      {texts.map((x) => {
-        const on = shownIds.includes(x.id)
-        const lone = on && shownIds.length === 1
-        return (
-          <button
-            key={x.id}
-            type="button"
-            className={on ? 'side-switch is-on' : 'side-switch'}
-            aria-pressed={on}
-            disabled={!on && full}
-            // The last one on stays (a touch leaves it): it is not offered as something to take away.
-            title={
-              !on && full
-                ? t('marco.lado.lleno', { n: max })
-                : lone
-                  ? undefined
-                  : on
-                    ? t('marco.lado.quitar', { texto: x.label })
-                    : t(max === 1 ? 'marco.lado.cambiar' : 'marco.lado.poner', { texto: x.label })
-            }
-            onClick={() => touch(x.id)}
-          >
-            {x.label}
-          </button>
-        )
-      })}
-      {aside && (
-        <button
-          type="button"
-          className={aside.on ? 'side-switch is-aside is-on' : 'side-switch is-aside'}
-          aria-pressed={aside.on}
-          // Why one text only fits beside it is said here, where it is asked, not in a line always in sight.
-          title={aside.on && max === 1 ? t('marco.lado.conAyudas') : t(aside.on ? 'marco.lado.quitar' : 'marco.lado.poner', { texto: aside.label })}
-          onClick={() => aside.onChange(!aside.on)}
-        >
-          {aside.label}
-        </button>
-      )}
+      {texts.map(switchOf)}
+      {asideSwitch}
     </div>
   )
+  // In rows, the switches are the rows' head: a text's name is its switch, over its column; the texts not shown and
+  // the column beside, at the head's end. One row less above the source text than a bar of switches over the names.
+  const head = {
+    cell: (id: string) => switchOf(texts.find((x) => x.id === id)!),
+    extra: (
+      <>
+        {texts.filter((x) => !shownIds.includes(x.id)).map(switchOf)}
+        {asideSwitch}
+      </>
+    ),
+  }
 
   // One text alone is drawn as the mini app draws it, when it has a way to (the team's own text has none: a row each).
   // Where the team writes, always rows: the box stays at the end of its verse's row.
   const alone = shown.length === 1 && !writing ? single?.(shown[0].id) : null
   return (
     <div className="side-by-side" data-n={shown.length}>
-      {switches}
+      {alone !== null && alone !== undefined && switches}
       {/* What the switches do is said by them when asked (their titles), not in a line always in sight: on a
           computer every line above the texts is one of the source text less on screen. */}
       {alone !== null && alone !== undefined ? (
@@ -182,7 +195,7 @@ export function SideBySide({
       ) : (
         <>
           {writing?.hint}
-          <Rows texts={shown} verses={verses} open={open} at={at} line={line} lit={lit} glossed={glossed} helped={helped} onWord={onWord} under={under} writing={writing} />
+          <Rows texts={shown} verses={verses} open={open} at={at} line={line} lit={lit} glossed={glossed} helped={helped} onWord={onWord} under={under} writing={writing} head={head} />
           {after}
         </>
       )}
@@ -204,8 +217,11 @@ function Rows({
   onWord,
   under,
   writing,
+  head,
 }: {
   texts: SideText[]
+  /** The head's cells as the texts' switches, and the others at its end (`SideBySide`); else the texts' names. */
+  head?: { cell(id: string): ReactNode; extra: ReactNode }
   verses?: number[]
   open: number[]
   at: number
@@ -322,16 +338,18 @@ function Rows({
 
   return (
     <div className={writing ? 'side-rows has-box' : 'side-rows'} role="table" aria-label={t('marco.lado.textos')} style={{ '--side-n': texts.length } as CSSProperties}>
-      <div className="side-row is-head" role="row">
+      <div className={head ? 'side-row is-head has-switches' : 'side-row is-head'} role="row">
         <span className="side-num" role="columnheader" aria-label={t('marco.lado.versiculo')} />
-        {texts.map((x) => (
-          <span key={x.id} className="side-head" role="columnheader" title={x.text?.title}>
-            {x.label}
+        {texts.map((x, i) => (
+          <span key={x.id} className="side-head" role="columnheader" title={head ? undefined : x.text?.title}>
+            {head ? head.cell(x.id) : x.label}
+            {head && !writing && i === texts.length - 1 && <span className="side-head-extra">{head.extra}</span>}
           </span>
         ))}
         {writing && (
           <span className="side-head" role="columnheader">
             {writing.label}
+            {head && <span className="side-head-extra">{head.extra}</span>}
           </span>
         )}
       </div>

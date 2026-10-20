@@ -125,15 +125,19 @@
   }
   /* The texts' names over their columns, in sight under the switches while the chapter scrolls */
   .side-row.is-head {
-    position: sticky; top: calc(var(--switch-h) + 0.7rem + 1px); z-index: 1; padding-block: 0.35rem; border-block-start: 0;
+    position: sticky; top: 0; z-index: 1; padding-block: 0.35rem; border-block-start: 0; border-block-end: 1px solid var(--hair);
     background: var(--bg); font-family: var(--font); font-size: 0.9rem; font-weight: 700;
   }
   .side-head { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* The head as the texts' switches: each name its own, the others at the end of the last column's */
+  .side-row.has-switches { align-items: center; }
+  .side-row.has-switches .side-head { display: flex; align-items: center; gap: 0.35rem; min-width: 0; overflow: visible; }
+  .side-head-extra { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.35rem; margin-inline-start: auto; }
   /* The section's rows: a line at their left and their text in full colour, no ground (as in the phone's texts) */
   .side-row.is-here { box-shadow: inset 3px 0 0 var(--accent); }
   /* A touched word's card open under a row: the row stays in sight under the texts' names while the card scrolls */
   .side-verse:has(> .side-row.is-under .word-help) > .side-row:first-child {
-    position: sticky; top: calc(var(--switch-h) + 0.7rem + 1px + 2.15rem); z-index: 1; background-color: var(--bg);
+    position: sticky; top: calc(var(--switch-h) + 0.7rem + 1px); z-index: 1; background-color: var(--bg);
   }
   .side-verse:has(> .side-row.is-here) + .side-verse > .side-row.is-here { border-block-start-color: transparent; }
   .side-num { font-family: var(--font); font-size: 0.85rem; font-weight: 700; line-height: 1.9; color: var(--accent); font-variant-numeric: tabular-nums; }
@@ -166,7 +170,10 @@
   .panes-split.has-side:not(:has(> .panes)):has(.side-by-side[data-n='3']) { grid-template-columns: minmax(0, 4.15fr) minmax(19.5rem, 0.85fr); }
 
   .side-rows.has-box .side-row { grid-template-columns: 2rem repeat(var(--side-n, 2), minmax(0, 1fr)) minmax(0, 1.15fr); }
-  .side-rows.has-box .side-row.is-under { padding-inline-start: calc(2rem + 1.25rem + 0.5rem); }
+  /* Where the team writes, a word's card under its row stays over the texts' columns: the boxes keep theirs, clear of
+     it, so the card reads as a help of the text and not as something over what is being written. */
+  .side-rows.has-box .side-row.is-under { display: grid; padding-inline-start: 0.5rem; }
+  .side-rows.has-box .side-row.is-under > .side-under { grid-column: 2 / -2; min-width: 0; }
   /* «10–11» goes on two lines rather than into the text */
   .side-rows.has-box .side-num { overflow-wrap: anywhere; }
   .side-cell .verse-number { font-family: var(--font); font-weight: 700; color: var(--accent); }

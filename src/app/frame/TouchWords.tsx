@@ -766,8 +766,8 @@ export function WordHelpCard({
           <summary>
             <span>
               {/* The lemma in its own letters, wherever the language puts it in the sentence. */}
-              {t('ayudas.masSobre', { palabra: ' ' })
-                .split(' ')
+              {t('ayudas.masSobre', { palabra: '\uE000' })
+                .split('\uE000')
                 .flatMap((part, j) => (j === 0 ? [part] : [<Scripture key={j} text={original}>{lexicons[0].lemma}</Scripture>, part]))}
             </span>
           </summary>
