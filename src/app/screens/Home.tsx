@@ -21,7 +21,7 @@ import { useWider } from '../frame/Panes'
 import { MenuRow, Sheet } from '../frame/Sheet'
 import { useCopies } from './CopiesSheet'
 import { useT } from '../i18n/i18n'
-import { PHASES, titleOf, type Phase, type Project } from '../projects/model'
+import { titleOf, type Phase, type Project } from '../projects/model'
 import { insideState, onInside } from '../projects/packsInside'
 
 export interface Resume {
@@ -29,24 +29,12 @@ export interface Resume {
   book: string
 }
 
-/** The book's five steps as a track: those done, the one it is in, those still ahead. Said in words beside it. */
-function StepTrack({ phase }: { phase: Phase }) {
-  const at = PHASES.indexOf(phase)
-  return (
-    <span className="step-track" aria-hidden="true">
-      {PHASES.map((p, i) => (
-        <span key={p} className={i < at ? 'is-done' : i === at ? 'is-now' : undefined} />
-      ))}
-    </span>
-  )
-}
-
 export function Home({
   projects,
   person,
   resume,
   resumeAt,
-  progressOf,
+  workOn,
   onResume,
   onAddProject,
   onBook,
@@ -60,8 +48,11 @@ export function Home({
   resume: Resume | null
   /** The mini app last worked in, in the book to resume, and where: «Alinear la traducción · Jonás 1:6». */
   resumeAt?: string | null
-  /** How far the step a book is in has gone, in percent, when it counts. */
-  progressOf(project: Project, book: string): number | null
+  /**
+   * What the person works on in a book: the step of the mini app they last opened there (the first step, before any),
+   * how far it has gone in percent when it counts, and whether they began.
+   */
+  workOn(project: Project, book: string): { step: Phase; pct: number | null; begun: boolean }
   onResume(r: Resume): void
   onAddProject(): void
   onBook(projectId: string, book: string): void
@@ -94,8 +85,8 @@ export function Home({
   // The moss field's book: the one worked on last, if it is in this project; or else its first book.
   const resumed = project && resume?.projectId === project.id ? project.books.find((b) => b.code === resume.book) : undefined
   const current = resumed ?? project?.books[0]
-  const currentPct = project && current ? progressOf(project, current.code) : null
-  const begun = Boolean(current && (current.phase !== PHASES[0] || (currentPct ?? 0) > 0))
+  const work = project && current ? workOn(project, current.code) : null
+  const begun = Boolean(work && (work.begun || (work.pct ?? 0) > 0))
   const sizeOf = (p: Project) => `${p.languageName} (${p.languageCode}) · ${p.books.length === 1 ? t('inicio.unLibro') : t('inicio.libros', { n: p.books.length })}`
   const others = project ? project.books.filter((b) => b !== current) : []
 
@@ -208,10 +199,15 @@ export function Home({
                     </span>
                   </button>
                   {resumed && resumeAt && <span className="home-current-where">{resumeAt}</span>}
-                  <StepTrack phase={current.phase} />
-                  <span className="home-current-step">
-                    {t('inicio.pasoDe', { n: PHASES.indexOf(current.phase) + 1, total: PHASES.length, paso: t(`pasos.${current.phase}`) })}
-                  </span>
+                  {/* How far the person's own work in the book has gone: no stage the whole book is said to be in. */}
+                  {work && work.pct !== null && (
+                    <span className="tool-progress home-current-step">
+                      <span className="progress-bar" aria-hidden="true" data-full={work.pct >= 100 || undefined}>
+                        <span style={{ width: `${work.pct}%` }} />
+                      </span>
+                      <span>{t('inicio.avancePaso', { paso: t(`pasos.${work.step}`), pct: work.pct })}</span>
+                    </span>
+                  )}
                   <button
                     type="button"
                     className="button-primary"
@@ -234,14 +230,14 @@ export function Home({
               {current && (
                 <ul className="home-books">
                   {others.map((b) => {
-                    const pct = progressOf(project, b.code)
+                    const w = workOn(project, b.code)
                     return (
                       <li key={b.code}>
                         <button type="button" className="home-book" onClick={() => onBook(project.id, b.code)}>
                           <span className="home-book-name">{titleOf(project, b.code)}</span>
                           <span className="home-book-step">
-                            {t(`pasos.${b.phase}Corto`)}
-                            {pct !== null && ` · ${pct} %`}
+                            {t(`pasos.${w.step}Corto`)}
+                            {w.pct !== null && ` · ${w.pct} %`}
                           </span>
                         </button>
                       </li>

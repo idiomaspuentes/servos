@@ -5,10 +5,11 @@
  * its progress in the whole book, the one filled button and, folded, its progress chapter by chapter (and, for the
  * translation, who wrote each chapter, since a team may split a book and gather it on one computer); the step's other
  * mini apps, one row each. What is used now and then (sharing the book, receiving work from another computer, the
- * project's glossary, naming the book, moving it on before its step is done) is in «More».
- * Moving the book on is said plainly at the foot of its step once the step is nearly done; no step is closed to the
- * person (philosophy, principle 5). A book whose texts and helps are not on the phone says so, and how to get them
- * (principle 8).
+ * project's glossary, naming the book) is in «More».
+ * The steps are kinds of work, not stages the book has to be moved through: any is opened at any time, a team studies
+ * one chapter while it translates another, and nobody has to decide for everyone that the book «is» in one (philosophy,
+ * principle 5). A step is marked ✓ when its work is done. A book whose texts and helps are not on the phone says so,
+ * and how to get them (principle 8).
  */
 
 import type { BookState } from '../projects/library'
@@ -37,7 +38,6 @@ export function BookScreen({
   chapters,
   onBack,
   onOpen,
-  onPhase,
   onName,
   onReceive,
   state,
@@ -59,7 +59,6 @@ export function BookScreen({
   onBack(): void
   /** Opens a mini app where the person left off, or at a chapter. */
   onOpen(app: MiniApp, chapter?: number): void
-  onPhase(phase: Phase): void
   /** The book's name as the team says it (empty: as the bridge text names it). */
   onName(name: string): void
   onReceive(): void
@@ -93,14 +92,12 @@ export function BookScreen({
       return false
     }
   })
-  const at = PHASES.indexOf(book.phase)
   const appsOf = (phase: Phase) => project.miniApps[phase].map((id) => miniApp(id)).filter((a): a is MiniApp => Boolean(a))
   const allApps = PHASES.flatMap((p) => appsOf(p)).filter((a) => !a.comingSoon)
-  // Where «Continue» goes: the mini app last worked in, if the project still uses it, or else the first of the step
-  // the book is in.
-  const current = allApps.find((a) => a.id === lastApp) ?? appsOf(book.phase).find((a) => !a.comingSoon)
+  // Where «Continue» goes: the mini app last worked in, if the project still uses it, or else the first one.
+  const current = allApps.find((a) => a.id === lastApp) ?? allApps[0]
   // The step shown: the one of the mini app last worked in, so its card is in sight.
-  const [shown, setShown] = useState<Phase>(current?.phase ?? book.phase)
+  const [shown, setShown] = useState<Phase>(current?.phase ?? PHASES[0])
   const [byChapter, setByChapter] = useState<string | null>(null)
   const [more, setMore] = useState(false)
   const [bookNoteOpen, setBookNoteOpen] = useState(false)
@@ -127,21 +124,13 @@ export function BookScreen({
   const toChoose = versesToChoose(book.code, chapters.map((c) => ({ chapter: c.chapter, verses: versesOf(c) }))).length
   // Everyone translated the same: what waits is said by section, with whose versions came.
   const toGather = book.together && toChoose ? sectionsToGather(book.code, chapters.map((c) => ({ chapter: c.chapter, verses: versesOf(c), sections: c.sections }))) : []
-  const shownAt = PHASES.indexOf(shown)
   const shownApps = appsOf(shown)
   // The one card of the step shown: the mini app last worked in, or else the step's first that can be opened.
   const lead = shownApps.find((a) => a === current) ?? shownApps.find((a) => !a.comingSoon)
   // From 1280 px the step's first mini app and its others side by side (principle 13); narrower, one under the other.
   const wider = useWider()
-  // Moving the book on is offered at the foot once its step is nearly done (or cannot be measured); before, in «More».
-  const atPct = stepPct(book.phase)
-  // Not while the book has no texts on this device: nothing of it can be done yet, nor finished.
-  const moveOnInSight = chapters.length > 0 && (atPct === null || atPct >= 90)
-  const nextPhase = at < PHASES.length - 1 ? PHASES[at + 1] : null
-  const moveOnLabel = nextPhase ? `${t('libro.terminadoPasar', { paso: t(`pasos.${book.phase}`), siguiente: t(`pasos.${nextPhase}`) })} →` : ''
 
-  // The steps slide in one row: the one shown is brought into sight, and with it, where it fits, the one the book is
-  // in; the row moves only as much as that needs (centring the shown one hid the book's own step).
+  // The steps slide in one row: the one shown is brought into sight, the row moving only as much as that needs.
   const stepsRef = useRef<HTMLDivElement>(null)
   // Which ends of the row have steps out of sight: those ends fade, so it is seen that the row goes on.
   const [hidden, setHidden] = useState<{ start: boolean; end: boolean }>({ start: false, end: false })
@@ -162,11 +151,7 @@ export function BookScreen({
         return [r.left - box.left + row.scrollLeft, r.right - box.left + row.scrollLeft]
       }
       const pad = 24
-      const [onFrom, onTo] = span(on)
-      const book = row.querySelector<HTMLElement>('.is-current')
-      const [bookFrom, bookTo] = book ? span(book) : [onFrom, onTo]
-      const both = Math.max(onTo, bookTo) - Math.min(onFrom, bookFrom) <= row.clientWidth - 2 * pad
-      const [from, to] = both ? [Math.min(onFrom, bookFrom), Math.max(onTo, bookTo)] : [onFrom, onTo]
+      const [from, to] = span(on)
       if (from - pad < row.scrollLeft) row.scrollLeft = Math.max(0, from - pad)
       else if (to + pad > row.scrollLeft + row.clientWidth) row.scrollLeft = to + pad - row.clientWidth
     }
@@ -291,14 +276,14 @@ export function BookScreen({
           </section>
         )}
 
-        {/* The steps in one row that slides, each with how far it has gone; the one the book is in, marked. */}
+        {/* The steps in one row that slides, each with how far it has gone, ✓ when done. */}
         <div className="book-steps" role="tablist" aria-label={t('libro.pasos')}
           ref={stepsRef}
           onScroll={measureSteps}
           data-more-start={hidden.start || undefined}
           data-more-end={hidden.end || undefined}
         >
-          {PHASES.map((phase, i) => {
+          {PHASES.map((phase) => {
             const p = stepPct(phase)
             return (
               <button
@@ -306,21 +291,19 @@ export function BookScreen({
                 type="button"
                 role="tab"
                 aria-selected={phase === shown}
-                className={i === at ? 'book-step is-current' : 'book-step'}
+                className="book-step"
                 onClick={() => {
                   setShown(phase)
                   setByChapter(null)
                 }}
               >
                 <span>{t(`pasos.${phase}Corto`)}</span>
-                <span className={i < at || p === 100 ? 'book-step-state is-done' : 'book-step-state'}>{i < at || p === 100 ? '✓' : p !== null && p > 0 ? `${p} %` : ''}</span>
+                <span className={p === 100 ? 'book-step-state is-done' : 'book-step-state'}>{p === 100 ? '✓' : p !== null && p > 0 ? `${p} %` : ''}</span>
               </button>
             )
           })}
         </div>
 
-        {/* Looking at another step than the book's: where the book is, said once, quietly (its step may be out of sight). */}
-        {shownAt !== at && <p className="quiet book-where">{t('libro.estaEn', { paso: t(`pasos.${book.phase}`) })}</p>}
         {shownApps.length === 0 && <p className="quiet">{t('libro.ningunaApp')}</p>}
         {(() => {
           const others = shownApps.filter((app) => app !== lead)
@@ -353,24 +336,6 @@ export function BookScreen({
             </ul>
           )
         })()}
-
-        {/* Moving the book on, said plainly at the foot of its step once it is nearly done; or back, or ahead, from another. */}
-        {shownAt === at && nextPhase && moveOnInSight && (
-          <>
-            <button type="button" className="button-secondary" onClick={() => onPhase(nextPhase)}>
-              {moveOnLabel}
-            </button>
-            <p className="quiet step-note">{t('libro.pasoNota', { paso: t(`pasos.${nextPhase}`) })}</p>
-          </>
-        )}
-        {shownAt !== at && (
-          <>
-            <button type="button" className="button-secondary" onClick={() => onPhase(shown)}>
-              {shownAt < at ? `← ${t('libro.volverA', { paso: t(`pasos.${shown}`) })}` : `${t('libro.pasarA', { paso: t(`pasos.${shown}`) })} →`}
-            </button>
-            <p className="quiet step-note">{t('libro.pasoNota', { paso: t(`pasos.${shown}`) })}</p>
-          </>
-        )}
 
         {(() => {
           // What the team understood of the whole book, written on its introduction: folded, under the work.
@@ -485,16 +450,6 @@ export function BookScreen({
             </div>
             <span className="quiet">{t(book.together ? 'libro.modoJuntosAyuda' : 'libro.modoRepartidoAyuda')}</span>
           </div>
-          {nextPhase && !moveOnInSight && (
-            <MenuRow
-              label={moveOnLabel}
-              description={t('libro.pasoNota', { paso: t(`pasos.${nextPhase}`) })}
-              onClick={() => {
-                setMore(false)
-                onPhase(nextPhase)
-              }}
-            />
-          )}
           <MenuRow
             label={t('libro.glosario')}
             description={t('libro.glosarioAyuda')}

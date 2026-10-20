@@ -10,7 +10,7 @@ import { MiniAppScreen } from './frame/MiniAppScreen'
 import { useT } from './i18n/i18n'
 import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type Position } from './miniapps/contract'
 import { miniApp } from './miniapps/registry'
-import { EXAMPLE_PROJECT_ID, exampleProject, loadProjects, saveProjects, titleOf, type Phase, type Project } from './projects/model'
+import { EXAMPLE_PROJECT_ID, PHASES, exampleProject, loadProjects, saveProjects, titleOf, type Project } from './projects/model'
 import { inProject, setProject } from './projects/scope'
 import { bookState, languageOf, libraryVersion, loadBook, setProjects as setLibraryProjects, subscribeLibrary } from './projects/library'
 import { placeLabel, stepPercent } from './projects/progress'
@@ -181,8 +181,6 @@ export function App() {
       setScreen({ kind: 'book', projectId: screen.projectId, book: screen.book })
     }
   }, [screen, read])
-  const setPhase = (projectId: string, book: string, phase: Phase) =>
-    setProjects(projects.map((p) => (p.id !== projectId ? p : { ...p, books: p.books.map((b) => (b.code === book ? { ...b, phase } : b)) })))
 
   const home = () => setScreen({ kind: 'home' })
   // Where home's «Continue» goes: into the mini app last worked in, at its place, in the book last opened; or else the book.
@@ -339,10 +337,14 @@ export function App() {
               ? `${t(`${resumeApp.id}.nombre`)} · ${resumePlace ? placeLabel(t, titleOf(project(resume.projectId), resume.book), resumePlace) : titleOf(project(resume.projectId), resume.book)}`
               : null
           }
-          progressOf={(p, code) => {
-            const b = p.books.find((x) => x.code === code)
-            return b ? inProject(p.id, () => stepPercent(p, code, b.phase)) : null
-          }}
+          workOn={(p, code) =>
+            // The person's own: the step of the mini app they last worked in on the book, and how far it has gone.
+            inProject(p.id, () => {
+              const app = miniApp(lastAppOf(person, code) ?? '')
+              const step = app?.phase ?? PHASES[0]
+              return { step, pct: stepPercent(p, code, step), begun: Boolean(app) }
+            })
+          }
           onResume={(r) => {
             if (!resumeApp || !project(r.projectId) || !inProject(r.projectId, () => chaptersOf(r.book).length)) return openBook(r.projectId, r.book)
             inProject(r.projectId, () => openAt(r.book, resumeApp))
@@ -398,7 +400,6 @@ export function App() {
             openAt(bookScreen.book, app, chapter)
             setScreen({ kind: 'app', projectId: bookScreen.projectId, book: bookScreen.book, id: app.id })
           }}
-          onPhase={(phase) => setPhase(bookScreen.projectId, bookScreen.book, phase)}
           onTogether={(on) =>
             setProjects(
               projects.map((p) =>

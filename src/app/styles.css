@@ -397,11 +397,10 @@ textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
 .home-current-chevron { color: var(--on-field-soft); font-weight: 400; }
 .home-current .home-current-where { color: var(--on-field-soft); }
 /* The five steps: those done in the field's gold, the one it is in in the field's light, those ahead faint */
-.step-track { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; max-width: 16rem; margin-block-start: 0.45rem; }
-.step-track > span { height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--on-field) 24%, transparent); }
-.step-track > .is-done { background: var(--field-kicker); }
-.step-track > .is-now { background: var(--on-field); }
-.home-current .home-current-step { color: var(--on-field-soft); font-size: 0.85rem; }
+/* The person's own work in the book, on the moss field: its bar in the field's colours */
+.home-current .home-current-step { max-width: 22rem; color: var(--on-field-soft); font-size: 0.85rem; }
+.home-current .progress-bar { background: color-mix(in srgb, var(--on-field) 24%, transparent); }
+.home-current .progress-bar > span { background: var(--on-field); }
 .home-current > .button-primary { margin-block-start: 0.6rem; }
 /* The other books, a row each with its step in words, and adding one as the last row, in the accent */
 .home-books { list-style: none; margin: 0; padding: 0; border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-card); overflow: hidden; }
@@ -474,8 +473,6 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .book-steps[data-more-start] { -webkit-mask-image: linear-gradient(to right, transparent, #000 3rem); mask-image: linear-gradient(to right, transparent, #000 3rem); }
 .book-steps[data-more-start][data-more-end] { -webkit-mask-image: linear-gradient(to right, transparent, #000 3rem, #000 calc(100% - 3rem), transparent); mask-image: linear-gradient(to right, transparent, #000 3rem, #000 calc(100% - 3rem), transparent); }
 .book-step { flex: none; display: inline-flex; align-items: center; gap: 0.35rem; width: auto; min-height: var(--touch); padding: 0.25rem 0.85rem; border: 0; border-radius: 999px; background: none; color: var(--text-soft); font-size: 0.9rem; font-weight: 600; }
-.book-step.is-current { color: var(--text); }
-.book-step.is-current::before { content: ''; width: 0.55rem; height: 0.55rem; border-radius: 999px; background: var(--accent); }
 .book-step[aria-selected='true'] { background: var(--pill); color: var(--text); font-weight: 700; box-shadow: var(--shadow-raised); }
 /* How far a step has gone, said quietly: blue is for going on (the filled button, the bar) */
 .book-step-state { font-size: 0.8rem; font-variant-numeric: tabular-nums; color: var(--text-soft); }
@@ -1153,7 +1150,6 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .copies-confirm { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; border-radius: var(--radius); background: var(--surface-soft); }
 .copies-confirm-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
 .copy-password { display: flex; flex-direction: column; gap: 0.75rem; }
-.step-note { margin: 0; text-align: center; font-size: 0.85rem; }
 .publish-where-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .publish-where-head .chip { flex: none; white-space: nowrap; }
 .helps-steps { display: flex; align-items: center; justify-content: center; gap: 0.9rem; }
@@ -1189,7 +1185,6 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .menu-choice { display: flex; flex-direction: column; gap: 0.4rem; padding: 0.6rem 0.9rem 0.75rem; border-block-end: 1px solid var(--line); }
 .choice-row.is-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .choice-row.is-four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.book-where { margin: -0.25rem 0 0; font-size: 0.85rem; padding-inline: 0.25rem; }
 
 /* Bringing versions together (design 6.10): each one's section read through in tabs, the versions of a verse as the
    cards of «two versions», and a mix made by touching pieces that read inline as their verse. The one piece chosen
@@ -1359,7 +1354,7 @@ button, .file-button, summary, input, select, textarea {
 :root[data-theme='sun'] .verse-large { font-size: 1.4rem; }
 :root[data-theme='sun'] :is(.button-secondary, .chip) { border-color: var(--line); }
 /* The steps ahead, on the moss field, still seen in the sun */
-:root[data-theme='sun'] .step-track > span:not(.is-done, .is-now) { background: color-mix(in srgb, var(--on-field) 42%, transparent); }
+:root[data-theme='sun'] .home-current .progress-bar { background: color-mix(in srgb, var(--on-field) 42%, transparent); box-shadow: none; }
 :root[data-theme='sun'] .notice { box-shadow: inset 0 0 0 1.5px var(--warn-text); }
 :root[data-theme='sun'] :is(.line-field:focus, .line-field:focus-visible) { box-shadow: 0 0 0 2px var(--accent); }
 :root[data-theme='sun'] .position { background: var(--surface); }
