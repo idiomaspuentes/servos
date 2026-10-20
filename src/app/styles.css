@@ -722,7 +722,11 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .word-help-rendering { font-size: 1.2rem; font-weight: 700; overflow-wrap: anywhere; }
 .word-help-soft { color: var(--text-soft); font-size: 0.95rem; }
 .word-help-team-note { color: var(--text-soft); font-size: 0.95rem; white-space: pre-line; }
-.word-help-paged-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-height: var(--touch); }
+.word-help-paged-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.25rem 0.5rem; min-height: var(--touch); }
+/* The card's helps by kind, as the helps panel's tabs; the slide sideways is the card's own */
+.word-help-kinds { display: flex; flex-wrap: wrap; gap: 0.25rem; min-width: 0; }
+.word-help-paged-head > .word-help-steps { margin-inline-start: auto; }
+.word-help-paged { touch-action: pan-y pinch-zoom; }
 .word-help-steps.helps-steps { margin: 0; padding: 0; border: 0; gap: 0.4rem; justify-content: flex-end; }
 .word-help-quote { font-family: var(--serif); font-weight: 700; font-size: 1.1rem; }
 .word-help-quote-original { margin-block-start: 0.1rem !important; }

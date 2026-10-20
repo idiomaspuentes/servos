@@ -454,6 +454,55 @@ export function WordHelpCard({
           ? t('ayudas.palabraClave')
           : t('ayudas.palabraTraduccion')
 
+  // The helps read one at a time, by kind, as tabs over them («Palabra clave», «Notas 4»): what there is is seen before
+  // going through it, and a kind is a touch away. The count under the arrows is within the kind.
+  const groupOf = (h: WordHelp) => (h.kind === 'nota' ? 'nota' : h.kind === 'palabra' ? 'palabra' : 'lectura')
+  const groups = paged.reduce<Array<{ kind: string; from: number; items: WordHelp[] }>>((out, h, i) => {
+    const last = out[out.length - 1]
+    if (last?.kind === groupOf(h)) last.items.push(h)
+    else out.push({ kind: groupOf(h), from: i, items: [h] })
+    return out
+  }, [])
+  const groupAt = help ? groups.find((g) => index >= g.from && index < g.from + g.items.length) : undefined
+  const groupLabel = (g: (typeof groups)[number]) =>
+    g.items.length === 1 ? labelOf(g.items[0]) : t(g.kind === 'nota' ? 'ayudas.notasN' : g.kind === 'palabra' ? 'ayudas.palabrasN' : 'ayudas.lecturasN', { n: g.items.length })
+
+  // On a phone the card is slid sideways to the next help or the one before, as a page; the arrows stay, for a
+  // computer and whoever prefers them. The slide is the card's, not the panes' around it.
+  const slide = useRef<{ id: number; x: number; y: number; dx: number; horizontal: boolean | null } | null>(null)
+  const slid = useRef(false)
+  const slider = paged.length > 1 && {
+    onPointerDown: (e: React.PointerEvent) => {
+      if (e.pointerType === 'mouse') return
+      e.stopPropagation()
+      slide.current = { id: e.pointerId, x: e.clientX, y: e.clientY, dx: 0, horizontal: null }
+      slid.current = false
+    },
+    onPointerMove: (e: React.PointerEvent) => {
+      const s = slide.current
+      if (!s || s.id !== e.pointerId) return
+      const dx = e.clientX - s.x
+      const dy = e.clientY - s.y
+      if (s.horizontal === null && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) s.horizontal = Math.abs(dx) > Math.abs(dy) * 1.2
+      if (s.horizontal) s.dx = dx
+    },
+    onPointerUp: (e: React.PointerEvent) => {
+      const s = slide.current
+      slide.current = null
+      if (!s || s.id !== e.pointerId || !s.horizontal || Math.abs(s.dx) < 50) return
+      slid.current = true
+      if (s.dx < 0 && index < paged.length - 1) go(index + 1, 'next')
+      else if (s.dx > 0 && index > 0) go(index - 1, 'previous')
+    },
+    onPointerCancel: () => (slide.current = null),
+    onClickCapture: (e: React.MouseEvent) => {
+      if (!slid.current) return
+      slid.current = false
+      e.stopPropagation()
+      e.preventDefault()
+    },
+  }
+
   const teamNotes = decided.filter((d) => d.entry.note || d.entry.by)
   const teamNotesShown = (
     <>
@@ -564,15 +613,25 @@ export function WordHelpCard({
       )}
 
       {help && (
-        <section className="word-help-part word-help-paged" aria-label={labelOf(help)}>
+        <section className="word-help-part word-help-paged" aria-label={labelOf(help)} {...(slider || {})}>
           <div className="word-help-paged-head" ref={pagedHead}>
-            <p className="word-help-label">{labelOf(help)}</p>
+            {groups.length > 1 ? (
+              <div className="word-help-kinds" role="tablist" aria-label={t('ayudas.dePalabra', { palabra: word })}>
+                {groups.map((g) => (
+                  <button key={g.from} type="button" role="tab" aria-selected={g === groupAt} className="helps-tab" onClick={() => g !== groupAt && go(g.from, g.from > index ? 'next' : 'previous')}>
+                    {groupLabel(g)}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="word-help-label">{groupAt && groupAt.items.length > 1 ? groupLabel(groupAt) : labelOf(help)}</p>
+            )}
             {paged.length > 1 && (
               <div className="helps-steps word-help-steps">
                 <button type="button" className="pager-arrow" aria-label={t('ayudas.anterior')} title={t('ayudas.anterior')} disabled={index === 0} onClick={() => go(index - 1, 'previous')}>
                   ‹
                 </button>
-                <span className="quiet">{t('ayudas.cuenta', { i: index + 1, n: paged.length })}</span>
+                <span className="quiet">{groupAt && groupAt.items.length > 1 ? t('ayudas.cuenta', { i: index - groupAt.from + 1, n: groupAt.items.length }) : ' '}</span>
                 <button type="button" className="pager-arrow" aria-label={t('ayudas.siguiente')} title={t('ayudas.siguiente')} disabled={index === paged.length - 1} onClick={() => go(index + 1, 'next')}>
                   ›
                 </button>
