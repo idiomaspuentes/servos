@@ -5,8 +5,8 @@
  * A section is read alone, its words to touch: a word brings its helps under its verse (the other bridge text's words,
  * the notes, the translation words), so there is no separate list of helps to go through. The texts and the team's
  * note on the section are panes side by side, the tabs at the foot on a phone; one button leads from reading to the
- * note (the keyboard up), and from the note to the next section. The note also offers the text's comprehension
- * questions, which no word leads to. On a wide screen the text stays on the left and the note on the right.
+ * note (the keyboard up), and from the note to the next section. The text's comprehension questions, which no word
+ * leads to, are read with the other helps under it. On a wide screen the text stays on the left and the note on the right.
  */
 
 import { Fragment, useLayoutEffect, useRef, useState } from 'react'
@@ -109,8 +109,8 @@ function Center({ context }: MiniAppCenterProps) {
   const inShown = data.verses.filter((v) => shown.includes(v.verse))
   const notesCount = inShown.reduce((n, v) => n + v.notes.length, 0)
   const wordsCount = inShown.reduce((n, v) => n + v.words.length, 0)
-  const helpsCount = notesCount + wordsCount
-  const questions = data.verses.filter((v) => shown.includes(v.verse)).flatMap((v) => v.questions)
+  const questionsCount = inShown.reduce((n, v) => n + v.questions.length, 0)
+  const helpsCount = notesCount + wordsCount + questionsCount
   const others = studyNotesAbout(position.book, position.chapter, shown).filter((n) => n.verses.join(',') !== shown.join(','))
   const texts: Pane[] = data.texts.map(
     (x): Pane => ({
@@ -146,7 +146,7 @@ function Center({ context }: MiniAppCenterProps) {
         {!x.original && helpsCount > 0 && (
           // Open, the note shown lights its words in the text above, as in the editor.
           <details className="advanced study-helps" onToggle={(e) => e.currentTarget.open && helpsOpened()}>
-            <summary>{t('estudio.ayudasAqui', { notas: notesCount, palabras: wordsCount })}</summary>
+            <summary>{t('estudio.ayudasAqui', { notas: notesCount, palabras: wordsCount, preguntas: questionsCount })}</summary>
             {frame.helps(shown, { comments: false, glossary })}
           </details>
         )}
@@ -194,7 +194,7 @@ function Center({ context }: MiniAppCenterProps) {
         after={
           helpsCount > 0 && (
             <details className="advanced study-helps" onToggle={(e) => e.currentTarget.open && helpsOpened()}>
-              <summary>{t('estudio.ayudasAqui', { notas: notesCount, palabras: wordsCount })}</summary>
+              <summary>{t('estudio.ayudasAqui', { notas: notesCount, palabras: wordsCount, preguntas: questionsCount })}</summary>
               {frame.helps(shown, { comments: false, glossary })}
             </details>
           )
@@ -211,11 +211,9 @@ function Center({ context }: MiniAppCenterProps) {
         <StudyNotes
           ref={box}
           passage={passageOf(context.bookTitle, position.chapter, shown, t)}
-          verses={shown}
           text={note.text}
           by={note.by}
           others={others}
-          questions={questions}
           onChange={write}
         />
       ),
@@ -251,22 +249,16 @@ export const estudio: MiniApp = {
       escribirNota: 'Escribir mi nota',
       miNota: 'Mi nota',
       notasGenerales: 'Notas sobre todo el versículo ({n})',
-      verRespuestas: 'Ver las respuestas',
       guardarSeguir: 'Guardar y seguir',
       toquePalabra: 'toque una palabra para ver sus notas',
       'toquePalabra.computadora': 'haga clic en una palabra para ver sus notas',
-      ayudasAqui: 'Todas las notas ({notas}) y palabras clave ({palabras}) de estos versículos',
+      ayudasAqui: 'Todas las notas ({notas}), palabras clave ({palabras}) y preguntas ({preguntas}) de estos versículos',
+      loQueEntendi: 'Lo que entendí de {pasaje}',
+      paraQue: 'Lo verá su equipo al traducir estos versículos.',
+      pista: '¿Qué dice? ¿Quién habla, a quién? ¿Qué será difícil de traducir?',
       paneles: 'Lo que se lee',
-      notaDe: 'Notas de comprensión · {pasaje}',
-      preguntaSeccion: '¿Qué dice esta sección? ¿Quién habla, a quién, y qué será difícil de traducir?',
-      preguntaVersiculo: '¿Qué significa este versículo y qué será difícil de traducir?',
-      preguntaQueDice: '¿Qué dice?',
-      preguntaQuienHabla: '¿Quién habla?',
-      preguntaAQuien: '¿A quién?',
-      preguntaDificil: '¿Qué será difícil?',
       notaGuardada: 'Guardada en este teléfono · la escribió {nombre}. Se verá al traducir estos versículos.',
       'notaGuardada.computadora': 'Guardada en esta computadora · la escribió {nombre}. Se verá al traducir estos versículos.',
-      notaVacia: 'Todavía no hay nota. Lo que escriba se verá al traducir estos versículos.',
       otrasNotas: 'Otras notas sobre estos versículos',
       notaSobre: 'Versículos {versiculos} · {nombre}',
       'lengua.hbo': 'Hebreo',
@@ -280,22 +272,16 @@ export const estudio: MiniApp = {
       escribirNota: 'Escrever minha nota',
       miNota: 'Minha nota',
       notasGenerales: 'Notas sobre todo o versículo ({n})',
-      verRespuestas: 'Ver as respostas',
       guardarSeguir: 'Salvar e seguir',
       toquePalabra: 'toque uma palavra para ver suas notas',
       'toquePalabra.computadora': 'clique numa palavra para ver suas notas',
-      ayudasAqui: 'Todas as notas ({notas}) e palavras-chave ({palabras}) destes versículos',
+      ayudasAqui: 'Todas as notas ({notas}), palavras-chave ({palabras}) e perguntas ({preguntas}) destes versículos',
+      loQueEntendi: 'O que entendi de {pasaje}',
+      paraQue: 'Sua equipe verá isto ao traduzir estes versículos.',
+      pista: 'O que diz? Quem fala, a quem? O que será difícil de traduzir?',
       paneles: 'O que se lê',
-      notaDe: 'Notas de compreensão · {pasaje}',
-      preguntaSeccion: 'O que diz esta seção? Quem fala, a quem, e o que será difícil de traduzir?',
-      preguntaVersiculo: 'O que significa este versículo e o que será difícil de traduzir?',
-      preguntaQueDice: 'O que diz?',
-      preguntaQuienHabla: 'Quem fala?',
-      preguntaAQuien: 'A quem?',
-      preguntaDificil: 'O que será difícil?',
       notaGuardada: 'Salva neste telefone · escrita por {nombre}. Será vista ao traduzir estes versículos.',
       'notaGuardada.computadora': 'Salva neste computador · escrita por {nombre}. Será vista ao traduzir estes versículos.',
-      notaVacia: 'Ainda não há nota. O que você escrever será visto ao traduzir estes versículos.',
       otrasNotas: 'Outras notas sobre estes versículos',
       notaSobre: 'Versículos {versiculos} · {nombre}',
       'lengua.hbo': 'Hebraico',
@@ -309,22 +295,16 @@ export const estudio: MiniApp = {
       escribirNota: 'Write my note',
       miNota: 'My note',
       notasGenerales: 'Notes on the whole verse ({n})',
-      verRespuestas: 'See the answers',
       guardarSeguir: 'Save and continue',
       toquePalabra: 'touch a word to see its notes',
       'toquePalabra.computadora': 'click a word to see its notes',
-      ayudasAqui: 'All the notes ({notas}) and key words ({palabras}) of these verses',
+      ayudasAqui: 'All the notes ({notas}), key words ({palabras}), and questions ({preguntas}) of these verses',
+      loQueEntendi: 'What I understood of {pasaje}',
+      paraQue: 'Your team will see it when translating these verses.',
+      pista: 'What does it say? Who speaks, to whom? What will be hard to translate?',
       paneles: 'What is read',
-      notaDe: 'Comprehension notes · {pasaje}',
-      preguntaSeccion: 'What does this section say? Who speaks, to whom, and what will be hard to translate?',
-      preguntaVersiculo: 'What does this verse mean and what will be hard to translate?',
-      preguntaQueDice: 'What does it say?',
-      preguntaQuienHabla: 'Who speaks?',
-      preguntaAQuien: 'To whom?',
-      preguntaDificil: 'What will be hard?',
       notaGuardada: 'Saved on this phone · written by {nombre}. It will be seen when these verses are translated.',
       'notaGuardada.computadora': 'Saved on this computer · written by {nombre}. It will be seen when these verses are translated.',
-      notaVacia: 'No note yet. What you write will be seen when these verses are translated.',
       otrasNotas: 'Other notes on these verses',
       notaSobre: 'Verses {versiculos} · {nombre}',
       'lengua.hbo': 'Hebrew',

@@ -741,9 +741,12 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .word-help-kind { margin: 0; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-soft); display: flex; gap: 0.5rem; align-items: center; }
 
 /* The team's note on what is studied: a box that grows with what is written */
-.study-notes { display: flex; flex-direction: column; gap: 0.5rem; }
-.study-note-field { min-height: 8rem; field-sizing: content; resize: none; }
-.study-note-by { margin: 0; font-size: 0.85rem; }
+.study-notes { display: flex; flex-direction: column; gap: 0.75rem; }
+.study-note-head { display: flex; flex-direction: column; gap: 0.25rem; }
+.study-note-head p { margin: 0; }
+.study-note-title { margin: 0; font-size: 1.15rem; font-weight: 600; text-wrap: balance; }
+.study-note-field { min-height: 10rem; field-sizing: content; resize: none; }
+.study-notes .study-other-notes { margin-block-start: 1rem; }
 .study-other-notes { display: flex; flex-direction: column; gap: 0.5rem; border-block-start: 1px solid var(--line); padding-block-start: 0.5rem; }
 .study-other-notes h3 { margin: 0; font-size: 0.9rem; }
 .study-other-note { padding: 0.5rem 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
@@ -761,13 +764,12 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .chip { min-height: var(--touch); padding: 0.25rem 0.85rem; border: 1px solid color-mix(in srgb, var(--text-soft) 55%, transparent); border-radius: 999px; background: var(--surface); color: var(--text); font-size: 0.9rem; width: auto; }
 .chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
 .chip:active { background: var(--accent-soft); }
-.chip-question { text-align: start; border-style: dashed; }
-.study-answers, .general-notes { font-size: 0.95rem; }
+.general-notes { font-size: 0.95rem; }
 /* Folded, as a row that unfolds (principle 12): the text's colour and ▾, not a loose blue link */
-.study-answers summary, .general-notes summary { min-height: var(--touch); display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; color: var(--text); font-weight: 600; cursor: pointer; list-style: none; }
-.study-answers summary::-webkit-details-marker, .general-notes summary::-webkit-details-marker { display: none; }
-.study-answers summary::after, .general-notes summary::after { content: '▾'; font-size: 1rem; transition: transform 0.15s; }
-.study-answers[open] > summary::after, .general-notes[open] > summary::after { transform: rotate(180deg); }
+.general-notes summary { min-height: var(--touch); display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; color: var(--text); font-weight: 600; cursor: pointer; list-style: none; }
+.general-notes summary::-webkit-details-marker { display: none; }
+.general-notes summary::after { content: '▾'; font-size: 1rem; transition: transform 0.15s; }
+.general-notes[open] > summary::after { transform: rotate(180deg); }
 .general-notes { margin-block: 0.25rem 0.5rem; padding-inline: 0.75rem; border-inline-start: 3px solid var(--line); font-family: var(--font); font-size: 1rem; line-height: 1.5; }
 
 /* The glossary: adding a word from the editor, and the project's list */
