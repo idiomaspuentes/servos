@@ -466,30 +466,42 @@ export function WordHelpCard({
         </button>
       </div>
 
-      {(gloss || (!text.original && original && originals.length > 0)) && (
+      {/* The word's original and its gloss are said in «More on …» below; here only for a word without it. The card
+          keeps short above what is read in it, so its verse stays in sight. */}
+      {lexicons.length === 0 && (gloss || (!text.original && original && originals.length > 0)) && (
         <p className="word-help-original">
           {!text.original && original && originals.length > 0 && <Scripture text={original}>{wordsOf(original, originals)}</Scripture>}
           {gloss && <span className="word-help-gloss">{gloss}</span>}
         </p>
       )}
 
-      {bridges.length > 0 && (
-        <dl className="word-help-texts">
-          {bridges.map((b) => {
-            const other = data.texts.find((x) => x.abbreviation === b.abbreviation)!
-            return (
-              <div key={b.id}>
-                <dt>{b.abbreviation}</dt>
-                <dd>
-                  <Scripture text={other}>{wordsOf(other, b.places[b.abbreviation])}</Scripture>
-                </dd>
-              </div>
-            )
-          })}
-        </dl>
+      {/* The other bridge text's words; beside them, while the team has decided nothing for the word, the way to. */}
+      {(bridges.length > 0 || (!decided.length && onGlossary)) && (
+        <div className="word-help-line">
+          {bridges.length > 0 && (
+            <dl className="word-help-texts">
+              {bridges.map((b) => {
+                const other = data.texts.find((x) => x.abbreviation === b.abbreviation)!
+                return (
+                  <div key={b.id}>
+                    <dt>{b.abbreviation}</dt>
+                    <dd>
+                      <Scripture text={other}>{wordsOf(other, b.places[b.abbreviation])}</Scripture>
+                    </dd>
+                  </div>
+                )
+              })}
+            </dl>
+          )}
+          {!decided.length && onGlossary && (
+            <button type="button" className="chip" onClick={onGlossary}>
+              + {t('ayudas.alGlosario')}
+            </button>
+          )}
+        </div>
       )}
 
-      {(decided.length > 0 || onGlossary || onNote) && (
+      {(decided.length > 0 || (lexicons.length === 0 && teamNotes.length > 0) || onNote) && (
         <div className="word-help-part word-help-team">
           {decided.map((d, i) => (
             <div key={d.id}>
@@ -519,17 +531,6 @@ export function WordHelpCard({
           ))}
           {/* With no word of the original to say more about, what the team noted is said here. */}
           {lexicons.length === 0 && teamNotesShown}
-          {!decided.length && onGlossary && (
-            <div className="word-help-decided">
-              <p className="word-help-label">
-                {t('ayudas.glosarioDelEquipo')}
-                <span className="word-help-soft">{t('ayudas.sinDecidir')}</span>
-              </p>
-              <button type="button" className="chip" onClick={onGlossary}>
-                + {t('ayudas.agregar')}
-              </button>
-            </div>
-          )}
           {onNote && (
             <div className="chip-row">
               <button type="button" className="chip" onClick={() => onNote(word)}>

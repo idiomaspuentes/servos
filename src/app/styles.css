@@ -662,6 +662,10 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 /* A section read alone: larger, no lit ground, the words to touch are all there is */
 .chapter-lines.is-alone { font-size: 1.15rem; line-height: 1.7; }
 .chapter-lines.is-alone .chapter-verse.is-current { background: none; border-inline-start: 0; padding-inline: 0; }
+/* A touched word's card open: its verse stays at the pane's top while the card scrolls under it, so whatever its
+   length the card is read beside its words. Its own ground over the page's, as nothing shows through it. */
+.chapter-lines > div:has(> .word-help) > .chapter-verse { position: sticky; inset-block-start: 0; z-index: 1; background-color: var(--bg); background-image: linear-gradient(color-mix(in srgb, var(--accent-soft) 65%, transparent), color-mix(in srgb, var(--accent-soft) 65%, transparent)); }
+.chapter-lines.is-alone > div:has(> .word-help) > .chapter-verse { background-image: none; }
 .word-help-note { justify-self: start; padding-inline: 0; }
 /* The lexicon: the lemma, a short meaning, the senses of this verse */
 .lexicon-lemma { font-size: 1.15rem; margin: 0; }
@@ -698,6 +702,10 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .word-help-gloss { color: var(--text-soft); }
 .word-help-texts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.1rem 0.6rem; align-items: baseline; margin: 0.3rem 0 0; }
 .word-help-texts > div { display: contents; }
+/* The other text's words and «+ To the glossary» on one line, the button at its end */
+.word-help-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.25rem 0.75rem; margin-block-start: 0.3rem; }
+.word-help-line > .word-help-texts { flex: 1 1 0; min-width: 7rem; margin: 0; }
+.word-help-line > .chip { flex: none; white-space: nowrap; }
 .word-help-texts dt { font-size: 0.8rem; font-weight: 700; color: var(--text-soft); }
 .word-help-texts dd { margin: 0; font-size: 1.05rem; }
 .word-help-texts dd bdi[dir='rtl'] { font-size: 1.2rem; }
