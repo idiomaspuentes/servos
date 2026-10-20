@@ -18,6 +18,7 @@ import { Markdown } from './Markdown'
 import { rangeOf } from './PlacePicker'
 import { showInPane } from './Panes'
 import { ArticleSheet, articleIn, type OpenArticle } from './ArticleSheet'
+import { placesOfOriginals, wordsOf } from './TouchWords'
 
 type Tab = 'glosario' | 'comentarios' | 'notas' | 'preguntas'
 
@@ -63,13 +64,21 @@ export function HelpsPanel({
         ...[introNoteOn(data.book.id, BOOK_NOTE_CHAPTER)].filter((n) => n !== null).map((n) => ({ ...n, about: t('ayudas.comentarioLibro', { nombre: n.by }) })),
       ]
     : []
-  // The team's decisions on the words of these verses, in the order the words come.
+  // The team's decisions on the words of these verses, in the order the words come, each with the words of the text
+  // being read that translate it here: a decision is about the original, but the person finds it in that text.
+  const read = data.texts.find((x) => x.abbreviation === textAbbreviation)
   const decided = (() => {
     const original = data.texts.find((x) => x.original)
     if (!glossary?.length || !original?.words) return []
     const places = shown.flatMap((v) => (original.lines[v] ?? []).flatMap((l) => l.pieces.map((p) => p.word).filter((w): w is number => w !== undefined)))
-    const out: GlossaryEntry[] = []
-    for (const p of places) for (const e of entriesAbout(glossary, [original.words[p]?.strong ?? ''])) if (!out.includes(e)) out.push(e)
+    const out: Array<GlossaryEntry & { inText: string[] }> = []
+    for (const p of places)
+      for (const e of entriesAbout(glossary, [original.words[p]?.strong ?? ''])) {
+        const words = read && !read.original ? wordsOf(read, placesOfOriginals(data, [p])[read.abbreviation]) : ''
+        const found = out.find((x) => x.id === e.id)
+        if (!found) out.push({ ...e, inText: words ? [words] : [] })
+        else if (words && !found.inText.includes(words)) found.inText.push(words)
+      }
     return out
   })()
   const [tab, setTab] = useState<Tab>('notas')
@@ -164,9 +173,20 @@ export function HelpsPanel({
 
         {tab === 'glosario' && decided[index] && (
           <>
-            <p className="help-quote help-bridge">{decided[index].rendering}</p>
-            <p className="help-original" lang={original?.lang} dir={original?.dir}>
-              {decided[index].lemma}
+            {/* What the decision is about, as in a note: the words of the text being read, then the original's. */}
+            {decided[index].inText.length > 0 && (
+              <p className="help-quote" lang={read?.lang} dir={read?.dir}>
+                {decided[index].inText.join(' · ')}
+              </p>
+            )}
+            <p className="help-original">
+              {t('ayudas.enElOriginalSolo')}{' '}
+              <span lang={original?.lang} dir={original?.dir}>
+                {decided[index].lemma}
+              </span>
+            </p>
+            <p className="help-decision">
+              {t('ayudas.elEquipoTraduce')} <strong>{decided[index].rendering}</strong>
             </p>
             {decided[index].alternatives.length > 0 && <p className="quiet">{t('ayudas.tambien', { formas: decided[index].alternatives.join(', ') })}</p>}
             {decided[index].note && <p className="study-other-text">{decided[index].note}</p>}

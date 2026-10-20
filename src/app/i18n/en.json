@@ -202,6 +202,7 @@
   "ayudas.comentarioLibro": "On the book · {nombre}",
   "ayudas.anotarPalabra": "Note this word",
   "marco.posicionSeccion": "section {n} of {total}",
+  "ayudas.elEquipoTraduce": "The team translates it:",
   "ayudas.acordada": "Agreed",
   "ayudas.propuesta": "Proposed",
   "ayudas.sinTraduccion": "(no rendering yet)",
