@@ -179,7 +179,7 @@ function Center({ context }: MiniAppCenterProps) {
   }
   const [adding, setAdding] = useState<GlossaryTarget | null>(null)
   const glossed = glossedPlaces(data, glossary)
-  const { lit, touch, card, helpsOpened } = useWordHelps({
+  const { lit, touch, card, helpsShown } = useWordHelps({
     data,
     resetKey: openKey,
     marked,
@@ -309,7 +309,8 @@ function Center({ context }: MiniAppCenterProps) {
   const [helpsOn, setHelpsOn] = useState(readHelpsOn)
   const helpsInSight = wide && (wider || helpsOn)
   useEffect(() => {
-    if (helpsInSight) helpsOpened()
+    // On a phone the helps are a pane apart: once opened, their note keeps its words lit in the texts beside.
+    if (wide) helpsShown(helpsInSight)
   }, [helpsInSight, openKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const widest = useWidest()
@@ -402,7 +403,7 @@ function Center({ context }: MiniAppCenterProps) {
         side="ayudas"
         sideOpen={helpsOn}
         onPane={(id) => {
-          if (id === 'ayudas') helpsOpened()
+          if (id === 'ayudas') helpsShown(true)
           if (!textSeen && data.texts.some((x) => x.abbreviation === id)) {
             setTextSeen(true)
             keepTextSeen()

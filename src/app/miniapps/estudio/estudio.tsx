@@ -70,7 +70,7 @@ function Center({ context }: MiniAppCenterProps) {
     (data.texts.find((x) => x.original)?.words ?? []).map((w) => w.strong)
   )
   const glossed = glossedPlaces(data, glossary)
-  const { lit, touch, card, helpsOpened } = useWordHelps({
+  const { lit, touch, card, helpsShown } = useWordHelps({
     data,
     resetKey: unitKey,
     marked,
@@ -144,8 +144,8 @@ function Center({ context }: MiniAppCenterProps) {
           </button>
         )}
         {!x.original && helpsCount > 0 && (
-          // Open, the note shown lights its words in the text above, as in the editor.
-          <details className="advanced study-helps" onToggle={(e) => e.currentTarget.open && helpsOpened()}>
+          // Open, the note shown lights its words in the text above, as in the editor; folded, none.
+          <details className="advanced study-helps" onToggle={(e) => helpsShown(e.currentTarget.open)}>
             <summary>{t('estudio.ayudasAqui', { notas: notesCount, palabras: wordsCount, preguntas: questionsCount })}</summary>
             {frame.helps(shown, { comments: false, glossary })}
           </details>
@@ -193,7 +193,7 @@ function Center({ context }: MiniAppCenterProps) {
         }}
         after={
           helpsCount > 0 && (
-            <details className="advanced study-helps" onToggle={(e) => e.currentTarget.open && helpsOpened()}>
+            <details className="advanced study-helps" onToggle={(e) => helpsShown(e.currentTarget.open)}>
               <summary>{t('estudio.ayudasAqui', { notas: notesCount, palabras: wordsCount, preguntas: questionsCount })}</summary>
               {frame.helps(shown, { comments: false, glossary })}
             </details>

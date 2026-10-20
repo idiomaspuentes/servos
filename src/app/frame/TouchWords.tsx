@@ -678,8 +678,8 @@ export interface GlossaryTarget {
  * (another verse or section). The helps are worked out as the card is drawn, so an entry just added to the glossary
  * shows at once.
  *
- * Without a touched word, the note being read in the helps pane lights its words, once the person has opened that
- * pane (`helpsOpened`): lit words nobody asked for, in a text read before the helps, only puzzle.
+ * Without a touched word, the note being read in the helps lights its words while the person has them open
+ * (`helpsShown`): lit words nobody asked for, in a text read before the helps or after they were folded, only puzzle.
  *
  * The pane does not move under the person's finger. A word touched stays where it was on screen, also when a card
  * above it goes away; its card is brought into sight only as far as the word stays in sight, so the words it lights
@@ -801,6 +801,6 @@ export function useWordHelps({
           }
         />
       ) : null,
-    helpsOpened: () => setHelpsRead(true),
+    helpsShown: (on: boolean) => setHelpsRead(on),
   }
 }
