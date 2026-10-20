@@ -23,7 +23,7 @@ Para pasar el **proyecto entero**, por ejemplo cuando quien coordina lo acaba de
 2. **Antes de juntar nada**, Servos dice qué trae: de quién es, a qué proyecto va, y cuántos versículos son nuevos, iguales o escritos distinto.
 3. Toque **Recibir**.
 
-![Antes de recibir, lo que trae](recibir.webp "Servos dice qué trae y qué cambia")
+![Antes de recibir, lo que trae](recibir.webp "Servos dice qué trae y qué cambia (en el ejemplo de la app)")
 ![Lo que entró](recibido.webp "Lo que entró, y lo que hay que elegir")
 
 Los versículos nuevos entran solos. Nada de lo suyo se borra.

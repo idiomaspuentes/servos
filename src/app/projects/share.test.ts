@@ -373,5 +373,6 @@ describe('el avance de la traducción', () => {
     expect(editor.done!(at)).toBe(false)
     chooseVersion('jon', 1, 2, true, 'Ana')
     expect(editor.done!(at)).toBe(true)
-  })
+    // The registry brings every mini app with it: its first import took 5.2 s on a busy computer.
+  }, 30_000)
 })

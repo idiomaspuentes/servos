@@ -26,7 +26,7 @@
       { "titulo": "Publicación.", "texto": "Cuando hay internet, subir el libro a Door43 y marcar versiones." }
     ],
     "capturaAnchaAlt": "Servos en una computadora: el texto puente, la traducción y las ayudas en columnas.",
-    "capturaAnchaPie": "En la computadora, la traducción, el texto puente y las ayudas se ven lado a lado.",
+    "capturaAnchaPie": "En la computadora, el texto puente, la traducción y las ayudas se ven lado a lado (en el ejemplo de la app, la traducción es un texto puente).",
     "descargasTitulo": "Descargar",
     "descargasEntrada": "Versión {version}, de prueba: puede tener errores. Las apps todavía no están firmadas, y Android y Windows avisan antes de instalarlas: la guía dice qué tocar. Lo que se escribe queda en el aparato; antes de borrar la app, comparta el trabajo. Puede pasar estos archivos a otros aparatos por tarjeta, USB, Bluetooth o Xender.",
     "descargas": [
