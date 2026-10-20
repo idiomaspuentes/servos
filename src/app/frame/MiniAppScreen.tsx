@@ -58,6 +58,7 @@ export function MiniAppScreen({
   textAbbreviation,
   onTextAbbreviation,
   onBack,
+  onFinished,
   backLabel,
   chapters,
   dataOf,
@@ -78,6 +79,8 @@ export function MiniAppScreen({
   textAbbreviation: string
   onTextAbbreviation(a: string): void
   onBack(): void
+  /** «Done» at the book's end: the person gave the work as finished (the place is kept so). */
+  onFinished?(): void
   /** What the back arrow says, when it goes back to another mini app rather than to the book. */
   backLabel?: string
   onOpenApp(appId: string, at: Position): void
@@ -182,6 +185,7 @@ export function MiniAppScreen({
   }
   const finish = () => {
     passed()
+    onFinished?.()
     onBack()
   }
   const atStart = at <= 0 && before === null

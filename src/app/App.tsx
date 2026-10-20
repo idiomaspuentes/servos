@@ -13,7 +13,7 @@ import { miniApp } from './miniapps/registry'
 import { EXAMPLE_PROJECT_ID, PHASES, exampleProject, loadProjects, saveProjects, titleOf, type Project } from './projects/model'
 import { inProject, setProject } from './projects/scope'
 import { bookState, languageOf, libraryVersion, loadBook, setProjects as setLibraryProjects, subscribeLibrary } from './projects/library'
-import { placeLabel, stepPercent } from './projects/progress'
+import { firstUndone, placeLabel, stepPercent } from './projects/progress'
 import { keepLastApp, keepPlace, lastAppOf, placeOf } from './projects/work'
 import { AddBookSheet } from './screens/AddBook'
 import { BookScreen } from './screens/BookScreen'
@@ -187,6 +187,21 @@ export function App() {
   const resumeApp = resume ? miniApp(inProject(resume.projectId, () => lastAppOf(person, resume.book)) ?? '') : undefined
   const resumePlace =
     resume && resumeApp && resumeApp.positionLine !== false ? inProject(resume.projectId, () => placeOf(person, resume.book, resumeApp.id)) : null
+  // Left with «Done» at the book's end: «Continue» goes to what is left of that mini app, or once it is all done, to
+  // the project's first mini app with work left (in the steps' order: offered, not imposed; the book opens any).
+  const resumeNext = (() => {
+    if (!resume || !resumeApp || !resumePlace?.finished) return null
+    const p = project(resume.projectId)
+    if (!p) return null
+    return inProject(resume.projectId, () => {
+      const left = firstUndone(resumeApp, resume.book)
+      if (left) return { app: resumeApp, place: left }
+      const next = PHASES.flatMap((phase) => p.miniApps[phase])
+        .map((id) => miniApp(id))
+        .find((a): a is MiniApp => Boolean(a && !a.comingSoon && a !== resumeApp && !(a.done && !firstUndone(a, resume.book))))
+      return next ? { app: next, place: null } : null
+    })
+  })()
   const bookScreen = screen.kind === 'book' ? screen : null
   const appScreen = screen.kind === 'app' ? screen : null
   // Back from a mini app: to the one it was opened from, at the place it was left, or else to its book.
@@ -333,10 +348,15 @@ export function App() {
           person={person}
           resume={resume}
           resumeAt={
-            resume && resumeApp
-              ? `${t(`${resumeApp.id}.nombre`)} · ${resumePlace ? placeLabel(t, titleOf(project(resume.projectId), resume.book), resumePlace) : titleOf(project(resume.projectId), resume.book)}`
-              : null
+            resumeNext
+              ? resumeNext.place
+                ? `${t(`${resumeNext.app.id}.nombre`)} · ${placeLabel(t, titleOf(project(resume!.projectId), resume!.book), resumeNext.place)}`
+                : null
+              : resume && resumeApp
+                ? `${t(`${resumeApp.id}.nombre`)} · ${resumePlace ? placeLabel(t, titleOf(project(resume.projectId), resume.book), resumePlace) : titleOf(project(resume.projectId), resume.book)}`
+                : null
           }
+          finished={resumeNext && !resumeNext.place && resumeApp ? { done: t(`${resumeApp.id}.nombre`), next: t(`${resumeNext.app.id}.nombre`) } : null}
           workOn={(p, code) =>
             // The person's own: the step of the mini app they last worked in on the book, and how far it has gone.
             inProject(p.id, () => {
@@ -346,9 +366,14 @@ export function App() {
             })
           }
           onResume={(r) => {
-            if (!resumeApp || !project(r.projectId) || !inProject(r.projectId, () => chaptersOf(r.book).length)) return openBook(r.projectId, r.book)
-            inProject(r.projectId, () => openAt(r.book, resumeApp))
-            setScreen({ kind: 'app', projectId: r.projectId, book: r.book, id: resumeApp.id })
+            const app = resumeNext?.app ?? resumeApp
+            if (!app || !project(r.projectId) || !inProject(r.projectId, () => chaptersOf(r.book).length)) return openBook(r.projectId, r.book)
+            inProject(r.projectId, () => {
+              keepLastApp(person, r.book, app.id)
+              if (resumeNext?.place) setPosition({ book: r.book, ...resumeNext.place }, app.id)
+              else openAt(r.book, app)
+            })
+            setScreen({ kind: 'app', projectId: r.projectId, book: r.book, id: app.id })
           }}
           onAddProject={() => setAddProject(true)}
           onBook={openBook}
@@ -462,6 +487,7 @@ export function App() {
           textAbbreviation={text}
           onTextAbbreviation={setText}
           onBack={leaveApp}
+          onFinished={() => keepPlace(person, position.book, appScreen.id, { chapter: position.chapter, verse: position.verse, finished: true })}
           backLabel={
             appScreen.back?.kind === 'app' && miniApp(appScreen.back.id)
               ? t('marco.volverA', { app: t(`${appScreen.back.id}.nombre`) })

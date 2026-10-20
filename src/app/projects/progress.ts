@@ -24,6 +24,13 @@ export const doneIn = (app: MiniApp, book: string, c: PrototypeData) => versesOf
 export const countedApps = (project: Project, phase: Phase) =>
   project.miniApps[phase].map((id) => miniApp(id)).filter((a): a is MiniApp => Boolean(a && !a.comingSoon && a.done))
 
+/** The first verse of a book a mini app has still to do, in the chapters this device has; none when all is done. */
+export function firstUndone(app: MiniApp, book: string): { chapter: number; verse: number } | null {
+  if (!app.done) return null
+  for (const c of chaptersHere(book)) for (const v of versesOf(c)) if (!app.done({ book, chapter: c.chapter, verse: v })) return { chapter: c.chapter, verse: v }
+  return null
+}
+
 /** How far a step has gone in a book: the verses done in all its mini apps that count, of all they have to do. */
 export function stepPercent(project: Project, book: string, phase: Phase, chapters = chaptersHere(book)): number | null {
   const apps = countedApps(project, phase)

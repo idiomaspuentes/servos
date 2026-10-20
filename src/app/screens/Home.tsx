@@ -34,6 +34,7 @@ export function Home({
   person,
   resume,
   resumeAt,
+  finished,
   workOn,
   onResume,
   onAddProject,
@@ -48,6 +49,8 @@ export function Home({
   resume: Resume | null
   /** The mini app last worked in, in the book to resume, and where: «Alinear la traducción · Jonás 1:6». */
   resumeAt?: string | null
+  /** The work the person left as finished, all done, and the mini app offered next: «Abel, terminó el Estudio». */
+  finished?: { done: string; next: string } | null
   /**
    * What the person works on in a book: the step of the mini app they last opened there (the first step, before any),
    * how far it has gone in percent when it counts, and whether they began.
@@ -188,7 +191,13 @@ export function Home({
               {current ? (
                 <section className="book-resume is-field home-current" aria-label={titleOf(project, current.code)}>
                   <span className="book-resume-kicker">
-                    {resumed ? t('inicio.sigaDonde', { nombre: person }) : begun ? t('inicio.sigaCon', { nombre: person }) : t('inicio.empiece', { nombre: person })}
+                    {resumed && finished
+                      ? t('inicio.termino', { nombre: person, trabajo: finished.done })
+                      : resumed
+                        ? t('inicio.sigaDonde', { nombre: person })
+                        : begun
+                          ? t('inicio.sigaCon', { nombre: person })
+                          : t('inicio.empiece', { nombre: person })}
                   </span>
                   {/* «Continue» may go straight back into a mini app; the book's name always opens the book */}
                   <button type="button" className="home-current-book home-current-open" onClick={() => onBook(project.id, current.code)}>
@@ -213,7 +222,7 @@ export function Home({
                     className="button-primary"
                     onClick={() => (resumed ? onResume({ projectId: project.id, book: current.code }) : onBook(project.id, current.code))}
                   >
-                    {begun ? t('libro.continuar') : t('libro.empezar')} →
+                    {resumed && finished ? t('inicio.empezarCon', { app: finished.next }) : begun ? t('libro.continuar') : t('libro.empezar')} →
                   </button>
                 </section>
               ) : (

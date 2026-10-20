@@ -95,6 +95,11 @@ export function receiveWork(file: WorkFile, by: string): Received {
 export interface Place {
   chapter: number
   verse: number
+  /**
+   * Left with «Done» at the book's end: the work given as finished there. Opening the mini app again keeps a new place
+   * without it, so whoever goes back to a section and leaves is taken back to it.
+   */
+  finished?: boolean
 }
 
 export function placeOf(person: string, book: string, app: string): Place | null {

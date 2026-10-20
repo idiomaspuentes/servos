@@ -114,6 +114,8 @@
   "inicio.otroProyecto": "Otro proyecto",
   "inicio.proyectos": "Proyectos",
   "inicio.sigaDonde": "{nombre}, siga donde quedó",
+  "inicio.termino": "{nombre}, terminó: {trabajo}",
+  "inicio.empezarCon": "Empezar {app}",
   "inicio.avancePaso": "{paso}: {pct} %",
   "inicio.sigaCon": "{nombre}, siga con este libro",
   "inicio.empiece": "{nombre}, empiece aquí",
