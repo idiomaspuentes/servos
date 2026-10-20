@@ -154,7 +154,17 @@ export function MiniAppScreen({
     setCrossed(chapter)
   }
   const previous = () => (at > 0 ? goStop(at - 1) : before !== null && cross(before, true))
-  const following = () => (at < stops.length - 1 ? goStop(at + 1) : after !== null && cross(after, false))
+  // Moving on past what was shown tells the mini app it was gone through (`MiniApp.passed`).
+  const passed = () => app.passed?.({ book: position.book, chapter: position.chapter, verses: shown })
+  const following = () => {
+    passed()
+    if (at < stops.length - 1) goStop(at + 1)
+    else if (after !== null) cross(after, false)
+  }
+  const finish = () => {
+    passed()
+    onBack()
+  }
   const atStart = at <= 0 && before === null
   const atEnd = at >= stops.length - 1 && after === null
   // The position line's arrows by the keyboard, also from a box being written in (principle 13).
@@ -199,7 +209,7 @@ export function MiniAppScreen({
       setSaved,
       setUnit,
       // At the book's last verse the way on is back to the book: a button that does nothing is not offered.
-      next: backLabel || atEnd ? onBack : following,
+      next: backLabel ? onBack : atEnd ? finish : following,
       atEnd: atEnd && !backLabel,
       back: onBack,
       open: onOpenApp,
@@ -257,7 +267,7 @@ export function MiniAppScreen({
           </button>
           {atEnd && !backLabel ? (
             // At the book's last verse the way on is back to the book: said, where the arrow was.
-            <button type="button" className="position-done" onPointerDown={keep} onClick={onBack}>
+            <button type="button" className="position-done" onPointerDown={keep} onClick={finish}>
               {t('marco.listo')}
             </button>
           ) : (

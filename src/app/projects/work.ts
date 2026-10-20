@@ -153,6 +153,26 @@ export function writeStudyNote(book: string, chapter: number, verses: number[], 
 }
 
 /**
+ * The verses of a chapter read through in the study: those of each section the person moved on from. Studying is
+ * reading, so a verse counts when it was read past, with or without a note on it.
+ */
+const studiedKey = (book: string, chapter: number) => `${KEY}.estudiado.${scoped(book)}.${chapter}`
+
+export function studiedIn(book: string, chapter: number): number[] {
+  try {
+    return JSON.parse(read(studiedKey(book, chapter)) ?? '[]') as number[]
+  } catch {
+    return []
+  }
+}
+
+export function markStudied(book: string, chapter: number, verses: number[]) {
+  const before = studiedIn(book, chapter)
+  const all = [...new Set([...before, ...verses.filter((v) => v > 0)])].sort((a, b) => a - b)
+  if (all.length !== before.length) write(studiedKey(book, chapter), JSON.stringify(all))
+}
+
+/**
  * The note on an introduction: a chapter's is its note on verse 0, the book's that of chapter 0. They are kept, shared
  * and taken in as any other note, and no verse is ever 0, so `studyNotesAbout` a verse never brings them.
  */

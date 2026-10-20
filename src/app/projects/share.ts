@@ -74,6 +74,8 @@ export interface SharedBook {
   /** What was seen to improve, by `chapter.verse`. */
   observations?: Record<string, Observation[]>
   studyNotes: Array<{ chapter: number; notes: StudyNote[] }>
+  /** The verses read through in the study, by chapter (`markStudied`). */
+  studied?: Array<{ chapter: number; verses: number[] }>
   /**
    * Brought from Door43 (`publishing.ts`, `fromDoor43`): the version of the book's file there. Once gathered, this phone
    * has seen it, and may upload over it.
@@ -157,7 +159,11 @@ export function shareBook(code: string, phase: Phase): SharedBook {
     return notes?.length ? [{ chapter: Number(k.split('.').pop()), notes }] : []
   })
   // The alignment goes in the book, with its diary; so do the choices still open, for whoever has one of their two versions.
-  return { code, phase, ...(state ? { state } : { verses: [] }), checks, passages, observations, studyNotes, recordings: recordedPlaces(code) }
+  const studied = keys(`${P}.estudiado.${book}.`).flatMap((k) => {
+    const verses = json<number[]>(k)
+    return verses?.length ? [{ chapter: Number(k.split('.').pop()), verses }] : []
+  })
+  return { code, phase, ...(state ? { state } : { verses: [] }), checks, passages, observations, studyNotes, studied, recordings: recordedPlaces(code) }
 }
 
 /** The file with the sound of every take on this phone in it (kept apart from the rest, where sound is kept). */
@@ -340,6 +346,13 @@ export function receiveBook(book: SharedBook, isNew: boolean, from: Gathering): 
       }
     }
     if (changed) set(k, JSON.stringify(mine))
+  }
+  // What was read through in the study: what either read stays read.
+  for (const { chapter, verses } of book.studied ?? []) {
+    const k = `${P}.estudiado.${scoped(code)}.${chapter}`
+    const mine = json<number[]>(k) ?? []
+    const all = [...new Set([...mine, ...verses])].sort((a, b) => a - b)
+    if (all.length !== mine.length) set(k, JSON.stringify(all))
   }
   // What was seen to improve: gathered, none lost; one marked improved on either side stays improved.
   for (const [place, list] of Object.entries(book.observations ?? {})) {

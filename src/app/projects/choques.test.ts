@@ -5,7 +5,7 @@ import { addObservation, answer } from './passageReview'
 import { readGlossary, saveGlossaryEntry, type GlossaryEntry } from './glossary'
 import { addTake, chooseTake, chosenTake, takesOf, takesToChoose } from './recordings'
 import { alignmentConflictAt, writeAlignment } from './alignment'
-import { BOOK_NOTE_CHAPTER, bookStateOf, chooseVersion, forgetBooks, introNoteOn, otherVersion, readDraft, studyNotesAbout, studyNotesOf, writeDraft, writeIntroNote, writeStudyNote } from './work'
+import { BOOK_NOTE_CHAPTER, bookStateOf, chooseVersion, forgetBooks, introNoteOn, markStudied, otherVersion, readDraft, studiedIn, studyNotesAbout, studyNotesOf, writeDraft, writeIntroNote, writeStudyNote } from './work'
 import type { Project } from './model'
 import { setProject } from './scope'
 
@@ -268,6 +268,16 @@ describe('11. Notas de estudio sobre los mismos versículos', () => {
     expect(introNoteOn('jon', BOOK_NOTE_CHAPTER)?.text).toBe('El título: «Jonás»')
     expect(introNoteOn('jon', 1)?.text).toBe('Jonás huye de Dios')
     expect(studyNotesAbout('jon', 1, [1, 2, 3]).map((n) => n.text)).toEqual(['Dios habla primero'])
+  })
+
+  it('lo leído en el estudio se junta: lo que cualquiera leyó queda leído, sin las introducciones', () => {
+    on('Ana')
+    markStudied('jon', 1, [0, 1, 2, 3])
+    on('Bea')
+    markStudied('jon', 1, [3, 4, 5])
+    receive(share('Bea'), 'Ana')
+    on('Ana')
+    expect(studiedIn('jon', 1)).toEqual([1, 2, 3, 4, 5])
   })
 
   it.fails('una nota corregida reemplaza la que corrigió (hoy la vieja queda pegada encima)', () => {

@@ -20,7 +20,7 @@ import { Sheet } from '../../frame/Sheet'
 import { SideBySide, type SideText } from '../../frame/SideBySide'
 import { glossedPlaces, useWordHelps } from '../../frame/TouchWords'
 import { readGlossaryFor } from '../../projects/glossary'
-import { BOOK_NOTE_CHAPTER, introNoteOn, joinStartOf, studyNoteOn, studyNotesAbout, textOf, writeIntroNote, writeStudyNote } from '../../projects/work'
+import { BOOK_NOTE_CHAPTER, introNoteOn, joinStartOf, markStudied, studiedIn, studyNoteOn, studyNotesAbout, textOf, writeIntroNote, writeStudyNote } from '../../projects/work'
 import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type MiniAppCenterProps } from '../contract'
 import { StudyNotes, withLine } from './StudyNotes'
 import { VerseExtras } from './VerseExtras'
@@ -261,8 +261,9 @@ export const estudio: MiniApp = {
   unit: 'section',
   sections: true,
   intros: true,
-  // A verse is studied when the team left a note on it, or on a section holding it.
-  done: (at) => studyNotesAbout(at.book, at.chapter, [at.verse]).length > 0,
+  // A verse is studied once it was read through (the person moved on past its section), or has a note on it.
+  done: (at) => studiedIn(at.book, at.chapter).includes(at.verse) || studyNotesAbout(at.book, at.chapter, [at.verse]).length > 0,
+  passed: (at) => markStudied(at.book, at.chapter, at.verses),
   helps: false,
   fills: true,
   writes: false,
