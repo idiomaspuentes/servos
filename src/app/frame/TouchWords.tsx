@@ -76,6 +76,25 @@ export function glossedPlaces(data: PrototypeData, glossary: GlossaryEntry[]): R
 }
 
 /**
+ * The words of every text a help is about in particular: the key terms (God, sin, grace…; not every name or word
+ * linked) and the notes on three words or fewer. Marked lightly, so the person sees where touching a word brings
+ * something on it. A note on a whole clause would mark most of the text (78 % of Jonah 1), telling nothing: it is
+ * still found by touching any of its words.
+ */
+const SHORT_NOTE = 3
+export function helpedPlaces(data: PrototypeData): Record<string, Set<number>> {
+  const out: Record<string, Set<number>> = {}
+  const mark = (places: PrototypeData['verses'][number]['notes'][number]['places'], short: boolean) => {
+    for (const [abbr, at] of Object.entries(places)) if (at?.length && (!short || at.length <= SHORT_NOTE)) for (const p of at) (out[abbr] ??= new Set()).add(p)
+  }
+  for (const v of data.verses) {
+    for (const w of v.words) if (w.keyTerm) mark(w.places, false)
+    for (const n of v.notes) mark(n.places, true)
+  }
+  return out
+}
+
+/**
  * The glossary's entries about a touched word: the team's decision on how to translate the original word it stands
  * for, whichever text it was touched in.
  */
@@ -258,6 +277,7 @@ export function WordLines({
   onWord,
   writing,
   glossed,
+  helped,
   numbered = true,
   tabbable = true,
   noted,
@@ -272,6 +292,8 @@ export function WordLines({
   tabbable?: boolean
   /** Words the glossary has an entry for: marked, so a decision is seen before it is asked for. */
   glossed?: Set<number>
+  /** Words a note or a key word is about (`helpedPlaces`): marked lightly, the glossary's mark over it. */
+  helped?: Set<number>
   /** Words the text gives a note on (the Hebrew's ketiv, read by its qere): marked with «°», as Hebrew Bibles do. */
   noted?: Set<number>
   /** The line that the line being written translates, to stand out from the rest of the verse. */
@@ -288,7 +310,7 @@ export function WordLines({
               key={key}
               type="button"
               tabIndex={tabbable ? undefined : -1}
-              className={`word${lit.has(place) ? ' is-lit' : ''}${place === touched ? ' is-touched' : ''}${glossed?.has(place) ? ' has-gloss' : ''}`}
+              className={`word${lit.has(place) ? ' is-lit' : ''}${place === touched ? ' is-touched' : ''}${glossed?.has(place) ? ' has-gloss' : helped?.has(place) ? ' has-help' : ''}`}
               aria-expanded={place === touched ? true : undefined}
               onClick={(e) => {
                 pressed = e.currentTarget

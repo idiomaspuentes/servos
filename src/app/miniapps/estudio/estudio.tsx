@@ -18,7 +18,7 @@ import { Panes, useWide, useWider, type Pane } from '../../frame/Panes'
 import { passageOf } from '../../frame/PlacePicker'
 import { Sheet } from '../../frame/Sheet'
 import { SideBySide, type SideText } from '../../frame/SideBySide'
-import { glossedPlaces, useWordHelps } from '../../frame/TouchWords'
+import { glossedPlaces, helpedPlaces, useWordHelps } from '../../frame/TouchWords'
 import { readGlossaryFor } from '../../projects/glossary'
 import { BOOK_NOTE_CHAPTER, introNoteOn, joinStartOf, markStudied, studiedIn, studyNoteOn, studyNotesAbout, textOf, writeIntroNote, writeStudyNote } from '../../projects/work'
 import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type MiniAppCenterProps } from '../contract'
@@ -81,6 +81,8 @@ function Center({ context }: MiniAppCenterProps) {
     (data.texts.find((x) => x.original)?.words ?? []).map((w) => w.strong)
   )
   const glossed = glossedPlaces(data, glossary)
+  // Where touching a word brings a note or a key word: marked lightly in the texts.
+  const helped = helpedPlaces(data)
   const { lit, touch, card } = useWordHelps({
     data,
     resetKey: unitKey,
@@ -171,6 +173,7 @@ function Center({ context }: MiniAppCenterProps) {
           line={null}
           only
           glossed={glossed[x.abbreviation]}
+          helped={helped[x.abbreviation]}
           lit={lit(x.abbreviation)}
           hint={hint}
           onWord={(verse, place) => touch(x.abbreviation, verse, place)}
@@ -215,6 +218,7 @@ function Center({ context }: MiniAppCenterProps) {
         line={null}
         lit={lit}
         glossed={glossed}
+        helped={helped}
         onWord={(id, verse, place) => touch(id, verse, place)}
         under={(ids, verse) => {
           const cards = ids.map((id) => [id, card(id, verse)] as const).filter(([, c]) => c).map(([id, c]) => <Fragment key={id}>{c}</Fragment>)

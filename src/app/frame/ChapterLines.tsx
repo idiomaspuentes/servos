@@ -19,6 +19,7 @@ export function ChapterLines({
   under,
   only = false,
   glossed,
+  helped,
 }: {
   text: PrototypeText
   /** The verses open: the verse, or those of its section. */
@@ -40,6 +41,8 @@ export function ChapterLines({
   only?: boolean
   /** Words the glossary has an entry for. */
   glossed?: Set<number>
+  /** Words a note or a key word is about. */
+  helped?: Set<number>
 }) {
   const current = useRef<HTMLDivElement>(null)
   const count = text.lines[at]?.length ?? 0
@@ -74,7 +77,7 @@ export function ChapterLines({
       {verses.map((v) => (
         <div key={v} ref={v === at ? current : undefined}>
           <div className={shown.includes(v) ? 'chapter-verse is-current' : 'chapter-verse'} dir={text.dir ?? 'ltr'} lang={text.lang}>
-            <WordLines lines={text.lines[v]} verse={v} lit={lit} onWord={(place) => onWord(v, place)} writing={v === at ? writing : undefined} glossed={glossed} noted={noted} />
+            <WordLines lines={text.lines[v]} verse={v} lit={lit} onWord={(place) => onWord(v, place)} writing={v === at ? writing : undefined} glossed={glossed} helped={helped} noted={noted} />
           </div>
           {under(v)}
         </div>

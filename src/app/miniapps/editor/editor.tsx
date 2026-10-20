@@ -15,7 +15,7 @@ import { Fragment, useEffect, useLayoutEffect, useRef, useState, type FocusEvent
 import { Panes, type Pane, useWide, useWider, useWidest } from '../../frame/Panes'
 import { rowsOf } from '../../frame/parallel'
 import { SideBySide } from '../../frame/SideBySide'
-import { glossedPlaces, useWordHelps, type GlossaryTarget } from '../../frame/TouchWords'
+import { glossedPlaces, helpedPlaces, useWordHelps, type GlossaryTarget } from '../../frame/TouchWords'
 import { readGlossaryFor, saveGlossaryEntry } from '../../projects/glossary'
 import { GlossarySheet } from './GlossarySheet'
 import type { MiniApp, MiniAppCenterProps } from '../contract'
@@ -181,6 +181,8 @@ function Center({ context }: MiniAppCenterProps) {
   }
   const [adding, setAdding] = useState<GlossaryTarget | null>(null)
   const glossed = glossedPlaces(data, glossary)
+  // Where touching a word brings a note or a key word: marked lightly in the texts.
+  const helped = helpedPlaces(data)
   const { lit, touch, card, helpsShown } = useWordHelps({
     data,
     resetKey: openKey,
@@ -326,6 +328,7 @@ function Center({ context }: MiniAppCenterProps) {
         shown={shown}
         at={position.verse}
         glossed={glossed[x.abbreviation]}
+        helped={helped[x.abbreviation]}
         line={writingLine?.verse === position.verse ? writingLine.line : null}
         lit={lit(x.abbreviation)}
         hint={hint}
@@ -364,6 +367,7 @@ function Center({ context }: MiniAppCenterProps) {
         line={writingLine?.verse === position.verse ? writingLine.line : null}
         lit={lit}
         glossed={glossed}
+        helped={helped}
         onWord={(id, verse, place) => touch(id, verse, place)}
         under={(ids, verse) => {
           const cards = ids.map((id) => [id, card(id, verse)] as const).filter(([, c]) => c)

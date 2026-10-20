@@ -72,6 +72,7 @@ export function SideBySide({
   line,
   lit,
   glossed,
+  helped,
   onWord,
   under,
   after,
@@ -97,6 +98,8 @@ export function SideBySide({
   line: number | null
   lit(id: string): Set<number>
   glossed?: Record<string, Set<number> | undefined>
+  /** Words a note or a key word is about, by text. */
+  helped?: Record<string, Set<number> | undefined>
   onWord(id: string, verse: number, place: number): void
   /** What goes under a verse's row: the helps of a word touched in one of the texts. */
   under(ids: string[], verse: number): ReactNode
@@ -182,7 +185,7 @@ export function SideBySide({
         <>
           {writing && shown.length === 1 && lone}
           {writing?.hint}
-          <Rows texts={shown} verses={verses} open={open} at={at} line={line} lit={lit} glossed={glossed} onWord={onWord} under={under} writing={writing} />
+          <Rows texts={shown} verses={verses} open={open} at={at} line={line} lit={lit} glossed={glossed} helped={helped} onWord={onWord} under={under} writing={writing} />
           {after}
         </>
       )}
@@ -200,6 +203,7 @@ function Rows({
   line,
   lit,
   glossed,
+  helped,
   onWord,
   under,
   writing,
@@ -211,6 +215,8 @@ function Rows({
   line: number | null
   lit(id: string): Set<number>
   glossed?: Record<string, Set<number> | undefined>
+  /** Words a note or a key word is about, by text. */
+  helped?: Record<string, Set<number> | undefined>
   onWord(id: string, verse: number, place: number): void
   under(ids: string[], verse: number): ReactNode
   writing?: SideWriting
@@ -273,6 +279,7 @@ function Rows({
               onWord={(place) => onWord(x.id, u, place)}
               writing={writingAt?.verse === u ? writingAt.line : undefined}
               glossed={glossed?.[x.id]}
+              helped={helped?.[x.id]}
               numbered={unit.length > 1}
               // Where the team writes, Tab goes from box to box: the words are a click away, their helps in their column.
               tabbable={!writing}
