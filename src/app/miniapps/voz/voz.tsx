@@ -1,5 +1,5 @@
 /**
- * Traducir de viva voz (design, section 10): a section (by default) or a verse said aloud in the team's language and
+ * Traducción oral (design, section 10): a section (by default) or a verse said aloud in the team's language and
  * recorded, instead of written: a passage is said best in one breath, and its take counts for each of its verses. What is to be said is at the top (the bridge text, the other a touch away); under it, one big button to
  * record, and once recorded, the recording to hear, «record again», and the way on. No take is thrown away: the last
  * one counts, and an earlier one can be chosen. Whatever was written of the verse is shown too, with the way to the
@@ -237,7 +237,7 @@ export const editorVoz: MiniApp = {
   Center,
   texts: {
     es: {
-      nombre: 'Traducir de viva voz',
+      nombre: 'Traducción oral',
       descripcion: 'Decir cada pasaje en su idioma y grabarlo, en lugar de escribirlo',
       queDecir: 'Lo que va a decir',
       suVoz: 'Su voz',
@@ -260,7 +260,7 @@ export const editorVoz: MiniApp = {
       quedarseCon: 'Quedarse con esta grabación',
     },
     pt: {
-      nombre: 'Traduzir em voz alta',
+      nombre: 'Tradução oral',
       descripcion: 'Dizer cada passagem no seu idioma e gravá-la, em vez de escrevê-la',
       queDecir: 'O que vai dizer',
       suVoz: 'Sua voz',
@@ -283,7 +283,7 @@ export const editorVoz: MiniApp = {
       quedarseCon: 'Ficar com esta gravação',
     },
     en: {
-      nombre: 'Translate by voice',
+      nombre: 'Oral translation',
       descripcion: 'Say each passage in your language and record it, instead of writing it',
       queDecir: 'What you will say',
       suVoz: 'Your voice',

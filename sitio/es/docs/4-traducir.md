@@ -7,11 +7,11 @@ resumen: Escribir cada versículo en su idioma, con el texto puente y las ayudas
 
 Cuando el equipo terminó de estudiar, en el libro toque el paso **Traducción** y luego **Pasar a Traducción**. El libro pasa a ese paso para todo el equipo, y se puede volver atrás.
 
-En el paso Traducción hay dos maneras de trabajar: **Traducir por escrito**, en el editor, y **Traducir de viva voz**, grabando cada versículo. Esta página habla del editor.
+En el paso Traducción hay dos maneras de trabajar: **Traducción escrita**, en el editor, y **Traducción oral**, grabando cada versículo. Esta página habla del editor.
 
 ## El editor en el teléfono
 
-Toque **Empezar** en **Traducir por escrito**. El editor muestra una sección a la vez, con **una caja por versículo**. Escriba en la caja; lo que escribe se guarda solo, en el aparato, mientras escribe.
+Toque **Empezar** en **Traducción escrita**. El editor muestra una sección a la vez, con **una caja por versículo**. Escriba en la caja; lo que escribe se guarda solo, en el aparato, mientras escribe.
 
 ![Las cajas de los versículos, vacías](editor-vacio.webp "Una caja por versículo")
 ![Las cajas con la traducción](editor-con-texto.webp "Una sección traducida, en el ejemplo de la app")

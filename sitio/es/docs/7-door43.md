@@ -29,4 +29,4 @@ En el paso **Publicar**, toque **Empezar**. Servos dice, libro por libro, si ya 
 
 ## Marcar una versión
 
-Cuando el equipo da por bueno lo que está en Door43, se marca una **versión con número** (v1, v2…). Las grabaciones de viva voz van adjuntas a la versión.
+Cuando el equipo da por bueno lo que está en Door43, se marca una **versión con número** (v1, v2…). Las grabaciones de la traducción oral van adjuntas a la versión.

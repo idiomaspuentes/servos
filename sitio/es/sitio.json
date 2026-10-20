@@ -21,7 +21,7 @@
     "pasosEntrada": "Cada libro pasa por pasos, y en cada paso hay herramientas sencillas, una cosa a la vez.",
     "pasos": [
       { "titulo": "Estudio.", "texto": "Leer el pasaje en el Texto Puente Literal y el Simple, con sus introducciones, notas, preguntas y palabras clave, y anotar lo que se entendió." },
-      { "titulo": "Traducción.", "texto": "Escribir cada versículo en el idioma del pueblo con el texto puente al lado, o grabarlo de viva voz." },
+      { "titulo": "Traducción.", "texto": "Escribir cada versículo en el idioma del pueblo con el texto puente al lado, o traducirlo oralmente, grabándolo." },
       { "titulo": "Revisión.", "texto": "Comprobar con las notas y con las palabras clave que el sentido quedó bien, leer cada pasaje con cuatro preguntas, y alinear la traducción con el original." },
       { "titulo": "Publicación.", "texto": "Cuando hay internet, subir el libro a Door43 y marcar versiones." }
     ],

@@ -55,7 +55,7 @@ nuevas sin tocar las demás.
 | Mini app | Qué hace | Lo que reusa de Taller o de `usfm-ast` |
 |---|---|---|
 | **Estudio** | Leer el libro con sus recursos antes de traducir: textos puente, notas, preguntas, palabras, academia | La lectura de ayudas pegadas al versículo de Taller |
-| **Traducir por escrito** (el editor) | Escribir el borrador, por sección o por versículo, con los textos puente al lado | El editor de USFM de `usfm-ast`; las reglas de escritura del USFM de Taller (poesía, notas) |
+| **Traducción escrita** (el editor) | Escribir el borrador, por sección o por versículo, con los textos puente al lado | El editor de USFM de `usfm-ast`; las reglas de escritura del USFM de Taller (poesía, notas) |
 | **Revisar con las notas** | Comprobar que cada frase difícil (las notas que enlazan a la Academia) quedó traducida como explica su nota y se entiende bien. Cuatro pasos por nota, uno a la vez: leer el versículo en el TPL o el TPS con la frase resaltada (la sección, plegada); entender la nota y su artículo de la Academia; marcar en el borrador las palabras que lo dicen; confirmar que dicen bien el sentido (sí, mejorarla ahora en el editor, dejarla para después). Por versículo, o por categoría y figura | La revisión de translationCore 3 y 4 y la Afinación de Taller (texto de referencia cambiable, marcar palabras con el dedo) |
 | **Revisar con las palabras** | Comprobar cada uso de una palabra (términos clave, otros términos, nombres) con los mismos cuatro pasos. En el segundo, el artículo entero se despliega antes de seguir, para ver todos los sentidos de la palabra; el cuarto es comparar: si está bien aquí y cómo se tradujo en los demás lugares del libro (también los que faltan revisar), donde significa lo mismo, igual; donde significa otra cosa, según su sentido. Palabra por palabra, o por versículo | «Revisar palabras clave» de Taller; los dos revisores comparten `miniapps/checking` |
 | **Revisar el pasaje** | Leer cada sección entera y pesarla con cuatro preguntas, una a la vez: ¿es fiel (dice lo mismo que la fuente), clara (se entiende a la primera), natural (suena como habla la gente), precisa (nombres, números, lugares, términos)? «Sí» pasa a la siguiente; «hay algo que mejorar» marca las palabras con el dedo y abre el editor o lo anota para después: la nota se ve bajo su versículo en el editor hasta que alguien la da por mejorada. Una respuesta vale mientras el texto no cambie | Los pasos y el marcado con el dedo de los otros revisores |
@@ -394,7 +394,7 @@ de elegir. Se dice, con «Ir a juntar» (`publishing.ts`, `door43Copy`, `knowsAl
     distinta queda como otra forma); dos notas de estudio distintas sobre los mismos versículos quedan las dos, cada
     una con su autor; de las grabaciones, ninguna toma se pierde, y la que suena sigue a las elecciones: la elegida
     (o grabada) sabiendo de la otra cuenta, y dos elegidas por separado dejan sonar la de aquí mientras la otra
-    espera; en «Traducir de viva voz» se escuchan las dos y se toca la que queda (19 de octubre).
+    espera; en «Traducción oral» se escuchan las dos y se toca la que queda (19 de octubre).
 - Al importar, la app dice qué trae y qué cambia antes de aplicarlo.
 - Un paquete de recursos más nuevo puede reemplazar a uno anterior; el trabajo hecho no se toca, pero la app avisa
   qué notas o textos cambiaron en los versículos ya traducidos.
@@ -497,7 +497,7 @@ No es parte de la primera etapa, pero el diseño no debe cerrarle la puerta:
 - Los paquetes pueden llevar archivos de audio.
 - La lista de mini apps admite una de grabación.
 
-Hecho en el prototipo, «Traducir de viva voz» (paso Traducción): por sección mientras la persona no elija otra cosa
+Hecho en el prototipo, «Traducción oral» (paso Traducción): por sección mientras la persona no elija otra cosa
 (un pasaje se dice mejor de corrido), o por versículo; arriba lo que se va a decir (el TPL, el TPS a un toque); un botón
 grande para grabar y, ya grabado, la grabación para oírla, «Grabar otra vez» y el camino al siguiente. Una toma de una
 sección cuenta para cada uno de sus versículos. Ninguna toma se pierde: cuenta la última, o la que se elija entre las
@@ -570,7 +570,7 @@ grabó el teléfono.
     teléfono»**, que pregunta la carpeta (Descargas, la tarjeta) y deja el archivo con su nombre. Muchos teléfonos no
     ofrecen otra manera de guardar un archivo de un tipo que no conocen. Guardado ahí, la app dice dónde quedó; si fue
     a otra app, no dice nada, porque Android no lo cuenta.
-  - **El micrófono** se pide la primera vez que alguien graba en «Traducir de viva voz».
+  - **El micrófono** se pide la primera vez que alguien graba en «Traducción oral».
   - **Lo guardado** queda en la WebView, en los datos de la app: Android no lo borra para hacer lugar, pero se pierde
     al desinstalar. No se copia a la nube ni a otro teléfono (las copias de Android están apagadas): el trabajo
     viaja con Compartir y Recibir. Por eso el APK lleva la firma propia de Servos, fuera del repositorio: una
@@ -618,7 +618,7 @@ Propuesta de etapas, para conversar:
    que todo lo demás necesita.
 2. **Personas, proyectos y paquetes:** entrar sin internet, crear un proyecto, importar un paquete de recursos,
    exportar e importar un paquete de trabajo.
-3. **Estudio y Traducir por escrito**, en teléfono y computadora.
+3. **Estudio y Traducción escrita**, en teléfono y computadora.
 4. **El solucionador de choques**, sobre el corazón de la etapa 1.
 5. **Revisor de desafíos y de palabras clave.**
 6. **Alineador.**
