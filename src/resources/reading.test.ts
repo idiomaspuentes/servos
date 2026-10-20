@@ -94,6 +94,7 @@ const ROWS = [
           { id: 'abcd', reference: '1:1', quote: 'δοῦλος Θεοῦ', body: '', note: 'Pablo se llama **siervo**.', supportReference: 'rc://*/ta/man/translate/figs-metaphor', tags: '', occurrence: '1' },
           { id: 'efgh', reference: '1:1-2', quote: 'κατὰ πίστιν', body: '', note: 'Para la fe.', supportReference: '', tags: '', occurrence: '1' },
           { id: 'ijkl', reference: '1:3', quote: 'ἐφανέρωσεν', body: '', note: 'Reveló.', supportReference: '', tags: '', occurrence: '1' },
+          { id: 'mnop', reference: '1:3', quote: 'Connecting Statement:', body: '', note: 'Pablo sigue.', supportReference: '', tags: '', occurrence: '0' },
         ],
       },
       NOTES_PREPARE_VERSION
@@ -238,6 +239,15 @@ describe('leer sin internet', () => {
     expect(notes[0].supportReference).toBe('rc://*/ta/man/translate/figs-metaphor')
     const verse2 = await notesOfVerse(stores, { notesKey: TN, textKey: GLT, book: 'tit', chapter: 1, verse: 2 })
     expect(verse2.map((n) => n.id)).toEqual(['efgh'])
+  })
+
+  it('una nota con occurrence 0 no tiene cita: las notas antiguas ponían ahí un título («Connecting Statement:»)', async () => {
+    const { stores } = await deviceWithPack()
+    const notes = await notesOfVerse(stores, { notesKey: TN, textKey: GLT, book: 'tit', chapter: 1, verse: 3 })
+    expect(notes.map((n) => [n.id, n.quote])).toEqual([
+      ['ijkl', 'ἐφανέρωσεν'],
+      ['mnop', ''],
+    ])
   })
 
   it('las palabras de una cita salen en el orden del texto, con «…» donde hay palabras en medio', () => {

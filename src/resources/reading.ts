@@ -509,7 +509,8 @@ export async function notesOfVerse(
       return {
         id: n.id,
         reference: n.reference,
-        quote: n.quote,
+        // Occurrence 0 says the quote is not in the verse: old notes put a heading there («Connecting Statement:»).
+        quote: String(n.occurrence ?? '').trim() === '0' ? '' : n.quote,
         textQuote: textQuoteOf(aligned[n.id]),
         note: n.note,
         supportReference: n.supportReference,
