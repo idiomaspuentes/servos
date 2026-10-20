@@ -919,6 +919,13 @@ export function useWordHelps({
     const view = paneView(pane)
     const until = (box.querySelector('.word-help-paged-head') ?? box).getBoundingClientRect().bottom
     pane.scrollTop += revealBelow({ paneTop: view.top, paneBottom: view.bottom, wordTop: word.el.getBoundingClientRect().top, until })
+    // The verse stuck at the pane's top while its card is open covers what scrolls under it: a word touched there
+    // with the pane scrolled down would open its card behind it. The card is brought to start right under the verse.
+    const verse = word.el.closest<HTMLElement>('.chapter-verse, .side-row')
+    if (verse && getComputedStyle(verse).position === 'sticky') {
+      const covered = verse.getBoundingClientRect().bottom - box.getBoundingClientRect().top
+      if (covered > 0) pane.scrollTop -= covered + 8
+    }
   }, [shown])
 
   return {

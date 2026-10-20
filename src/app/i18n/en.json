@@ -11,6 +11,7 @@
   "marco.seccionAnterior": "Previous section",
   "marco.seccionSiguiente": "Next section",
   "marco.lado.textos": "Texts read side by side",
+  "marco.lado.masTextos": "Texts",
   "marco.lado.lleno": "Up to {n} at a time: take one away to add another.",
   "marco.lado.poner": "Put {texto} beside it",
   "marco.lado.quitar": "Take {texto} away",

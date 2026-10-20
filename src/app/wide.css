@@ -132,7 +132,27 @@
   /* The head as the texts' switches: each name its own, the others at the end of the last column's */
   .side-row.has-switches { align-items: center; }
   .side-row.has-switches .side-head { display: flex; align-items: center; gap: 0.35rem; min-width: 0; overflow: visible; }
-  .side-head-extra { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.35rem; margin-inline-start: auto; }
+  .side-head-extra { display: flex; justify-content: flex-end; margin-inline-start: auto; }
+  .side-head-name { overflow: hidden; text-overflow: ellipsis; }
+  /* Taking a text away: a small «×» beside its name, so touching the name hides nothing */
+  .side-head-off {
+    display: inline-grid; place-items: center; width: 1.75rem; height: 1.75rem; min-height: 0; padding: 0; border: 0;
+    border-radius: 999px; background: none; color: var(--text-soft); font-size: 1.1rem; line-height: 1;
+  }
+  .side-head-off:hover { background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--text); }
+  /* The texts not shown and the helps' column, in one menu at the head's end */
+  .side-more { position: relative; }
+  .side-more > summary {
+    display: inline-flex; align-items: center; min-height: var(--switch-h); padding: 0.2rem 0.85rem; border: 1px dashed color-mix(in srgb, var(--accent) 55%, transparent);
+    border-radius: 999px; color: var(--accent); font-family: var(--font); font-size: 0.9rem; font-weight: 700; cursor: pointer; list-style: none; white-space: nowrap;
+  }
+  .side-more > summary::-webkit-details-marker { display: none; }
+  .side-more > summary::after { content: ' ▾'; }
+  .side-more-list {
+    position: absolute; inset-inline-end: 0; inset-block-start: calc(100% + 0.35rem); z-index: 3; display: flex; flex-direction: column; gap: 0.35rem;
+    min-width: 11rem; padding: 0.5rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-card);
+  }
+  .side-more-list .side-switch { justify-content: flex-start; }
   /* The section's rows: a line at their left and their text in full colour, no ground (as in the phone's texts) */
   .side-row.is-here { box-shadow: inset 3px 0 0 var(--accent); }
   /* A touched word's card open under a row: the row stays in sight under the texts' names while the card scrolls */
@@ -268,6 +288,8 @@
   .side-switch:not(:disabled, .is-on):hover { color: var(--text); background-color: color-mix(in srgb, var(--accent) 8%, transparent); }
   .side-write:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 55%, transparent); background-color: color-mix(in srgb, var(--accent) 6%, transparent); }
   .side-write.is-empty:hover .side-write-dash { display: none; }
+  /* A verse out of the section: its cell empty until the pointer is on it («Escribir el 4 →»); a dash said nothing */
+  .side-write.is-empty .side-write-dash { visibility: hidden; }
   .side-write.is-empty:hover .side-write-go { display: inline; }
   .side-box .line-field:not(:focus):hover { border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
 }

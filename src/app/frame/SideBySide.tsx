@@ -120,6 +120,15 @@ export function SideBySide({
   const shown = texts.filter((x) => shownIds.includes(x.id))
   // With room for one, a text is not put beside but in place of the other: never full.
   const full = max > 1 && shownIds.length >= max
+  // The «+ Textos» menu closes on a click outside it, as a menu does.
+  const more = useRef<HTMLDetailsElement>(null)
+  useEffect(() => {
+    const away = (e: PointerEvent) => {
+      if (more.current?.open && !more.current.contains(e.target as Node)) more.current.open = false
+    }
+    document.addEventListener('pointerdown', away)
+    return () => document.removeEventListener('pointerdown', away)
+  }, [])
   const touch = (id: string) => {
     const next = toggleShown(shownIds, id, order, max)
     setChosen(next)
@@ -170,15 +179,36 @@ export function SideBySide({
       {asideSwitch}
     </div>
   )
-  // In rows, the switches are the rows' head: a text's name is its switch, over its column; the texts not shown and
-  // the column beside, at the head's end. One row less above the source text than a bar of switches over the names.
+  // In rows, the rows' head says which texts are on and holds the switches: a text's name over its column, with a
+  // «×» apart to take it away (a touch on a name is not one that hides it); the texts not shown and the column
+  // beside, in one «+ Textos» at the head's end, so the head keeps one line however many there are. One row less
+  // above the source text than a bar of switches over the names.
+  const hidden = texts.filter((x) => !shownIds.includes(x.id))
   const head = {
-    cell: (id: string) => switchOf(texts.find((x) => x.id === id)!),
-    extra: (
-      <>
-        {texts.filter((x) => !shownIds.includes(x.id)).map(switchOf)}
-        {asideSwitch}
-      </>
+    cell: (id: string) => {
+      const x = texts.find((y) => y.id === id)!
+      return (
+        <>
+          <span className="side-head-name" title={x.text?.title}>
+            {x.label}
+          </span>
+          {shownIds.length > 1 && (
+            <button type="button" className="side-head-off" aria-label={t('marco.lado.quitar', { texto: x.label })} title={t('marco.lado.quitar', { texto: x.label })} onClick={() => touch(x.id)}>
+              ×
+            </button>
+          )}
+        </>
+      )
+    },
+    extra: (hidden.length > 0 || asideSwitch) && (
+      <details ref={more} className="side-more">
+        <summary>+ {t('marco.lado.masTextos')}</summary>
+        {/* A choice made, the menu closes. */}
+        <div className="side-more-list" role="group" aria-label={t('marco.lado.textos')} onClick={() => more.current && (more.current.open = false)}>
+          {hidden.map(switchOf)}
+          {asideSwitch}
+        </div>
+      </details>
     ),
   }
 

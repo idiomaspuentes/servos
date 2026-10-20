@@ -11,6 +11,7 @@
   "marco.seccionAnterior": "Seção anterior",
   "marco.seccionSiguiente": "Próxima seção",
   "marco.lado.textos": "Textos lidos lado a lado",
+  "marco.lado.masTextos": "Textos",
   "marco.lado.lleno": "Até {n} de uma vez: tire um para pôr outro.",
   "marco.lado.poner": "Pôr {texto} ao lado",
   "marco.lado.quitar": "Tirar {texto}",
