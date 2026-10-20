@@ -208,7 +208,7 @@
   "ayudas.agregar": "Adicionar",
   "ayudas.sinDecidir": "ainda sem decidir",
   "ayudas.leerArticuloDe": "Ler o artigo: {titulo}",
-  "ayudas.leerElArticulo": "Ler o artigo",
+  "ayudas.leerSobre": "Ler o artigo sobre {palabra}",
   "ayudas.masSobre": "Mais sobre {palabra}",
   "libro.glosario": "Glossário do projeto",
   "glosario.titulo": "Glossário",

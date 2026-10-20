@@ -719,6 +719,9 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .word-help-quote-original .word-help-scripture { font-size: 1.2rem; color: var(--text-soft); }
 .word-help-paged .markdown, .word-help-paged > p:not(.word-help-quote):not(.word-help-quote-original) { margin-block-start: 0.4rem; }
 .word-help-paged .row-button { margin-block-start: 0.4rem; }
+/* An item's article: a link in the helps' colour under the item, its own, not a row like the folds below the card */
+.word-help-read { display: inline-flex; align-items: center; width: auto; min-height: var(--touch); margin-block-start: 0.15rem; padding: 0; border: 0; background: none; color: var(--accent); font: inherit; font-weight: 600; text-align: start; cursor: pointer; }
+.word-help-read:hover { text-decoration: underline; text-underline-offset: 0.2em; }
 .word-help-more { border-block-start: 1px solid var(--line); margin-block-start: 0.7rem; }
 .word-help-more > summary, .word-help-other > summary { min-height: var(--touch); display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-weight: 700; cursor: pointer; list-style: none; }
 .word-help-more > summary::-webkit-details-marker, .word-help-other > summary::-webkit-details-marker { display: none; }

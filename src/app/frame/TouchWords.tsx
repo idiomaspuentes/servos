@@ -587,7 +587,9 @@ export function WordHelpCard({
               )}
               <Markdown text={help.note.note} />
               {help.note.academy && data.academy[help.note.academy] && (
-                <RowButton label={t('ayudas.leerArticuloDe', { titulo: data.academy[help.note.academy].title })} onClick={() => setArticle(data.academy[help.note.academy!])} />
+                <button type="button" className="word-help-read" onClick={() => setArticle(data.academy[help.note.academy!])}>
+                  {t('ayudas.leerArticuloDe', { titulo: data.academy[help.note.academy].title })} ›
+                </button>
               )}
             </>
           )}
@@ -605,7 +607,12 @@ export function WordHelpCard({
                       <Scripture text={original}>{help.original}</Scripture>
                     </p>
                   )}
-                  {data.words[help.article] && <RowButton label={t('ayudas.leerElArticulo')} onClick={() => setArticle(data.words[help.article])} />}
+                  {/* Its article, said with its name and kept to the item, not a row like «More on …» under it. */}
+                  {data.words[help.article] && (
+                    <button type="button" className="word-help-read" onClick={() => setArticle(data.words[help.article])}>
+                      {t('ayudas.leerSobre', { palabra: name })} ›
+                    </button>
+                  )}
                 </>
               )
             })()}

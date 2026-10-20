@@ -208,7 +208,7 @@
   "ayudas.agregar": "Add",
   "ayudas.sinDecidir": "not decided yet",
   "ayudas.leerArticuloDe": "Read the article: {titulo}",
-  "ayudas.leerElArticulo": "Read the article",
+  "ayudas.leerSobre": "Read the article on {palabra}",
   "ayudas.masSobre": "More about {palabra}",
   "libro.glosario": "Project glossary",
   "glosario.titulo": "Glossary",
