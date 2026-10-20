@@ -20,4 +20,13 @@ describe('las ayudas de una palabra tocada', () => {
       expect(spans).toEqual([...spans].sort((a, b) => a - b))
     }
   })
+
+  it('si su única palabra clave abarca una frase, la nota sobre la palabra sola va primero (Jonás 1:1)', () => {
+    const tpl1 = (tpl.lines[1] ?? []).flatMap((l) => l.pieces).find((p) => p.text === 'Jehová')?.word
+    const helps = helpsOfWord(data, 'TPL', tpl1!).filter((h) => h.kind === 'palabra' || h.kind === 'nota')
+    expect(helps[0].kind).toBe('nota')
+    expect(helps[0].places.TPL).toEqual([tpl1])
+    // «la palabra de Jehová»: the word list quotes דְּבַר־יְהוָה, both words.
+    expect(helps.find((h) => h.kind === 'palabra')?.places.TPL?.length).toBeGreaterThan(1)
+  })
 })

@@ -185,9 +185,11 @@ function readingsOfWord(data: PrototypeData, abbreviation: string, place: number
 
 export function helpsOfWord(data: PrototypeData, abbreviation: string, place: number, glossary: GlossaryEntry[] = [], verse?: number): WordHelp[] {
   const out: WordHelp[] = [...readingsOfWord(data, abbreviation, place), ...glossaryOf(data, abbreviation, place, glossary), ...otherBridges(data, abbreviation, place)]
-  // What is about the word touched comes first: its key words, then its notes, each from the narrowest (the word
-  // alone) to the widest (a phrase or clause holding it): «Jehová» before «la palabra de Jehová», a note on «Jehová»
-  // before one on «the word of Jehová came». A stable sort: helps as wide keep the resources' order.
+  // What is about the word touched comes first: its key words and its notes, each from the narrowest (the word
+  // alone) to the widest (a phrase or clause holding it), and of the two the kind whose narrowest is narrower, the
+  // key words when as narrow. In Jonah 1:3 «Jehová» has its key word, first; in 1:1 its only key word is «la palabra
+  // de Jehová» (דְּבַר־יְהוָה, the word list's own quote), and the note on «Jehová» alone comes before it. A stable
+  // sort: helps as wide keep the resources' order.
   const narrowest = (x: WordHelp, y: WordHelp) => (x.places[abbreviation]?.length ?? 0) - (y.places[abbreviation]?.length ?? 0)
   const seen = new Set<string>()
   const words: WordHelp[] = []
@@ -198,7 +200,7 @@ export function helpsOfWord(data: PrototypeData, abbreviation: string, place: nu
       words.push({ kind: 'palabra', id: word.id, places: word.places, original: word.original, article: word.article, keyTerm: word.keyTerm })
     }
   }
-  out.push(...words.sort(narrowest))
+  words.sort(narrowest)
   const notes: WordHelp[] = []
   for (const verse of data.verses) {
     for (const note of verse.notes) {
@@ -207,7 +209,9 @@ export function helpsOfWord(data: PrototypeData, abbreviation: string, place: nu
       notes.push({ kind: 'nota', id: note.id, places: note.places, note })
     }
   }
-  out.push(...notes.sort(narrowest))
+  notes.sort(narrowest)
+  const width = (list: WordHelp[]) => (list.length ? (list[0].places[abbreviation]?.length ?? 0) : Infinity)
+  out.push(...(width(notes) < width(words) ? [...notes, ...words] : [...words, ...notes]))
   if (verse !== undefined) out.push(...lexiconOfWord(data, abbreviation, place, verse))
   return out
 }
