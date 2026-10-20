@@ -801,9 +801,6 @@ export function WordHelpCard({
 }
 
 /** The part of a pane in sight: under the names that stay over the columns of texts side by side. */
-/** The share of the pane's visible height a verse may take and still stay at its top over its card. */
-const TALL_VERSE = 1 / 3
-
 function paneView(pane: HTMLElement): { top: number; bottom: number } {
   const box = pane.getBoundingClientRect()
   const head = pane.querySelector<HTMLElement>('.side-row.is-head')
@@ -900,31 +897,6 @@ export function useWordHelps({
   }
 
   const shown = at ? `${at.abbreviation}|${at.verse}|${at.place}` : ''
-  // The verse of an open card stays at the pane's top only while it leaves the card room: a long verse on a narrow
-  // pane, or any verse once a phone's keyboard is up, would leave a sliver to read the card in. Then it scrolls with
-  // the card, whose quote still says which words a help is about. Measured again as the keyboard comes and goes.
-  useLayoutEffect(() => {
-    if (!shown || aside) return
-    const fit = () => {
-      for (const verse of document.querySelectorAll<HTMLElement>('.chapter-lines > div:has(> .word-help) > .chapter-verse')) {
-        const pane = verse.closest<HTMLElement>('.pane')
-        if (!pane) continue
-        const box = pane.getBoundingClientRect()
-        const bottom = Math.min(box.bottom, window.visualViewport ? window.visualViewport.offsetTop + window.visualViewport.height : box.bottom)
-        if (verse.offsetHeight > (bottom - box.top) * TALL_VERSE) verse.dataset.tall = ''
-        else delete verse.dataset.tall
-      }
-    }
-    fit()
-    const viewport = window.visualViewport
-    viewport?.addEventListener('resize', fit)
-    window.addEventListener('resize', fit)
-    return () => {
-      viewport?.removeEventListener('resize', fit)
-      window.removeEventListener('resize', fit)
-      for (const verse of document.querySelectorAll<HTMLElement>('.chapter-verse[data-tall]')) delete verse.dataset.tall
-    }
-  }, [shown, aside])
   useLayoutEffect(() => {
     const word = anchor.current
     anchor.current = null
@@ -951,13 +923,6 @@ export function useWordHelps({
     const view = paneView(pane)
     const until = (box.querySelector('.word-help-paged-head') ?? box).getBoundingClientRect().bottom
     pane.scrollTop += revealBelow({ paneTop: view.top, paneBottom: view.bottom, wordTop: word.el.getBoundingClientRect().top, until })
-    // The verse stuck at the pane's top while its card is open covers what scrolls under it: a word touched there
-    // with the pane scrolled down would open its card behind it. The card is brought to start right under the verse.
-    const verse = word.el.closest<HTMLElement>('.chapter-verse, .side-row')
-    if (verse && getComputedStyle(verse).position === 'sticky') {
-      const covered = verse.getBoundingClientRect().bottom - box.getBoundingClientRect().top
-      if (covered > 0) pane.scrollTop -= covered + 8
-    }
   }, [shown])
 
   return {
