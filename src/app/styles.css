@@ -670,8 +670,9 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .chapter-lines.is-alone { font-size: 1.15rem; line-height: 1.7; }
 .chapter-lines.is-alone .chapter-verse.is-current { background: none; border-inline-start: 0; padding-inline: 0; }
 /* A touched word's card open: its verse stays at the pane's top while the card scrolls under it, so whatever its
-   length the card is read beside its words. Its own ground over the page's, as nothing shows through it. */
-.chapter-lines > div:has(> .word-help) > .chapter-verse { position: sticky; inset-block-start: 0; z-index: 1; background-color: var(--bg); }
+   length the card is read beside its words. Its own ground over the page's, as nothing shows through it. Not a verse
+   too tall for the pane (`data-tall`, TouchWords): it would leave the card a sliver. */
+.chapter-lines > div:has(> .word-help) > .chapter-verse:not([data-tall]) { position: sticky; inset-block-start: 0; z-index: 1; background-color: var(--bg); }
 .word-help-note { justify-self: start; padding-inline: 0; }
 /* The lexicon: the lemma, a short meaning, the senses of this verse */
 .lexicon-lemma { font-size: 1.15rem; margin: 0; }
