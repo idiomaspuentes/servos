@@ -246,19 +246,45 @@ export function MiniAppScreen({
   // says it to a screen reader, so the title keeps its room. To the book, its short name is said.
   const returning = Boolean(backLabel && app.primary?.returning)
   const wide = useWide()
+  // On a computer, a mini app showing the whole chapter goes by chapter in its bar: «‹ Jonás 1 ›».
+  const byChapter = wide && Boolean(app.wideByChapter)
+  const lastChapter = after === null
+  const chapterLabel = `${title} ${position.chapter}`
   // Where the person is, with the arrows on: on a computer in the header's row, so the texts have its height (a
   // second bar is a line of the source text less on screen); on a phone at the foot, under the thumb.
   const positionLine = app.positionLine !== false && (
-    <nav className="position" aria-label={passage}>
-      <button type="button" className="pager-arrow position-arrow" aria-label={previousLabel} title={t('marco.conAtajo', { accion: previousLabel, atajo: KEYS.previous })} disabled={atStart} onPointerDown={keep} onClick={previous}>
-        ‹
-      </button>
+    <nav className="position" aria-label={byChapter ? chapterLabel : passage}>
+      {byChapter ? (
+        <button type="button" className="pager-arrow position-arrow" aria-label={t('marco.capituloAnterior')} title={t('marco.capituloAnterior')} disabled={before === null} onPointerDown={keep} onClick={() => before !== null && cross(before, false)}>
+          ‹
+        </button>
+      ) : (
+        <button type="button" className="pager-arrow position-arrow" aria-label={previousLabel} title={t('marco.conAtajo', { accion: previousLabel, atajo: KEYS.previous })} disabled={atStart} onPointerDown={keep} onClick={previous}>
+          ‹
+        </button>
+      )}
       <button type="button" className="position-label" onClick={() => setVerseList(true)}>
         {/* Which unit it goes by is said, so the person knows there is another (chosen in the sheet this opens). */}
-        <strong>{passage}</strong>
-        {shown[0] > 0 && ` · ${t(app.sections && unit === 'section' ? 'marco.posicionSeccion' : 'marco.posicion', { n: counted.indexOf(shown) + 1, total: counted.length })}`}
+        {byChapter ? (
+          <strong>{chapterLabel}</strong>
+        ) : (
+          <>
+            <strong>{passage}</strong>
+            {shown[0] > 0 && ` · ${t(app.sections && unit === 'section' ? 'marco.posicionSeccion' : 'marco.posicion', { n: counted.indexOf(shown) + 1, total: counted.length })}`}
+          </>
+        )}
       </button>
-      {atEnd && !backLabel ? (
+      {byChapter ? (
+        lastChapter && !backLabel ? (
+          <button type="button" className="position-done" onPointerDown={keep} onClick={finish}>
+            {t('marco.listo')}
+          </button>
+        ) : (
+          <button type="button" className="pager-arrow position-arrow" aria-label={t('marco.capituloSiguiente')} title={t('marco.capituloSiguiente')} disabled={lastChapter} onPointerDown={keep} onClick={() => after !== null && cross(after, false)}>
+            ›
+          </button>
+        )
+      ) : atEnd && !backLabel ? (
         // At the book's last verse the way on is back to the book: said, where the arrow was.
         <button type="button" className="position-done" onPointerDown={keep} onClick={finish}>
           {t('marco.listo')}

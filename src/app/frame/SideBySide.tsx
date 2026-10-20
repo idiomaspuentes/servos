@@ -42,6 +42,11 @@ export interface SideWriting {
   go(unit: number[]): void
   /** Said after the switches (how a poem's lines are written, when the verses open have one). */
   hint?: ReactNode
+  /**
+   * A box in every row, not only in the rows open (a computer, where the chapter is in sight): writing in one opens
+   * its rows. The rows open are then brought into sight only when out of it, so writing elsewhere moves nothing.
+   */
+  everyRow?: boolean
 }
 
 const keptKey = (app: string) => `servos.prototipo.lado.${app}`
@@ -279,6 +284,10 @@ function Rows({
     if (!row || !pane) return
     const head = pane.querySelector<HTMLElement>('.side-row.is-head')
     const covered = head ? (parseFloat(getComputedStyle(head).top) || 0) + head.offsetHeight : 0
+    if (writing?.everyRow) {
+      const top = row.offsetTop - pane.scrollTop
+      if (top >= covered && top < pane.clientHeight - 40) return
+    }
     pane.scrollTop = row.offsetTop < pane.clientHeight / 3 ? 0 : row.offsetTop - covered - 8
   }, [anchor, ids.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -393,7 +402,7 @@ function Rows({
                 {unitLabel(unit)}
               </span>
               {texts.map((x) => cell(x, unit))}
-              {box(unit, here)}
+              {box(unit, here || Boolean(writing?.everyRow))}
             </div>
             {below.length > 0 && (
               <div className="side-row is-under" role="row">

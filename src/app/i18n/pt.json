@@ -10,6 +10,8 @@
   "marco.siguiente": "Próximo versículo",
   "marco.seccionAnterior": "Seção anterior",
   "marco.seccionSiguiente": "Próxima seção",
+  "marco.capituloAnterior": "Capítulo anterior",
+  "marco.capituloSiguiente": "Próximo capítulo",
   "marco.lado.textos": "Textos lidos lado a lado",
   "marco.lado.masTextos": "Textos",
   "marco.lado.lleno": "Até {n} de uma vez: tire um para pôr outro.",

@@ -138,6 +138,11 @@ export interface MiniApp {
   /** Whether the person may also work a section at a time: then the frame moves by sections and opens all its verses. */
   sections?: boolean
   /**
+   * On a computer, the position line's arrows go from chapter to chapter: the mini app shows the whole chapter there
+   * (the editor's rows, a box each). The keyboard's still go by verse or section.
+   */
+  wideByChapter?: boolean
+  /**
    * Whether the book starts with its introduction and each chapter with its own, when the notes have them: the frame
    * then stops at them first (`BOOK_INTRO`, `CHAPTER_INTRO` as the verse).
    */

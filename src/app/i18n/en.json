@@ -10,6 +10,8 @@
   "marco.siguiente": "Next verse",
   "marco.seccionAnterior": "Previous section",
   "marco.seccionSiguiente": "Next section",
+  "marco.capituloAnterior": "Previous chapter",
+  "marco.capituloSiguiente": "Next chapter",
   "marco.lado.textos": "Texts read side by side",
   "marco.lado.masTextos": "Texts",
   "marco.lado.lleno": "Up to {n} at a time: take one away to add another.",

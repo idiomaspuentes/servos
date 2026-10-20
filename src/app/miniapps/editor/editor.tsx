@@ -99,10 +99,14 @@ function keepHelpsOn(on: boolean) {
 
 function Center({ context }: MiniAppCenterProps) {
   const { position, marked, t, data, textAbbreviation, frame, goTo } = context
+  const wide = useWide()
   // The verses open, with those joined to them: a verse joined to the one before opens their box.
   const units = unitsOf(position.book, position.chapter, context.shown)
   const shown = units.flat()
-  const starts = units.map((u) => u[0])
+  // On a computer every verse of the chapter has its box (`everyRow`): their drafts are all read, and ↑ ↓ go through
+  // them all; on a phone, those of the verses open.
+  const boxUnits = wide ? unitsOf(position.book, position.chapter, data.verses.map((v) => v.verse)) : units
+  const starts = boxUnits.map((u) => u[0])
   // What is open: the verse, or the verses of its section. Within a section the position follows the verse being
   // written (so the helps are that verse's), and nothing else changes.
   const openKey = `${position.book}.${position.chapter}.${shown.join(',')}`
@@ -127,6 +131,9 @@ function Center({ context }: MiniAppCenterProps) {
     const verse = asked.current
     asked.current = null
     const at = units.find((u) => u.includes(position.verse))?.[0] ?? shown[0]
+    // Written into already (a box of another section clicked, on a computer): its cursor stays where it was put.
+    const active = document.activeElement
+    if (!verse && active instanceof HTMLTextAreaElement && active.id.startsWith(fieldsId(at))) return
     const box = document.getElementById(lineFieldId(fieldsId(verse ?? at), 0)) as HTMLTextAreaElement | null
     box?.focus()
     box?.setSelectionRange(box.value.length, box.value.length)
@@ -186,7 +193,6 @@ function Center({ context }: MiniAppCenterProps) {
   // On a computer a touched word's card is in the helps column, beside the texts, not under its verse, while the
   // column is in sight; put away (a narrower window), the card stays under its verse rather than the texts shrinking
   // to make room for it.
-  const wide = useWide()
   const wider = useWider()
   const [helpsOn, setHelpsOn] = useState(readHelpsOn)
   const { lit, touch, card, cardAside, helpsShown } = useWordHelps({
@@ -216,8 +222,8 @@ function Center({ context }: MiniAppCenterProps) {
 
   // ↑ and ↓ past a box's first or last line: the box of the verse before or after, among the verses open.
   const edge = (unit: number[], toward: 'previous' | 'next') => {
-    const i = units.findIndex((u) => u[0] === unit[0])
-    const to = units[toward === 'next' ? i + 1 : i - 1]
+    const i = boxUnits.findIndex((u) => u[0] === unit[0])
+    const to = boxUnits[toward === 'next' ? i + 1 : i - 1]
     const first = to ? document.getElementById(lineFieldId(fieldsId(to[0]), 0)) : null
     const fields = first?.closest('.line-fields')?.querySelectorAll<HTMLTextAreaElement>('textarea.line-field')
     const box = fields && (toward === 'next' ? fields[0] : fields[fields.length - 1])
@@ -393,6 +399,7 @@ function Center({ context }: MiniAppCenterProps) {
             goTo({ ...position, verse: unit[0] })
           },
           hint: anyPoem ? <p className="side-hint">{t('editor.comoRenglones')}</p> : undefined,
+          everyRow: true,
         }}
       />
     ),
@@ -447,6 +454,8 @@ export const editor: MiniApp = {
   // A section at a time until the person chooses: a verse reads best written with those around it.
   unit: 'section',
   sections: true,
+  // On a computer the whole chapter is in its rows, a box a verse: its bar goes by chapter.
+  wideByChapter: true,
   // A verse joined to the one before is translated with it.
   // Written, and not waiting to be brought together with other versions of it: until then the verse is not settled.
   done: (at) => Boolean(textOf(at.book, at.chapter, at.verse).trim()) && !versionsAt(at.book, at.chapter, joinStartOf(at.book, at.chapter, at.verse)).length,

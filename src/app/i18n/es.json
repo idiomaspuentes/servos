@@ -10,6 +10,8 @@
   "marco.siguiente": "Versículo siguiente",
   "marco.seccionAnterior": "Sección anterior",
   "marco.seccionSiguiente": "Sección siguiente",
+  "marco.capituloAnterior": "Capítulo anterior",
+  "marco.capituloSiguiente": "Capítulo siguiente",
   "marco.lado.textos": "Textos que se leen lado a lado",
   "marco.lado.masTextos": "Textos",
   "marco.lado.lleno": "Hasta {n} a la vez: quite uno para poner otro.",
