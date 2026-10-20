@@ -526,7 +526,18 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .panes-tab { flex: 0 0 auto; min-height: var(--touch); min-width: var(--touch); border: 0; border-radius: 0; background: none; color: var(--text-soft); border-block-end: 3px solid transparent; padding-inline: 0.5rem; }
 .panes-tab[aria-selected='true'] { color: var(--text); border-block-end-color: var(--accent); font-weight: 600; }
 /* The window clips and cannot be scrolled; the row inside it is moved by a transform (see Panes.tsx). */
-.panes-window { flex: 1; min-height: 0; overflow: hidden; overflow: clip; }
+.panes-window { position: relative; flex: 1; min-height: 0; overflow: hidden; overflow: clip; }
+/* The panes beside, at the window's foot: small tinted tabs that float, out of the way of the text read */
+.panes-edge {
+  position: absolute; inset-block-end: 0.75rem; z-index: 2; width: auto; min-height: var(--touch); padding: 0 0.9rem; border: 0; border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-soft) 88%, var(--bg)); color: var(--accent); font-size: 0.9rem; font-weight: 700; box-shadow: var(--shadow-raised);
+}
+.panes-edge.is-next { inset-inline-end: 0.75rem; }
+.panes-edge.is-prev { inset-inline-start: 0.75rem; }
+/* The last lines of a pane are read above them */
+.panes-window:has(> .panes-edge) .pane { padding-block-end: 4.5rem; }
+/* While writing on a phone the keyboard leaves little room: the tabs at the top are enough */
+.screen-fill.is-writing .panes-edge { display: none; }
 .panes-track { height: 100%; display: flex; transition: transform 0.25s ease; }
 /* A finger moving sideways is the swipe's, read in Panes.tsx; the browser keeps the vertical scroll and the pinch.
    On everything inside, not only the row: touch-action holds only up to the nearest box that scrolls, and each pane
@@ -585,11 +596,14 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .edit-pane { height: 100%; display: flex; flex-direction: column; gap: 0.75rem; }
 /* The boxes scroll inside the pane, so the one being written stays right above the keyboard. */
 .edit-fields { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 0.5rem; }
-.edit-where { margin: 0; font-size: 0.85rem; color: var(--text-soft); flex: none; }
+/* The line over the boxes: a breath under the tabs, near the boxes it speaks of */
+.edit-where { margin: 0.75rem 0 0; font-size: 0.85rem; color: var(--text-soft); flex: none; }
 /* The boxes are what scrolls: the pane gives them its padding, so their scroll bar is at the screen's edge, as the
    other panes' is, not inside the margin */
 .pane:has(> .edit-pane) { overflow-y: hidden; padding: 0; }
 .edit-fields { padding: 0.75rem 1rem; }
+/* Under the line that speaks of them, the boxes close to it */
+.edit-where + .edit-fields { padding-block-start: 0.5rem; }
 .edit-pane > :not(.edit-fields) { padding-inline: 1rem; }
 
 /* Writing on a phone: the header and the filled button step aside for the keyboard */

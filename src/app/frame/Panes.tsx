@@ -225,6 +225,18 @@ export function Panes({
             </section>
           ))}
         </div>
+        {/* What is beside, said at the window's foot: the next pane at the right, the one before at the left. Its name
+            and the way it lies tell that the window slides; a touch goes there. */}
+        {current < panes.length - 1 && (
+          <button type="button" className="panes-edge is-next" onClick={() => go(current + 1)}>
+            {panes[current + 1].label} ›
+          </button>
+        )}
+        {current > 0 && (
+          <button type="button" className="panes-edge is-prev" onClick={() => go(current - 1)}>
+            ‹ {panes[current - 1].label}
+          </button>
+        )}
       </div>
     </div>
   )
