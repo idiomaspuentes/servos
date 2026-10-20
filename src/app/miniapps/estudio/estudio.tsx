@@ -13,9 +13,10 @@
 import { Fragment, useLayoutEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { ChapterLines } from '../../frame/ChapterLines'
-import { Markdown } from '../../frame/Markdown'
+import { Markdown, type ArticleLinks } from '../../frame/Markdown'
 import { Panes, useWide, useWider, type Pane } from '../../frame/Panes'
 import { passageOf } from '../../frame/PlacePicker'
+import { Sheet } from '../../frame/Sheet'
 import { SideBySide, type SideText } from '../../frame/SideBySide'
 import { glossedPlaces, useWordHelps } from '../../frame/TouchWords'
 import { readGlossaryFor } from '../../projects/glossary'
@@ -38,6 +39,7 @@ function Center({ context }: MiniAppCenterProps) {
   const [note, setNote] = useState(() => ({ text: read()?.text ?? '', by: read()?.by ?? null }))
   const [, setPane] = useState('')
   const [open, setOpen] = useState<{ id: string } | undefined>(undefined)
+  const [article, setArticle] = useState<{ title: string; markdown: string } | null>(null)
   if (key !== unitKey) {
     setKey(unitKey)
     setNote({ text: read()?.text ?? '', by: read()?.by ?? null })
@@ -92,6 +94,13 @@ function Center({ context }: MiniAppCenterProps) {
     // note keeps what the team decides for all of it (the title, the names that come back), read again while
     // translating any verse of it.
     const label = t(introOf === 'libro' ? 'marco.introLibro' : 'marco.introCapitulo')
+    // The articles it points to («Ver: gracia, misericordia»), to open by their titles.
+    const articleAt = (ref: { kind: 'tw' | 'ta'; path: string }) => (ref.kind === 'tw' ? data.words[ref.path] : data.academy[ref.path])
+    const links: ArticleLinks = {
+      // A word's article is named by its first form («gracia, amable»): commas would run several links together.
+      titleOf: (ref) => (articleAt(ref)?.markdown ? (ref.kind === 'tw' ? articleAt(ref)!.title.split(',')[0].trim() : articleAt(ref)!.title) : null),
+      open: (ref) => setArticle(articleAt(ref) ?? null),
+    }
     const panes: Pane[] = [
       {
         id: 'introduccion',
@@ -99,7 +108,7 @@ function Center({ context }: MiniAppCenterProps) {
         content: (
           <>
             <article className="study-intro" aria-label={label}>
-              <Markdown text={intro} />
+              <Markdown text={intro} links={links} />
             </article>
             {!wide && !note.text.trim() && (
               <button type="button" className="button-secondary study-write" onClick={() => toNote()}>
@@ -129,6 +138,11 @@ function Center({ context }: MiniAppCenterProps) {
     return (
       <div className="study" ref={root}>
         <Panes panes={panes} label={t('estudio.paneles')} fixed="nota" open={open} onPane={setPane} holdFocus={false} />
+        {article && (
+          <Sheet title={article.title} onClose={() => setArticle(null)}>
+            <Markdown text={article.markdown} skipFirstHeading />
+          </Sheet>
+        )}
       </div>
     )
   }

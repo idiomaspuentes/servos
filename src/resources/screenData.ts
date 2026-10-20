@@ -24,6 +24,7 @@ import {
   type ChapterWords,
 } from './reading'
 import type { ResourceStores } from './store'
+import { articleOf, rcLinksIn } from './articleLinks'
 
 /** The original a book is translated from, as the screens name it. */
 export interface Original {
@@ -171,28 +172,32 @@ export async function chapterData(
 
   const words: PrototypeData['words'] = {}
   const twStamp = sources.words ? resourceContentStamp(await stores.catalog.get(sources.words)) : null
-  for (const link of links) {
-    if (words[link.articlePath]) continue
-    const entry = link.articlePath.replace(/^bible\//, '')
+  const keepWord = async (articlePath: string) => {
+    if (words[articlePath]) return
+    const entry = articlePath.replace(/^bible\//, '')
     const titleRow = sources.words ? await stores.cache.get(`helps-text:tw-title:${sources.words}@${twStamp}:${entry}`) : null
-    const article = sources.words ? await stores.cache.get(`${sources.words}/${link.articlePath}`) : null
-    words[link.articlePath] = {
+    const article = sources.words ? await stores.cache.get(`${sources.words}/${articlePath}`) : null
+    words[articlePath] = {
       title: unwrapVersioned<string>(titleRow, 1) ?? entry.split('/').pop()!,
       markdown: typeof article === 'string' ? article : '',
     }
   }
+  for (const link of links) await keepWord(link.articlePath)
 
   const byVerse: PrototypeData['verses'] = []
   const academy: PrototypeData['academy'] = {}
+  const keepAcademy = async (path: string) => {
+    if (academy[path]) return
+    const article = sources.academy ? await stores.cache.get(`${sources.academy}/${path}`) : null
+    const markdown = typeof article === 'string' ? article : ''
+    academy[path] = { title: markdown.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? path, markdown }
+  }
   for (const verse of verses) {
     const inGlt = sources.notes ? await notesOfVerse(stores, { notesKey: sources.notes, textKey: literal, book: bookId, chapter, verse }) : []
     const inGst = sources.notes && simpleWords && simple ? await notesOfVerse(stores, { notesKey: sources.notes, textKey: simple, book: bookId, chapter, verse }) : []
     for (const n of inGlt) {
       const path = n.supportReference.split('/ta/man/')[1]
-      if (!path || academy[path]) continue
-      const article = sources.academy ? await stores.cache.get(`${sources.academy}/${path}`) : null
-      const markdown = typeof article === 'string' ? article : ''
-      academy[path] = { title: markdown.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? path, markdown }
+      if (path) await keepAcademy(path)
     }
     byVerse.push({
       verse,
@@ -225,6 +230,12 @@ export async function chapterData(
   }
 
   const intros = sources.notes ? await introsOf(stores, sources.notes, bookId, chapter) : { book: null, chapter: null }
+  // The articles the introductions point to («(Ver: [[rc://…/tw/dict/bible/kt/grace]], …)»), offered there by title.
+  for (const rc of rcLinksIn(`${intros.book ?? ''}\n${intros.chapter ?? ''}`)) {
+    const ref = articleOf(rc)
+    if (ref?.kind === 'tw') await keepWord(ref.path)
+    else if (ref?.kind === 'ta') await keepAcademy(ref.path)
+  }
   const today = options.today ?? new Date().toISOString().slice(0, 10)
   const texts: PrototypeText[] = [{ key: literal, abbreviation: 'TPL', title: await title(literal), pieces: glt, lines: literalWords.lines, toOriginal: toOriginal('TPL') }]
   if (gst && simple && simpleWords) texts.push({ key: simple, abbreviation: 'TPS', title: await title(simple), pieces: gst, lines: simpleWords.lines, toOriginal: toOriginal('TPS') })

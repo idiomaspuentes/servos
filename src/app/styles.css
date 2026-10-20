@@ -757,6 +757,8 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .study-intro h3:first-child { margin-block-start: 0.25rem; }
 /* In its pane beside the note, the pane scrolls it */
 .pane .study-intro { flex: none; overflow: visible; }
+/* An article a text points to, offered by its title in the text's own line: the helps' colour, underlined */
+.md-article { display: inline; width: auto; min-height: 0; padding: 0; border: 0; background: none; color: var(--accent); font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; }
 
 /* The study: the texts and the note as panes, one button leading on */
 .study { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.5rem; }
