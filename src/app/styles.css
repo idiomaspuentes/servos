@@ -390,6 +390,9 @@ textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
 /* With two or more projects, on a phone the title opens their list */
 .home-title-pick { display: inline; width: auto; min-height: var(--touch); padding: 0; border: 0; border-radius: 0; background: none; font-weight: inherit; text-align: start; }
 .home-current .home-current-book { font-size: 1.45rem; line-height: 1.15; font-weight: 800; overflow-wrap: anywhere; }
+/* The book's name opens the book (its steps and tools), whatever «Continue» goes back into */
+.home-current-open { align-self: flex-start; width: auto; min-height: var(--touch); margin-block: -0.45rem; padding: 0; border: 0; border-radius: 0; background: none; color: inherit; text-align: start; }
+.home-current-chevron { color: var(--on-field-soft); font-weight: 400; }
 .home-current .home-current-where { color: var(--on-field-soft); }
 /* The five steps: those done in the field's gold, the one it is in in the field's light, those ahead faint */
 .step-track { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; max-width: 16rem; margin-block-start: 0.45rem; }

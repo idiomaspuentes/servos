@@ -199,7 +199,14 @@ export function Home({
                   <span className="book-resume-kicker">
                     {resumed ? t('inicio.sigaDonde', { nombre: person }) : begun ? t('inicio.sigaCon', { nombre: person }) : t('inicio.empiece', { nombre: person })}
                   </span>
-                  <span className="home-current-book">{titleOf(project, current.code)}</span>
+                  {/* «Continue» may go straight back into a mini app; the book's name always opens the book */}
+                  <button type="button" className="home-current-book home-current-open" onClick={() => onBook(project.id, current.code)}>
+                    {titleOf(project, current.code)}
+                    <span className="home-current-chevron" aria-hidden="true">
+                      {' '}
+                      ›
+                    </span>
+                  </button>
                   {resumed && resumeAt && <span className="home-current-where">{resumeAt}</span>}
                   <StepTrack phase={current.phase} />
                   <span className="home-current-step">

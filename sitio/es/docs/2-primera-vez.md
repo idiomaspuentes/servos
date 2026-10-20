@@ -63,7 +63,7 @@ Si el libro ya está empezado en otra app (Paratext, translationCore), elija **D
 
 ## El inicio
 
-Al abrir Servos, arriba está el nombre del proyecto y, en el recuadro verde, el libro en que trabajó la última vez: en qué paso va, de los cinco, y el botón para seguir donde quedó. Debajo están los otros libros, cada uno con su paso, y al final **+ Agregar un libro**. Abajo, **Ajustes** del proyecto y **+ Otro proyecto**.
+Al abrir Servos, arriba está el nombre del proyecto y, en el recuadro verde, el libro en que trabajó la última vez: en qué paso va, de los cinco, y el botón para seguir donde quedó. Para ver los pasos y las herramientas de ese libro, toque su nombre. Debajo están los otros libros, cada uno con su paso, y al final **+ Agregar un libro**. Abajo, **Ajustes** del proyecto y **+ Otro proyecto**.
 
 Si el equipo tiene más de un proyecto, toque el nombre del proyecto, arriba, para pasar a otro. En la computadora, los proyectos están en una columna a la izquierda.
 
