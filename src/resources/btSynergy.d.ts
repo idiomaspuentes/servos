@@ -138,6 +138,9 @@ declare module '@bt-synergy/resource-pipeline/scripture/scripturePreparer' {
     o: number
     k: number
     a?: number[]
+    /** A ketiv's qere (from the note after it), and the index of its match key. */
+    qc?: string
+    q?: number
   }
   export type FullInline = LightInline | { kind: 'token'; token: InternedToken }
   export interface FullBlock {

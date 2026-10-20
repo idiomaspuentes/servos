@@ -262,9 +262,10 @@ export interface ChapterWords {
   lines: Record<number, WordLine[]>
   /**
    * The chapter's words in order: the place of each is what aligned helps keep (`helps-align` rows), so a touched word
-   * finds its notes. `own` is its match key (`jon 2:2:קראתי:1`), `originals` the original words it translates.
+   * finds its notes. `own` is its match key (`jon 2:2:קראתי:1`), `originals` the original words it translates. A
+   * Hebrew ketiv also has its qere's key: the bridge texts are aligned to the qere (Ruth 4:5, קניתי read קָנִ֔יתָה).
    */
-  words: Array<{ verse: number; own: string; originals: string[] }>
+  words: Array<{ verse: number; own: string; originals: string[]; qere?: string }>
   /** The notes the text gives after a word, by the word's place: the Hebrew's qere after its ketiv («Q יַ֣עַשׂ»). */
   notes?: Record<number, string>
 }
@@ -327,10 +328,12 @@ export function wordsInLines(full: ScriptureFullChapter): ChapterWords {
           if (spaceBefore(block.inline[i - 1])) line.pieces.push({ text: ' ' })
           line.pieces.push({ text: item.token.c, word: words.length })
           last = words.length
+          const qere = item.token.q === undefined ? undefined : full.matchKeys[item.token.q]
           words.push({
             verse: v,
             own: full.matchKeys[item.token.k] ?? '',
             originals: (item.token.a ?? []).map((k) => full.matchKeys[k]).filter((k): k is string => typeof k === 'string'),
+            ...(qere ? { qere } : {}),
           })
         }
       }

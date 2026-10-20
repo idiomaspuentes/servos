@@ -113,7 +113,8 @@ export async function chapterData(
     tn: { TPL: await alignedIn(sources.notes, literal), TPS: await alignedIn(sources.notes, simpleWords ? simple : undefined) },
     twl: { TPL: await alignedIn(sources.wordLinks, literal), TPS: await alignedIn(sources.wordLinks, simpleWords ? simple : undefined) },
   }
-  const originalPlace = new Map(originalOwn.words.map((w, i) => [w.own, i]))
+  // A word of a bridge text aligned to a qere finds the ketiv shown in its place.
+  const originalPlace = new Map(originalOwn.words.flatMap((w, i) => (w.qere ? [[w.own, i], [w.qere, i]] : [[w.own, i]]) as Array<[string, number]>))
   const originalRead = await originalWordsOf(stores, original.key, bookId, chapter)
   const originalWords = originalRead?.words ?? []
   const originalsOfVerse = (verse: number) =>

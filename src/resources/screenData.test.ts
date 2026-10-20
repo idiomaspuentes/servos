@@ -88,6 +88,20 @@ describe.skipIf(!folder)('un capítulo desde los paquetes reales', () => {
     expect(hebrew.words?.length).toBe(Object.values(hebrew.lines).flat().flatMap((l) => l.pieces).filter((p) => p.word !== undefined).length)
   }, 600_000)
 
+  it('Rut 4:5: el ketiv קניתי y «adquieres», alineado a su qere קָנִ֔יתָה, se encuentran uno al otro', async () => {
+    await opened
+    const data = await chapterData(stores, es419(HEBREW), 'rut', 4)
+    const hebrew = data.texts.find((t) => t.original)!
+    const tpl = data.texts.find((t) => t.abbreviation === 'TPL')!
+    const placeOf = (text: typeof tpl, word: string) =>
+      text.lines[5].flatMap((l) => l.pieces).find((p) => p.word !== undefined && p.text.replace(/[֑-ׇ⁠]/g, '') === word)?.word
+    const ketiv = placeOf(hebrew, 'קניתי')
+    const adquieres = placeOf(tpl, 'adquieres')
+    expect(ketiv).toBeDefined()
+    expect(adquieres).toBeDefined()
+    expect(tpl.toOriginal?.[adquieres!]).toEqual([ketiv])
+  }, 600_000)
+
   it('Ester, de la que el equipo solo publicó el TPL: abre igual, con el TPL y el hebreo, sin ayudas', async () => {
     await opened
     const data = await chapterData(stores, es419(HEBREW), 'est', 1)
