@@ -573,17 +573,21 @@ export function WordHelpCard({
             </>
           )}
 
+          {/* A note or a key word says which words of the text being read it is about: the original is at the card's
+              head already, and is said again only for a quote this text does not have. */}
           {help.kind === 'nota' && (
             <>
               {help.places[touched.abbreviation]?.length ? (
                 <p className="word-help-quote">
                   <Scripture text={text}>{wordsOf(text, help.places[touched.abbreviation])}</Scripture>
                 </p>
-              ) : null}
-              {original && !text.original && (
-                <p className="word-help-quote-original">
-                  <Scripture text={original}>{help.note.quote}</Scripture>
-                </p>
+              ) : (
+                original &&
+                help.note.quote.trim() && (
+                  <p className="word-help-quote-original">
+                    <Scripture text={original}>{help.note.quote}</Scripture>
+                  </p>
+                )
               )}
               <Markdown text={help.note.note} />
               {help.note.academy && data.academy[help.note.academy] && (
@@ -596,17 +600,12 @@ export function WordHelpCard({
 
           {help.kind === 'palabra' &&
             (() => {
-              // An article's title names the word and its kin («apóstol, apostolado»): the word first, the kin under it.
-              const [name, ...kin] = (data.words[help.article]?.title ?? help.article).split(/,\s*/)
+              // An article's title names the word and its kin («apóstol, apostolado»): the word names the link.
+              const [name] = (data.words[help.article]?.title ?? help.article).split(/,\s*/)
+              const here = help.places[touched.abbreviation]
               return (
                 <>
-                  <p className="word-help-quote">{name}</p>
-                  {kin.length > 0 && <p className="word-help-soft">{t('ayudas.tambien', { formas: kin.join(', ') })}</p>}
-                  {original && !text.original && (
-                    <p className="word-help-quote-original">
-                      <Scripture text={original}>{help.original}</Scripture>
-                    </p>
-                  )}
+                  <p className="word-help-quote">{here?.length ? <Scripture text={text}>{wordsOf(text, here)}</Scripture> : name}</p>
                   {/* Its article, said with its name and kept to the item, not a row like «More on …» under it. */}
                   {data.words[help.article] && (
                     <button type="button" className="word-help-read" onClick={() => setArticle(data.words[help.article])}>
