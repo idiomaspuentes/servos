@@ -649,17 +649,15 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 /* The verses being translated: a line at their left and their text in full colour, the others' soft; no ground, so
    the section does not weigh more than the words in it */
 .chapter-verse.is-current { color: var(--text); border-radius: 0; border-inline-start: 3px solid var(--accent); }
-/* The line the person is translating: apart from the rest of its verse, a mark at its start and a deeper ground.
-   background-color only, so a poem line keeps its rule (drawn as a background image). */
-.usfm-line.is-writing-line { background-color: color-mix(in srgb, var(--accent) 10%, transparent); box-shadow: inset 3px 0 0 var(--accent); border-radius: 4px; }
-/* Its ground reaches out to the verse's band (`.chapter-verse`, 0.5rem in), so its mark joins the band's line, thicker
-   where the person writes, instead of being drawn over the verse's number; the text stays where it was (as much
-   margin taken as padding given), and a poem's rule with it. */
+/* The line the person is translating: apart from the rest of its verse by a light ground, no mark of its own (the
+   section's line is at its left). background-color only, so a poem line keeps its rule (drawn as a background image).
+   Its ground reaches a little out of the text, short of the section's line (`.chapter-verse`, 0.5rem in): the text
+   stays where it was (as much margin taken as padding given), and a poem's rule with it. */
 .usfm-line.is-writing-line {
-  margin-inline-start: -0.5rem; padding-inline-start: calc(var(--indent) + var(--bar) + var(--pad) + 0.5rem);
-  background-position: calc(var(--indent) + 0.5rem) 50%;
+  background-color: color-mix(in srgb, var(--accent) 10%, transparent); border-radius: 4px;
+  margin-inline: -0.25rem; padding-inline-start: calc(var(--indent) + var(--bar) + var(--pad) + 0.25rem); padding-inline-end: 0.25rem;
+  background-position: calc(var(--indent) + 0.25rem) 50%;
 }
-[dir='rtl'] .usfm-line.is-writing-line { box-shadow: inset -3px 0 0 var(--accent); }
 /* A section read alone: larger, no lit ground, the words to touch are all there is */
 .chapter-lines.is-alone { font-size: 1.15rem; line-height: 1.7; }
 .chapter-lines.is-alone .chapter-verse.is-current { background: none; border-inline-start: 0; padding-inline: 0; }
