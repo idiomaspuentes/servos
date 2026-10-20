@@ -159,7 +159,8 @@ export function SideBySide({
           type="button"
           className={aside.on ? 'side-switch is-aside is-on' : 'side-switch is-aside'}
           aria-pressed={aside.on}
-          title={t(aside.on ? 'marco.lado.quitar' : 'marco.lado.poner', { texto: aside.label })}
+          // Why one text only fits beside it is said here, where it is asked, not in a line always in sight.
+          title={aside.on && max === 1 ? t('marco.lado.conAyudas') : t(aside.on ? 'marco.lado.quitar' : 'marco.lado.poner', { texto: aside.label })}
           onClick={() => aside.onChange(!aside.on)}
         >
           {aside.label}
@@ -171,8 +172,9 @@ export function SideBySide({
   // One text alone is drawn as the mini app draws it, when it has a way to (the team's own text has none: a row each).
   // Where the team writes, always rows: the box stays at the end of its verse's row.
   const alone = shown.length === 1 && !writing ? single?.(shown[0].id) : null
-  // With one text on: that another fits beside it, or, with the column beside on, that putting it away makes room.
-  const lone = <p className="side-hint">{max === 1 && aside?.on ? t('marco.lado.conAyudas') : t('marco.lado.ayuda', { n: max })}</p>
+  // With one text on: that another fits beside it. With the column beside on and room for one text, nothing: the
+  // switches say it when asked (their titles), and a text touched there takes the place of the one on.
+  const lone = max === 1 && aside?.on ? null : <p className="side-hint">{t('marco.lado.ayuda', { n: max })}</p>
   return (
     <div className="side-by-side" data-n={shown.length}>
       {switches}

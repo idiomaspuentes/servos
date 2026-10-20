@@ -215,6 +215,8 @@
   "ayudas.articuloNoEsta": "Este artigo não está neste telefone. Chega com o pacote do seu idioma.",
   "ayudas.articuloNoEsta.computadora": "Este artigo não está neste computador. Chega com o pacote do seu idioma.",
   "ayudas.masSobre": "Mais sobre {palabra}",
+  "ayudas.ayudasDelVersiculo": "Ajudas do versículo",
+  "ayudas.masSobreOriginal": "Mais sobre o original",
   "libro.glosario": "Glossário do projeto",
   "glosario.titulo": "Glossário",
   "glosario.ayuda": "Como a equipe traduz as palavras do original. São adicionadas ao traduzir por escrito: toque uma palavra e «Adicionar ao glossário».",

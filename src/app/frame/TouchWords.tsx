@@ -377,6 +377,7 @@ export function WordHelpCard({
   onNote,
   onGlossary,
   cardRef,
+  inColumn = false,
 }: {
   data: PrototypeData
   touched: Touched
@@ -388,6 +389,11 @@ export function WordHelpCard({
   onGlossary?(): void
   /** The card's box, for whoever keeps the pane in place around it. */
   cardRef?(box: HTMLElement | null): void
+  /**
+   * Drawn in the column beside the texts (a computer), not under its verse: no frame of its own, the column is one,
+   * and the way back to the verse's helps it took the place of instead of «Close».
+   */
+  inColumn?: boolean
 }) {
   const t = useT()
   const [article, setArticle] = useState<OpenArticle | null>(null)
@@ -503,6 +509,50 @@ export function WordHelpCard({
     },
   }
 
+  // The word of the original a touched word mostly stands for: not a preposition, conjunction or particle bound to it.
+  function mainFirst(list: typeof lexicons) {
+    const minor = (place: number) => {
+      const morph = original?.words?.[place]?.morph ?? ''
+      const last = morph.split(',').slice(1).join(',').split(':').pop() ?? ''
+      return (original?.lang === 'grc' ? /^[PCT]/ : /^[RCT]/).test(last)
+    }
+    return [...list].sort((a, b) => Number(minor(a.place)) - Number(minor(b.place)))
+  }
+
+  function lexiconBody(l: (typeof lexicons)[number], i: number) {
+    return (
+      <>
+        {i === 0 && teamNotes.length > 0 && (
+          <div className="word-help-more-part">
+            <p className="word-help-label">{t('ayudas.glosarioDelEquipo')}</p>
+            {teamNotesShown}
+          </div>
+        )}
+        <div className="word-help-more-part">
+          {l.byVerse && <p className="word-help-label">{t('ayudas.enEsteVersiculo')}</p>}
+          {l.here.map((s, j) => (
+            <LexiconSenseText key={j} sense={s} />
+          ))}
+        </div>
+        <Referents data={data} verse={l.verse} place={l.place} credit={false} />
+        <OriginalFacts data={data} place={l.place} />
+        {l.other.length > 0 && (
+          <details className="word-help-other">
+            <summary>{t('ayudas.otrosSentidos', { n: l.other.length })}</summary>
+            {l.other.map((s, j) => (
+              <LexiconSenseText key={j} sense={s} />
+            ))}
+          </details>
+        )}
+        <RowButton label={t('st.open')} onClick={() => setDiagram({ verse: l.verse, place: l.place })} />
+        <p className="quiet lexicon-credit">
+          {t('ayudas.lexicoCredito')}
+          {hasReferents(data, l.verse, l.place) && ` ${t('lx.refCredit')}`}
+        </p>
+      </>
+    )
+  }
+
   const teamNotes = decided.filter((d) => d.entry.note || d.entry.by)
   const teamNotesShown = (
     <>
@@ -519,7 +569,7 @@ export function WordHelpCard({
   return (
     <aside
       ref={cardRef}
-      className="word-help"
+      className={inColumn ? 'word-help is-column' : 'word-help'}
       aria-label={t('ayudas.dePalabra', { palabra: word })}
       onKeyDown={(e) => {
         // Esc closes the card from inside it, as it closes a sheet (principle 13).
@@ -528,13 +578,20 @@ export function WordHelpCard({
         onClose()
       }}
     >
+      {inColumn && (
+        <button type="button" className="word-help-read word-help-back word-help-close" onClick={onClose}>
+          ‹ {t('ayudas.ayudasDelVersiculo')}
+        </button>
+      )}
       <div className="word-help-head">
         <p className="word-help-word">
           <Scripture text={text}>{word}</Scripture>
         </p>
-        <button type="button" className="button-quiet word-help-close" onClick={onClose}>
-          {t('ayudas.cerrar')}
-        </button>
+        {!inColumn && (
+          <button type="button" className="button-quiet word-help-close" onClick={onClose}>
+            {t('ayudas.cerrar')}
+          </button>
+        )}
       </div>
 
       {/* The word's original and its gloss are said in «More on …» below; here only for a word without it. The card
@@ -702,45 +759,36 @@ export function WordHelpCard({
 
       {!help && lexicons.length === 0 && bridges.length === 0 && decided.length === 0 && <p className="quiet">{t('ayudas.nadaEnPalabra')}</p>}
 
-      {lexicons.map((l, i) => (
-        <details key={l.id} className="word-help-more">
+      {/* More on the original, folded: one fold, the main word first, when the word touched stands for several
+          («a Jonás» is אֶל and יוֹנָה); each with its lemma over it. */}
+      {lexicons.length === 1 && (
+        <details className="word-help-more">
           <summary>
             <span>
               {/* The lemma in its own letters, wherever the language puts it in the sentence. */}
-              {t('ayudas.masSobre', { palabra: ' ' })
-                .split(' ')
-                .flatMap((part, j) => (j === 0 ? [part] : [<Scripture key={j} text={original}>{l.lemma}</Scripture>, part]))}
+              {t('ayudas.masSobre', { palabra: ' ' })
+                .split(' ')
+                .flatMap((part, j) => (j === 0 ? [part] : [<Scripture key={j} text={original}>{lexicons[0].lemma}</Scripture>, part]))}
             </span>
           </summary>
-          {i === 0 && teamNotes.length > 0 && (
-            <div className="word-help-more-part">
-              <p className="word-help-label">{t('ayudas.glosarioDelEquipo')}</p>
-              {teamNotesShown}
-            </div>
-          )}
-          <div className="word-help-more-part">
-            {l.byVerse && <p className="word-help-label">{t('ayudas.enEsteVersiculo')}</p>}
-            {l.here.map((s, j) => (
-              <LexiconSenseText key={j} sense={s} />
-            ))}
-          </div>
-          <Referents data={data} verse={l.verse} place={l.place} credit={false} />
-          <OriginalFacts data={data} place={l.place} />
-          {l.other.length > 0 && (
-            <details className="word-help-other">
-              <summary>{t('ayudas.otrosSentidos', { n: l.other.length })}</summary>
-              {l.other.map((s, j) => (
-                <LexiconSenseText key={j} sense={s} />
-              ))}
-            </details>
-          )}
-          <RowButton label={t('st.open')} onClick={() => setDiagram({ verse: l.verse, place: l.place })} />
-          <p className="quiet lexicon-credit">
-            {t('ayudas.lexicoCredito')}
-            {hasReferents(data, l.verse, l.place) && ` ${t('lx.refCredit')}`}
-          </p>
+          {lexiconBody(lexicons[0], 0)}
         </details>
-      ))}
+      )}
+      {lexicons.length > 1 && (
+        <details className="word-help-more">
+          <summary>
+            <span>{t('ayudas.masSobreOriginal')}</span>
+          </summary>
+          {mainFirst(lexicons).map((l, i) => (
+            <section key={l.id} className="word-help-more-word">
+              <p className="word-help-more-lemma">
+                <Scripture text={original}>{l.lemma}</Scripture>
+              </p>
+              {lexiconBody(l, i)}
+            </section>
+          ))}
+        </details>
+      )}
 
       {article && <ArticleSheet data={data} article={article} onClose={() => setArticle(null)} />}
       {diagram && <SentenceDiagram data={data} verse={diagram.verse} place={diagram.place} onClose={() => setDiagram(null)} />}
@@ -901,6 +949,7 @@ export function useWordHelps({
         onClose={close}
         onNote={onNote}
         cardRef={(box) => (cardBox.current = box)}
+        inColumn={aside}
         onGlossary={
           onGlossary &&
           (() =>

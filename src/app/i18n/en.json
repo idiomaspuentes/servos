@@ -215,6 +215,8 @@
   "ayudas.articuloNoEsta": "This article is not on this phone. It comes with your language pack.",
   "ayudas.articuloNoEsta.computadora": "This article is not on this computer. It comes with your language pack.",
   "ayudas.masSobre": "More about {palabra}",
+  "ayudas.ayudasDelVersiculo": "Helps of the verse",
+  "ayudas.masSobreOriginal": "More on the original",
   "libro.glosario": "Project glossary",
   "glosario.titulo": "Glossary",
   "glosario.ayuda": "How the team translates the words of the original. They are added while translating in writing: touch a word and «Add to the glossary».",

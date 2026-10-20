@@ -695,6 +695,15 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .word-help { margin-block: 0.5rem; padding: 0.6rem 1rem 0.35rem; max-width: 40rem; border: 1px solid var(--line); border-inline-start: 3px solid var(--accent); border-radius: var(--radius); background: var(--surface); font-family: var(--font); font-size: 1rem; line-height: 1.5; text-align: start; }
 .word-help p { margin: 0; }
 .word-help-head { display: flex; align-items: flex-start; gap: 0.5rem; }
+/* In the column beside the texts: the same box as the verse's helps it takes the place of, no frame of its own */
+.word-help.is-column { margin: 0; padding: 0.75rem 1rem; max-width: none; border: 0; border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-card); }
+.word-help.is-column .word-help-word { font-size: 1.5rem; }
+/* Its groups a group apart, as the verse's helps: more room between them than within */
+.word-help.is-column > .word-help-part, .word-help.is-column > .word-help-more { margin-block-start: 1rem; padding-block-start: 1rem; }
+.word-help.is-column .word-help-quote { font-size: 1.05rem; font-weight: 600; }
+.word-help-back { margin-block-end: 0.5rem; }
+.word-help-more-word + .word-help-more-word { border-block-start: 1px solid var(--line); margin-block-start: 0.75rem; padding-block-start: 0.75rem; }
+.word-help-more-lemma { margin: 0 0 0.25rem; font-size: 1.3rem; }
 .word-help-word { flex: 1; min-width: 0; padding-block-start: 0.3rem; overflow-wrap: anywhere; font-family: var(--serif); font-weight: 700; font-size: 1.4rem; line-height: 1.3; }
 .word-help-word bdi[dir='rtl'] { font-size: 1.7rem; font-weight: 400; }
 .word-help-close { min-width: var(--touch); padding-inline: 0.5rem; font-size: 0.95rem; }
