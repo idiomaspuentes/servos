@@ -22,6 +22,7 @@ import { readGlossaryFor } from '../../projects/glossary'
 import { joinStartOf, studyNoteOn, studyNotesAbout, textOf, writeStudyNote } from '../../projects/work'
 import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type MiniAppCenterProps } from '../contract'
 import { StudyNotes, withLine } from './StudyNotes'
+import { VerseExtras } from './VerseExtras'
 
 function Center({ context }: MiniAppCenterProps) {
   const { position, data, t, marked, textAbbreviation, shown, person } = context
@@ -97,35 +98,7 @@ function Center({ context }: MiniAppCenterProps) {
   // whose words were not found in this text, with its quote), and the comprehension questions.
   const general = (verse: number, abbreviation: string) => {
     const at = data.verses.find((v) => v.verse === verse)
-    const notes = at?.notes.filter((n) => !n.places[abbreviation]?.length) ?? []
-    const questions = at?.questions ?? []
-    if (!notes.length && !questions.length) return null
-    return (
-      <>
-        {notes.length > 0 && (
-          <details className="general-notes">
-            <summary>{t('estudio.notasGenerales', { n: notes.length })}</summary>
-            {notes.map((n) => (
-              <Fragment key={n.id}>
-                {n.quote.trim() && <p className="general-quote">{n.quote}</p>}
-                <Markdown text={n.note} />
-              </Fragment>
-            ))}
-          </details>
-        )}
-        {questions.length > 0 && (
-          <details className="general-notes">
-            <summary>{t('estudio.preguntas', { n: questions.length })}</summary>
-            {questions.map((q) => (
-              <div key={q.id} className="general-question">
-                <p className="help-question">{q.question}</p>
-                <p>{q.response}</p>
-              </div>
-            ))}
-          </details>
-        )}
-      </>
-    )
+    return <VerseExtras notes={at?.notes.filter((n) => !n.places[abbreviation]?.length) ?? []} questions={at?.questions ?? []} />
   }
   const hint = t('estudio.toquePalabra')
   const others = studyNotesAbout(position.book, position.chapter, shown).filter((n) => n.verses.join(',') !== shown.join(','))
@@ -248,8 +221,10 @@ export const estudio: MiniApp = {
       seguir: 'Seguir leyendo',
       escribirNota: 'Escribir mi nota',
       miNota: 'Mi nota',
-      notasGenerales: 'Notas sobre todo el versículo ({n})',
-      preguntas: 'Preguntas para pensar ({n})',
+      notaVersiculo: 'Nota sobre el versículo',
+      notasVersiculo: 'Notas sobre el versículo ({n})',
+      preguntaPensar: 'Pregunta para pensar',
+      preguntasPensar: 'Preguntas para pensar ({n})',
       guardarSeguir: 'Guardar y seguir',
       toquePalabra: 'toque una palabra para ver sus notas',
       'toquePalabra.computadora': 'haga clic en una palabra para ver sus notas',
@@ -271,8 +246,10 @@ export const estudio: MiniApp = {
       seguir: 'Continuar lendo',
       escribirNota: 'Escrever minha nota',
       miNota: 'Minha nota',
-      notasGenerales: 'Notas sobre todo o versículo ({n})',
-      preguntas: 'Perguntas para pensar ({n})',
+      notaVersiculo: 'Nota sobre o versículo',
+      notasVersiculo: 'Notas sobre o versículo ({n})',
+      preguntaPensar: 'Pergunta para pensar',
+      preguntasPensar: 'Perguntas para pensar ({n})',
       guardarSeguir: 'Salvar e seguir',
       toquePalabra: 'toque uma palavra para ver suas notas',
       'toquePalabra.computadora': 'clique numa palavra para ver suas notas',
@@ -294,8 +271,10 @@ export const estudio: MiniApp = {
       seguir: 'Keep reading',
       escribirNota: 'Write my note',
       miNota: 'My note',
-      notasGenerales: 'Notes on the whole verse ({n})',
-      preguntas: 'Questions to think on ({n})',
+      notaVersiculo: 'Note on the verse',
+      notasVersiculo: 'Notes on the verse ({n})',
+      preguntaPensar: 'Question to think on',
+      preguntasPensar: 'Questions to think on ({n})',
       guardarSeguir: 'Save and continue',
       toquePalabra: 'touch a word to see its notes',
       'toquePalabra.computadora': 'click a word to see its notes',

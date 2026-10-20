@@ -764,13 +764,15 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .chip { min-height: var(--touch); padding: 0.25rem 0.85rem; border: 1px solid color-mix(in srgb, var(--text-soft) 55%, transparent); border-radius: 999px; background: var(--surface); color: var(--text); font-size: 0.9rem; width: auto; }
 .chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
 .chip:active { background: var(--accent-soft); }
-.general-notes { font-size: 0.95rem; }
-/* Folded, as a row that unfolds (principle 12): the text's colour and ▾, not a loose blue link */
-.general-notes summary { min-height: var(--touch); display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; color: var(--text); font-weight: 600; cursor: pointer; list-style: none; }
-.general-notes summary::-webkit-details-marker { display: none; }
-.general-notes summary::after { content: '▾'; font-size: 1rem; transition: transform 0.15s; }
-.general-notes[open] > summary::after { transform: rotate(180deg); }
-.general-notes { margin-block: 0.25rem 0.5rem; padding-inline: 0.75rem; border-inline-start: 3px solid var(--line); font-family: var(--font); font-size: 1rem; line-height: 1.5; }
+/* What no word leads to, under its verse: a small sign in the helps' colour, set apart from the text by size and
+   face; open, a card like a touched word's */
+.verse-extras { display: flex; flex-direction: column; margin-block: 0.25rem 0.75rem; font-family: var(--font); }
+.verse-extras-signs { display: flex; flex-wrap: wrap; gap: 0 1rem; }
+.verse-extra { display: inline-flex; align-items: center; gap: 0.4rem; width: auto; min-height: var(--touch); padding: 0; border: 0; background: none; color: var(--accent); font-family: var(--font); font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+.verse-extra-mark { display: inline-grid; place-items: center; width: 1.3rem; height: 1.3rem; border-radius: 999px; background: var(--accent-soft); font-size: 0.8rem; line-height: 1; }
+.verse-extra.is-open .verse-extra-mark { background: var(--accent); color: var(--surface); }
+.verse-extra-card { margin-block-start: 0; }
+.verse-extra-title { flex: 1; margin: 0; padding-block-start: 0.6rem; font-weight: 700; }
 /* A note whose words were not found in this text says which they are; each question sits a group apart from the next */
 .general-quote { margin-block: 0.75rem 0; font-weight: 600; }
 .general-question { display: flex; flex-direction: column; gap: 0.25rem; padding-block-end: 0.75rem; }
