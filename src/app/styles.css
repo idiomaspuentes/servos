@@ -736,6 +736,7 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 /* An item's article: a link in the helps' colour under the item, its own, not a row like the folds below the card */
 .word-help-read { display: inline-flex; align-items: center; width: auto; min-height: var(--touch); margin-block-start: 0.15rem; padding: 0; border: 0; background: none; color: var(--accent); font: inherit; font-weight: 600; text-align: start; cursor: pointer; }
 .word-help-read:hover { text-decoration: underline; text-underline-offset: 0.2em; }
+.article-back { margin-block-end: 0.5rem; }
 .word-help-more { border-block-start: 1px solid var(--line); margin-block-start: 0.7rem; }
 .word-help-more > summary, .word-help-other > summary { min-height: var(--touch); display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-weight: 700; cursor: pointer; list-style: none; }
 .word-help-more > summary::-webkit-details-marker, .word-help-other > summary::-webkit-details-marker { display: none; }

@@ -10,8 +10,15 @@ import { articleOf, rcLinksIn, type ArticleRef } from '../../resources/articleLi
 
 export type { ArticleRef }
 
-/** How a text's articles are offered: the title of one on this device (null when it is not), and opening it. */
-export type ArticleLinks = { titleOf(ref: ArticleRef): string | null; open(ref: ArticleRef): void }
+/**
+ * How a text's articles are offered: the title of one on this device (null when it is not), opening it, and, for an
+ * article's own links (`[profeta](../kt/prophet.md)`), the article a link points to; those are offered by their text.
+ */
+export type ArticleLinks = {
+  titleOf(ref: ArticleRef): string | null
+  open(ref: ArticleRef, label?: string): void
+  hrefOf?(href: string): ArticleRef | null
+}
 
 function inline(text: string, links?: ArticleLinks): ReactNode[] {
   const out: ReactNode[] = []
@@ -34,7 +41,19 @@ function inline(text: string, links?: ArticleLinks): ReactNode[] {
           </button>
         )
     } else if (m.startsWith('**')) out.push(<strong key={i++}>{m.slice(2, -2)}</strong>)
-    else if (m.startsWith('[')) out.push(m.slice(1, m.indexOf(']')))
+    else if (m.startsWith('[')) {
+      const label = m.slice(1, m.indexOf(']'))
+      const ref = links?.hrefOf?.(m.slice(m.indexOf('(') + 1, -1).trim())
+      out.push(
+        ref ? (
+          <button key={i++} type="button" className="md-article" onClick={() => links!.open(ref, label)}>
+            {label}
+          </button>
+        ) : (
+          label
+        )
+      )
+    }
     else out.push(<em key={i++}>{m.slice(1, -1)}</em>)
     last = at + m.length
   }
@@ -55,7 +74,7 @@ export function withoutArticleLinks(text: string, keep?: (rc: string) => boolean
       return kept.length ? all.replace(inside, kept.map((rc) => `[[${rc}]]`).join(', ')) : ''
     })
     .replace(/\[\[(rc:[^\]]+)\]\]/g, (all, rc: string) => (gone(rc) ? '' : all))
-    .replace(/([^.])\.\.(?!\.)/g, '$1.') // «Dios». (ver: …). leaves two periods
+    .replace(/([^.])\.\.(?![./])/g, '$1.') // «Dios». (ver: …). leaves two periods; «../kt/prophet.md» is a path
 }
 
 export function Markdown({ text, skipFirstHeading = false, links }: { text: string; skipFirstHeading?: boolean; links?: ArticleLinks }) {

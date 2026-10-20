@@ -18,8 +18,8 @@ import { sensesOfWord, strongCode, type LexiconSense } from '../../lexicon/lexic
 import { Markdown } from './Markdown'
 import { hasReferents, OriginalFacts, Referents } from './OriginalWord'
 import { SentenceDiagram } from './SentenceDiagram'
-import { Sheet } from './Sheet'
 import { inSight, keepPlace, litOf, pagedHelps, revealBelow, shortGloss } from './wordCard'
+import { ArticleSheet, articleIn, type OpenArticle } from './ArticleSheet'
 
 export type WordHelp =
   /** What the original says of how a word of it is read: the qere of a ketiv, another possible reading, a note. */
@@ -390,7 +390,7 @@ export function WordHelpCard({
   cardRef?(box: HTMLElement | null): void
 }) {
   const t = useT()
-  const [article, setArticle] = useState<{ title: string; markdown: string } | null>(null)
+  const [article, setArticle] = useState<OpenArticle | null>(null)
   const [diagram, setDiagram] = useState<{ verse: number; place: number } | null>(null)
   const text = data.texts.find((x) => x.abbreviation === touched.abbreviation)!
   const original = data.texts.find((x) => x.original)
@@ -673,7 +673,7 @@ export function WordHelpCard({
               )}
               <Markdown text={help.note.note} />
               {help.note.academy && data.academy[help.note.academy] && (
-                <button type="button" className="word-help-read" onClick={() => setArticle(data.academy[help.note.academy!])}>
+                <button type="button" className="word-help-read" onClick={() => setArticle(articleIn(data, { kind: 'ta', path: help.note.academy! }))}>
                   {t('ayudas.leerArticuloDe', { titulo: data.academy[help.note.academy].title })} ›
                 </button>
               )}
@@ -690,7 +690,7 @@ export function WordHelpCard({
                   <p className="word-help-quote">{here?.length ? <Scripture text={text}>{wordsOf(text, here)}</Scripture> : name}</p>
                   {/* Its article, said with its name and kept to the item, not a row like «More on …» under it. */}
                   {data.words[help.article] && (
-                    <button type="button" className="word-help-read" onClick={() => setArticle(data.words[help.article])}>
+                    <button type="button" className="word-help-read" onClick={() => setArticle(articleIn(data, { kind: 'tw', path: help.article }))}>
                       {t('ayudas.leerSobre', { palabra: name })} ›
                     </button>
                   )}
@@ -742,11 +742,7 @@ export function WordHelpCard({
         </details>
       ))}
 
-      {article && (
-        <Sheet title={article.title} onClose={() => setArticle(null)}>
-          <Markdown text={article.markdown} skipFirstHeading />
-        </Sheet>
-      )}
+      {article && <ArticleSheet data={data} article={article} onClose={() => setArticle(null)} />}
       {diagram && <SentenceDiagram data={data} verse={diagram.verse} place={diagram.place} onClose={() => setDiagram(null)} />}
     </aside>
   )

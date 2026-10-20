@@ -17,6 +17,9 @@ import { sectionStartsOf } from '../../resources/sections'
 import { availability, deviceIndex, languagesOnDevice, sourcesFor, type Availability, type DeviceIndex, type ResourceHere } from '../../resources/sources'
 import { openResourceStores, type ResourceStores } from '../../resources/store'
 import { openingLeft } from '../../resources/packs'
+import type { ArticleRef } from '../../resources/articleLinks'
+import { resourceContentStamp } from '@bt-synergy/resource-catalog'
+import { unwrapVersioned } from '@bt-synergy/resource-pipeline/cache/versionedEnvelope'
 import type { Project } from './model'
 import { currentProject } from './scope'
 
@@ -128,6 +131,32 @@ export const onDevice = (key: string): boolean => Boolean(index?.resources.some(
 
 /** What this device has of a book in a language, and why not, when it can tell. */
 export const availabilityOf = (book: string, language: string): Availability | null => (index ? availability(index, language, book) : null)
+
+/** Whether this device has a language's word articles or Translation Academy: then any article of them can be read. */
+export function articlesOnDevice(kind: ArticleRef['kind'], language = languageOf(currentProject())): boolean {
+  const sources = index ? sourcesFor(index, language) : null
+  const key = kind === 'tw' ? sources?.words : sources?.academy
+  return Boolean(key && onDevice(key))
+}
+
+/**
+ * An article of the project's helps language read from this device, for one an article links to and the chapter did
+ * not bring (`ArticleSheet`): a word's, with its title, or Translation Academy's, titled by its heading. None when the
+ * device does not have it, or for the example bundled in the app.
+ */
+export async function readArticle(ref: ArticleRef, language = languageOf(currentProject())): Promise<{ title: string; markdown: string } | null> {
+  if (!stores || !index) return null
+  const sources = sourcesFor(index, language)
+  const key = ref.kind === 'tw' ? sources?.words : sources?.academy
+  if (!key) return null
+  const article = await stores.cache.get(`${key}/${ref.path}`)
+  if (typeof article !== 'string' || !article.trim()) return null
+  if (ref.kind === 'ta') return { title: article.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? ref.path, markdown: article }
+  const stamp = resourceContentStamp(await stores.catalog.get(key))
+  const entry = ref.path.replace(/^bible\//, '')
+  const title = unwrapVersioned<string>(await stores.cache.get(`helps-text:tw-title:${key}@${stamp}:${entry}`), 1)
+  return { title: title ?? entry.split('/').pop()!, markdown: article }
+}
 
 /** Where a book stands, in the language of the project the app is in unless said. */
 export function bookState(book: string, language = languageOf(currentProject())): BookState {

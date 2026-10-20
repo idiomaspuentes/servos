@@ -17,7 +17,7 @@ import { RowButton } from './Actions'
 import { Markdown } from './Markdown'
 import { rangeOf } from './PlacePicker'
 import { showInPane } from './Panes'
-import { Sheet } from './Sheet'
+import { ArticleSheet, articleIn, type OpenArticle } from './ArticleSheet'
 
 type Tab = 'glosario' | 'comentarios' | 'notas' | 'preguntas'
 
@@ -75,7 +75,7 @@ export function HelpsPanel({
   const [tab, setTab] = useState<Tab>('notas')
   const [index, setIndex] = useState(0)
   const [answer, setAnswer] = useState(false)
-  const [article, setArticle] = useState<{ title: string; markdown: string } | null>(null)
+  const [article, setArticle] = useState<OpenArticle | null>(null)
   // What a newer pack changed in these verses, already translated (helpsChanges.ts): a changed note unfolds what it said.
   useSyncExternalStore(subscribeChanges, changesVersion)
   const changes = changedVerses(data.book.id, data.chapter).filter((c) => shown.includes(c.verse))
@@ -157,7 +157,7 @@ export function HelpsPanel({
               </>
             )}
             {note.academy && data.academy[note.academy] && (
-              <RowButton label={t('ayudas.leerArticulo', { titulo: data.academy[note.academy].title })} onClick={() => setArticle(data.academy[note.academy!])} />
+              <RowButton label={t('ayudas.leerArticulo', { titulo: data.academy[note.academy].title })} onClick={() => setArticle(articleIn(data, { kind: 'ta', path: note.academy! }))} />
             )}
           </>
         )}
@@ -211,11 +211,7 @@ export function HelpsPanel({
         )}
       </div>
 
-      {article && (
-        <Sheet title={article.title} onClose={() => setArticle(null)}>
-          <Markdown text={article.markdown} skipFirstHeading />
-        </Sheet>
-      )}
+      {article && <ArticleSheet data={data} article={article} onClose={() => setArticle(null)} />}
     </section>
   )
 }

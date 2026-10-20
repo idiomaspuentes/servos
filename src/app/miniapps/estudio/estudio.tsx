@@ -16,7 +16,6 @@ import { ChapterLines } from '../../frame/ChapterLines'
 import { Markdown, type ArticleLinks } from '../../frame/Markdown'
 import { Panes, useWide, useWider, type Pane } from '../../frame/Panes'
 import { passageOf } from '../../frame/PlacePicker'
-import { Sheet } from '../../frame/Sheet'
 import { SideBySide, type SideText } from '../../frame/SideBySide'
 import { glossedPlaces, helpedPlaces, useWordHelps } from '../../frame/TouchWords'
 import { readGlossaryFor } from '../../projects/glossary'
@@ -24,6 +23,7 @@ import { BOOK_NOTE_CHAPTER, introNoteOn, joinStartOf, markStudied, studiedIn, st
 import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type MiniAppCenterProps } from '../contract'
 import { StudyNotes, withLine } from './StudyNotes'
 import { VerseExtras } from './VerseExtras'
+import { ArticleSheet, articleIn, type OpenArticle } from '../../frame/ArticleSheet'
 
 /** How long a section stays on screen before moving on past it counts as having read it. */
 export const READ_SECONDS = 5
@@ -42,7 +42,7 @@ function Center({ context }: MiniAppCenterProps) {
   const [note, setNote] = useState(() => ({ text: read()?.text ?? '', by: read()?.by ?? null }))
   const [, setPane] = useState('')
   const [open, setOpen] = useState<{ id: string } | undefined>(undefined)
-  const [article, setArticle] = useState<{ title: string; markdown: string } | null>(null)
+  const [article, setArticle] = useState<OpenArticle | null>(null)
   if (key !== unitKey) {
     setKey(unitKey)
     setNote({ text: read()?.text ?? '', by: read()?.by ?? null })
@@ -104,7 +104,7 @@ function Center({ context }: MiniAppCenterProps) {
     const links: ArticleLinks = {
       // A word's article is named by its first form («gracia, amable»): commas would run several links together.
       titleOf: (ref) => (articleAt(ref)?.markdown ? (ref.kind === 'tw' ? articleAt(ref)!.title.split(',')[0].trim() : articleAt(ref)!.title) : null),
-      open: (ref) => setArticle(articleAt(ref) ?? null),
+      open: (ref) => setArticle(articleIn(data, ref)),
     }
     const panes: Pane[] = [
       {
@@ -143,11 +143,7 @@ function Center({ context }: MiniAppCenterProps) {
     return (
       <div className="study" ref={root}>
         <Panes panes={panes} label={t('estudio.paneles')} fixed="nota" open={open} onPane={setPane} holdFocus={false} />
-        {article && (
-          <Sheet title={article.title} onClose={() => setArticle(null)}>
-            <Markdown text={article.markdown} skipFirstHeading />
-          </Sheet>
-        )}
+        {article && <ArticleSheet data={data} article={article} onClose={() => setArticle(null)} />}
       </div>
     )
   }
