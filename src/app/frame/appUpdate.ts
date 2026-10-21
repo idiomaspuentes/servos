@@ -24,12 +24,15 @@ export function keepAppOffline() {
     .catch(() => {})
   if (mode === 'escritorio' || mode === 'telefono' || !('serviceWorker' in navigator)) return
   const start = () => {
+    const own = new URL(`${import.meta.env.BASE_URL}sw.js`, location.href).href
     navigator.serviceWorker
       .register(`${import.meta.env.BASE_URL}sw.js`)
       .then((registration) => {
-        // Only an update waits with a version already in use; the first one is used at once.
+        // Only an update waits with a version already in use; the first one is used at once. The site's own worker
+        // (at the root, for the page that presents Servos) also covers /app/ until the app's worker takes over: the
+        // app's first worker is not an update of it.
         const ready = (worker: ServiceWorker | null) => {
-          if (!worker || !navigator.serviceWorker.controller) return
+          if (!worker || navigator.serviceWorker.controller?.scriptURL !== own) return
           waiting = worker
           listeners.forEach((fn) => fn())
         }
@@ -59,6 +62,8 @@ export function keepAppOffline() {
 /** Uses the new version now: the app opens again in it (what was written is kept, as on any reload). */
 export function switchToNewVersion() {
   if (!waiting) return
+  // Already in use (it took over by itself): opening the page again is all that is left.
+  if (waiting.state === 'activating' || waiting.state === 'activated' || waiting.state === 'redundant') return location.reload()
   asked = true
   waiting.postMessage('usar-ahora')
 }
