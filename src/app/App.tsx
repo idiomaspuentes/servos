@@ -10,7 +10,7 @@ import { MiniAppScreen } from './frame/MiniAppScreen'
 import { useT } from './i18n/i18n'
 import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type Position } from './miniapps/contract'
 import { miniApp } from './miniapps/registry'
-import { EXAMPLE_PROJECT_ID, PHASES, exampleProject, loadProjects, saveProjects, titleOf, type Project } from './projects/model'
+import { EXAMPLE_PROJECT_ID, PHASES, exampleProject, loadProjects, saveProjects, titleOf, type Phase, type Project } from './projects/model'
 import { inProject, setProject } from './projects/scope'
 import { bookState, languageOf, libraryVersion, loadBook, setProjects as setLibraryProjects, subscribeLibrary } from './projects/library'
 import { firstUndone, placeLabel, stepPercent } from './projects/progress'
@@ -45,7 +45,8 @@ import { waiting } from './projects/outbox'
 type Screen =
   | { kind: 'home' }
   | { kind: 'newProject' }
-  | { kind: 'book'; projectId: string; book: string }
+  /** `step`: a step of the book open on its own screen (on a phone; a wide window shows one beside the steps). */
+  | { kind: 'book'; projectId: string; book: string; step?: Phase }
   | { kind: 'app'; projectId: string; book: string; id: string; back?: Screen }
   | { kind: 'settings'; projectId: string }
   | { kind: 'glossary'; projectId: string; back: Screen; entry?: string }
@@ -220,7 +221,10 @@ export function App() {
   // the screen goes back and, if still away from home, sets another.
   const goBack = useRef(home)
   goBack.current =
-    screen.kind === 'app' ? leaveApp : screen.kind === 'glossary' || screen.kind === 'receive' || screen.kind === 'recibir' || screen.kind === 'elegir' || screen.kind === 'equipo' ? () => setScreen(screen.back) : home
+    // A step open on a phone goes back to its book's steps; in a wide window the steps are beside it, so the book goes home.
+    screen.kind === 'book' && screen.step && !window.matchMedia('(min-width: 900px)').matches
+      ? () => setScreen({ kind: 'book', projectId: screen.projectId, book: screen.book })
+      : screen.kind === 'app' ? leaveApp : screen.kind === 'glossary' || screen.kind === 'receive' || screen.kind === 'recibir' || screen.kind === 'elegir' || screen.kind === 'equipo' ? () => setScreen(screen.back) : home
   const armed = useRef(false)
   // An entry kept for a sheet open on home (home keeps none of its own).
   const sheetEntry = useRef(false)
@@ -423,8 +427,11 @@ export function App() {
           onOpen={(app, chapter) => {
             keepLastApp(person, bookScreen.book, app.id)
             openAt(bookScreen.book, app, chapter)
-            setScreen({ kind: 'app', projectId: bookScreen.projectId, book: bookScreen.book, id: app.id })
+            // Back from it to where it was opened: the book, or the step's screen.
+            setScreen({ kind: 'app', projectId: bookScreen.projectId, book: bookScreen.book, id: app.id, back: bookScreen })
           }}
+          step={bookScreen.step}
+          onStep={(step) => setScreen({ kind: 'book', projectId: bookScreen.projectId, book: bookScreen.book, ...(step ? { step } : {}) })}
           onTogether={(on) =>
             setProjects(
               projects.map((p) =>

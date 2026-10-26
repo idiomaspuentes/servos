@@ -101,6 +101,13 @@ Lo que se aprende en una mini app sirve en la siguiente, y una mini app nueva no
 
 - **Toques de 44 px** como mínimo. Lo que se arrastra (las palabras al alinear) se prueba aparte, en un teléfono.
 - **Ningún icono sin palabra.** En el teléfono no hay texto al pasar el ratón, y una palabra se puede traducir; un icono suelto no dice qué hace.
+- **Una lista que no se ve entera no es una fila que se desliza** (Abel, 26 de octubre). Los cinco pasos del libro
+  iban en una fila de píldoras que, a 375 px, cortaba «Comunidad» y dejaba «Publicar» fuera de la vista. Ahora el
+  libro abre con la mini app donde la persona quedó («Siga donde quedó», su botón lleno) y debajo los cinco pasos,
+  una fila cada uno con su dibujo, su nombre y su avance; cada paso se abre en su pantalla, que dice para qué sirve.
+  Los dibujos (`StepIcon`) son de la familia de la marca, en musgo sobre un cuadro teñido y siempre junto a su
+  nombre: una lupa, un lápiz que escribe, una lista con un visto, un grupo de personas, una flecha que sube. El libro
+  abierto no se usa: es la marca.
 - **Tocar, no pasar el ratón.** Lo que en tC4 se marca al pasar por encima, aquí se marca al tocar.
 - **Tocar antes que escribir.** Si el texto ya existe, se ofrece en trozos para tocar; el teclado es el último recurso.
 - **Nada escondido sin que se note.** Una pestaña dice cuánto hay dentro («Notas 3»).
@@ -117,13 +124,13 @@ acción toma la forma de su papel:
 | Lo principal | Botón lleno, uno por pantalla | «Continuar», «Sí, se entiende bien» |
 | Una alternativa que hace algo | Botón con borde, del ancho del lleno, debajo de él | «Dejar este para después», «Elegir otro archivo» |
 | Salir o cancelar, sin hacer nada | El «‹» del encabezado o «Cerrar» de la hoja; sin botón propio | Terminar de recibir, dejar una hoja |
-| Abrir algo más | Fila de ancho completo con su flecha: › abre una hoja u otro lugar, ▾ despliega aquí y gira al abrir | «Por capítulo», «Leer el artículo», los pliegues |
+| Abrir algo más | Fila de ancho completo con su flecha: › abre una hoja u otro lugar, ▾ despliega aquí y gira al abrir | «Por capítulo», «Leer el artículo», los pasos del libro, los pliegues |
 | Actuar sobre una cosa | Chip pegado a la cosa: borde, verbo y su signo (✎, +) | «✎ Cambiar», «+ Agregar al glosario», «↶ Deshacer» |
 | Lo que la app sugiere una vez | Tarjeta neutra, debajo de lo que sigue, con su acción y «Ahora no» | «¿Cómo se dice «Jonás» en kichwa?» |
 | Pasar el libro de paso | Botón con borde al pie del paso, con una línea que dice qué cambia | «Terminar Traducción y pasar a Revisión» |
 | Moverse en una lista | Dos cuadrados teñidos de 44 px, de esquinas redondeadas (como las flechas de tC4), sin borde, con la posición en medio. Lo que comparte su barra (el filtro, «Listo») toma las mismas esquinas, sin borde | «‹ 2 de 5 ›» |
 | Ver una cosa u otra de un panel | Pestañas con una línea bajo la abierta (como las ayudas de tC4) | Su traducción · TPL · TPS · Hebreo · Ayudas |
-| Elegir entre pocas, una a la vez | Píldoras sobre un riel hundido; la elegida, levantada (como el interruptor de modo de tC4) | Glosario · Notas · Preguntas; los pasos del libro |
+| Elegir entre pocas, una a la vez | Píldoras sobre un riel hundido; la elegida, levantada (como el interruptor de modo de tC4) | Glosario · Notas · Preguntas |
 | Algo que no se deshace | Botón con borde rojo | «Desvincular de este teléfono» |
 
 - **Chip no es etiqueta.** El chip hace algo: tiene borde, un verbo y su signo. La etiqueta dice un estado: va teñida,
@@ -204,7 +211,8 @@ medida es tC4: una ventana ancha, ratón y teclado, columnas a los lados y el te
   de posición abajo. Desde 900 px, dos columnas: lo que se lee y lo que se escribe. Desde 1280 px, también la columna de
   las ayudas, como en tC4. Una ventana angosta en la computadora se ve como el teléfono, y está bien.
 - **Lo que en el teléfono es una hoja, en la ventana ancha es una columna o un cuadro.** La lista de un revisor va en una
-  columna a la izquierda desde 1280 px (antes, en un cuadro); las ayudas, a la derecha. Lo que sigue siendo una hoja (compartir, un artículo, elegir un
+  columna a la izquierda desde 1280 px (antes, en un cuadro); las ayudas, a la derecha. Los pasos del libro van en una
+  columna a la izquierda desde 900 px, con el paso elegido a su lado (al entrar, el de la última mini app usada). Lo que sigue siendo una hoja (compartir, un artículo, elegir un
   libro) se abre como un cuadro en medio de la ventana, nunca pegado al pie. «Más» y el menú de la persona se abren bajo
   su botón.
 - **Anchos de lectura, no de ventana.** Un renglón de texto no pasa de unos 70 caracteres; un formulario, de unos 40rem.
