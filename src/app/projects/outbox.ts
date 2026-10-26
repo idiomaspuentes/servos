@@ -7,7 +7,7 @@
  */
 
 import { accountOf, destinationOf, leaveWork, nextVersion, problemOf, type Destination, type Problem } from './door43'
-import type { Project } from './model'
+import { privacyOf, type Project } from './model'
 import { booksOf, markVersionWithTakes, uploadProject, withWorkOf, type BookToPublish } from './publishing'
 import { shareProject, withSounds } from './share'
 import { deviceId } from './work'
@@ -128,7 +128,7 @@ export async function runErrand(
   try {
     if (e.kind === 'dejar') {
       const file = await withSounds(shareProject(project, project.books.map((b) => b.code), e.person))
-      const result = await leaveWork(account, to, JSON.stringify(file), e.person, deviceId())
+      const result = await leaveWork(account, to, JSON.stringify(file), e.person, deviceId(), privacyOf(project))
       return result.state === 'failed' ? { problem: result.problem ?? 'other' } : { sent: { kind: 'dejar' } }
     }
     const { results, books } = await uploadProject(account, to, project, e.person, texts.message)

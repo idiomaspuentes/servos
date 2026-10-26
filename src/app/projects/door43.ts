@@ -28,7 +28,7 @@ import {
   type DcsClientConfig,
 } from '../../door43/dcs'
 import { deviceId } from './bookText'
-import { BOOKS, type Project } from './model'
+import { BOOKS, type Privacy, type Project } from './model'
 
 const KEY = 'servos.prototipo.door43'
 const read = <T>(k: string): T | null => {
@@ -548,8 +548,43 @@ const slug = (s: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '') || 'persona'
 
-/** A person's work on the shelf: theirs from this phone, replaced each time they leave it. */
+/** A person's work on the shelf, for a project open to whoever has the file: theirs from this phone, replaced each time. */
 export const workNameOf = (person: string, device: string) => `${slug(person)}-${device}${PACKAGE}`
+
+// For a project kept to its team (philosophy, principle 9), the name says nothing, as the memory-card copies'
+// (`frame/copies.ts`): `3fa9c1d2-7b20e4aa.dat`. The first part tells this phone apart on this shelf (to leave its own
+// out when bringing), the second this person on it; both are hashed with a secret that never leaves the phone, so
+// nobody can try names and phones until one fits, nor tell the same phone on two projects' shelves.
+const QUIET = /^[0-9a-f]{8}-[0-9a-f]{8}\.dat$/
+const SECRET = 'servos.dispositivo.secreto'
+function phoneSecret(): string {
+  try {
+    let secret = localStorage.getItem(SECRET)
+    if (!secret) {
+      secret = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, '0')).join('')
+      localStorage.setItem(SECRET, secret)
+    }
+    return secret
+  } catch {
+    // Nowhere to keep it (the tests): the device alone, which still tells phones apart.
+    return ''
+  }
+}
+const hash8 = async (text: string) =>
+  [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)))]
+    .slice(0, 4)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+const phonePart = (at: Destination, device: string) => hash8(`${phoneSecret()}\n${device}\n${at.owner}/${at.repo}`)
+
+/** A person's work on the shelf of a project kept to its team (`at`, the shelf's repository): a name that says nothing. */
+export async function quietWorkNameOf(at: Destination, person: string, device: string): Promise<string> {
+  return `${await phonePart(at, device)}-${await hash8(`${phoneSecret()}\n${device}\n${at.owner}/${at.repo}\n${person}`)}.dat`
+}
+
+// The shelf's release says what it is for a project open to whoever has the file; nothing, for one kept to its team.
+const SHELF_SAYS = { name: 'Trabajo del equipo', body: 'Lo deja Servos para el equipo: no es una versión.' }
+const SHELF_QUIET = { name: SHELF, body: '' }
 
 type Asset = { id: number; name: string; size: number; browser_download_url: string }
 
@@ -584,10 +619,12 @@ async function ensureRepo(account: Door43Account, to: Destination, privately: bo
   }
 }
 
+type Shelf = { id: number; name?: string; body?: string }
+
 /** The shelf's release, or none yet. */
-async function shelfOf(account: Door43Account, to: Destination): Promise<{ id: number } | null> {
+async function shelfOf(account: Door43Account, to: Destination): Promise<Shelf | null> {
   try {
-    return await call<{ id: number }>(account, to, `/releases/tags/${SHELF}`)
+    return await call<Shelf>(account, to, `/releases/tags/${SHELF}`)
   } catch (e) {
     if (e instanceof DcsApiError && e.status === 404) return null
     throw e
@@ -597,21 +634,40 @@ async function shelfOf(account: Door43Account, to: Destination): Promise<{ id: n
 /**
  * Leaves a person's work (a package's text, its sound in it) on the shelf, gzipped, making the private repository and
  * the shelf the first time. The new one goes up before the one it replaces goes away: there is never a moment without.
- * What an earlier Servos left for this person and phone as a file of the repository is taken away.
+ * What an earlier Servos left for this person and phone as a file of the repository is taken away. For a project kept
+ * to its team, the name and the shelf say nothing (`quietWorkNameOf`), and what this phone left before with its name
+ * goes away with it.
  */
-export async function leaveWork(account: Door43Account, to: Destination, text: string, person: string, device: string): Promise<FileResult> {
+export async function leaveWork(
+  account: Door43Account,
+  to: Destination,
+  text: string,
+  person: string,
+  device: string,
+  privacy: Privacy = 'abierto'
+): Promise<FileResult> {
   const at = workRepoOf(to)
-  const name = workNameOf(person, device)
+  const quiet = privacy === 'equipo'
+  const named = workNameOf(person, device)
+  const unnamed = await quietWorkNameOf(at, person, device)
+  const name = quiet ? unnamed : named
+  // What this person and phone left before under either name (an earlier Servos, or the project's privacy changed).
+  const theirs = new Set([named, `${named.slice(0, -PACKAGE.length)}${OLD_PACKAGE}`, unnamed])
+  const says = quiet ? SHELF_QUIET : SHELF_SAYS
   try {
     await ensureRepo(account, at, true)
-    const shelf =
-      (await shelfOf(account, at)) ??
-      (await call<{ id: number }>(account, at, '/releases', {
+    let shelf = await shelfOf(account, at)
+    if (!shelf) {
+      shelf = await call<Shelf>(account, at, '/releases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tag_name: SHELF, target_commitish: 'master', name: 'Trabajo del equipo', body: 'Lo deja Servos para el equipo: no es una versión.', prerelease: true }),
-      }))
-    const before = (await call<Asset[]>(account, at, `/releases/${shelf.id}/assets`)).filter((a) => a.name === name)
+        body: JSON.stringify({ tag_name: SHELF, target_commitish: 'master', ...says, prerelease: true }),
+      })
+    } else if (quiet && (shelf.name !== says.name || (shelf.body ?? '') !== says.body)) {
+      // Made by an open project's Servos, or before: it stops saying it.
+      await call<Shelf>(account, at, `/releases/${shelf.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(says) })
+    }
+    const before = (await call<Asset[]>(account, at, `/releases/${shelf.id}/assets`)).filter((a) => theirs.has(a.name))
     const form = new FormData()
     form.append('attachment', new Blob([new Uint8Array(await gzipped(text))], { type: 'application/gzip' }), name)
     await call<Asset>(account, at, `/releases/${shelf.id}/assets?name=${encodeURIComponent(name)}`, { method: 'POST', body: form })
@@ -619,10 +675,11 @@ export async function leaveWork(account: Door43Account, to: Destination, text: s
   } catch (e) {
     return { path: name, state: 'failed', problem: problemOf(e) }
   }
-  for (const old of [`${OLD_FOLDER}/${name}`, `${OLD_FOLDER}/${name.slice(0, -PACKAGE.length)}${OLD_PACKAGE}`]) {
+  for (const old of [`${OLD_FOLDER}/${named}`, `${OLD_FOLDER}/${named.slice(0, -PACKAGE.length)}${OLD_PACKAGE}`]) {
     try {
       const there = await getContents(configOf(at.host), at.owner, at.repo, old, { token: account.token })
-      if (!Array.isArray(there)) await deleteContents(configOf(at.host), at.owner, at.repo, old, { sha: there.sha, message: `Trabajo de ${person}`, token: account.token })
+      const message = quiet ? SHELF : `Trabajo de ${person}`
+      if (!Array.isArray(there)) await deleteContents(configOf(at.host), at.owner, at.repo, old, { sha: there.sha, message, token: account.token })
     } catch {
       /* none there, or it stays: bringing it in twice brings nothing new */
     }
@@ -630,20 +687,26 @@ export async function leaveWork(account: Door43Account, to: Destination, text: s
   return { path: name, state: 'written' }
 }
 
-/** The work the others left (this phone's own left out), each one's text; none yet, when nobody left any. */
+/**
+ * The work the others left (this phone's own left out), each one's text; none yet, when nobody left any. Named or
+ * not, gzipped or not (an earlier Servos's), all of it is read.
+ */
 export async function workLeft(account: Door43Account, to: Destination, device: string): Promise<Array<{ path: string; text: string }>> {
   const at = workRepoOf(to)
-  const isPackage = (name: string) => name.endsWith(PACKAGE) || name.endsWith(OLD_PACKAGE)
-  const mine = (name: string) => name.endsWith(`-${device}${PACKAGE}`) || name.endsWith(`-${device}${OLD_PACKAGE}`)
+  const isPackage = (name: string) => name.endsWith(PACKAGE) || name.endsWith(OLD_PACKAGE) || QUIET.test(name)
+  const phone = `${await phonePart(at, device)}-`
+  const mine = (name: string) =>
+    name.endsWith(`-${device}${PACKAGE}`) || name.endsWith(`-${device}${OLD_PACKAGE}`) || (QUIET.test(name) && name.startsWith(phone))
   const out: Array<{ path: string; text: string }> = []
-  const read = async (name: string, bytes: Uint8Array) => (name.endsWith(PACKAGE) ? gunzipped(bytes) : new TextDecoder().decode(bytes))
+  const gzip = (bytes: Uint8Array) => bytes[0] === 0x1f && bytes[1] === 0x8b
+  const read = async (bytes: Uint8Array) => (gzip(bytes) ? gunzipped(bytes) : new TextDecoder().decode(bytes))
   // On the shelf.
   const shelf = await shelfOf(account, at)
   if (shelf) {
     for (const a of (await call<Asset[]>(account, at, `/releases/${shelf.id}/assets`)).filter((x) => isPackage(x.name) && !mine(x.name))) {
       const res = await fetch(a.browser_download_url, { headers: { Authorization: `token ${account.token}` } })
       if (!res.ok) throw new DcsApiError(`Could not bring ${a.name}`, res.status)
-      out.push({ path: a.name, text: await read(a.name, new Uint8Array(await res.arrayBuffer())) })
+      out.push({ path: a.name, text: await read(new Uint8Array(await res.arrayBuffer())) })
     }
   }
   // Left by an earlier Servos as files of the repository.
@@ -658,7 +721,7 @@ export async function workLeft(account: Door43Account, to: Destination, device: 
     const got = await getContents(config, at.owner, at.repo, x.path, { token: account.token })
     if (Array.isArray(got)) continue
     const bytes = got.content ? fromBase64(got.content.replace(/\s/g, '')) : await rawBytes(account, at, x.path)
-    out.push({ path: x.path, text: await read(x.name, bytes) })
+    out.push({ path: x.path, text: await read(bytes) })
   }
   return out
 }

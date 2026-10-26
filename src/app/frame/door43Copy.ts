@@ -137,7 +137,7 @@ async function copyChanged(person: string, always: boolean) {
       if (!work) continue
       const printKey = `${PRINT}${person}.${project.id}`
       if (!always && localStorage.getItem(printKey) === work.print) continue
-      const done = await leaveWork(account, to, work.text, person, deviceId())
+      const done = await leaveWork(account, to, work.text, person, deviceId(), privacyOf(project))
       if (done.state === 'failed') {
         failed = done.problem ?? 'other'
         continue

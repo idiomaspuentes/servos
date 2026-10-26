@@ -11,9 +11,11 @@ export const TOKEN = 't'
 export function fakeDoor43(host = 'https://qa.door43.org') {
   const repos = new Map<string, { private: boolean }>()
   const files = new Map<string, { b64: string; sha: string }>()
-  const releases = new Map<string, { id: number; tag_name: string; prerelease: boolean }>()
+  const releases = new Map<string, { id: number; tag_name: string; prerelease: boolean; name?: string; body?: string }>()
   const assets = new Map<number, { id: number; release: number; name: string; bytes: Uint8Array; uuid: string }>()
   const calls: string[] = []
+  /** The messages of the commits made (files written or deleted). */
+  const messages: string[] = []
   let n = 0
   let reachable = true
   vi.stubGlobal('fetch', async (url: string, init: RequestInit = {}) => {
@@ -50,9 +52,16 @@ export function fakeDoor43(host = 'https://qa.door43.org') {
     if (rest === 'releases' && method === 'POST') {
       const body = JSON.parse(String(init.body))
       if (releases.has(`${repo}@${body.tag_name}`)) return ok({ message: 'Release is has no Tag' }, 409)
-      const rel = { id: ++n, tag_name: body.tag_name, prerelease: Boolean(body.prerelease) }
+      const rel = { id: ++n, tag_name: body.tag_name, prerelease: Boolean(body.prerelease), name: String(body.name ?? ''), body: String(body.body ?? '') }
       releases.set(`${repo}@${body.tag_name}`, rel)
       return ok(rel, 201)
+    }
+    r = /^releases\/(\d+)$/.exec(rest)
+    if (r && method === 'PATCH') {
+      const rel = [...releases.values()].find((x) => x.id === Number(r![1]))
+      if (!rel) return ok({ message: 'not found' }, 404)
+      Object.assign(rel, JSON.parse(String(init.body)))
+      return ok(rel)
     }
     r = /^releases\/(\d+)\/assets(?:\/(\d+))?$/.exec(rest)
     if (r) {
@@ -82,12 +91,14 @@ export function fakeDoor43(host = 'https://qa.door43.org') {
         return inside.length ? ok(inside.map((p) => ({ name: p.split('/').pop(), path: p, sha: 'x', size: 1, type: 'file' }))) : ok({ message: 'not found' }, 404)
       }
       if (method === 'DELETE') {
+        messages.push(JSON.parse(String(init.body ?? '{}')).message ?? '')
         files.delete(key)
         return ok({ commit: { sha: 'c' } })
       }
       const body = JSON.parse(String(init.body))
       if (method === 'POST' && f) return ok({ message: 'already exists' }, 422)
       if (method === 'PUT' && f?.sha !== body.sha) return ok({ message: 'sha does not match' }, 409)
+      messages.push(body.message ?? '')
       files.set(key, { b64: body.content, sha: `s${++n}` })
       return ok({ content: { path: r[1], sha: files.get(key)!.sha }, commit: { sha: `c${n}` } }, method === 'POST' ? 201 : 200)
     }
@@ -99,6 +110,7 @@ export function fakeDoor43(host = 'https://qa.door43.org') {
     releases,
     assets,
     calls,
+    messages,
     offline: () => void (reachable = false),
     online: () => void (reachable = true),
     /** A file's text, as kept. */

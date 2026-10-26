@@ -487,8 +487,11 @@ se escribe, al volver internet y al pasar la app atrás; solo con wifi, salvo «
 internet» (6.11): el sí se dio una vez, al prender el interruptor de cada proyecto en «Copia de su trabajo», prendido
 de entrada en los abiertos y apagado en los de «Solo el equipo», cuya copia va sellada con la contraseña del equipo
 (como la de la tarjeta) y espera mientras el teléfono no la sepa. «Dejar mi trabajo» se sella igual, y «Trabajo del
-equipo» abre lo sellado con las llaves que guarda el teléfono. Hace falta que el proyecto tenga su lugar en Door43.
-Inicio calla mientras funciona; después de tres días de fallar con internet dice por qué y qué hacer («Vincular otra
+equipo» abre lo sellado con las llaves que guarda el teléfono. En esos proyectos el nombre tampoco dice nada: no
+`ana-<teléfono>.servos.json.gz` sino dos huellas cortas, `3fa9c1d2-7b20e4aa.dat` (la del teléfono en ese proyecto y la
+de la persona en él, hechas con un secreto que no sale del teléfono), y el *release* no nombra a Servos; lo que el
+teléfono dejó antes con nombre se quita al dejarlo así, y lo de los demás con nombre se sigue trayendo (`leaveWork`,
+`quietWorkNameOf`, 26 de octubre). Hace falta que el proyecto tenga su lugar en Door43. Inicio calla mientras funciona; después de tres días de fallar con internet dice por qué y qué hacer («Vincular otra
 vez») (`frame/door43Copy.ts`, `Door43CopySection.tsx`).
 
 **El certificado de Door43, en el teléfono.** La app no puede saber si una red es segura, y no lo promete. En la app

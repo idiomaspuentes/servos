@@ -188,6 +188,74 @@ describe('el trabajo del equipo por Door43', () => {
   })
 })
 
+describe('el trabajo de un proyecto de «Solo el equipo» en Door43 no dice de quién es ni qué lo deja', () => {
+  afterEach(() => vi.unstubAllGlobals())
+  const account = { host: 'https://qa.door43.org', username: 'ana', token: 't' }
+  const to = { host: 'https://qa.door43.org', owner: 'BSOJ', repo: 'qu_reg' }
+  const names = (assets: Map<number, { name: string }>) => [...assets.values()].map((a) => a.name)
+  const QUIET = /^[0-9a-f]{8}-[0-9a-f]{8}\.dat$/
+
+  it('el nombre son dos huellas cortas: ni la persona, ni el teléfono, ni Servos', async () => {
+    const { assets } = fakeDoor43(to.host)
+    expect((await leaveWork(account, to, '{"de":"María José"}', 'María José', 'dev-a', 'equipo')).state).toBe('written')
+    const [name] = names(assets)
+    expect(name).toMatch(QUIET)
+    expect(name).not.toMatch(/maria|jose|dev-a|servos/i)
+    // Left again: replaced in place.
+    await leaveWork(account, to, '{"de":"María José","mas":1}', 'María José', 'dev-a', 'equipo')
+    expect(names(assets)).toEqual([name])
+  })
+
+  it('dos personas en un teléfono dejan dos; el mismo teléfono no se reconoce de un proyecto a otro', async () => {
+    const { assets } = fakeDoor43(to.host)
+    await leaveWork(account, to, '{}', 'Ana', 'dev-a', 'equipo')
+    await leaveWork(account, to, '{}', 'Bea', 'dev-a', 'equipo')
+    await leaveWork(account, { ...to, repo: 'qu_otro' }, '{}', 'Ana', 'dev-a', 'equipo')
+    const [ana, bea, otro] = names(assets)
+    expect(new Set([ana, bea, otro]).size).toBe(3)
+    // The phone's part is the same on one project's shelf (it tells this phone's own apart), not across projects.
+    expect(ana.slice(0, 8)).toBe(bea.slice(0, 8))
+    expect(otro.slice(0, 8)).not.toBe(ana.slice(0, 8))
+  })
+
+  it('el release no nombra a Servos, y uno hecho antes con su nombre se calla al dejar', async () => {
+    const { releases } = fakeDoor43(to.host)
+    await leaveWork(account, to, '{}', 'Ana', 'dev-a')
+    expect(releases.get('BSOJ/qu_reg-servos@trabajo')?.body).toContain('Servos')
+    await leaveWork(account, to, '{}', 'Ana', 'dev-a', 'equipo')
+    const shelf = releases.get('BSOJ/qu_reg-servos@trabajo')!
+    expect([shelf.name, shelf.body, shelf.prerelease]).toEqual(['trabajo', '', true])
+    // Made quiet from the start.
+    const { releases: fresh } = fakeDoor43(to.host)
+    await leaveWork(account, to, '{}', 'Ana', 'dev-a', 'equipo')
+    expect([fresh.get('BSOJ/qu_reg-servos@trabajo')?.name, fresh.get('BSOJ/qu_reg-servos@trabajo')?.body]).toEqual(['trabajo', ''])
+  })
+
+  it('lo que el teléfono dejó con su nombre de antes se quita al dejar sin nombre, y el commit no nombra a nadie', async () => {
+    const { assets, files, messages } = fakeDoor43(to.host)
+    await leaveWork(account, to, '{"de":"Ana, antes"}', 'Ana', 'dev-a')
+    files.set('BSOJ/qu_reg-servos/trabajo/ana-dev-a.servos.json', { b64: Buffer.from('{}').toString('base64'), sha: 'old' })
+    await leaveWork(account, to, '{"de":"Ana"}', 'Ana', 'dev-a', 'equipo')
+    expect(names(assets)).toHaveLength(1)
+    expect(names(assets)[0]).toMatch(QUIET)
+    expect([...files.keys()]).toEqual([])
+    expect(messages.join(' ')).not.toMatch(/ana/i)
+  })
+
+  it('al traer, llega lo de los demás, con nombre o sin él, y no lo de este teléfono', async () => {
+    const { files } = fakeDoor43(to.host)
+    await leaveWork(account, to, '{"de":"Ana"}', 'Ana', 'dev-a', 'equipo')
+    await leaveWork(account, to, '{"de":"Eva"}', 'Eva', 'dev-a', 'equipo')
+    await leaveWork(account, to, '{"de":"Bea"}', 'Bea', 'dev-b', 'equipo')
+    // Left before by an earlier Servos, with names: on the shelf and as a file of the repository.
+    await leaveWork(account, to, '{"de":"Carla"}', 'Carla', 'dev-c')
+    files.set('BSOJ/qu_reg-servos/trabajo/dora-dev-d.servos.json', { b64: Buffer.from('{"de":"Dora"}').toString('base64'), sha: 'old' })
+    files.set('BSOJ/qu_reg-servos/trabajo/ana-dev-a.servos.json', { b64: Buffer.from('{"de":"Ana, antes"}').toString('base64'), sha: 'old2' })
+    expect((await workLeft(account, to, 'dev-a')).map((x) => x.text).sort()).toEqual(['{"de":"Bea"}', '{"de":"Carla"}', '{"de":"Dora"}'])
+    expect((await workLeft(account, to, 'dev-b')).map((x) => x.text).sort()).toEqual(['{"de":"Ana"}', '{"de":"Ana, antes"}', '{"de":"Carla"}', '{"de":"Dora"}', '{"de":"Eva"}'])
+  })
+})
+
 describe('which Door43', () => {
   const kept = new Map<string, string>()
   const storage = {

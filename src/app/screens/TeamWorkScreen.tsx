@@ -192,7 +192,7 @@ export function TeamWorkScreen({
       // copy made by itself goes (frame/door43Copy.ts).
       const work = await workToLeave(project, person)
       const text = work?.text ?? JSON.stringify(await withSounds(shareProject(project, project.books.map((b) => b.code), person)))
-      const result = await leaveWork(account, to, text, person, deviceId())
+      const result = await leaveWork(account, to, text, person, deviceId(), privacyOf(project))
       if (result.state === 'failed' && result.problem === 'offline') return later('dejar', true)
       if (result.state === 'failed') setProblem(result.problem ?? 'other')
       else {
