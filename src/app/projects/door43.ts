@@ -28,6 +28,7 @@ import {
   type DcsClientConfig,
 } from '../../door43/dcs'
 import { deviceId } from './bookText'
+import { lockedKind } from './lockedCopy'
 import { BOOKS, type Privacy, type Project } from './model'
 
 const KEY = 'servos.prototipo.door43'
@@ -344,8 +345,11 @@ export function titlesOf(yaml: string): Map<string, string> {
  */
 export type FileResult = { path: string; state: 'written' | 'same' | 'changed' | 'gather' | 'failed'; problem?: Problem; sha?: string }
 
-/** Why something could not be done, said in the person's terms. */
-export type Problem = 'offline' | 'signin' | 'scope' | 'permission' | 'conflict' | 'changed' | 'gather' | 'pin' | 'other'
+/**
+ * Why something could not be done, said in the person's terms. `teamPassword`: a project kept to its team, whose work
+ * goes sealed with the team's password, and this phone does not know it yet (`workToLeave.ts`).
+ */
+export type Problem = 'offline' | 'signin' | 'scope' | 'permission' | 'conflict' | 'changed' | 'gather' | 'pin' | 'teamPassword' | 'other'
 export function problemOf(e: unknown): Problem {
   // The network presented a certificate that was not Door43's (the app for phones, `frame/door43Pins.ts`): nothing went.
   if (e instanceof Error && e.name === 'NotDoor43') return 'pin'
@@ -636,7 +640,7 @@ async function shelfOf(account: Door43Account, to: Destination): Promise<Shelf |
  * the shelf the first time. The new one goes up before the one it replaces goes away: there is never a moment without.
  * What an earlier Servos left for this person and phone as a file of the repository is taken away. For a project kept
  * to its team, the name and the shelf say nothing (`quietWorkNameOf`), and what this phone left before with its name
- * goes away with it.
+ * goes away with it; its work goes only sealed with the team's password (`workToLeave.ts`): open, nothing is sent.
  */
 export async function leaveWork(
   account: Door43Account,
@@ -648,6 +652,7 @@ export async function leaveWork(
 ): Promise<FileResult> {
   const at = workRepoOf(to)
   const quiet = privacy === 'equipo'
+  if (quiet && lockedKind(text) !== 'compartido') return { path: SHELF, state: 'failed', problem: 'teamPassword' }
   const named = workNameOf(person, device)
   const unnamed = await quietWorkNameOf(at, person, device)
   const name = quiet ? unnamed : named

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { attachToRelease, fileOf, fingerprint, hostName, leaveWork, manifestOf, markVersion, problemOf, proposedRepo, publish, signIn, wantsQa, workLeft, workNameOf, workRepoOf } from './door43'
 import { DcsApiError } from '../../door43/dcs'
 import { fakeDoor43 } from './fakeDoor43'
+import { keyFrom, lock, openWith, type CopyKey } from './lockedCopy'
 
 describe('a project published to Door43', () => {
   it('names each book file as USFM numbers books, the New Testament from 41', () => {
@@ -194,23 +195,35 @@ describe('el trabajo de un proyecto de «Solo el equipo» en Door43 no dice de q
   const to = { host: 'https://qa.door43.org', owner: 'BSOJ', repo: 'qu_reg' }
   const names = (assets: Map<number, { name: string }>) => [...assets.values()].map((a) => a.name)
   const QUIET = /^[0-9a-f]{8}-[0-9a-f]{8}\.dat$/
+  // Its work goes only sealed with the team's password.
+  let team: CopyKey
+  const teamKey = async () => (team ??= await keyFrom('maíz y frijol', undefined, 1000))
+  const seal = async (text: string) => lock(text, await teamKey(), 'compartido')
+  const opened = async (left: { text: string }[]) => Promise.all(left.map(async (x) => (await openWith(x.text, team.key)) ?? x.text))
+
+  it('abierto no se manda: nada llega a Door43', async () => {
+    const { repos, assets, calls } = fakeDoor43(to.host)
+    expect(await leaveWork(account, to, '{"de":"Ana"}', 'Ana', 'dev-a', 'equipo')).toMatchObject({ state: 'failed', problem: 'teamPassword' })
+    expect(await leaveWork(account, to, await lock('{"de":"Ana"}', await teamKey(), 'copia'), 'Ana', 'dev-a', 'equipo')).toMatchObject({ state: 'failed' })
+    expect([calls, repos.size, assets.size]).toEqual([[], 0, 0])
+  })
 
   it('el nombre son dos huellas cortas: ni la persona, ni el teléfono, ni Servos', async () => {
     const { assets } = fakeDoor43(to.host)
-    expect((await leaveWork(account, to, '{"de":"María José"}', 'María José', 'dev-a', 'equipo')).state).toBe('written')
+    expect((await leaveWork(account, to, await seal('{"de":"María José"}'), 'María José', 'dev-a', 'equipo')).state).toBe('written')
     const [name] = names(assets)
     expect(name).toMatch(QUIET)
     expect(name).not.toMatch(/maria|jose|dev-a|servos/i)
     // Left again: replaced in place.
-    await leaveWork(account, to, '{"de":"María José","mas":1}', 'María José', 'dev-a', 'equipo')
+    await leaveWork(account, to, await seal('{"de":"María José","mas":1}'), 'María José', 'dev-a', 'equipo')
     expect(names(assets)).toEqual([name])
   })
 
   it('dos personas en un teléfono dejan dos; el mismo teléfono no se reconoce de un proyecto a otro', async () => {
     const { assets } = fakeDoor43(to.host)
-    await leaveWork(account, to, '{}', 'Ana', 'dev-a', 'equipo')
-    await leaveWork(account, to, '{}', 'Bea', 'dev-a', 'equipo')
-    await leaveWork(account, { ...to, repo: 'qu_otro' }, '{}', 'Ana', 'dev-a', 'equipo')
+    await leaveWork(account, to, await seal('{}'), 'Ana', 'dev-a', 'equipo')
+    await leaveWork(account, to, await seal('{}'), 'Bea', 'dev-a', 'equipo')
+    await leaveWork(account, { ...to, repo: 'qu_otro' }, await seal('{}'), 'Ana', 'dev-a', 'equipo')
     const [ana, bea, otro] = names(assets)
     expect(new Set([ana, bea, otro]).size).toBe(3)
     // The phone's part is the same on one project's shelf (it tells this phone's own apart), not across projects.
@@ -222,12 +235,12 @@ describe('el trabajo de un proyecto de «Solo el equipo» en Door43 no dice de q
     const { releases } = fakeDoor43(to.host)
     await leaveWork(account, to, '{}', 'Ana', 'dev-a')
     expect(releases.get('BSOJ/qu_reg-servos@trabajo')?.body).toContain('Servos')
-    await leaveWork(account, to, '{}', 'Ana', 'dev-a', 'equipo')
+    await leaveWork(account, to, await seal('{}'), 'Ana', 'dev-a', 'equipo')
     const shelf = releases.get('BSOJ/qu_reg-servos@trabajo')!
     expect([shelf.name, shelf.body, shelf.prerelease]).toEqual(['trabajo', '', true])
     // Made quiet from the start.
     const { releases: fresh } = fakeDoor43(to.host)
-    await leaveWork(account, to, '{}', 'Ana', 'dev-a', 'equipo')
+    await leaveWork(account, to, await seal('{}'), 'Ana', 'dev-a', 'equipo')
     expect([fresh.get('BSOJ/qu_reg-servos@trabajo')?.name, fresh.get('BSOJ/qu_reg-servos@trabajo')?.body]).toEqual(['trabajo', ''])
   })
 
@@ -235,7 +248,7 @@ describe('el trabajo de un proyecto de «Solo el equipo» en Door43 no dice de q
     const { assets, files, messages } = fakeDoor43(to.host)
     await leaveWork(account, to, '{"de":"Ana, antes"}', 'Ana', 'dev-a')
     files.set('BSOJ/qu_reg-servos/trabajo/ana-dev-a.servos.json', { b64: Buffer.from('{}').toString('base64'), sha: 'old' })
-    await leaveWork(account, to, '{"de":"Ana"}', 'Ana', 'dev-a', 'equipo')
+    await leaveWork(account, to, await seal('{"de":"Ana"}'), 'Ana', 'dev-a', 'equipo')
     expect(names(assets)).toHaveLength(1)
     expect(names(assets)[0]).toMatch(QUIET)
     expect([...files.keys()]).toEqual([])
@@ -244,15 +257,15 @@ describe('el trabajo de un proyecto de «Solo el equipo» en Door43 no dice de q
 
   it('al traer, llega lo de los demás, con nombre o sin él, y no lo de este teléfono', async () => {
     const { files } = fakeDoor43(to.host)
-    await leaveWork(account, to, '{"de":"Ana"}', 'Ana', 'dev-a', 'equipo')
-    await leaveWork(account, to, '{"de":"Eva"}', 'Eva', 'dev-a', 'equipo')
-    await leaveWork(account, to, '{"de":"Bea"}', 'Bea', 'dev-b', 'equipo')
+    await leaveWork(account, to, await seal('{"de":"Ana"}'), 'Ana', 'dev-a', 'equipo')
+    await leaveWork(account, to, await seal('{"de":"Eva"}'), 'Eva', 'dev-a', 'equipo')
+    await leaveWork(account, to, await seal('{"de":"Bea"}'), 'Bea', 'dev-b', 'equipo')
     // Left before by an earlier Servos, with names: on the shelf and as a file of the repository.
     await leaveWork(account, to, '{"de":"Carla"}', 'Carla', 'dev-c')
     files.set('BSOJ/qu_reg-servos/trabajo/dora-dev-d.servos.json', { b64: Buffer.from('{"de":"Dora"}').toString('base64'), sha: 'old' })
     files.set('BSOJ/qu_reg-servos/trabajo/ana-dev-a.servos.json', { b64: Buffer.from('{"de":"Ana, antes"}').toString('base64'), sha: 'old2' })
-    expect((await workLeft(account, to, 'dev-a')).map((x) => x.text).sort()).toEqual(['{"de":"Bea"}', '{"de":"Carla"}', '{"de":"Dora"}'])
-    expect((await workLeft(account, to, 'dev-b')).map((x) => x.text).sort()).toEqual(['{"de":"Ana"}', '{"de":"Ana, antes"}', '{"de":"Carla"}', '{"de":"Dora"}', '{"de":"Eva"}'])
+    expect((await opened(await workLeft(account, to, 'dev-a'))).sort()).toEqual(['{"de":"Bea"}', '{"de":"Carla"}', '{"de":"Dora"}'])
+    expect((await opened(await workLeft(account, to, 'dev-b'))).sort()).toEqual(['{"de":"Ana"}', '{"de":"Ana, antes"}', '{"de":"Carla"}', '{"de":"Dora"}', '{"de":"Eva"}'])
   })
 })
 

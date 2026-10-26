@@ -16,11 +16,12 @@ import { namesTogether } from '../projects/mix'
 import { ask, drop, settle } from '../projects/outbox'
 import { bookName, privacyOf, type Project } from '../projects/model'
 import { inProject } from '../projects/scope'
-import { previewBook, readShared, receiveShared, shareProject, withSounds, type BookPreview, type SharedFile } from '../projects/share'
+import { previewBook, readShared, receiveShared, type BookPreview, type SharedFile } from '../projects/share'
 import { deviceId } from '../projects/work'
-import { workToLeave } from '../frame/door43Copy'
+import { waitsForTeamPassword, workToLeave } from '../projects/workToLeave'
 import { lockedKind } from '../projects/lockedCopy'
 import { openWithTeamKeys } from '../projects/teamKeys'
+import { TeamPassword } from './CopiesSheet'
 import { Door43AccountSheet } from './Door43Account'
 
 type Found = { file: SharedFile; previews: BookPreview[] }
@@ -62,6 +63,8 @@ export function TeamWorkScreen({
   // Work the others left sealed with a team password this phone does not know.
   const [sealed, setSealed] = useState(0)
   const [problem, setProblem] = useState<Problem | null>(null)
+  // Leaving was asked for a project kept to its team whose password this phone does not know: it is asked for here.
+  const [password, setPassword] = useState(false)
   const [done, setDone] = useState<{ names: string[]; choices: number; takes: number } | null>(null)
   // Tried with the phone saying it was online, and Door43 could not be reached: it waits all the same.
   const [unreached, setUnreached] = useState(false)
@@ -182,17 +185,21 @@ export function TeamWorkScreen({
     }
   }
   const leave = async () => {
+    // A project kept to its team goes sealed with the team's password, or not at all: without it, it is asked for
+    // first, with internet or without (an errand kept without it would only wait for it).
+    if (await waitsForTeamPassword(project)) return setPassword(true)
     if (!online) return later('dejar', false)
     setBusy('dejando')
     setProblem(null)
     setUnreached(false)
     try {
       // With the sound of every take: the shelf replaces it in place, so recording again does not pile up versions.
-      // Sealed with the team's password where the project is kept to its team and the password is known here, as the
-      // copy made by itself goes (frame/door43Copy.ts).
       const work = await workToLeave(project, person)
-      const text = work?.text ?? JSON.stringify(await withSounds(shareProject(project, project.books.map((b) => b.code), person)))
-      const result = await leaveWork(account, to, text, person, deviceId(), privacyOf(project))
+      if (!work) {
+        setPassword(true)
+        return setBusy(null)
+      }
+      const result = await leaveWork(account, to, work.text, person, deviceId(), privacyOf(project))
       if (result.state === 'failed' && result.problem === 'offline') return later('dejar', true)
       if (result.state === 'failed') setProblem(result.problem ?? 'other')
       else {
@@ -291,6 +298,19 @@ export function TeamWorkScreen({
             </button>
           )}
         </div>
+      )}
+      {password && (
+        <TeamPassword
+          id={project.id}
+          name={project.name}
+          person={person}
+          said={t('equipo.faltaContrasena', { proyecto: project.name })}
+          working={t('equipo.dejando')}
+          then={async () => {
+            setPassword(false)
+            await leave()
+          }}
+        />
       )}
       {left && (
         <p className="status" role="status">

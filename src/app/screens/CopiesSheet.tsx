@@ -32,9 +32,23 @@ export function whenCopied(at: string, lang: string): string {
 
 /**
  * The team's password of a project kept to its team, chosen or typed here once, so its copies can be sealed (on the
- * memory card, or on Door43: `then`).
+ * memory card, or on Door43: `then`), and so can the work left for the team (`said`, `working`: what it is asked for).
  */
-export function TeamPassword({ id, name, person, then = () => copyNow(person) }: { id: string; name: string; person: string; then?(): Promise<void> }) {
+export function TeamPassword({
+  id,
+  name,
+  person,
+  said,
+  working: workingLabel,
+  then = () => copyNow(person),
+}: {
+  id: string
+  name: string
+  person: string
+  said?: string
+  working?: string
+  then?(): Promise<void>
+}) {
   const t = useT()
   const [password, setPassword] = useState('')
   const [again, setAgain] = useState('')
@@ -55,7 +69,7 @@ export function TeamPassword({ id, name, person, then = () => copyNow(person) }:
         setWorking(false)
       }}
     >
-      <p>{t('copias.faltaContrasena', { proyecto: name })}</p>
+      <p>{said ?? t('copias.faltaContrasena', { proyecto: name })}</p>
       <label className="field">
         <span className="field-label">{t('compartir.contrasenaEquipo')}</span>
         <input type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
@@ -68,7 +82,7 @@ export function TeamPassword({ id, name, person, then = () => copyNow(person) }:
       </label>
       <p className="quiet">{t('compartir.contrasenaAyuda')}</p>
       <button type="submit" className="button-secondary" disabled={password.length < SHORTEST || again !== password || working}>
-        {working ? t('copias.copiando') : t('copias.guardarContrasena')}
+        {working ? (workingLabel ?? t('copias.copiando')) : t('copias.guardarContrasena')}
       </button>
     </form>
   )

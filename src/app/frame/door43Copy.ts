@@ -9,19 +9,17 @@
  * chosen, by a person who linked an account. Each project chooses: it is on from the start for a project open to
  * whoever has the file, off for one kept to its team. Switched on for one kept to its team, the copy goes sealed with
  * the team's password, as on the memory card (`copies.ts`), and waits while that password is not known here: it is
- * never sent open. The app does not promise a safe network: whoever watches the network can tell that this phone
- * reaches Door43, not what it sends (and in the app for phones, Door43's certificate is checked against the ones the
- * app carries: `door43Pins.ts`).
+ * never sent open (`projects/workToLeave.ts`). The app does not promise a safe network: whoever watches the network
+ * can tell that this phone reaches Door43, not what it sends (and in the app for phones, Door43's certificate is
+ * checked against the ones the app carries: `door43Pins.ts`).
  *
  * Home says nothing while it works. Only after some days of failing does it say what to do.
  */
 
 import { accountOf, destinationOf, leaveWork, problemOf, type Problem } from '../projects/door43'
-import { lock } from '../projects/lockedCopy'
 import { loadProjects, privacyOf, type Project } from '../projects/model'
-import { shareProject, withSounds } from '../projects/share'
-import { teamKey } from '../projects/teamKeys'
 import { deviceId } from '../projects/work'
+import { waitsForTeamPassword, workToLeave } from '../projects/workToLeave'
 import { onDesktop } from './desktop'
 import { isOnline, whenNotTyping } from './online'
 import { networkNow } from './door43Pins'
@@ -90,27 +88,10 @@ export async function networkAllows(person: string): Promise<boolean> {
   return (await networkNow()) !== 'datos'
 }
 
-const hex = (bytes: ArrayBuffer) => [...new Uint8Array(bytes)].map((b) => b.toString(16).padStart(2, '0')).join('')
-const sha = async (text: string) => hex(await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)))
-
-/**
- * The work a person leaves on Door43 for a project, as it would go now: sealed with the team's key for a project kept
- * to its team (null while that key is not on this phone: it is never sent open), and a print of it that is the same
- * while the work is the same.
- */
-export async function workToLeave(project: Project, person: string): Promise<{ text: string; print: string } | null> {
-  const team = privacyOf(project) === 'equipo'
-  const key = team ? await teamKey(project.id) : null
-  if (team && !key) return null
-  const print = await sha(`${key ? [...key.salt].join(',') : 'abierta'}\n${JSON.stringify(shareProject(project, project.books.map((b) => b.code), person, new Date(0)))}`)
-  const text = JSON.stringify(await withSounds(shareProject(project, project.books.map((b) => b.code), person)))
-  return { text: key ? await lock(text, key, 'compartido') : text, print }
-}
-
 /** What a project's copy waits for, to say it: the place on Door43 chosen, or the team's password on this phone. */
 export async function copyWaitsFor(project: Project): Promise<'lugar' | 'contrasena' | null> {
   if (!destinationOf(project.id)) return 'lugar'
-  if (privacyOf(project) === 'equipo' && !(await teamKey(project.id))) return 'contrasena'
+  if (await waitsForTeamPassword(project)) return 'contrasena'
   return null
 }
 

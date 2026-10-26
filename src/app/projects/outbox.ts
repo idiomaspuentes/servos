@@ -9,8 +9,8 @@
 import { accountOf, destinationOf, leaveWork, nextVersion, problemOf, type Destination, type Problem } from './door43'
 import { privacyOf, type Project } from './model'
 import { booksOf, markVersionWithTakes, uploadProject, withWorkOf, type BookToPublish } from './publishing'
-import { shareProject, withSounds } from './share'
 import { deviceId } from './work'
+import { workToLeave } from './workToLeave'
 
 const KEY = 'servos.prototipo.door43.espera'
 
@@ -127,8 +127,10 @@ export async function runErrand(
   if (!to) return { problem: 'other' }
   try {
     if (e.kind === 'dejar') {
-      const file = await withSounds(shareProject(project, project.books.map((b) => b.code), e.person))
-      const result = await leaveWork(account, to, JSON.stringify(file), e.person, deviceId(), privacyOf(project))
+      // Sealed with the team's password for a project kept to its team; while it is not known here, it waits.
+      const work = await workToLeave(project, e.person)
+      if (!work) return { problem: 'teamPassword' }
+      const result = await leaveWork(account, to, work.text, e.person, deviceId(), privacyOf(project))
       return result.state === 'failed' ? { problem: result.problem ?? 'other' } : { sent: { kind: 'dejar' } }
     }
     const { results, books } = await uploadProject(account, to, project, e.person, texts.message)
