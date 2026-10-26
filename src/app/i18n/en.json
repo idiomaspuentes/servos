@@ -846,6 +846,7 @@
   "espera.quedan": "What could not be done is still waiting: you will be asked again when there is internet.",
   "espera.todoListo": "Done: all of it went.",
   "espera.verLoQueTrajo": "See the team's work",
+  "espera.escribirContrasena": "Type the team's password",
   "espera.listo": "Done",
   "espera.sinLlegar": "Door43 could not be reached.",
   "espera.esperaInternet": "Waiting for internet: {que}. You are asked before it is done.",

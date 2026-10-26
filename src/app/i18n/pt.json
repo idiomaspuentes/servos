@@ -846,6 +846,7 @@
   "espera.quedan": "O que não se pôde fazer continua esperando: será perguntado de novo quando houver internet.",
   "espera.todoListo": "Pronto: fez-se tudo.",
   "espera.verLoQueTrajo": "Ver o trabalho da equipe",
+  "espera.escribirContrasena": "Escrever a senha da equipe",
   "espera.listo": "Pronto",
   "espera.sinLlegar": "Não se conseguiu chegar ao Door43.",
   "espera.esperaInternet": "Espera internet: {que}. Antes de fazê-lo, pergunta-se.",

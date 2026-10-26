@@ -32,7 +32,8 @@ export function whenCopied(at: string, lang: string): string {
 
 /**
  * The team's password of a project kept to its team, chosen or typed here once, so its copies can be sealed (on the
- * memory card, or on Door43: `then`), and so can the work left for the team (`said`, `working`: what it is asked for).
+ * memory card, or on Door43: `then`), and so can the work left for the team (`said`, `working`: what it is asked for;
+ * `onNotNow`: it can be left for later, beside the button that uses it).
  */
 export function TeamPassword({
   id,
@@ -40,6 +41,7 @@ export function TeamPassword({
   person,
   said,
   working: workingLabel,
+  onNotNow,
   then = () => copyNow(person),
 }: {
   id: string
@@ -47,6 +49,7 @@ export function TeamPassword({
   person: string
   said?: string
   working?: string
+  onNotNow?(): void
   then?(): Promise<void>
 }) {
   const t = useT()
@@ -81,9 +84,16 @@ export function TeamPassword({
         {differ && <span className="field-problem">{t('copias.noIguales')}</span>}
       </label>
       <p className="quiet">{t('compartir.contrasenaAyuda')}</p>
-      <button type="submit" className="button-secondary" disabled={password.length < SHORTEST || again !== password || working}>
-        {working ? (workingLabel ?? t('copias.copiando')) : t('copias.guardarContrasena')}
-      </button>
+      <div className="copies-confirm-actions">
+        <button type="submit" className="button-secondary" disabled={password.length < SHORTEST || again !== password || working}>
+          {working ? (workingLabel ?? t('copias.copiando')) : t('copias.guardarContrasena')}
+        </button>
+        {onNotNow && (
+          <button type="button" className="button-quiet" disabled={working} onClick={onNotNow}>
+            {t('marco.ahoraNo')}
+          </button>
+        )}
+      </div>
     </form>
   )
 }

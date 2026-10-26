@@ -1221,6 +1221,7 @@ a.button-secondary { display: flex; align-items: center; justify-content: center
 .copies p { margin: 0; }
 .copies-confirm { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; border-radius: var(--radius); background: var(--surface-soft); }
 .copies-confirm-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.copies-confirm-actions { display: flex; flex-direction: column; gap: 0.5rem; }
 .copy-password { display: flex; flex-direction: column; gap: 0.75rem; }
 .publish-where-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .publish-where-head .chip { flex: none; white-space: nowrap; }

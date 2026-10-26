@@ -21,6 +21,7 @@ export function WaitingSheet({
   person,
   onClose,
   onBring,
+  onTeamPassword,
 }: {
   errands: Errand[]
   projects: Project[]
@@ -28,6 +29,8 @@ export function WaitingSheet({
   onClose(): void
   /** Opens the team's work of a book, bringing it in at once. */
   onBring(projectId: string, book: string): void
+  /** Opens the team's work of a book to type the team's password, which leaving the work there waits for. */
+  onTeamPassword(projectId: string, book: string): void
 }) {
   const t = useT()
   const [versions, setVersions] = useState<Record<string, number | null>>({})
@@ -86,6 +89,11 @@ export function WaitingSheet({
       setBringing(false)
     }
   }
+  // Work left for a team-only project waits for the team's password, typed where the team's work is.
+  const locked = list.find((e) => {
+    const r = results?.get(e.id)
+    return r !== undefined && 'problem' in r && r.problem === 'teamPassword'
+  })
   const failed = results !== null && list.some((e) => !results.has(e.id) || 'problem' in results.get(e.id)!)
 
   // The books as they are now, read once for each errand (a whole book is written out to be read).
@@ -187,6 +195,15 @@ export function WaitingSheet({
             <button type="button" className="button-primary" onClick={() => onBring(brought.projectId, brought.book ?? projectOf(brought.projectId)!.books[0].code)}>
               {t('espera.verLoQueTrajo')} →
             </button>
+          ) : locked ? (
+            <>
+              <button type="button" className="button-primary" onClick={() => onTeamPassword(locked.projectId, locked.book ?? projectOf(locked.projectId)!.books[0].code)}>
+                {t('espera.escribirContrasena')} →
+              </button>
+              <button type="button" className="button-quiet" onClick={onClose}>
+                {t('espera.ahoraNo')}
+              </button>
+            </>
           ) : (
             <button type="button" className="button-primary" onClick={onClose}>
               {t('espera.listo')}

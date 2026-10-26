@@ -33,6 +33,7 @@ export function TeamWorkScreen({
   title,
   person,
   bringNow = false,
+  askPassword = false,
   onBack,
   onReceived,
   onGather,
@@ -46,6 +47,8 @@ export function TeamWorkScreen({
   person: string
   /** Opened to bring in at once (the person said yes to it when internet came back). */
   bringNow?: boolean
+  /** Opened to type the team's password, which the work left for the team waits for. */
+  askPassword?: boolean
   onBack(): void
   onReceived(projects: Project[]): void
   /** Goes to bring together what came written another way. */
@@ -64,7 +67,7 @@ export function TeamWorkScreen({
   const [sealed, setSealed] = useState(0)
   const [problem, setProblem] = useState<Problem | null>(null)
   // Leaving was asked for a project kept to its team whose password this phone does not know: it is asked for here.
-  const [password, setPassword] = useState(false)
+  const [password, setPassword] = useState(askPassword)
   const [done, setDone] = useState<{ names: string[]; choices: number; takes: number } | null>(null)
   // Tried with the phone saying it was online, and Door43 could not be reached: it waits all the same.
   const [unreached, setUnreached] = useState(false)
@@ -301,22 +304,18 @@ export function TeamWorkScreen({
       )}
       {password && (
         // The one thing on the screen while it is asked: bringing and leaving come back once it is used, or not now.
-        <>
-          <TeamPassword
-            id={project.id}
-            name={project.name}
-            person={person}
-            said={t('equipo.faltaContrasena', { proyecto: project.name })}
-            working={t('equipo.dejando')}
-            then={async () => {
-              setPassword(false)
-              await leave()
-            }}
-          />
-          <button type="button" className="button-quiet" onClick={() => setPassword(false)}>
-            {t('marco.ahoraNo')}
-          </button>
-        </>
+        <TeamPassword
+          id={project.id}
+          name={project.name}
+          person={person}
+          said={t('equipo.faltaContrasena', { proyecto: project.name })}
+          working={t('equipo.dejando')}
+          onNotNow={() => setPassword(false)}
+          then={async () => {
+            setPassword(false)
+            await leave()
+          }}
+        />
       )}
       {left && (
         <p className="status" role="status">

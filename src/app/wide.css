@@ -45,6 +45,10 @@
   .review-next { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
   .review-next .review-hint { flex-basis: 100%; text-align: start; }
   .review-other-answers { flex-direction: row; flex-wrap: wrap; }
+  /* The way on and «Not now» side by side, as wide as what they say */
+  :is(.waiting-actions, .copies-confirm-actions) { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  :is(.waiting-actions, .copies-confirm-actions) > .button-quiet { width: auto; padding-inline: 1rem; }
+  .waiting-actions > p { flex-basis: 100%; }
   /* From the third step of a check, what was read stays in a column beside what is done */
   .review:has(.review-beside) .review-scroll { --column: 72rem; }
   /* The way on under the column where it is decided, not under what was read */

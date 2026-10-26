@@ -58,7 +58,7 @@ type Screen =
   | { kind: 'translate' }
   | { kind: 'elegir'; projectId: string; book: string; back: Screen }
   /** `bring`: opened to bring in the team's work at once (asked without internet, and said yes to when it came). */
-  | { kind: 'equipo'; projectId: string; book: string; back: Screen; bring?: boolean }
+  | { kind: 'equipo'; projectId: string; book: string; back: Screen; bring?: boolean; password?: boolean }
 
 /** The chapters of a book whose texts and helps the prototype has (every chapter of Titus and Jonah). */
 const chaptersFor = (book: string) => chaptersOf(book).map((c) => chapterOf(book, c)!)
@@ -572,13 +572,14 @@ export function App() {
       {screen.kind === 'translate' && <TranslateUi onBack={home} />}
       {screen.kind === 'equipo' && project(screen.projectId) && (
         <TeamWorkScreen
-          key={`${screen.projectId}.${screen.book}.${screen.bring ? 'traer' : ''}`}
+          key={`${screen.projectId}.${screen.book}.${screen.bring ? 'traer' : ''}${screen.password ? 'contrasena' : ''}`}
           project={project(screen.projectId)!}
           projects={projects}
           book={screen.book}
           title={titleOf(project(screen.projectId), screen.book)}
           person={person}
           bringNow={screen.bring}
+          askPassword={screen.password}
           onBack={() => setScreen(screen.back)}
           onReceived={setProjects}
           onGather={() => setScreen({ kind: 'elegir', projectId: screen.projectId, book: screen.book, back: { kind: 'book', projectId: screen.projectId, book: screen.book } })}
@@ -693,6 +694,10 @@ export function App() {
           onBring={(projectId, book) => {
             setAsking(false)
             setScreen({ kind: 'equipo', projectId, book, back: { kind: 'book', projectId, book }, bring: true })
+          }}
+          onTeamPassword={(projectId, book) => {
+            setAsking(false)
+            setScreen({ kind: 'equipo', projectId, book, back: { kind: 'book', projectId, book }, password: true })
           }}
         />
       )}
