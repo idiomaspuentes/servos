@@ -300,17 +300,23 @@ export function TeamWorkScreen({
         </div>
       )}
       {password && (
-        <TeamPassword
-          id={project.id}
-          name={project.name}
-          person={person}
-          said={t('equipo.faltaContrasena', { proyecto: project.name })}
-          working={t('equipo.dejando')}
-          then={async () => {
-            setPassword(false)
-            await leave()
-          }}
-        />
+        // The one thing on the screen while it is asked: bringing and leaving come back once it is used, or not now.
+        <>
+          <TeamPassword
+            id={project.id}
+            name={project.name}
+            person={person}
+            said={t('equipo.faltaContrasena', { proyecto: project.name })}
+            working={t('equipo.dejando')}
+            then={async () => {
+              setPassword(false)
+              await leave()
+            }}
+          />
+          <button type="button" className="button-quiet" onClick={() => setPassword(false)}>
+            {t('marco.ahoraNo')}
+          </button>
+        </>
       )}
       {left && (
         <p className="status" role="status">
@@ -334,7 +340,7 @@ export function TeamWorkScreen({
         </div>
       )}
       {!online && !waits.length && <p className="status">{t('equipo.sinInternet')}</p>}
-      {found && anyNew ? (
+      {password ? null : found && anyNew ? (
         <button type="button" className="button-primary" onClick={receiveAll}>
           {t('equipo.recibirTodo')}
         </button>
@@ -345,7 +351,7 @@ export function TeamWorkScreen({
           </button>
         )
       )}
-      {(online || !waitsFor('dejar')) && (
+      {!password && (online || !waitsFor('dejar')) && (
         <button type="button" className="button-secondary" disabled={busy !== null} onClick={leave}>
           {busy === 'dejando' ? t('equipo.dejando') : online ? t('equipo.dejar') : t('equipo.dejarLuego')}
         </button>
