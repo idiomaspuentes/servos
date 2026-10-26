@@ -313,23 +313,22 @@ export async function addToOrg(account: Door43Account, org: string, username: st
 }
 
 /**
- * The user name in what the person adding someone wrote or pasted: the whole message «Compartir mi usuario» sends
- * (`org.mensaje`, in any of `templates`), or the name alone, without an «@».
+ * The user name in what the person adding someone wrote or pasted: the name alone, without an «@»; or the message
+ * «Compartir mi usuario» sends (`org.mensaje`, in any of `templates`), found by the words that go before the name,
+ * so a message changed after it still works. Words where no name can be found give '': nothing is searched for.
  */
 export function userFromMessage(text: string, templates: string[]): string {
   const said = text.trim().replace(/\s+/g, ' ')
+  if (!said.includes(' ')) return said.replace(/^@/, '')
   for (const template of templates) {
-    const pattern = template
-      .trim()
-      .replace(/\s+/g, ' ')
-      .replace(/[.*+?^$()|[\]\\]/g, '\\$&')
-      .replace('{usuario}', '([A-Za-z0-9_.-]+?)')
-      .replace(/\{[a-z]+\}/g, '.*?')
-      .replace(/ /g, '\\s*')
-    const m = said.match(new RegExp(`^${pattern}$`, 'i'))
-    if (m) return m[1]
+    const before = template.split('{usuario}')[0].trim().replace(/\s+/g, ' ')
+    if (!before || before === template.trim()) continue
+    const pattern = before.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/ /g, '\\s+')
+    const m = said.match(new RegExp(`${pattern}\\s*@?([A-Za-z0-9_.-]+)`, 'i'))
+    // A name ends in a letter, a digit or «_»: the period after it ends the sentence.
+    if (m) return m[1].replace(/[.-]+$/, '')
   }
-  return said.replace(/^@/, '')
+  return ''
 }
 
 /** Where a project is published: chosen once, by whoever coordinates. */

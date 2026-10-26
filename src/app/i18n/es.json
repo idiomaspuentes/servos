@@ -801,6 +801,7 @@
   "org.agregarTitulo": "Agregar a alguien a {org}",
   "org.agregarQue": "Escriba el usuario de Door43 que le mandaron. También puede pegar el mensaje entero.",
   "org.usuarioDe": "Usuario de Door43",
+  "org.sinUsuario": "No se ve un usuario de Door43 en ese texto. Escriba solo el usuario, por ejemplo: juanp",
   "org.nadieAsi": "No hay en Door43 nadie con el usuario «{usuario}». Revise cómo está escrito.",
   "org.yaEstaPersona": "Ya está en {org}.",
   "org.quedara": "Quedará en el equipo «{equipo}» de {org}: podrá guardar y publicar en sus proyectos, pero no borrarlos ni agregar a otros.",

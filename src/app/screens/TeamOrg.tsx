@@ -243,13 +243,20 @@ export function AddToOrgSheet({ account, org, onClose }: { account: Door43Accoun
 
   const search = async () => {
     const username = userFromMessage(asked, templates)
-    if (!username) return
+    if (!username) {
+      setPerson(null)
+      setMissing(null)
+      setProblem(t('org.sinUsuario'))
+      return
+    }
     setBusy('buscando')
     setProblem(null)
     setMissing(null)
     setPerson(null)
     try {
       const found = await lookUpPerson(account, org, username)
+      // The field keeps only the name read from it: a message pasted whole showed cut, and not what was understood.
+      setAsked(found?.login ?? username)
       if (found) setPerson(found)
       else setMissing(username)
     } catch (e) {
@@ -329,7 +336,7 @@ export function AddToOrgSheet({ account, org, onClose }: { account: Door43Accoun
               <>
                 <p className="org-user">
                   <strong>{nameOf(person)}</strong>
-                  {person.fullName && <span className="quiet"> · {person.login}</span>}
+                  {person.fullName && person.fullName.toLocaleLowerCase() !== person.login.toLocaleLowerCase() && <span className="quiet"> · {person.login}</span>}
                 </p>
                 {person.inOrg ? (
                   <p className="status" role="status">

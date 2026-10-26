@@ -100,6 +100,15 @@ describe('the user name in the message the person sent', () => {
     }
   })
 
+  it('takes it from a message changed after the name, or with a greeting before it', () => {
+    expect(userFromMessage('Hola. Mi usuario de Door43 es juanp. Gracias', templates)).toBe('juanp')
+    expect(userFromMessage('my door43 user name is @Rosa_T, add me please', templates)).toBe('Rosa_T')
+  })
+
+  it('finds nothing in words without the name, rather than searching for the words', () => {
+    expect(userFromMessage('agrégueme por favor', templates)).toBe('')
+  })
+
   it('takes a name written alone as it is, without spaces or an @', () => {
     expect(userFromMessage('  @juanp ', templates)).toBe('juanp')
     expect(userFromMessage('juanp', templates)).toBe('juanp')

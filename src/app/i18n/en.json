@@ -801,6 +801,7 @@
   "org.agregarTitulo": "Add someone to {org}",
   "org.agregarQue": "Type the Door43 user name you were sent. You can also paste the whole message.",
   "org.usuarioDe": "Door43 user name",
+  "org.sinUsuario": "No Door43 user name shows in that text. Type the user name alone, for example: juanp",
   "org.nadieAsi": "Nobody on Door43 has the user name «{usuario}». Check how it is written.",
   "org.yaEstaPersona": "Already in {org}.",
   "org.quedara": "They will be in the «{equipo}» team of {org}: they can save and publish in its projects, but not delete them or add others.",
