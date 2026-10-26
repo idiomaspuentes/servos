@@ -770,6 +770,7 @@
   "espera.traerAhora": "Traer ahora",
   "espera.enviarYTraer": "Enviar y traer ahora",
   "espera.enviando": "Enviando…",
+  "inicio.esperaVer": "Ver y enviar",
   "espera.ahoraNo": "Ahora no",
   "espera.mensaje": "Servos: {nombre} sube {libros}",
   "espera.nota": "Marcada desde Servos por {nombre}.",

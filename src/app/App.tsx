@@ -385,6 +385,8 @@ export function App() {
           onSettings={(projectId) => setScreen({ kind: 'settings', projectId })}
           onPersonMenu={() => setPersonMenu(true)}
           onCopies={() => setCopiesSheet(true)}
+          waiting={waits}
+          onSendWaiting={() => setAsking(true)}
         />
       )}
 

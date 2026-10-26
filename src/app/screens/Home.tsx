@@ -11,9 +11,16 @@
  *
  * On a phone with a memory card and no copy of the work on it yet, the copy is offered once (`frame/copies.ts`); and
  * when a copy could not be made, it is said there.
+ *
+ * What the person asked to send to Door43 and still waits for internet is said under the moss field, in one quiet line,
+ * every time home opens: asked and then out of sight, it was easy to believe it had gone (philosophy, principle 8). With
+ * internet, its chip opens the sheet that shows what goes and asks before it does.
  */
 
 import { useEffect, useState } from 'react'
+import { useOnline } from '../frame/online'
+import type { Errand } from '../projects/outbox'
+import { namesTogether } from '../projects/mix'
 import { Suggestion } from '../frame/Actions'
 import { BrandMark } from '../frame/BrandMark'
 import { answerSuggestion, cardInPhone, copiesHere, suggestionAnswered } from '../frame/copies'
@@ -43,6 +50,8 @@ export function Home({
   onSettings,
   onPersonMenu,
   onCopies,
+  waiting = [],
+  onSendWaiting,
 }: {
   projects: Project[]
   person: string
@@ -64,6 +73,10 @@ export function Home({
   onPersonMenu(): void
   /** Opens the copy on a memory card. */
   onCopies(): void
+  /** What the person asked to send to Door43 that still waits for internet. */
+  waiting?: Errand[]
+  /** Opens the sheet that shows what waits and sends it when the person says so. */
+  onSendWaiting?(): void
 }) {
   const t = useT()
   const wide = useWider()
@@ -92,6 +105,25 @@ export function Home({
   const begun = Boolean(work && (work.begun || (work.pct ?? 0) > 0))
   const sizeOf = (p: Project) => `${p.languageName} (${p.languageCode}) · ${p.books.length === 1 ? t('inicio.unLibro') : t('inicio.libros', { n: p.books.length })}`
   const others = project ? project.books.filter((b) => b !== current) : []
+  const online = useOnline()
+  const waits = project ? waiting.filter((e) => e.projectId === project.id) : []
+  const waitLine = waits.length > 0 && (
+    <div className="status waiting-here" role="status">
+      <span>
+        {(online ? (que: string) => t('espera.pendiente', { que }) : (que: string) => t('espera.esperaInternet', { que }))(
+          namesTogether(
+            [...new Set(waits.map((e) => e.kind))].map((k) => t(`espera.que.${k}`)),
+            t('juntar.y')
+          )
+        )}
+      </span>
+      {online && onSendWaiting && (
+        <button type="button" className="chip" onClick={onSendWaiting}>
+          {t('inicio.esperaVer')}
+        </button>
+      )}
+    </div>
+  )
 
   const suggestion =
     copies.place && copies.failed ? (
@@ -235,6 +267,7 @@ export function Home({
                   </button>
                 </section>
               )}
+              {waitLine}
               {suggestion}
               {current && (
                 <ul className="home-books">

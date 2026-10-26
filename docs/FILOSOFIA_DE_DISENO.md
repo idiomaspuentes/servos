@@ -61,7 +61,7 @@ Lo normal no se anuncia. Un aviso aparece cuando hay algo que hacer o algo sali�
 
 ### 8. Honestidad, también sin internet
 
-- **Lo que está en el aparato no es lo que está en Door43.** «Guardado en este teléfono» y «Subido a Door43» son dos estados distintos, y la app dice cuál es.
+- **Lo que está en el aparato no es lo que está en Door43.** «Guardado en este teléfono» y «Subido a Door43» son dos estados distintos, y la app dice cuál es. Lo que la persona pidió subir y espera internet se dice en Inicio, en una línea tranquila bajo «Siga donde quedó» (Abel, 26 de octubre): pedido y fuera de la vista, era fácil creer que ya se había subido.
 - **No está aquí no es lo mismo que no existe.** Un recurso que no vino en el paquete se muestra como «no está en este aparato», con cómo conseguirlo, y no como si no hubiera.
 - **Quién hizo cada cambio.** En un aparato compartido, siempre se ve quién está trabajando, y cada cambio lleva su nombre (diseño, sección 5).
 - **Un número que baja dice por qué.**
