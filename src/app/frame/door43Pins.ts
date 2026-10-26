@@ -76,7 +76,8 @@ async function pinnedFetch(input: RequestInfo | URL, init?: RequestInit): Promis
     const code = (e as { code?: string }).code
     if (code === 'NOT_DOOR43') throw new NotDoor43(new URL(request.url).hostname)
     // No way out, as fetch says it.
-    throw new TypeError('Failed to fetch')
+    if (code === 'OFFLINE') throw new TypeError('Failed to fetch')
+    throw e
   }
   const empty = answer.status === 204 || answer.status === 304
   return new Response(empty ? null : fromBase64(answer.body), { status: answer.status, headers: answer.headers })

@@ -51,6 +51,10 @@ export function Door43CopySection({ person }: { person: string }) {
   const lang = document.documentElement.lang || 'es'
   const single = projects.length === 1
   const anyOn = projects.some((p) => copyOn(person, p))
+  // How the copy goes is said once when it goes the same way for every project, and by each project when not.
+  const team = (p: Project) => privacyOf(p) === 'equipo'
+  const allSame = projects.every((p) => team(p) === team(projects[0]))
+  const how = (p: Project) => <p className="quiet">{t(team(p) ? 'copiaDoor43.sellada' : 'copiaDoor43.privada')}</p>
   const today = state.tried && new Date(state.tried).toDateString() === new Date().toDateString()
 
   return (
@@ -60,11 +64,10 @@ export function Door43CopySection({ person }: { person: string }) {
       {!single && <p className="door43-copy-ask">{t('copiaDoor43.guardar')}</p>}
       {projects.map((p) => {
         const on = copyOn(person, p)
-        const team = privacyOf(p) === 'equipo'
         return (
           <div key={p.id} className="door43-copy-project">
             <Switch label={single ? t('copiaDoor43.guardar') : p.name} on={on} onChange={(v) => setCopyOn(person, p.id, v)} />
-            <p className="quiet">{t(team ? 'copiaDoor43.sellada' : 'copiaDoor43.privada')}</p>
+            {!allSame && how(p)}
             {on && waits[p.id] === 'lugar' && <p className="quiet">{t('copiaDoor43.faltaLugar')}</p>}
             {on && waits[p.id] === 'contrasena' && (
               <TeamPassword
@@ -80,6 +83,7 @@ export function Door43CopySection({ person }: { person: string }) {
           </div>
         )
       })}
+      {allSame && how(projects[0])}
       {anyOn && !onDesktop() && (
         <div className="choice-row" role="radiogroup" aria-label={t('copiaDoor43.red')}>
           {[false, true].map((data) => (
