@@ -207,6 +207,131 @@ export async function findOrgs(account: Door43Account, asked: string, most = 30)
   return [...exact, ...starts, ...found.filter((n) => !exact.includes(n) && !starts.includes(n))].slice(0, most)
 }
 
+/** One call to Door43's API as this account; a refusal throws a `DcsApiError` with its status. */
+async function api<T>(account: Door43Account, path: string, init: RequestInit = {}): Promise<T | null> {
+  const res = await fetch(`${account.host}/api/v1${path}`, {
+    ...init,
+    headers: { Authorization: `token ${account.token}`, ...(init.body ? { 'Content-Type': 'application/json' } : {}), ...(init.headers ?? {}) },
+  })
+  if (!res.ok) {
+    let body: unknown
+    try {
+      body = await res.json()
+    } catch {
+      body = undefined
+    }
+    throw new DcsApiError(`${res.status} ${path}`, res.status, body)
+  }
+  const text = res.status === 204 ? '' : await res.text()
+  return text.trim() ? (JSON.parse(text) as T) : null
+}
+const notFound = (e: unknown) => e instanceof DcsApiError && e.status === 404
+
+/**
+ * Whether this account owns the organization: on Door43 only an owner may add someone to it. Not known (no internet,
+ * an old key): not an owner, and nothing is offered.
+ */
+export async function ownsOrg(account: Door43Account, org: string): Promise<boolean> {
+  try {
+    const p = await api<{ is_owner?: boolean }>(account, `/users/${encodeURIComponent(account.username)}/orgs/${encodeURIComponent(org)}/permissions`)
+    return Boolean(p?.is_owner)
+  } catch {
+    return false
+  }
+}
+
+/** Someone on Door43, as the person adding them sees them before adding: their name, and whether they are in already. */
+export interface Door43Person {
+  login: string
+  fullName?: string
+  inOrg: boolean
+}
+/** The account with that user name (Door43 takes it in any case), or null when there is none. */
+export async function lookUpPerson(account: Door43Account, org: string, username: string): Promise<Door43Person | null> {
+  let user: { login: string; full_name?: string } | null
+  try {
+    user = await api(account, `/users/${encodeURIComponent(username.trim())}`)
+  } catch (e) {
+    if (notFound(e)) return null
+    throw e
+  }
+  if (!user) return null
+  return { login: user.login, fullName: user.full_name || undefined, inOrg: await inOrg(account, org, user.login) }
+}
+async function inOrg(account: Door43Account, org: string, login: string): Promise<boolean> {
+  try {
+    await api(account, `/orgs/${encodeURIComponent(org)}/members/${encodeURIComponent(login)}`)
+    return true
+  } catch (e) {
+    if (notFound(e)) return false
+    throw e
+  }
+}
+
+/**
+ * The team those added from Servos go in (Abel, 26 October): they save and publish in every project of the
+ * organization, and make the repositories the work goes to (`{repo}-servos`), but neither delete them nor manage the
+ * organization or its people, as its owners do.
+ */
+export const TEAM = 'traductores'
+const TEAM_UNITS = ['repo.code', 'repo.releases', 'repo.issues', 'repo.pulls', 'repo.wiki']
+
+async function teamOf(account: Door43Account, org: string): Promise<number> {
+  const at = `/orgs/${encodeURIComponent(org)}/teams`
+  for (let page = 1; page <= 10; page++) {
+    const teams = (await api<Array<{ id: number; name: string }>>(account, `${at}?limit=50&page=${page}`)) ?? []
+    const team = teams.find((x) => x.name.toLocaleLowerCase() === TEAM)
+    if (team) return team.id
+    if (teams.length < 50) break
+  }
+  const made = await api<{ id: number }>(account, at, {
+    method: 'POST',
+    body: JSON.stringify({
+      name: TEAM,
+      description: 'Servos',
+      permission: 'write',
+      includes_all_repositories: true,
+      can_create_org_repo: true,
+      // Older Door43s read `units`, newer ones `units_map`.
+      units: TEAM_UNITS,
+      units_map: Object.fromEntries(TEAM_UNITS.map((u) => [u, 'write'])),
+    }),
+  })
+  if (!made) throw new DcsApiError(`no team made in ${org}`, 500)
+  return made.id
+}
+
+/**
+ * Adds someone to the organization, in its translators' team (made the first time). Someone in it already is left as
+ * they are. Door43 refuses it (403) to an account that does not own the organization.
+ */
+export async function addToOrg(account: Door43Account, org: string, username: string): Promise<'added' | 'already'> {
+  if (await inOrg(account, org, username)) return 'already'
+  const team = await teamOf(account, org)
+  await api(account, `/teams/${team}/members/${encodeURIComponent(username)}`, { method: 'PUT' })
+  return 'added'
+}
+
+/**
+ * The user name in what the person adding someone wrote or pasted: the whole message «Compartir mi usuario» sends
+ * (`org.mensaje`, in any of `templates`), or the name alone, without an «@».
+ */
+export function userFromMessage(text: string, templates: string[]): string {
+  const said = text.trim().replace(/\s+/g, ' ')
+  for (const template of templates) {
+    const pattern = template
+      .trim()
+      .replace(/\s+/g, ' ')
+      .replace(/[.*+?^$()|[\]\\]/g, '\\$&')
+      .replace('{usuario}', '([A-Za-z0-9_.-]+?)')
+      .replace(/\{[a-z]+\}/g, '.*?')
+      .replace(/ /g, '\\s*')
+    const m = said.match(new RegExp(`^${pattern}$`, 'i'))
+    if (m) return m[1]
+  }
+  return said.replace(/^@/, '')
+}
+
 /** Where a project is published: chosen once, by whoever coordinates. */
 export interface Destination {
   host: string

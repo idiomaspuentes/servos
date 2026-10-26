@@ -11,7 +11,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useOnline, useWaiting } from '../frame/online'
 import { DestinationForm } from '../miniapps/publicar/publicar'
 import { useT } from '../i18n/i18n'
-import { accountOf, destinationOf, forgetAccount, leaveWork, problemOf, proposedOrg, proposedRepo, setDestination, workLeft, workRepoOf, type Problem } from '../projects/door43'
+import { accountOf, destinationOf, forgetAccount, leaveWork, ownsOrg, problemOf, proposedOrg, proposedRepo, setDestination, workLeft, workRepoOf, type Problem } from '../projects/door43'
 import { namesTogether } from '../projects/mix'
 import { ask, drop, settle } from '../projects/outbox'
 import { bookName, privacyOf, type Project } from '../projects/model'
@@ -22,6 +22,8 @@ import { workToLeave } from '../frame/door43Copy'
 import { lockedKind } from '../projects/lockedCopy'
 import { openWithTeamKeys } from '../projects/teamKeys'
 import { Door43AccountSheet } from './Door43Account'
+import { AddToOrgSheet } from './TeamOrg'
+import { RowButton } from '../frame/Actions'
 
 type Found = { file: SharedFile; previews: BookPreview[] }
 
@@ -67,6 +69,17 @@ export function TeamWorkScreen({
   const [unreached, setUnreached] = useState(false)
   const online = useOnline()
   const waits = useWaiting(person).filter((e) => e.projectId === project.id && (e.kind === 'dejar' || e.kind === 'traer'))
+  // Whoever owns the team's organization adds people to it from here; known only with internet, else not offered.
+  const [owner, setOwner] = useState(false)
+  const [adding, setAdding] = useState(false)
+  useEffect(() => {
+    if (!account || !to || !online) return
+    let live = true
+    void ownsOrg(account, to.owner).then((yes) => live && setOwner(yes))
+    return () => {
+      live = false
+    }
+  }, [account, to, online])
   // Once, though the screen be drawn twice as it opens.
   const brought = useRef(false)
   useEffect(() => {
@@ -330,7 +343,13 @@ export function TeamWorkScreen({
           {busy === 'dejando' ? t('equipo.dejando') : online ? t('equipo.dejar') : t('equipo.dejarLuego')}
         </button>
       )}
+      {owner && online && (
+        <div className="team-more">
+          <RowButton label={t('org.agregarFila', { org: to.owner })} onClick={() => setAdding(true)} />
+        </div>
+      )}
       <p className="quiet">{t('equipo.cuenta', { usuario: account.username })}</p>
+      {adding && <AddToOrgSheet account={account} org={to.owner} onClose={() => setAdding(false)} />}
     </>
   )
 }
