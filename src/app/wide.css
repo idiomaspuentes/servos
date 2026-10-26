@@ -238,12 +238,20 @@
   .screen.welcome { display: flex; flex-direction: column; justify-content: center; }
   .welcome .main { padding-block: 2rem; }
   /* The book: its steps a column at the left, as home's projects, the one shown tinted; the step beside it */
-  .book-layout { display: grid; grid-template-columns: 15rem minmax(0, 36rem); align-items: start; gap: 1rem 2.5rem; }
+  .book-layout { display: grid; grid-template-columns: 20rem minmax(0, 36rem); align-items: start; gap: 1rem 2.5rem; }
   .book-layout > .book-steps {
     position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--touch) + 2rem + 1px);
     display: flex; flex-direction: column; gap: 0.2rem; overflow: visible; background: none; box-shadow: none; border-radius: 0;
   }
-  .book-layout .book-step { gap: 0.65rem; min-height: var(--touch); padding: 0.4rem 0.6rem; border: 0; border-radius: var(--radius); }
+  /* Each step's name on one line, in every language; how far it has gone under it, so a long name is not cut by it */
+  .book-layout .book-step {
+    display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: 'icon name' 'icon meta'; align-items: center;
+    column-gap: 0.65rem; min-height: var(--touch); padding: 0.4rem 0.6rem; border: 0; border-radius: var(--radius);
+  }
+  .book-layout .book-step-icon { grid-area: icon; }
+  .book-layout .book-step-name { grid-area: name; }
+  .book-layout .book-step-state { grid-area: meta; font-size: 0.8rem; }
+  .book-layout .book-step-state:empty { display: none; }
   .book-layout .book-step::after { content: none; }
   .book-layout .book-step-icon { width: 2rem; height: 2rem; border-radius: 8px; }
   .book-layout .step-icon { width: 1.25rem; height: 1.25rem; }
