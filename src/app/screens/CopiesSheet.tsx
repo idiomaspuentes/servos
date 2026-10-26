@@ -30,8 +30,11 @@ export function whenCopied(at: string, lang: string): string {
   return today ? hour : `${d.toLocaleDateString(lang, { day: 'numeric', month: 'short' })} ${hour}`
 }
 
-/** The team's password of a project kept to its team, chosen or typed here once, so its copies can be sealed. */
-function TeamPassword({ id, name, person }: { id: string; name: string; person: string }) {
+/**
+ * The team's password of a project kept to its team, chosen or typed here once, so its copies can be sealed (on the
+ * memory card, or on Door43: `then`).
+ */
+export function TeamPassword({ id, name, person, then = () => copyNow(person) }: { id: string; name: string; person: string; then?(): Promise<void> }) {
   const t = useT()
   const [password, setPassword] = useState('')
   const [again, setAgain] = useState('')
@@ -48,7 +51,7 @@ function TeamPassword({ id, name, person }: { id: string; name: string; person: 
         await chooseTeamPassword(id, password)
         setPassword('')
         setAgain('')
-        await copyNow(person)
+        await then()
         setWorking(false)
       }}
     >

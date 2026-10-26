@@ -20,6 +20,8 @@ import { BookScreen } from './screens/BookScreen'
 import { GatherScreen } from './screens/GatherScreen'
 import { TeamWorkScreen } from './screens/TeamWorkScreen'
 import { keepCopying } from './frame/copies'
+import { keepCopyingToDoor43 } from './frame/door43Copy'
+import { accountOf, forgetAccount } from './projects/door43'
 import { CopiesSheet } from './screens/CopiesSheet'
 import { closeTopSheet, onSheets } from './frame/Sheet'
 import { GlossaryScreen } from './screens/GlossaryScreen'
@@ -96,6 +98,8 @@ export function App() {
   const working = useRef<string | null>(null)
   working.current = people ? person : null
   useEffect(() => keepCopying(() => working.current), [])
+  // A copy on Door43 too, when there is internet and the person chose it (frame/door43Copy.ts).
+  useEffect(() => keepCopyingToDoor43(() => working.current), [])
   // What waited for internet (design 6.11): shown when internet comes, or when the app opens with it, before anything
   // goes; not while something is being typed. «Not now» holds until internet comes again.
   const waits = useWaiting(person)
@@ -123,6 +127,8 @@ export function App() {
     }
   }, [person])
   const [door43, setDoor43] = useState(false)
+  // Linking again (the key kept no longer works): on the Door43 it was on.
+  const [relinkHost, setRelinkHost] = useState<string | undefined>(undefined)
   const [language, setLanguage] = useState(false)
   const [addProject, setAddProject] = useState(false)
   const [addBookFor, setAddBookFor] = useState<string | null>(null)
@@ -385,6 +391,14 @@ export function App() {
           onSettings={(projectId) => setScreen({ kind: 'settings', projectId })}
           onPersonMenu={() => setPersonMenu(true)}
           onCopies={() => setCopiesSheet(true)}
+          onDoor43={(relink) => {
+            const account = accountOf(person)
+            if (relink && account) {
+              forgetAccount(person)
+              setRelinkHost(account.host)
+            }
+            setDoor43(true)
+          }}
           waiting={waits}
           onSendWaiting={() => setAsking(true)}
         />
@@ -657,7 +671,16 @@ export function App() {
       )}
       {about && <AboutSheet onClose={() => setAbout(false)} />}
       {copiesSheet && <CopiesSheet person={person} onClose={() => setCopiesSheet(false)} />}
-      {door43 && <Door43AccountSheet person={person} onClose={() => setDoor43(false)} />}
+      {door43 && (
+        <Door43AccountSheet
+          person={person}
+          host={relinkHost}
+          onClose={() => {
+            setDoor43(false)
+            setRelinkHost(undefined)
+          }}
+        />
+      )}
       {asking && (
         <WaitingSheet
           errands={waits}

@@ -345,8 +345,10 @@ export function titlesOf(yaml: string): Map<string, string> {
 export type FileResult = { path: string; state: 'written' | 'same' | 'changed' | 'gather' | 'failed'; problem?: Problem; sha?: string }
 
 /** Why something could not be done, said in the person's terms. */
-export type Problem = 'offline' | 'signin' | 'scope' | 'permission' | 'conflict' | 'changed' | 'gather' | 'other'
+export type Problem = 'offline' | 'signin' | 'scope' | 'permission' | 'conflict' | 'changed' | 'gather' | 'pin' | 'other'
 export function problemOf(e: unknown): Problem {
+  // The network presented a certificate that was not Door43's (the app for phones, `frame/door43Pins.ts`): nothing went.
+  if (e instanceof Error && e.name === 'NotDoor43') return 'pin'
   if (e instanceof DcsApiError) {
     if (e.status === 401) return 'signin'
     // The account may do it, but the key this phone keeps was made without that permission: link the account again.

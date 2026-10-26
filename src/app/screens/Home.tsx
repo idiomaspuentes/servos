@@ -27,6 +27,8 @@ import { answerSuggestion, cardInPhone, copiesHere, suggestionAnswered } from '.
 import { useWider } from '../frame/Panes'
 import { MenuRow, Sheet } from '../frame/Sheet'
 import { useCopies } from './CopiesSheet'
+import { useDoor43Copy } from './Door43CopySection'
+import { failingLong } from '../frame/door43Copy'
 import { useT } from '../i18n/i18n'
 import { titleOf, type Phase, type Project } from '../projects/model'
 import { insideState, onInside } from '../projects/packsInside'
@@ -50,6 +52,7 @@ export function Home({
   onSettings,
   onPersonMenu,
   onCopies,
+  onDoor43,
   waiting = [],
   onSendWaiting,
 }: {
@@ -73,6 +76,8 @@ export function Home({
   onPersonMenu(): void
   /** Opens the copy on a memory card. */
   onCopies(): void
+  /** Opens the person's Door43 account (`relink`: forgets the key that no longer works, to link it again). */
+  onDoor43?(relink: boolean): void
   /** What the person asked to send to Door43 that still waits for internet. */
   waiting?: Errand[]
   /** Opens the sheet that shows what waits and sends it when the person says so. */
@@ -83,6 +88,7 @@ export function Home({
   const [inside, setInside] = useState(insideState)
   useEffect(() => onInside(setInside), [])
   const copies = useCopies()
+  const door43Copy = useDoor43Copy(person)
   // A card in the phone and no copy yet: offered once, on home (philosophy, principles 9 and 12).
   const [card, setCard] = useState(false)
   const [answered, setAnswered] = useState(suggestionAnswered)
@@ -125,8 +131,22 @@ export function Home({
     </div>
   )
 
+  // The copy on Door43 failing for days (never sooner: principle 6), and what to do about it.
+  const relink = door43Copy.problem === 'signin' || door43Copy.problem === 'scope'
+  const door43Notice = onDoor43 && failingLong(door43Copy) && (
+    <section className="suggestion" role="status">
+      <p>{t('copiaDoor43.avisoInicio', { porque: door43Copy.problem === 'pin' ? t('copiaDoor43.avisoPin') : relink ? t('copiaDoor43.avisoVincular') : t(`door43.problema.${door43Copy.problem ?? 'other'}`) })}</p>
+      <div className="chip-row">
+        <button type="button" className="chip chip-action" onClick={() => onDoor43(relink)}>
+          {relink ? t('equipo.vincularOtraVez') : t('copiaDoor43.ver')}
+        </button>
+      </div>
+    </section>
+  )
+
   const suggestion =
-    copies.place && copies.failed ? (
+    door43Notice ||
+    (copies.place && copies.failed ? (
       // Said only when it fails (principle 6), once, under what continues the work.
       <section className="suggestion" role="status">
         <p>{t('copias.avisoInicio')}</p>
@@ -151,7 +171,7 @@ export function Home({
           }}
         />
       )
-    )
+    ))
 
   return (
     <div className="screen">

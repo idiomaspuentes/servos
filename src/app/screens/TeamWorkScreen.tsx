@@ -18,6 +18,9 @@ import { bookName, privacyOf, type Project } from '../projects/model'
 import { inProject } from '../projects/scope'
 import { previewBook, readShared, receiveShared, shareProject, withSounds, type BookPreview, type SharedFile } from '../projects/share'
 import { deviceId } from '../projects/work'
+import { workToLeave } from '../frame/door43Copy'
+import { lockedKind } from '../projects/lockedCopy'
+import { openWithTeamKeys } from '../projects/teamKeys'
 import { Door43AccountSheet } from './Door43Account'
 
 type Found = { file: SharedFile; previews: BookPreview[] }
@@ -56,6 +59,8 @@ export function TeamWorkScreen({
   const [busy, setBusy] = useState<'trayendo' | 'dejando' | null>(null)
   const [found, setFound] = useState<Found[] | null>(null)
   const [left, setLeft] = useState(false)
+  // Work the others left sealed with a team password this phone does not know.
+  const [sealed, setSealed] = useState(0)
   const [problem, setProblem] = useState<Problem | null>(null)
   const [done, setDone] = useState<{ names: string[]; choices: number; takes: number } | null>(null)
   // Tried with the phone saying it was online, and Door43 could not be reached: it waits all the same.
@@ -157,7 +162,11 @@ export function TeamWorkScreen({
     setProblem(null)
     setUnreached(false)
     try {
-      const files = (await workLeft(account, to, deviceId())).map((x) => readShared(x.text)).filter((f): f is SharedFile => Boolean(f))
+      // What the others left sealed with the team's password (a project kept to its team) opens with the key kept here.
+      const left = await workLeft(account, to, deviceId())
+      const texts = await Promise.all(left.map(async (x) => (lockedKind(x.text) === 'compartido' ? openWithTeamKeys(x.text) : x.text)))
+      setSealed(texts.filter((x) => x === null).length)
+      const files = texts.map((x) => (x === null ? null : readShared(x))).filter((f): f is SharedFile => Boolean(f))
       settle('traer', project.id, person)
       setFound(
         inProject(project.id, () =>
@@ -179,8 +188,11 @@ export function TeamWorkScreen({
     setUnreached(false)
     try {
       // With the sound of every take: the shelf replaces it in place, so recording again does not pile up versions.
-      const file = await withSounds(shareProject(project, project.books.map((b) => b.code), person))
-      const result = await leaveWork(account, to, JSON.stringify(file), person, deviceId())
+      // Sealed with the team's password where the project is kept to its team and the password is known here, as the
+      // copy made by itself goes (frame/door43Copy.ts).
+      const work = await workToLeave(project, person)
+      const text = work?.text ?? JSON.stringify(await withSounds(shareProject(project, project.books.map((b) => b.code), person)))
+      const result = await leaveWork(account, to, text, person, deviceId())
       if (result.state === 'failed' && result.problem === 'offline') return later('dejar', true)
       if (result.state === 'failed') setProblem(result.problem ?? 'other')
       else {
@@ -243,7 +255,8 @@ export function TeamWorkScreen({
     <>
       <p className="quiet">{t('equipo.que', { repo: `${work.owner}/${work.repo}` })}</p>
       {inPage && <p className="status">{t('equipo.enLaPagina')}</p>}
-      {found && found.length === 0 && <p>{t('equipo.nadie')}</p>}
+      {found && found.length === 0 && !sealed && <p>{t('equipo.nadie')}</p>}
+      {sealed > 0 && <p className="status">{t('equipo.sellado', { n: sealed })}</p>}
       {found && found.length > 0 && (
         <ul className="receive-books">
           {found.map(({ file, previews }) => (

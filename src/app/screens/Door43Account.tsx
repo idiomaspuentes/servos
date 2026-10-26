@@ -8,6 +8,8 @@
 import { useState } from 'react'
 import { Sheet } from '../frame/Sheet'
 import { useT } from '../i18n/i18n'
+import { Door43CopySection } from './Door43CopySection'
+import { forgetDoor43Prints } from '../frame/door43Copy'
 import { HOSTS, accountOf, defaultHost, forgetAccount, hostName, problemOf, signIn, signInWithToken, signUpUrl, type Door43Account } from '../projects/door43'
 
 export function Door43AccountSheet({
@@ -38,6 +40,8 @@ export function Door43AccountSheet({
     try {
       const linked = withToken ? await signInWithToken(person, host, token) : await signIn(person, host, username, password)
       setPassword('')
+      // Linked again: the copy on Door43 starts over, and what kept it failing is forgotten.
+      forgetDoor43Prints(person)
       setAccount(linked)
       onLinked?.(linked)
     } catch (e) {
@@ -52,6 +56,7 @@ export function Door43AccountSheet({
       {account ? (
         <div className="glossary-form">
           <p className="status">{t('door43.vinculada', { usuario: account.username, donde: t(`door43.host.${hostName(account.host)}`) })}</p>
+          <Door43CopySection person={person} />
           <button
             type="button"
             className="button-secondary button-danger"
