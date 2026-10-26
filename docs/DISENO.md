@@ -301,6 +301,8 @@ espera en el teléfono: subir el proyecto, marcar una versión, dejar el trabajo
 
 Hecho en el prototipo (`outbox.ts`, `WaitingSheet`), probado con un Door43 de mentira en la página y en las pruebas.
 
+La copia en Door43 (sección 8) no espera aquí ni pregunta: el sí se dio una vez, al prenderla.
+
 **Subir no pisa lo que subió otro** (acordado con Abel el 19 de octubre). Cada teléfono recuerda, de cada libro, la
 última versión que vio en Door43 (la que subió o la que trajo), con su texto. Al subir, un libro se escribe solo si
 Door43 todavía tiene esa versión, o una cuyos versículos este teléfono ya tiene todos (el trabajo llegó por otro lado:
@@ -461,6 +463,43 @@ Como en `usfm-editor`:
   desde la última subida. Subir y marcar una versión se piden igual, y esperan a que haya internet y a que la persona
   diga que sí (6.11). Falta todavía subir el diario («su historia») junto con los libros.
 - El cliente de Door43 es el de Taller (`packages/dcs-client`), copiado en `src/door43/dcs`.
+
+**Empezar en Door43** (acordado con Abel el 26 de octubre, hecho en el prototipo). Muchos de quienes vinculan una
+cuenta nunca oyeron de Door43:
+
+- **La hoja de la cuenta dice qué es Door43** antes de pedir nada («un sitio en internet donde los equipos de
+  traducción guardan y publican su trabajo. Es gratis…») y ofrece «Crear una cuenta en Door43 ›», que abre la página
+  de registro de Door43 (`/user/sign_up`) en el navegador. La app no crea cuentas; dice que se vuelva y se vincule.
+- **La organización del equipo.** Donde quien coordina elige el lugar del proyecto, la pregunta es «¿En qué
+  organización de Door43 guarda el equipo su trabajo?», con una línea sobre qué es una organización. Debajo de las
+  suyas, «Crear una para el equipo ›» (se propone el idioma y «reg»; «Quién puede ver lo que guarda»: «Solo sus
+  miembros», propuesto si el proyecto es «Solo el equipo», o «Cualquiera»; Gitea `POST /orgs`) y «Buscar la de mi
+  equipo ›». Door43 no busca organizaciones por nombre: la lista de las que se ven se trae una vez por visita, página
+  por página, y se busca aquí. Tampoco hay cómo pedir entrar: una organización encontrada dice que alguien de ella
+  tiene que agregarle, muestra su usuario y lo comparte en un mensaje listo («Compartir mi usuario»; en la computadora,
+  se copia). Las organizaciones privadas no aparecen, y se dice: se pide el nombre a quien coordina
+  (`TeamOrg.tsx`, `findOrgs`, `createTeamOrg`).
+
+**La copia en Door43** (acordado con Abel el 26 de octubre; filosofía, principio 9). Cada persona guarda una copia de
+su trabajo en Door43 sin pedirla cada vez: el mismo paquete que «Dejar mi trabajo» (6.10), en el repositorio privado
+`{repo}-servos`, uno por persona y aparato, reemplazado cada vez. Va unos minutos después de un cambio, nunca mientras
+se escribe, al volver internet y al pasar la app atrás; solo con wifi, salvo «También con datos». No pasa por «Ya hay
+internet» (6.11): el sí se dio una vez, al prender el interruptor de cada proyecto en «Copia de su trabajo», prendido
+de entrada en los abiertos y apagado en los de «Solo el equipo», cuya copia va sellada con la contraseña del equipo
+(como la de la tarjeta) y espera mientras el teléfono no la sepa. «Dejar mi trabajo» se sella igual, y «Trabajo del
+equipo» abre lo sellado con las llaves que guarda el teléfono. Hace falta que el proyecto tenga su lugar en Door43.
+Inicio calla mientras funciona; después de tres días de fallar con internet dice por qué y qué hacer («Vincular otra
+vez») (`frame/door43Copy.ts`, `Door43CopySection.tsx`).
+
+**El certificado de Door43, en el teléfono.** La app no puede saber si una red es segura, y no lo promete. En la app
+para teléfonos, todo lo que va a door43.org (y sus subdominios) lo manda Android (`Door43Plugin.java`), que acepta el
+certificado solo si su cadena lleva una de las llaves que la app trae (`res/xml/network_security_config.xml`: la
+autoridad de SSL.com que usan git. y qa.door43.org, la de Amazon de door43.org, y de respaldo otras raíces de las dos y
+las de Let's Encrypt). Si una red presenta otro, no se manda nada (tampoco la llave de la cuenta) y la hoja dice «Hoy no
+se mandó nada: en esta red no se pudo comprobar que era Door43. Su trabajo sigue en este teléfono». Las llaves se
+cambian con una versión nueva de la app (el archivo dice cómo); dejan de exigirse a fines de 2030, para que un teléfono
+que nunca se actualice no quede sin Door43, y lo que manda sigue sellado. En el navegador y en la computadora, Door43 se
+alcanza como siempre. Probado en el emulador el 26 de octubre.
 
 **USFM, de ida y vuelta** (prototipo): un libro empezado en otra app se trae desde su archivo USFM («Agregar un
 libro › Desde un archivo USFM»). Se lee el texto de cada versículo (sin alineación ni notas al pie), un puente como

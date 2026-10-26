@@ -84,6 +84,21 @@ Lo normal no se anuncia. Un aviso aparece cuando hay algo que hacer o algo sali�
 - **Cada proyecto elige quién puede ver su trabajo**, al crearlo: «Solo el equipo» (elegido de entrada) o «Cualquiera
   que tenga el archivo». La mayoría de los equipos no necesita lo primero, y no se le impone. La elección viaja con
   el proyecto y, al juntar, queda la más reservada; cerrarlo es un toque, abrirlo pide confirmar.
+- **Una copia en Door43, con internet y sin pedirla cada vez** (Abel, 26 de octubre). Un teléfono perdido se llevaba
+  lo que nadie había dejado en Door43 a mano. Ahora el trabajo de cada persona va solo a Door43 cuando hay internet
+  (solo con wifi, si la persona no dice «También con datos»), unos minutos después de un cambio y nunca mientras
+  escribe; Inicio no dice nada mientras funciona, y solo después de días de fallar dice qué hacer. Como va sin
+  preguntar, **se consiente una vez, sabiendo lo que implica, al prenderla**: en «Copia de su trabajo» (la cuenta de
+  Door43) cada proyecto tiene su interruptor, prendido de entrada en los abiertos a quien tenga el archivo y apagado
+  en los de «Solo el equipo». Junto a este, antes de tocarlo, la app dice cómo va: «Va sellada con la contraseña del
+  equipo: solo el equipo puede abrirla. Quien vea su red puede saber que este teléfono se conecta a Door43, pero no lo
+  que manda». Sin esa contraseña en el teléfono, espera y la pide ahí: nunca se manda abierta.
+- **La app no promete una red segura.** Pensamos en comprobar si la red es segura antes de mandar algo, y no se puede:
+  ninguna app sabe quién mira una red. Lo que sí hace es proteger lo que manda: va sellado con la contraseña del
+  equipo, y en el teléfono Door43 se reconoce por su certificado (los que la app lleva, con respaldos, renovados con
+  cada versión); si una red pone otro en el medio, no se manda nada y se dice: «Hoy no se mandó nada: en esta red no
+  se pudo comprobar que era Door43. Su trabajo sigue en este teléfono». Y dice con claridad lo que no puede ocultar:
+  que el teléfono se conecta a Door43.
 - **Se habla solo de quién puede ver el trabajo.** Nunca «riesgo», «peligro» ni «prohibido»: asustaría a quienes no
   están en esa situación, y diría en la pantalla de los demás lo que conviene no decir (una prueba lo vigila).
 
