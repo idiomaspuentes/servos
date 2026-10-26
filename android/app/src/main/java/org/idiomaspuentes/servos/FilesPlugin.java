@@ -131,6 +131,27 @@ public class FilesPlugin extends Plugin {
         }
     }
 
+    /** A few words out by the share sheet, to a message (a Door43 user name sent to whoever coordinates). */
+    @PluginMethod
+    public void shareText(PluginCall call) {
+        String text = call.getString("text", "");
+        if (text.isEmpty()) {
+            call.reject("No text");
+            return;
+        }
+        try {
+            Intent send = new Intent(Intent.ACTION_SEND);
+            send.setType("text/plain");
+            send.putExtra(Intent.EXTRA_TEXT, text);
+            Intent chooser = Intent.createChooser(send, null);
+            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(chooser);
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("Not shared", e);
+        }
+    }
+
     /** Where the sheet went: a file kept on the phone is written there now; anywhere else has the file already. */
     @ActivityCallback
     private void chosen(PluginCall call, ActivityResult result) {

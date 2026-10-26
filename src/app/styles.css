@@ -1192,6 +1192,11 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .option-card input { width: auto; min-height: 0; margin-block-start: 0.2rem; accent-color: var(--accent); }
 .option-card > span { display: flex; flex-direction: column; gap: 0.25rem; }
 
+/* Door43: making an account (in the browser), apart from linking one */
+.door43-new { display: flex; flex-direction: column; gap: 0.5rem; margin-block-start: 0.5rem; padding-block-start: 1rem; border-block-start: 1px solid var(--hair); }
+.door43-new p { margin: 0; }
+a.button-secondary { display: flex; align-items: center; justify-content: center; min-height: var(--touch); padding: 0.5rem 0.9rem; border: 1px solid color-mix(in srgb, var(--text-soft) 35%, transparent); border-radius: var(--radius); color: var(--text); text-decoration: none; text-align: center; box-sizing: border-box; }
+
 /* «Copia en la tarjeta» */
 .copies { display: flex; flex-direction: column; gap: 0.75rem; }
 .copies p { margin: 0; }
@@ -1286,6 +1291,13 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .destination-orgs.is-scrolled { max-height: 17.5rem; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
 .destination-org strong { color: var(--accent); }
 .destination-none { margin: 0; padding: 0.75rem 0.9rem; }
+.destination-more { display: flex; flex-direction: column; }
+.destination-more > .row-button:last-child { border-block-end: 1px solid var(--hair); }
+.org-search { display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; }
+.org-search > .button-secondary { width: auto; }
+.org-found { padding-inline: 0.9rem; }
+.org-found:first-child { border-block-start: 0; }
+.org-user { margin: 0; overflow-wrap: anywhere; }
 .team-problem { display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; }
 /* Cutting a piece of the mix: its words as small tinted pieces to touch, the first dimmed (nothing to cut before it). */
 .mix-piece.is-cutting { cursor: default; }

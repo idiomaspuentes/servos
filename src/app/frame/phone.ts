@@ -24,6 +24,7 @@ const OPENED = 'archivos-abiertos'
 interface Files {
   opened(): Promise<{ files: Arrived[] }>
   share(file: { name: string; text: string; type: string; keepHere: string }): Promise<{ saved?: string }>
+  shareText(options: { text: string }): Promise<void>
   addListener(event: string, listener: () => void): Promise<unknown>
 }
 
@@ -105,6 +106,11 @@ export function followTheme() {
       window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', follow)
     })
     .catch(() => {})
+}
+
+/** A few words out by the phone's share sheet, to a message. */
+export async function shareTextOnPhone(text: string): Promise<void> {
+  await (await files()).plugin.shareText({ text })
 }
 
 /**

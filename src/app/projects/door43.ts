@@ -111,6 +111,9 @@ export async function signIn(person: string, host: string, username: string, pas
   return account
 }
 
+/** Door43's page for making an account, opened in the browser: the app makes none itself. */
+export const signUpUrl = (host: string) => `${host}/user/sign_up`
+
 /** Links a token made on Door43 itself (the other way to sign in, and the mock's). */
 export async function signInWithToken(person: string, host: string, token: string): Promise<Door43Account> {
   const { getAuthenticatedUser } = await import('../../door43/dcs')
@@ -124,6 +127,84 @@ export async function signInWithToken(person: string, host: string, token: strin
 export async function organizationsOf(account: Door43Account): Promise<string[]> {
   const { getUserOrgs } = await import('../../door43/dcs')
   return (await getUserOrgs(configOf(account.host), account.token)).map((o) => o.name)
+}
+
+/** The name proposed for a team's new organization: its language and «reg», as the repository is proposed. */
+export const proposedOrg = (project: Pick<Project, 'languageCode'>) => proposedRepo(project)
+
+/** A Door43 name, as Door43 takes it for an organization or a repository. */
+export const validName = (name: string) => /^[A-Za-z0-9_.-]+$/.test(name) && !/^[.-]|[.-]$/.test(name)
+
+/** Why an organization could not be made: the name taken, this account not allowed to make one, or another problem. */
+export type OrgProblem = 'taken' | 'notAllowed' | Problem
+/**
+ * Makes the team's organization on Door43, its maker in it; `private`: only its members see what it keeps. Fails with
+ * what went wrong, in the person's terms.
+ */
+export async function createTeamOrg(account: Door43Account, name: string, privately: boolean): Promise<string> {
+  const { createOrg } = await import('../../door43/dcs')
+  try {
+    const made = await createOrg(configOf(account.host), { name, visibility: privately ? 'private' : 'public', token: account.token })
+    return made?.name ?? name
+  } catch (e) {
+    throw new OrgError(orgProblemOf(e))
+  }
+}
+export class OrgError extends Error {
+  constructor(readonly problem: OrgProblem) {
+    super(problem)
+  }
+}
+function orgProblemOf(e: unknown): OrgProblem {
+  if (e instanceof DcsApiError) {
+    const said = `${e.message} ${JSON.stringify(e.body ?? '')}`
+    if (e.status === 422 && /already exists|name is reserved|been used/i.test(said)) return 'taken'
+    if (e.status === 403 && !/required scope/i.test(said)) return 'notAllowed'
+  }
+  return problemOf(e)
+}
+
+// Every organization Door43 shows, by host, brought once a visit: Door43 has no search of organizations by name.
+const everyOrg = new Map<string, Promise<string[]>>()
+const PAGE = 50
+/** Most pages brought of the organizations Door43 shows (some thousands). */
+const MOST_PAGES = 80
+
+async function orgsShown(account: Door43Account): Promise<string[]> {
+  const url = (page: number) => `${account.host}/api/v1/orgs?limit=${PAGE}&page=${page}`
+  const page = async (n: number): Promise<string[]> => {
+    const res = await fetch(url(n), { headers: { Authorization: `token ${account.token}` } })
+    if (!res.ok) throw new DcsApiError(`${res.status} /orgs`, res.status)
+    return ((await res.json()) as Array<{ name?: string; username?: string }>).map((o) => o.name || o.username || '').filter(Boolean)
+  }
+  const all: string[] = []
+  // Four pages at a time, until one comes short.
+  for (let n = 1; n <= MOST_PAGES; n += 4) {
+    const got = await Promise.all([n, n + 1, n + 2, n + 3].filter((k) => k <= MOST_PAGES).map(page))
+    for (const names of got) all.push(...names)
+    if (got.some((names) => names.length < PAGE)) break
+  }
+  return all
+}
+
+/**
+ * The organizations Door43 shows whose name holds what is asked, the one named exactly first. Those only their
+ * members see are not shown: their name is asked of whoever coordinates.
+ */
+export async function findOrgs(account: Door43Account, asked: string, most = 30): Promise<string[]> {
+  const wanted = asked.trim().toLocaleLowerCase()
+  if (!wanted) return []
+  let list = everyOrg.get(account.host)
+  if (!list) {
+    list = orgsShown(account)
+    everyOrg.set(account.host, list)
+    list.catch(() => everyOrg.delete(account.host))
+  }
+  const names = await list
+  const found = names.filter((n) => n.toLocaleLowerCase().includes(wanted))
+  const exact = found.filter((n) => n.toLocaleLowerCase() === wanted)
+  const starts = found.filter((n) => !exact.includes(n) && n.toLocaleLowerCase().startsWith(wanted))
+  return [...exact, ...starts, ...found.filter((n) => !exact.includes(n) && !starts.includes(n))].slice(0, most)
 }
 
 /** Where a project is published: chosen once, by whoever coordinates. */

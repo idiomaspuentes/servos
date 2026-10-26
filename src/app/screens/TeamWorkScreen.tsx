@@ -11,10 +11,10 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useOnline, useWaiting } from '../frame/online'
 import { DestinationForm } from '../miniapps/publicar/publicar'
 import { useT } from '../i18n/i18n'
-import { accountOf, destinationOf, forgetAccount, leaveWork, organizationsOf, problemOf, proposedRepo, setDestination, workLeft, workRepoOf, type Problem } from '../projects/door43'
+import { accountOf, destinationOf, forgetAccount, leaveWork, problemOf, proposedOrg, proposedRepo, setDestination, workLeft, workRepoOf, type Problem } from '../projects/door43'
 import { namesTogether } from '../projects/mix'
 import { ask, drop, settle } from '../projects/outbox'
-import { bookName, type Project } from '../projects/model'
+import { bookName, privacyOf, type Project } from '../projects/model'
 import { inProject } from '../projects/scope'
 import { previewBook, readShared, receiveShared, shareProject, withSounds, type BookPreview, type SharedFile } from '../projects/share'
 import { deviceId } from '../projects/work'
@@ -123,13 +123,11 @@ export function TeamWorkScreen({
     return screen(
       <>
         <DestinationForm
-          host={account.host}
+          account={account}
           proposed={{ host: account.host, owner: '', repo: proposedRepo(project) }}
-          organizations={() => organizationsOf(account)}
-          projectName={project.name}
+          newOrg={proposedOrg(project)}
+          teamOnly={privacyOf(project) === 'equipo'}
           saveLabel={t('equipo.guardarAhi')}
-          heading={t('equipo.dondePregunta')}
-          help={t('equipo.dondeAyuda')}
           onSave={(d) => {
             setDestination(project.id, d)
             setTo(d)
