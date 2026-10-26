@@ -511,8 +511,55 @@ export const repoUrl = (to: Destination) => `${to.host}/${to.owner}/${to.repo}`
 // is replaced in place, with no history, so a team leaving its work every day (and its takes, recorded again and
 // again) does not fill the repository with every version of it, as files in git would (Door43 has no Git LFS).
 
-/** The repository where the team leaves its work for one another: beside the one it publishes, and private. */
-export const workRepoOf = (to: Destination): Destination => ({ ...to, repo: `${to.repo}-servos` })
+/**
+ * The repository where the team leaves its work for one another: beside the one it publishes, and private. For a
+ * project kept to its team its name says nothing of Servos (philosophy, principle 9): `{repo}-trabajo`, the shelf's
+ * own word; for one open to whoever has the file, `{repo}-servos`, as it always was. Where the work already is wins,
+ * though (`workRepoAt`).
+ */
+export const workRepoOf = (to: Destination, privacy: Privacy = 'abierto'): Destination => ({
+  ...to,
+  repo: `${to.repo}-${privacy === 'equipo' ? 'trabajo' : 'servos'}`,
+})
+
+/** The repository reached by this name, by the name it has now (renamed, Door43 takes its old name to it); or none. */
+async function repoReached(account: Door43Account, at: Destination): Promise<Destination | null> {
+  try {
+    return { ...at, repo: (await getRepo(configOf(at.host), at.owner, at.repo, account.token)).name || at.repo }
+  } catch (e) {
+    if (e instanceof DcsApiError && e.status === 404) return null
+    throw e
+  }
+}
+
+/**
+ * Where the team's work is: the quiet repository, or else the one named for Servos (an earlier Servos's, or the
+ * project's while it was open). There is only ever one, so teammates on different versions never miss each other.
+ * Leaving (`making`) for a project kept to its team renames the one named for Servos quiet: the same repository, so
+ * nothing in it is lost, and Door43 takes an earlier Servos that still uses the old name to it. Only its admins may
+ * rename it (whoever made it, the organization's owners): for anyone else it stays as it is until one of them leaves
+ * their work. With none yet, leaving makes it, private, named for the project's privacy; bringing finds nothing.
+ */
+async function workRepoAt(account: Door43Account, to: Destination, privacy: Privacy, making: boolean): Promise<Destination | null> {
+  const quiet = workRepoOf(to, 'equipo')
+  const named = workRepoOf(to, 'abierto')
+  const found = (await repoReached(account, quiet)) ?? (await repoReached(account, named))
+  if (!found) {
+    if (!making) return null
+    const at = workRepoOf(to, privacy)
+    await createOrgRepo(configOf(at.host), at.owner, { name: at.repo, description: '', private: true, auto_init: true, default_branch: 'master', token: account.token })
+    return at
+  }
+  if (!making || privacy !== 'equipo' || found.repo !== named.repo) return found
+  try {
+    await call<unknown>(account, named, '', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: quiet.repo }) })
+    return quiet
+  } catch (e) {
+    if (!(e instanceof DcsApiError)) throw e
+    // Not this account's to rename, or another phone just did: where it is now.
+    return (await repoReached(account, quiet)) ?? named
+  }
+}
 
 /** The release whose attachments are the shelf: not a version, said so on Door43. */
 const SHELF = 'trabajo'
@@ -579,11 +626,12 @@ const hash8 = async (text: string) =>
     .slice(0, 4)
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('')
-const phonePart = (at: Destination, device: string) => hash8(`${phoneSecret()}\n${device}\n${at.owner}/${at.repo}`)
+// Both by the project's place, not its shelf's repository, whose name changes when it is made quiet (`workRepoAt`).
+const phonePart = (to: Destination, device: string) => hash8(`${phoneSecret()}\n${device}\n${to.owner}/${to.repo}`)
 
-/** A person's work on the shelf of a project kept to its team (`at`, the shelf's repository): a name that says nothing. */
-export async function quietWorkNameOf(at: Destination, person: string, device: string): Promise<string> {
-  return `${await phonePart(at, device)}-${await hash8(`${phoneSecret()}\n${device}\n${at.owner}/${at.repo}\n${person}`)}.dat`
+/** A person's work on the shelf of a project kept to its team (`to`, the project's place): a name that says nothing. */
+export async function quietWorkNameOf(to: Destination, person: string, device: string): Promise<string> {
+  return `${await phonePart(to, device)}-${await hash8(`${phoneSecret()}\n${device}\n${to.owner}/${to.repo}\n${person}`)}.dat`
 }
 
 // The shelf's release says what it is for a project open to whoever has the file; nothing, for one kept to its team.
@@ -613,16 +661,6 @@ export async function attachToRelease(account: Door43Account, to: Destination, r
   return call<Asset>(account, to, `/releases/${releaseId}/assets?name=${encodeURIComponent(name)}`, { method: 'POST', body: form })
 }
 
-async function ensureRepo(account: Door43Account, to: Destination, privately: boolean) {
-  const config = configOf(to.host)
-  try {
-    await getRepo(config, to.owner, to.repo, account.token)
-  } catch (e) {
-    if (!(e instanceof DcsApiError && e.status === 404)) throw e
-    await createOrgRepo(config, to.owner, { name: to.repo, description: '', private: privately, auto_init: true, default_branch: 'master', token: account.token })
-  }
-}
-
 type Shelf = { id: number; name?: string; body?: string }
 
 /** The shelf's release, or none yet. */
@@ -650,17 +688,17 @@ export async function leaveWork(
   device: string,
   privacy: Privacy = 'abierto'
 ): Promise<FileResult> {
-  const at = workRepoOf(to)
   const quiet = privacy === 'equipo'
   if (quiet && lockedKind(text) !== 'compartido') return { path: SHELF, state: 'failed', problem: 'teamPassword' }
   const named = workNameOf(person, device)
-  const unnamed = await quietWorkNameOf(at, person, device)
+  const unnamed = await quietWorkNameOf(to, person, device)
   const name = quiet ? unnamed : named
   // What this person and phone left before under either name (an earlier Servos, or the project's privacy changed).
   const theirs = new Set([named, `${named.slice(0, -PACKAGE.length)}${OLD_PACKAGE}`, unnamed])
   const says = quiet ? SHELF_QUIET : SHELF_SAYS
+  let at = workRepoOf(to, privacy)
   try {
-    await ensureRepo(account, at, true)
+    at = (await workRepoAt(account, to, privacy, true))!
     let shelf = await shelfOf(account, at)
     if (!shelf) {
       shelf = await call<Shelf>(account, at, '/releases', {
@@ -697,9 +735,10 @@ export async function leaveWork(
  * not, gzipped or not (an earlier Servos's), all of it is read.
  */
 export async function workLeft(account: Door43Account, to: Destination, device: string): Promise<Array<{ path: string; text: string }>> {
-  const at = workRepoOf(to)
+  const at = await workRepoAt(account, to, 'abierto', false)
+  if (!at) return []
   const isPackage = (name: string) => name.endsWith(PACKAGE) || name.endsWith(OLD_PACKAGE) || QUIET.test(name)
-  const phone = `${await phonePart(at, device)}-`
+  const phone = `${await phonePart(to, device)}-`
   const mine = (name: string) =>
     name.endsWith(`-${device}${PACKAGE}`) || name.endsWith(`-${device}${OLD_PACKAGE}`) || (QUIET.test(name) && name.startsWith(phone))
   const out: Array<{ path: string; text: string }> = []

@@ -10,7 +10,7 @@ import { useT } from '../i18n/i18n'
 import { accountOf, destinationOf, problemOf, workRepoOf, type Problem } from '../projects/door43'
 import { arrive } from '../frame/arriving'
 import { bringFromDoor43 } from '../projects/publishing'
-import type { Project } from '../projects/model'
+import { privacyOf, type Project } from '../projects/model'
 import { drop, errandNow, runErrand, sendWaiting, versionToMark, type Errand, type Sent } from '../projects/outbox'
 
 type Result = { sent: Sent } | { problem: Problem }
@@ -119,7 +119,7 @@ export function WaitingSheet({
             ? t('espera.dejar')
             : t('espera.traer')
     // The team's work goes beside the project, to its own repository.
-    const work = now.to ? workRepoOf(now.to) : null
+    const work = now.to ? workRepoOf(now.to, privacyOf(project)) : null
     const details = [
       (e.kind === 'dejar' || e.kind === 'traer') && work ? `${work.owner}/${work.repo}` : where,
       e.kind === 'dejar' ? titles : '',

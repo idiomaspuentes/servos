@@ -271,8 +271,8 @@ Todos lo mismo), que viaja con el libro; con «Todos lo mismo», al recibir se d
 tarjeta del libro cuenta secciones para juntar y de quiénes llegaron versiones. En los dos modos, un versículo con
 versiones esperando no cuenta como traducido hasta que se junta. Y Door43 como vía: en «Más» del libro, «El trabajo
 del equipo en Door43» deja el paquete de cada uno, con el sonido de sus tomas, en un repositorio privado junto al
-del proyecto (`{repo}-servos`), como adjunto de su *release* «trabajo» (uno por persona y teléfono, que se reemplaza
-sin dejar historia: git guardaría cada toma regrabada para siempre), y trae el de los demás para recibirlo como uno
+del proyecto (`{repo}-servos`, o `{repo}-trabajo` en los de «Solo el equipo»), como adjunto de su *release*
+«trabajo» (uno por persona y teléfono, que se reemplaza sin dejar historia: git guardaría cada toma regrabada para siempre), y trae el de los demás para recibirlo como uno
 que llegó por tarjeta: se ve antes qué trae cada uno, y traer lo mismo otra vez no trae nada nuevo. Probado contra
 el mock y en QA. Las tomas se graban a 32 kbps.
 
@@ -482,8 +482,8 @@ cuenta nunca oyeron de Door43:
 
 **La copia en Door43** (acordado con Abel el 26 de octubre; filosofía, principio 9). Cada persona guarda una copia de
 su trabajo en Door43 sin pedirla cada vez: el mismo paquete que «Dejar mi trabajo» (6.10), en el repositorio privado
-`{repo}-servos`, uno por persona y aparato, reemplazado cada vez. Va unos minutos después de un cambio, nunca mientras
-se escribe, al volver internet y al pasar la app atrás; solo con wifi, salvo «También con datos». No pasa por «Ya hay
+`{repo}-servos` (`{repo}-trabajo` en los de «Solo el equipo»), uno por persona y aparato, reemplazado cada vez. Va
+unos minutos después de un cambio, nunca mientras se escribe, al volver internet y al pasar la app atrás; solo con wifi, salvo «También con datos». No pasa por «Ya hay
 internet» (6.11): el sí se dio una vez, al prender el interruptor de cada proyecto en «Copia de su trabajo», prendido
 de entrada en los abiertos y apagado en los de «Solo el equipo», cuya copia va sellada con la contraseña del equipo
 (como la de la tarjeta) y espera mientras el teléfono no la sepa. «Dejar mi trabajo» se sella igual, y «Trabajo del
@@ -491,7 +491,13 @@ equipo» abre lo sellado con las llaves que guarda el teléfono. En esos proyect
 `ana-<teléfono>.servos.json.gz` sino dos huellas cortas, `3fa9c1d2-7b20e4aa.dat` (la del teléfono en ese proyecto y la
 de la persona en él, hechas con un secreto que no sale del teléfono), y el *release* no nombra a Servos; lo que el
 teléfono dejó antes con nombre se quita al dejarlo así, y lo de los demás con nombre se sigue trayendo (`leaveWork`,
-`quietWorkNameOf`, 26 de octubre). Hace falta que el proyecto tenga su lugar en Door43. Inicio calla mientras funciona; después de tres días de fallar con internet dice por qué y qué hacer («Vincular otra
+`quietWorkNameOf`, 26 de octubre). Tampoco el repositorio: en esos proyectos se llama `{repo}-trabajo`, no
+`{repo}-servos` (Abel, 26 de octubre). Lo ya dejado en `{repo}-servos` no se copia: el primero que deja su trabajo con
+la versión nueva le pide a Door43 que renombre el repositorio, así que todo sigue ahí, y Door43 lleva el nombre viejo
+al nuevo, así que quien sigue con una versión anterior deja y trae en el mismo lugar. Solo pueden renombrarlo quien lo
+hizo y los dueños de la organización: con otra cuenta se sigue usando `{repo}-servos` hasta que deje su trabajo uno de
+ellos. Nunca hay dos repositorios; traer busca primero `{repo}-trabajo` (`workRepoAt`).
+Hace falta que el proyecto tenga su lugar en Door43. Inicio calla mientras funciona; después de tres días de fallar con internet dice por qué y qué hacer («Vincular otra
 vez») (`frame/door43Copy.ts`, `Door43CopySection.tsx`).
 
 **El certificado de Door43, en el teléfono.** La app no puede saber si una red es segura, y no lo promete. En la app

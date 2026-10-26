@@ -2,7 +2,8 @@
  * A copy of each person's work on Door43, made by itself when there is internet (philosophy, principle 9): if the phone
  * is lost or broken, the work is on Door43 too, and the team can bring it in from «Trabajo del equipo». It is the work
  * the person would leave there by hand (`leaveWork`): one package by person and phone, on the shelf of the project's
- * private repository beside the one it publishes (`{repo}-servos`), replaced each time, so it does not pile up.
+ * private repository beside the one it publishes (`{repo}-servos`, or `{repo}-trabajo` for a project kept to its
+ * team: `workRepoAt`), replaced each time, so it does not pile up.
  *
  * It is made a few minutes after the work changed, never while a sentence is being typed, and when the app goes behind
  * the others; only with Wi-Fi unless the person said mobile data too; only for a project whose place on Door43 was

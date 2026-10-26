@@ -148,7 +148,7 @@ export function TeamWorkScreen({
     )
   }
 
-  const work = workRepoOf(to)
+  const work = workRepoOf(to, privacyOf(project))
   // Kept to go when there is internet.
   const later = (kind: 'dejar' | 'traer', tried: boolean) => {
     ask({ kind, projectId: project.id, person, book })
