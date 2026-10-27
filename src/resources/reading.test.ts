@@ -142,6 +142,23 @@ describe('abrir un paquete de recursos', () => {
     // The name comes from the text's 	oc2, the chapters from the prepared chapters: tc-study's table keeps only the last.
     expect(await booksOfText(stores, GLT)).toEqual([{ book: 'tit', name: 'Tito', chapters: [{ number: 1, verseCount: 2 }] }])
   })
+
+  it('un paquete hecho con otra versión de cualquier capa se rechaza antes de abrirlo', async () => {
+    const others = [
+      ['sot', 'usjProcessing', '1.0.0-usj'],
+      ['prepared', 'scripturePrepare', 1],
+      ['quote', 'helpsQuote', 8],
+      ['align', 'helpsAlign', 11],
+      ['text', 'helpsText', 99],
+    ] as const
+    for (const [layer, field, value] of others) {
+      const versions = { ...RESOURCE_VERSIONS, [layer]: { [field]: value } }
+      const { bytes } = await buildLanguagePack({ source, language: 'es-419', versions })
+      expect((await describePack(bytes)).otherVersion, layer).toBe(true)
+    }
+    const { bytes } = await buildLanguagePack({ source, language: 'es-419', versions: RESOURCE_VERSIONS })
+    expect((await describePack(bytes)).otherVersion).toBe(false)
+  })
 })
 
 /**
