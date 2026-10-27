@@ -8,6 +8,8 @@
 declare module '@bt-synergy/resource-catalog' {
   /** `{tag}#{published_at}`, sanitized; `nostamp` when the row has neither. */
   export function resourceContentStamp(metadata: unknown): string
+  /** `g` + ten hex of the book's blob sha when the row recorded it at its own release; else `resourceContentStamp`. */
+  export function bookContentStamp(metadata: unknown, book: string): string
   /** `usj:{version}`: what a scripture's receipt says it was processed with. */
   export function scriptureIngestSchema(usjProcessingVersion: string): string
   /** The metadata of a `resource:{key}` receipt row, or null. */
@@ -192,6 +194,8 @@ declare module '@bt-synergy/resource-pipeline/helps/helpsAlignCache' {
   /** Positions of the aligned words in the prepared full chapter, and their texts. `m: 0` is a settled miss. */
   export type CachedAlignRow = { p: number[]; m: 0 | 1 | 2; t?: string[] }
   export type CachedAlignments = Record<string, CachedAlignRow>
+  /** The text's stamp in an align key: `bookContentStamp` + `+{prepareVersion}` (the scripture prepare version). */
+  export function targetBookStamp(metadata: unknown, book: string, prepareVersion?: number): string
 }
 
 declare module '@bt-synergy/resource-pipeline/helps/helpsQuoteCache' {

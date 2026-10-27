@@ -241,6 +241,74 @@ describe('leer sin internet', () => {
     expect(verse2.map((n) => n.id)).toEqual(['efgh'])
   })
 
+  const TN_BLOB = '1234567890abcdef1234567890abcdef12345678'
+  const GLT_BLOB = 'abcdef1234567890abcdef1234567890abcdef12'
+  /** A catalog row whose download recorded the book's blob sha at the row's own release (or at `ref`). */
+  const withBlobs = (key: string, sha: string, ref?: string) => ({
+    ...META[key],
+    contentMetadata: { bookBlobs: { tit: sha }, bookBlobsRef: ref ?? (META[key].release as { tag_name: string }).tag_name },
+  })
+  const alignKey = (h: string, t: string) =>
+    `helps-align:${TN}@${h}:${UGNT}@v0.34#2023-09-27T02_19_31Z+${USJ_PROCESSING_VERSION}:${GLT}@${t}+${SCRIPTURE_PREPARE_VERSION}:tit:1`
+  /** A device opened from a pack of these catalog rows, its aligned row keyed `key`. */
+  async function deviceWith(meta: typeof META, key: string) {
+    const rows = ROWS.map((r) => (r.key.startsWith('helps-align:') ? { ...r, key } : r))
+    const variant: PackSource = {
+      rowsByPrefix: async (prefix) => rows.filter((r) => r.key.startsWith(prefix)),
+      catalogRow: async (k) => meta[k] ?? null,
+      catalogRows: async () => Object.values(meta),
+    }
+    const { bytes } = await buildLanguagePack({ source: variant, language: 'es-419', versions: RESOURCE_VERSIONS })
+    const stores = openResourceStores({ cache: `prueba-${crypto.randomUUID()}`, catalog: `prueba-cat-${crypto.randomUUID()}` })
+    await openPack(stores, bytes)
+    return stores
+  }
+  const quotesOfVerse1 = async (stores: Parameters<typeof notesOfVerse>[0]) =>
+    (await notesOfVerse(stores, { notesKey: TN, textKey: GLT, book: 'tit', chapter: 1, verse: 1 })).map((n) => [n.id, n.textQuote])
+
+  it('con blobs por libro, la cita se busca con el sello del libro', async () => {
+    const stores = await deviceWith({ [GLT]: withBlobs(GLT, GLT_BLOB), [TN]: withBlobs(TN, TN_BLOB) }, alignKey('g1234567890', 'gabcdef1234'))
+    expect(await quotesOfVerse1(stores)).toEqual([
+      ['abcd', 'siervo de Dios'],
+      ['efgh', null],
+    ])
+  })
+
+  it('una alineación hecha sobre otra versión del texto del libro no se usa', async () => {
+    const stores = await deviceWith({ [GLT]: withBlobs(GLT, GLT_BLOB), [TN]: withBlobs(TN, TN_BLOB) }, alignKey('g1234567890', stamp(GLT)))
+    expect(await quotesOfVerse1(stores)).toEqual([
+      ['abcd', null],
+      ['efgh', null],
+    ])
+  })
+
+  it('notas con blobs y texto sin ellos: cada sello sale de su fila', async () => {
+    const stores = await deviceWith({ [GLT]: META[GLT], [TN]: withBlobs(TN, TN_BLOB) }, alignKey('g1234567890', stamp(GLT)))
+    expect(await quotesOfVerse1(stores)).toEqual([
+      ['abcd', 'siervo de Dios'],
+      ['efgh', null],
+    ])
+  })
+
+  it('blobs de un release anterior no cuentan: se usa el sello del release', async () => {
+    const stores = await deviceWith({ [GLT]: META[GLT], [TN]: withBlobs(TN, TN_BLOB, 'v65') }, alignKey(stamp(TN), stamp(GLT)))
+    expect(await quotesOfVerse1(stores)).toEqual([
+      ['abcd', 'siervo de Dios'],
+      ['efgh', null],
+    ])
+  })
+
+  it('sin la fila del catálogo de las notas, las notas salen sin cita y nada falla', async () => {
+    const { stores } = await deviceWithPack()
+    // The same cache, read with a catalog that has the text's row and not the notes'.
+    const { catalog } = openResourceStores({ catalog: `prueba-cat-${crypto.randomUUID()}` })
+    await catalog.set(GLT, META[GLT])
+    expect(await quotesOfVerse1({ ...stores, catalog })).toEqual([
+      ['abcd', null],
+      ['efgh', null],
+    ])
+  })
+
   it('una nota con occurrence 0 no tiene cita: las notas antiguas ponían ahí un título («Connecting Statement:»)', async () => {
     const { stores } = await deviceWithPack()
     const notes = await notesOfVerse(stores, { notesKey: TN, textKey: GLT, book: 'tit', chapter: 1, verse: 3 })
