@@ -22,17 +22,21 @@ export interface PackSummary {
   needs: Array<{ key: string; stamp: string }>
   createdAt: string
   /**
-   * Its texts were processed by another version of the code than this app reads with: opening it is refused
-   * (`importLanguagePack`), so it is said before, in the app's words.
+   * Its texts were processed by another version of the code than this app reads with. It agrees with
+   * `importLanguagePack` on which layers differ, and Servos refuses the pack where the importer would throw (`sot`)
+   * or drop the layer (`prepared`, `quote`, `align`, `text`): a pack with unreadable layers is worse than none. So it
+   * is said before, in the app's words.
    */
   otherVersion: boolean
 }
 
 /**
  * Whether a pack was made by another version of the code than Servos reads with, in any of its layers (source,
- * prepared chapters, quotes, aligned helps, helps' text). It agrees with `importLanguagePack`: each field this app
- * knows is compared by `String()`, and a layer or field the pack does not say is not other. The one exception is the
- * prepared chapters' version: a pack that does not say it was made before packs said it, so it counts as other.
+ * prepared chapters, quotes, aligned helps, helps' text). It agrees with `importLanguagePack` on which layers
+ * differ (the importer throws on `sot` and drops `prepared`, `quote`, `align` and `text`; Servos refuses the pack in
+ * both cases, since a pack with unreadable layers is worse than none): each field this app knows is compared by
+ * `String()`, and a layer or field the pack does not say is not other. The one exception is the prepared chapters'
+ * version: a pack that does not say it was made before packs said it, so it counts as other.
  */
 function madeForOtherVersion(versions: PackManifest['versions']): boolean {
   if (versions?.prepared?.scripturePrepare === undefined) return true

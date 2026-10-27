@@ -44,7 +44,9 @@ A va primero porque B y C necesitan el código de partes, que no existe en el bt
 - **Commit fijado.** `bt-synergy.ref` en la raíz: una línea con el commit completo de bt-synergy con el que Servos se
   probó. Empieza en `e36aa83936dc12f05dc99d252382d4393aa9074f`.
 - **Comprobación en `npm test`.** Una función pequeña decide, con una forma de preguntar a git que se le pasa:
-  - la carpeta contiene el commit (`git merge-base --is-ancestor <ref> HEAD`): pasa, también si va por delante;
+  - la carpeta contiene el commit (`git merge-base --is-ancestor <ref> HEAD`): pasa, también si va por delante (la
+    guarda solo atrapa una carpeta POR DETRÁS de `bt-synergy.ref`; una adelantada pasa, y los cambios incompatibles de
+    bt-synergy se ven como pruebas que fallan, no como la guarda);
   - no lo contiene: falla, con un mensaje que dice traer `master` en esa carpeta o apuntar `SERVOS_BT_SYNERGY` a otra;
   - la carpeta no es un repositorio git: avisa y no falla.
 - **Documentación.** El «Empezar» de `CLAUDE.md` explica la variable, el archivo y cómo subir el commit fijado.
@@ -76,7 +78,10 @@ A va primero porque B y C necesitan el código de partes, que no existe en el bt
   lo mismo que hace el importador.
 - Dispositivos de prueba con datos viejos: las alineaciones guardadas con la versión 11 dejan de leerse y el paquete
   del mismo release figura como «lo mismo». Se arregla volviendo a abrir los paquetes con «abrir igual» o borrando
-  los datos de la app; no hay código para esto.
+  los datos de la app; no hay código para esto. «Abrir igual» vuelve a llenar las alineaciones en un dispositivo de
+  prueba solo porque los paquetes q9-a12, hechos con acceso a Door43, traen claves nuevas (sellos `g`); un paquete
+  hecho sin ese acceso (sellos de release) conservaría las filas viejas y las citas seguirían faltando hasta borrar
+  los datos de la app.
 - `droppedRows` no se muestra en A: no hay un caso real que lo dispare. Queda para B y C.
 - El comentario de `src/resources/freshness.ts` que dice que las citas se guardan «por release» pasa a decir «por
   libro».
@@ -104,7 +109,7 @@ A va primero porque B y C necesitan el código de partes, que no existe en el bt
 - **Con paquetes reales:** con `SERVOS_PAQUETES` en la carpeta de la sección 4, pasan `realPacks.test.ts`,
   `screenData.test.ts` y `sources.test.ts`, con citas alineadas y posiciones. `prototype/makeData.test.ts`, que
   reescribe los datos del prototipo, solo se corre a propósito y con su diff revisado.
-- **En la app:** servidor de desarrollo en modo escritorio, a 375 px: una nota de Tito 1 muestra su cita en el texto
+- **En la app:** servidor de desarrollo (no la app de escritorio), a 375 px: una nota de Tito 1 muestra su cita en el texto
   y marca sus palabras, como antes. No hay pantallas nuevas.
 - **Hecho cuando** todo lo anterior pasa, `CLAUDE.md` está al día y esta especificación registra los paquetes.
 

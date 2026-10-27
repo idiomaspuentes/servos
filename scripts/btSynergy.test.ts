@@ -48,6 +48,7 @@ describe('la carpeta de bt-synergy en uso', () => {
     const ref = readFileSync(resolve(here, 'bt-synergy.ref'), 'utf8').trim()
     const git: Git = (args) => {
       const r = spawnSync('git', args, { encoding: 'utf8' })
+      if (r.error) throw r.error
       return { status: r.status ?? 1, stdout: r.stdout ?? '' }
     }
     const check = checkBtSynergyRef({ root: btSynergyRoot(here), ref, exists: existsSync, git })

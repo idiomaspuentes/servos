@@ -330,7 +330,7 @@ de elegir. Se dice, con «Ir a juntar» (`publishing.ts`, `door43Copy`, `knowsAl
   preguntar. «Recibir textos y ayudas» sigue para otro idioma o un paquete más nuevo. La app web no los trae.
 - **El Paquete de Recursos de Traducción es el «paquete de idioma» de tc-study** (decidido el 14 de octubre). Su
   formato está en `bt-synergy/apps/tc-study/docs/cache-data-structure.md`, sección 6, y lo hace y lo abre el paquete
-  `@bt-synergy/language-pack` (rama `feat/language-pack` de `bt-synergy`). Lleva las filas del catálogo, los recibos,
+  `@bt-synergy/language-pack` (en `master` de `bt-synergy`, en el commit que fija `bt-synergy.ref`). Lleva las filas del catálogo, los recibos,
   el texto fuente del idioma y el original griego o hebreo, y además lo ya construido: las vistas preparadas, las
   citas de cada nota resueltas en el original y en cada texto destino, y los títulos de los artículos. Así se abre
   sin internet y ya listo para leer. Servos guarda esas filas con las mismas claves de caché que tc-study.

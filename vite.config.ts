@@ -8,7 +8,7 @@ import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
 import { viteSingleFile } from 'vite-plugin-singlefile'
 import { configDefaults } from 'vitest/config'
-import { btSynergyRoot } from './scripts/btSynergy'
+import { btSynergyRoot } from './scripts/btSynergy.ts'
 
 /**
  * bt-synergy lives next to this repository (`../bt-synergy`) unless `SERVOS_BT_SYNERGY` names another checkout, as
