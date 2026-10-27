@@ -121,4 +121,17 @@ Y lo que es de B o C: leer partes, el registro por hueco, mostrar `droppedRows`,
 
 ## Paquetes llevados dentro
 
-(Se completa al terminar la sección 4: archivo, compat, run, sha256.)
+Compat de los cuatro: `f1.1-u2.3.0-p6000230-q9-a12-t1`, hechos con bt-synergy `e36aa839`. Están en
+`C:\Users\LENOVO\Git\Github\wt\paquetes-q9a12` (fuera del repositorio).
+
+| Archivo | De dónde | sha256 |
+| --- | --- | --- |
+| `originals.langpack.zip` | run 40502309021 (tc-study `master`), `language-packs-staging`, `packs/f1.1-u2.3.0-p6000230-q9-a12-t1/originals/1d328fe6….langpack.zip` | `1d328fe6c65368c8093cb76372c101f753e3e06102c745c5cb7a3f54bd3ddd7e` |
+| `es-419.langpack.zip` | run 40502309021 (tc-study `master`), `language-packs-staging`, `packs/f1.1-u2.3.0-p6000230-q9-a12-t1/es-419/c8436d45….langpack.zip` | `c8436d457a7173b32ad8a6fae26bdbdd953a7e5101c66c66f6b3125663201b93` |
+| `es-419-base.langpack.zip` | local, `prepare-language --lang es-419 --no-originals --books tit` en `e36aa839` | `ca569864d8351a17679d54fc826eeb7a4384150548237266a448c9d5bcf6a9eb` |
+| `es-419-tit.langpack.zip` | local, la misma corrida | `d3ecdff0ee9e329f58ec6652571bbebe6873784aa1c90e943a01e3c5299285c8` |
+
+Los dos del run coinciden con el sha256 de su entrada en `catalog/f1.1-u2.3.0-p6000230-q9-a12-t1/`. Los dos locales
+los pide `realPacks.test.ts` (el run hace solo el idioma entero); leen Door43 de producción el 27 de octubre de 2026 y
+tienen los mismos sellos que el run en cada recurso de la Biblia y en los léxicos (TPL `v42`, notas `v66`, UGNT
+`v0.34`); el base trae además las Historias Bíblicas Abiertas y sus ayudas, que el paquete del run no trae.
