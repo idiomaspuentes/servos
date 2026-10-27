@@ -70,7 +70,7 @@ export interface PackResourceStanding {
   /**
    * Newer, but the device has books of it that the pack does not bring. A resource is of one release, so it is not
    * replaced: those books would keep a text of the old release under the new one's name, and their notes' quotes,
-   * kept by release, would no longer be found.
+   * kept by book, would no longer be found.
    */
   lacking: string[]
   /** Books the pack brings of it that the device does not have: a pack of the same release fills them in. */

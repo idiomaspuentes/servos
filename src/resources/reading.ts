@@ -4,9 +4,9 @@
  * (prepared views and aligned quotes), so reading needs no parsing and no network.
  */
 
-import { resourceContentStamp } from '@bt-synergy/resource-catalog'
+import { bookContentStamp, resourceContentStamp } from '@bt-synergy/resource-catalog'
 import { unwrapVersioned } from '@bt-synergy/resource-pipeline/cache/versionedEnvelope'
-import { HELPS_ALIGN_VERSION, type CachedAlignments } from '@bt-synergy/resource-pipeline/helps/helpsAlignCache'
+import { HELPS_ALIGN_VERSION, targetBookStamp, type CachedAlignments } from '@bt-synergy/resource-pipeline/helps/helpsAlignCache'
 import { NOTES_PREPARE_VERSION, type NotesLightChapter } from '@bt-synergy/resource-pipeline/notes/notesPreparer'
 import { preparedUnitKey } from '@bt-synergy/resource-pipeline/prepare/prepareKeys'
 import {
@@ -359,8 +359,7 @@ export function wordsInLines(full: ScriptureFullChapter): ChapterWords {
  * The same rows as `notesOfVerse` reads; translation words links are aligned the same way.
  */
 export async function alignedPlaces(stores: ResourceStores, helpsKey: string, textKey: string, book: string, chapter: number): Promise<Record<string, number[]>> {
-  const stamp = resourceContentStamp(await stores.catalog.get(helpsKey))
-  const rows = await alignedQuotes(stores, helpsKey, stamp, textKey, book, chapter)
+  const rows = await alignedQuotes(stores, helpsKey, textKey, book, chapter)
   return Object.fromEntries(Object.entries(rows).filter(([, row]) => row.m !== 0 && row.p.length).map(([id, row]) => [id, row.p]))
 }
 
@@ -387,21 +386,20 @@ export function referenceCovers(reference: string, chapter: number, verse: numbe
 }
 
 /**
- * The aligned quotes of a notes resource for one chapter of a text: note id → the text's words. Read by prefix, not by
- * key, so it does not need the original's stamp, and raw, so a row past its cache lifetime is still read.
+ * The aligned quotes of a notes resource for one chapter of a text: note id → the text's words. The notes' and the
+ * text's stamps are each the book's own (`bookContentStamp`, `targetBookStamp`: `g` + the book's blob sha, or the
+ * release stamp without one), read from their catalog rows, so an alignment made on another version of the book's text
+ * is not used. Read by prefix, not by key, so it does not need the original's stamp, and raw, so a row past its cache
+ * lifetime is still read.
  */
-async function alignedQuotes(
-  stores: ResourceStores,
-  notesKey: string,
-  notesStamp: string,
-  textKey: string,
-  book: string,
-  chapter: number
-): Promise<CachedAlignments> {
+async function alignedQuotes(stores: ResourceStores, notesKey: string, textKey: string, book: string, chapter: number): Promise<CachedAlignments> {
   const out: CachedAlignments = {}
+  const notesRow = await stores.catalog.get(notesKey)
+  const textRow = await stores.catalog.get(textKey)
   const tail = `:${book.toLowerCase()}:${chapter}`
-  for (const row of await stores.cache.getByPrefix(`helps-align:${notesKey}@${notesStamp}:`)) {
-    if (!row.key.endsWith(tail) || row.key.split(':')[3]?.split('@')[0] !== textKey) continue
+  const target = `${textKey}@${targetBookStamp(textRow, book)}`
+  for (const row of await stores.cache.getByPrefix(`helps-align:${notesKey}@${bookContentStamp(notesRow, book)}:`)) {
+    if (!row.key.endsWith(tail) || row.key.split(':')[3] !== target) continue
     Object.assign(out, unwrapVersioned<CachedAlignments>(row.entry, HELPS_ALIGN_VERSION) ?? {})
   }
   return out
@@ -504,8 +502,7 @@ export async function notesOfVerse(
   const entry = await stores.cache.get(preparedUnitKey('notes', notesKey, book, chapter, 'light'))
   const light = unwrapVersioned<NotesLightChapter>(entry, NOTES_PREPARE_VERSION)
   if (!light) return []
-  const notesStamp = resourceContentStamp(await stores.catalog.get(notesKey))
-  const aligned = await alignedQuotes(stores, notesKey, notesStamp, textKey, book, chapter)
+  const aligned = await alignedQuotes(stores, notesKey, textKey, book, chapter)
   return light.notes
     .filter((n) => !n.isIntro && referenceCovers(n.reference, chapter, verse))
     .map((n) => {

@@ -22,24 +22,33 @@ export interface PackSummary {
   needs: Array<{ key: string; stamp: string }>
   createdAt: string
   /**
-   * Its texts were processed by another version of the code than this app reads with: opening it is refused
-   * (`importLanguagePack`), so it is said before, in the app's words.
+   * Its texts were processed by another version of the code than this app reads with. It agrees with
+   * `importLanguagePack` on which layers differ, and Servos refuses the pack where the importer would throw (`sot`)
+   * or drop the layer (`prepared`, `quote`, `align`, `text`): a pack with unreadable layers is worse than none. So it
+   * is said before, in the app's words.
    */
   otherVersion: boolean
 }
 
 /**
- * Whether a pack's texts were made by another version of the code than Servos reads with: its source, its prepared
- * chapters (a pack that does not say their version was made before packs said it), or its aligned helps.
+ * Whether a pack was made by another version of the code than Servos reads with, in any of its layers (source,
+ * prepared chapters, quotes, aligned helps, helps' text). It agrees with `importLanguagePack` on which layers
+ * differ (the importer throws on `sot` and drops `prepared`, `quote`, `align` and `text`; Servos refuses the pack in
+ * both cases, since a pack with unreadable layers is worse than none): each field this app knows is compared by
+ * `String()`, and a layer or field the pack does not say is not other. The one exception is the prepared chapters'
+ * version: a pack that does not say it was made before packs said it, so it counts as other.
  */
 function madeForOtherVersion(versions: PackManifest['versions']): boolean {
-  const usj = versions?.sot?.usjProcessing
-  const align = versions?.align?.helpsAlign
-  return (
-    Boolean(usj && usj !== RESOURCE_VERSIONS.sot?.usjProcessing) ||
-    versions?.prepared?.scripturePrepare !== RESOURCE_VERSIONS.prepared?.scripturePrepare ||
-    Boolean(align && align !== RESOURCE_VERSIONS.align?.helpsAlign)
-  )
+  if (versions?.prepared?.scripturePrepare === undefined) return true
+  for (const layer of Object.keys(RESOURCE_VERSIONS) as Array<keyof typeof RESOURCE_VERSIONS>) {
+    const mine = RESOURCE_VERSIONS[layer]
+    const theirs = versions?.[layer]
+    if (!mine || !theirs) continue
+    for (const field of Object.keys(mine)) {
+      if (field in theirs && String(theirs[field]) !== String(mine[field])) return true
+    }
+  }
+  return false
 }
 
 /** What a pack brings, without opening its rows. Throws with a message for people when the file is not a pack. */

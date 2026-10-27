@@ -7,9 +7,14 @@ antes de proponer o construir nada.
 
 ## Empezar
 
-- `../bt-synergy` (github.com/unfoldingWord/tc-study, rama `feat/language-pack` o posterior) debe estar al lado de
-  este repositorio, con `bun install` hecho: Servos usa sus paquetes desde sus fuentes (`vite.config.ts`), los mismos
-  con que tc-study guarda y lee los recursos. Sus tipos están declarados en `src/resources/btSynergy.d.ts`.
+- bt-synergy (github.com/unfoldingWord/tc-study) debe estar al lado de este repositorio (`../bt-synergy`) o donde diga
+  la variable `SERVOS_BT_SYNERGY`, con `bun install` hecho: Servos usa sus paquetes desde sus fuentes
+  (`vite.config.ts`), los mismos con que tc-study guarda y lee los recursos. Sus tipos están declarados en
+  `src/resources/btSynergy.d.ts`. `bt-synergy.ref` es el commit con que Servos se probó, y `npm test` falla si la
+  carpeta en uso no lo contiene. Para pasar Servos a un bt-synergy más nuevo, pruébalo contra él y escribe su commit
+  en `bt-synergy.ref`. Cuando `bt-synergy.ref` avanza, hay que llevar la carpeta compartida `../bt-synergy` a ese
+  commit (`git fetch`, `git checkout` del commit o de `master`, `bun install`); si no, toda sesión sin
+  `SERVOS_BT_SYNERGY` ve fallar `npm test` y las construcciones se rompen.
 - `npm install`, luego `npm test` y `npm run typecheck`.
 - Con paquetes reales (los que escribe `bt-synergy/packages/resource-pipeline/cli/prepare-language.ts`):
   `SERVOS_PAQUETES=<carpeta> npx vitest run src/resources/realPacks.test.ts`.
