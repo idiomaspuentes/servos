@@ -90,7 +90,8 @@ type ListAnswer =
   | { kind: 'sinIdioma' }                               // 404 no packs for this language
   | { kind: 'espera'; retryAfter: number }              // 429
 function fetchList(server: string, compat: string, lang: string, etag?: string | null): Promise<ListAnswer>
-function fetchOriginals(server: string, compat: string, sha: string): Promise<PartsList | null>  // checks sha256 of the JSON bytes
+type OriginalsAnswer = { kind: 'listo'; list: PartsList } | { kind: 'noEstá' } | { kind: 'espera'; retryAfter: number } | { kind: 'falla' }
+function fetchOriginals(server: string, compat: string, sha: string): Promise<OriginalsAnswer>  // checks sha256 and language 'originals'
 type PartAnswer = { kind: 'listo'; bytes: Uint8Array } | { kind: 'parteNoEstá' } | { kind: 'espera'; retryAfter: number } | { kind: 'falla' }
 function fetchPart(server: string, sha: string): Promise<PartAnswer>                            // checks sha256; mismatch → 'falla'
 function fakeWorker(opts): { fetch: typeof fetch; lists, parts, setAnswer(...) }                // test helper, like projects/fakeDoor43.ts
@@ -157,7 +158,7 @@ originals from the newest originals list kept in `servos.enLinea.listas` (by the
 plan with `planParts`, free-space check (`navigator.storage.estimate`, Global Constraints) → `sinEspacio`; download;
 apply via `whenNotTyping` (never while typing — Review Focus 3): `watchHelps` → `applyParts` → `refreshLibrary` →
 `keepHelpsChanges` → `done.changedVerses`; `refused.versions` → `actualizarApp`; `refused.missing` → download again;
-`quota` → `sinEspacio`; wake lock where available during apply.
+`quota` → `sinEspacio`; wake lock where available during apply. Originals `noEstá` → fetch the language list again once in that check; a second `noEstá` → `noDisponible` (no loop); originals `espera` → `reintentar`; `falla` → try at the next check.
 
 - [ ] Steps: tests with the fake Worker and fake stores — new book downloaded and applied (`bookIsHere` after
   `refreshLibrary`); an offer appears with its bytes and code; «Ahora no» hides it until the code changes; apply waits
