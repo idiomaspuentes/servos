@@ -12,7 +12,7 @@ import {
   type PackManifest,
 } from '@bt-synergy/language-pack'
 import { resourceContentStamp } from '@bt-synergy/resource-catalog'
-import { whileOnlineIdle } from './online/onlineLock'
+import { holdsOnlineLock, whileOnlineIdle, type HeldLock } from './online/onlineLock'
 import { RESOURCE_VERSIONS, type ResourceStores } from './store'
 
 export interface PackSummary {
@@ -182,15 +182,20 @@ async function keptByDevice(stores: ResourceStores, manifest: PackManifest, repl
  * The parts register forgets the slots of the resources and books the pack writes (`forgetSlots`) before the first
  * row is written, so an opening cut halfway never leaves a slot claiming rows the pack wrote over; at worst the slot
  * is downloaded again. It forgets them once more when the import ends: a resource the importer took after all is the
- * pack's too, and so would be parts applied meanwhile. Servos online applies none then: the whole opening waits for
- * its run in flight and holds new runs back (`whileOnlineIdle`), here, where every caller (ReceivePack, the packs
- * inside the app, a card or USB) goes through. The second pass stays for a mispredicted skip, and costs one read.
+ * pack's too, and so would be parts applied meanwhile. Servos online applies none then: the opening waits for an apply
+ * in flight and holds new applies back (`whileOnlineIdle`), here, where every caller (ReceivePack, the packs inside
+ * the app, a card or USB) goes through; a download goes on beside it. The second pass stays for a mispredicted skip,
+ * and costs one read.
+ *
+ * A caller that already holds the lock for more than the opening (ReceivePack, around what changed) passes `held`:
+ * the opening then runs inside that section instead of waiting for it to end.
  */
 export async function openPack(
   stores: ResourceStores,
   bytes: Uint8Array | ArrayBuffer,
-  options: { replace?: readonly string[]; file?: string; onProgress?: (done: number, total: number) => void } = {}
+  options: { replace?: readonly string[]; file?: string; onProgress?: (done: number, total: number) => void; held?: HeldLock } = {}
 ): Promise<ImportPackResult> {
+  if (holdsOnlineLock(options.held)) return openPackAlone(stores, bytes, options)
   return whileOnlineIdle(() => openPackAlone(stores, bytes, options))
 }
 

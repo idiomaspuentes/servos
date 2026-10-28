@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { applyParts, memoryByteStore, stagingFrom, writePart, type ApplyInput, type PartEntry, type PartRow, type PartsList } from '@bt-synergy/language-pack'
+import { REGISTER_PREFIX, applyParts, memoryByteStore, stagingFrom, writePart, type ApplyInput, type PartEntry, type PartRow, type PartsList } from '@bt-synergy/language-pack'
 import { RESOURCE_VERSIONS, openResourceStores, readPartsRegister, type ResourceStores } from '../store'
 import { ANSWERS, fakeWorker } from './fakeWorker'
 import {
@@ -1203,7 +1203,64 @@ describe('switching the server (Task 7, fix round 1)', () => {
 })
 
 describe('a pack opened while Servos online works (Task 8)', () => {
-  it('an apply in flight delays the opening; a check asked during the opening waits for it', async () => {
+  /** What `openPack` does to the register before it writes: the slots of what the pack brings are forgotten. */
+  const forget = (d: ReturnType<typeof device>, slot: (id: string) => boolean) =>
+    d.stores.cache.transactRaw!({ keys: [], prefixes: [REGISTER_PREFIX] }, (found) => ({
+      puts: [],
+      deletes: (found.prefixKeys.get(REGISTER_PREFIX) ?? []).filter((key) => slot(key.slice(REGISTER_PREFIX.length))),
+    }))
+
+  it('a pack opens while a queue runs, without waiting for it', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const d = device(w)
+    setOnlineProjects([project('es-419', ['tit'])])
+    let open!: () => void
+    const gate = new Promise<void>((r) => (open = r))
+    w.gate((url) => (url.includes('/parts/') ? gate : Promise.resolve()))
+    const downloading = downloadBook('es-419', 'tit')
+    await vi.waitFor(() => expect(w.inFlight).toBeGreaterThan(0))
+    await whileOnlineIdle(async () => void d.log.push('pack'))
+    expect(d.log).toEqual(['pack'])
+    open()
+    await downloading
+    expect(d.log).toContain('applyParts')
+    expect(bookIsHere(d, 'tit')).toBe(true)
+  })
+
+  it('the apply plans again under the lock: a slot a pack forgot during the queue is planned, not passed over', async () => {
+    const w = fakeWorker()
+    const { parts } = await publish(w, { books: ['tit', 'rut'] })
+    const titles = parts[2]
+    const d = device(w)
+    await startOnline([project('es-419', ['tit', 'rut'])])
+    await downloadBook('es-419', 'tit')
+    expect([...(await slots(d)).values()].map((r) => r.sha256)).toContain(titles.sha256)
+
+    // Ruth comes; while its parts come, a pack that brings the titles is opened.
+    let open!: () => void
+    const gate = new Promise<void>((r) => (open = r))
+    w.gate((url) => (url.includes('/parts/') ? gate : Promise.resolve()))
+    d.applied.length = 0
+    w.calls.length = 0
+    const downloading = downloadBook('es-419', 'rut')
+    await vi.waitFor(() => expect(requests(w, 'part').length).toBeGreaterThan(0))
+    // The queue was planned before the pack: Ruth's parts only, the titles held.
+    expect(requests(w, 'part').map((c) => c.url.split('/').pop())).not.toContain(titles.sha256)
+    await whileOnlineIdle(() => forget(d, (id) => id.startsWith('titles:')))
+    open()
+    await downloading
+
+    // The first apply's plan is made after the pack: it needs the titles again (not staged, so nothing is applied
+    // and they are downloaded); the next applies Ruth and the titles.
+    expect(d.applied[0].plan.download.map((p) => p.sha256)).toContain(titles.sha256)
+    expect(d.applied.at(-1)!.plan.download.map((p) => p.sha256)).toEqual(expect.arrayContaining([titles.sha256, parts[1].sha256]))
+    const held = [...(await slots(d)).values()].map((r) => r.sha256)
+    expect(held).toEqual(expect.arrayContaining([titles.sha256, parts[1].sha256]))
+    expect(bookIsHere(d, 'rut')).toBe(true)
+  })
+
+  it('an apply in flight still delays the opening', async () => {
     const w = fakeWorker()
     await publish(w, { books: ['tit'] })
     let open!: () => void
@@ -1220,8 +1277,20 @@ describe('a pack opened while Servos online works (Task 8)', () => {
     setOnlineProjects([project('es-419', ['tit'])])
     const downloading = downloadBook('es-419', 'tit')
     await vi.waitFor(() => expect(d.log).toContain('applyParts'))
+    const opening = whileOnlineIdle(async () => void d.log.push('pack'))
+    await new Promise((r) => setTimeout(r, 20))
+    expect(d.log).not.toContain('pack')
+    open()
+    await Promise.all([downloading, opening])
+    // Everything the apply does (the library read again, what changed kept) comes before the pack.
+    expect(d.log.indexOf('pack')).toBeGreaterThan(d.log.indexOf('keepHelpsChanges'))
+  })
 
-    // The pack waits for the apply in flight.
+  it('a download asked during an opening fetches its parts, and applies only once the opening ends', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const d = device(w)
+    setOnlineProjects([project('es-419', ['tit'])])
     let ending!: () => void
     const importing = new Promise<void>((r) => (ending = r))
     const opening = whileOnlineIdle(async () => {
@@ -1229,21 +1298,14 @@ describe('a pack opened while Servos online works (Task 8)', () => {
       await importing
       d.log.push('pack opened')
     })
+    const downloading = downloadBook('es-419', 'tit')
+    await vi.waitFor(async () => expect(await staged(d)).toHaveLength(3))
     await new Promise((r) => setTimeout(r, 20))
-    expect(d.log).not.toContain('pack')
-    open()
-    await downloading
-    await vi.waitFor(() => expect(d.log).toContain('pack'))
-    expect(d.log.indexOf('pack')).toBeGreaterThan(d.log.indexOf('applied'))
-
-    // A check asked while the pack opens asks for nothing until it ends.
-    w.calls.length = 0
-    const checking = checkForUpdates({ force: true })
-    await new Promise((r) => setTimeout(r, 20))
-    expect(w.calls).toEqual([])
+    expect(d.log).toEqual(['pack'])
     ending()
-    await Promise.all([opening, checking])
-    expect(requests(w, 'list')).toHaveLength(1)
+    await Promise.all([opening, downloading])
+    expect(d.log.slice(0, 3)).toEqual(['pack', 'pack opened', 'watchHelps es-419 tit'])
+    expect(bookIsHere(d, 'tit')).toBe(true)
   })
 })
 

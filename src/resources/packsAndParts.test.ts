@@ -30,7 +30,7 @@ import {
 } from '@bt-synergy/language-pack'
 import { resourceContentStamp } from '@bt-synergy/resource-catalog'
 import { USJ_PROCESSING_VERSION } from '@bt-synergy/usj-processor'
-import { asOnlineRun } from './online/onlineLock'
+import { asOnlineApply, whileOnlineIdle } from './online/onlineLock'
 import { openPack } from './packs'
 import { RESOURCE_VERSIONS, openResourceStores, readPartsRegister, type ResourceStores } from './store'
 
@@ -263,11 +263,11 @@ describe('a pack opened over parts', () => {
     expect(ids).toContain(`book:${TN}:rut`)
   })
 
-  it('waits for an online run in flight before it forgets or writes anything', async () => {
+  it('waits for an online apply in flight before it forgets or writes anything', async () => {
     const { stores } = await deviceWithParts()
     let open!: () => void
     const gate = new Promise<void>((r) => (open = r))
-    const run = asOnlineRun(() => gate)
+    const run = asOnlineApply(() => gate)
     const before = await slotIds(stores)
     const opening = openPack(stores, await pack())
     await new Promise((r) => setTimeout(r, 30))
@@ -275,5 +275,27 @@ describe('a pack opened over parts', () => {
     open()
     await Promise.all([run, opening])
     expect(await slotIds(stores)).not.toContain(`book:${GLT}:tit`)
+  })
+
+  it('opens inside a section that holds the lock when given its token, and takes the lock itself otherwise', async () => {
+    const { stores } = await deviceWithParts()
+    let kept: Parameters<Parameters<typeof whileOnlineIdle>[0]>[0] | undefined
+    const result = await whileOnlineIdle(async (held) => {
+      kept = held
+      return openPack(stores, await pack(), { held })
+    })
+    expect(result.skippedResources).toEqual([])
+    expect(await slotIds(stores)).not.toContain(`book:${GLT}:tit`)
+    // A token whose section ended is no proof: the opening takes the lock again (and so waits for an apply).
+    let open!: () => void
+    const gate = new Promise<void>((r) => (open = r))
+    const apply = asOnlineApply(() => gate)
+    let opened = false
+    const again = openPack(stores, await pack(), { held: kept }).then(() => (opened = true))
+    await new Promise((r) => setTimeout(r, 30))
+    expect(opened).toBe(false)
+    open()
+    await Promise.all([apply, again])
+    expect(opened).toBe(true)
   })
 })

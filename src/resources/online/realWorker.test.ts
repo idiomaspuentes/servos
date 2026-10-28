@@ -77,14 +77,14 @@ describe.skipIf(!staging)('the real staging Worker', () => {
       notes += found.length
       aligned += found.filter((n) => n.textQuote).length
     }
-    expect(notes).toBeGreaterThan(0)
-    expect(aligned).toBeGreaterThan(0)
-
     const p = last as Progress | null
-    console.log(
-      `\nStaging Worker, es-419 Titus: ${seconds.toFixed(1)} s, ${p?.total ?? '?'} parts, ${p?.bytesTotal ?? '?'} bytes; ` +
-        `${register.size} slots; Titus 1: ${verses.length} verses, ${notes} notes, ${aligned} with aligned quotes.\n`,
-    )
+    const said =
+      `Staging Worker, es-419 Titus: ${seconds.toFixed(1)} s, ${p?.total ?? '?'} parts, ${p?.bytesTotal ?? '?'} bytes; ` +
+      `${register.size} slots; Titus 1: ${verses.length} verses, ${notes} notes, ${aligned} with aligned quotes.`
+    // Said whatever happens: printed with --silent=false, and in the message of an assertion that fails.
+    console.log(`\n${said}\n`)
+    expect(notes, said).toBeGreaterThan(0)
+    expect(aligned, said).toBeGreaterThan(0)
     const first = await notesOfVerse(stores, { notesKey, textKey, book: 'tit', chapter: 1, verse: 1 })
     for (const n of first.slice(0, 4)) console.log(`  · ${n.textQuote ?? `(${n.quote})`}: ${n.note.split('\n')[0].slice(0, 90)}`)
   }, 300_000)

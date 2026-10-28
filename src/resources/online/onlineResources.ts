@@ -12,8 +12,9 @@
  *
  * - Staging keeps only what a kept list still names (`pruneStaging`), after an apply and at the end of the heal.
  *
- * One run (a check or a download) at a time: a second call joins the running one, or waits for it. No run goes beside
- * a pack being opened (`onlineLock.ts`): it waits for the opening, and an opening waits for it. Every language
+ * One run (a check or a download) at a time: a second call joins the running one, or waits for it. No apply goes
+ * beside a pack being opened (`onlineLock.ts`): it waits for the opening, plans again from the register as the pack
+ * left it, and an opening waits for an apply; a queue goes on beside an opening (staging is not the store). Every language
  * plans its originals from the newest originals list on the device (`planLanguage.ts`). The state lives in this
  * module (as `packsInside`), read by the screens through `useOnlineResources`. Everything outside is injectable
  * (`setOnlineDeps`), so the tests need neither network nor DOM. Nothing here throws to its caller.
@@ -41,7 +42,7 @@ import { bookIsHere as realBookIsHere, refreshLibrary as realRefreshLibrary } fr
 import type { Project } from '../../app/projects/model'
 import { RESOURCE_VERSIONS, openPartsStaging, openResourceStores, readPartsRegister, type ResourceStores } from '../store'
 import { downloadParts, type Progress } from './downloads'
-import { asOnlineRun } from './onlineLock'
+import { asOnlineApply } from './onlineLock'
 import { fetchList, fetchOriginals, fetchPart, type ClientOptions } from './packsClient'
 import { packsServer, setPacksServer, type PacksServerId } from './packsServer'
 import {
@@ -367,8 +368,7 @@ function startRun(kind: Run['kind'], body: (ctx: Ctx) => Promise<void>, about: {
   const run: Run = { kind, ...about, ctrl, generation, promise: Promise.resolve() }
   run.promise = (async () => {
     try {
-      // Never beside a pack being opened (`onlineLock.ts`): it waits for one in flight, and holds new ones back.
-      await asOnlineRun(() => body(newCtx(ctrl.signal)))
+      await body(newCtx(ctrl.signal))
     } catch {
       // Never to the caller: what failed is tried again at the next check.
     } finally {
@@ -583,21 +583,38 @@ function untilNotTyping(signal: AbortSignal): Promise<boolean> {
  * Applies a plan once nobody is typing, with the screen kept on: what the translated verses read is watched, the plan
  * applied, the library read again, and what changed kept. `missing` when a part is not staged after all. A list made
  * with other versions says «actualice la app» unless told not to (the startup heal, which asked no one).
+ *
+ * All of it holds the lock against opening a pack (`onlineLock.ts`), and the plan is made again under it, from the
+ * same lists and the register as it is now: a pack opened while the parts came forgot the slots of what it brought,
+ * and a plan made before would pass over them. When the new plan needs parts not staged, B applies no unit and says
+ * `missing`, and the caller downloads them; staged parts it no longer needs are pruned.
  */
-async function applyPlan(
+function applyPlan(
   language: string,
-  planned: Planned,
+  before: Planned,
   ctx: Ctx,
-  { blockOnVersions = true }: { blockOnVersions?: boolean } = {},
+  options: { blockOnVersions?: boolean } = {},
 ): Promise<'applied' | 'missing' | 'stopped'> {
-  if (!(await untilNotTyping(ctx.signal))) return 'stopped'
+  return untilNotTyping(ctx.signal).then((go) => (go ? asOnlineApply(() => applyPlanLocked(language, before, ctx, options)) : 'stopped'))
+}
+
+async function applyPlanLocked(
+  language: string,
+  before: Planned,
+  ctx: Ctx,
+  { blockOnVersions = true }: { blockOnVersions?: boolean },
+): Promise<'applied' | 'missing' | 'stopped'> {
+  if (ctx.signal.aborted) return 'stopped'
+  const register = await readPartsRegister(d().stores())
+  const plan = planLanguage({ list: before.list, originals: before.originals ?? null, register, chosen: before.chosen })
+  if (!plan) return 'stopped'
+  const planned: Planned = { ...before, plan, register }
   const lock = await d()
     .wakeLock()
     .catch(() => null)
   try {
     const stores = d().stores()
     const staging = d().staging()
-    const { plan } = planned
     const books = booksOfUnits(plan.units)
     // Watched only when the plan will apply: a heal with parts still missing writes no row of these books.
     const ready = (await Promise.all(plan.download.map((p) => staging.has(p.sha256)))).every(Boolean)

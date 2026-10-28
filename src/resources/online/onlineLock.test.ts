@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { asOnlineRun, whileOnlineIdle } from './onlineLock'
+import { asOnlineApply, holdsOnlineLock, whileOnlineIdle } from './onlineLock'
 
 const opened = () => {
   let open!: () => void
@@ -8,11 +8,11 @@ const opened = () => {
 }
 const tick = () => new Promise((resolve) => setTimeout(resolve, 5))
 
-describe('a pack opening and an online run never overlap', () => {
-  it('a run in flight delays the opening until it ends', async () => {
+describe('a pack opening and an online apply never overlap', () => {
+  it('an apply in flight delays the opening until it ends', async () => {
     const log: string[] = []
     const apply = opened()
-    const run = asOnlineRun(async () => {
+    const run = asOnlineApply(async () => {
       log.push('run starts')
       await apply.gate
       log.push('run ends')
@@ -25,7 +25,7 @@ describe('a pack opening and an online run never overlap', () => {
     expect(log).toEqual(['run starts', 'run ends', 'pack'])
   })
 
-  it('a run started during the opening waits for it, and the opening gives back what fn gives', async () => {
+  it('an apply asked during the opening waits for it, and the opening gives back what fn gives', async () => {
     const log: string[] = []
     const importing = opened()
     const pack = whileOnlineIdle(async () => {
@@ -35,7 +35,7 @@ describe('a pack opening and an online run never overlap', () => {
       return 'result'
     })
     await tick()
-    const run = asOnlineRun(async () => void log.push('run'))
+    const run = asOnlineApply(async () => void log.push('run'))
     await tick()
     expect(log).toEqual(['pack starts'])
     importing.open()
@@ -44,7 +44,7 @@ describe('a pack opening and an online run never overlap', () => {
     expect(log).toEqual(['pack starts', 'pack ends', 'run'])
   })
 
-  it('openings go one after another; a run waiting meanwhile is not starved into a deadlock', async () => {
+  it('openings go one after another; an apply waiting meanwhile does not deadlock', async () => {
     const log: string[] = []
     const first = opened()
     const a = whileOnlineIdle(async () => {
@@ -52,7 +52,7 @@ describe('a pack opening and an online run never overlap', () => {
       await first.gate
     })
     await tick()
-    const run = asOnlineRun(async () => void log.push('run'))
+    const run = asOnlineApply(async () => void log.push('run'))
     const b = whileOnlineIdle(async () => void log.push('b'))
     await tick()
     expect(log).toEqual(['a'])
@@ -62,10 +62,23 @@ describe('a pack opening and an online run never overlap', () => {
     expect(log.sort()).toEqual(['a', 'b', 'run'])
   })
 
-  it('an opening that throws lets the runs in, and so does a run that throws', async () => {
+  it('an opening that throws lets the applies in, and so does an apply that throws', async () => {
     await expect(whileOnlineIdle(async () => Promise.reject(new Error('not a pack')))).rejects.toThrow('not a pack')
-    await expect(asOnlineRun(async () => 'in')).resolves.toBe('in')
-    await expect(asOnlineRun(async () => Promise.reject(new Error('failed')))).rejects.toThrow('failed')
+    await expect(asOnlineApply(async () => 'in')).resolves.toBe('in')
+    await expect(asOnlineApply(async () => Promise.reject(new Error('failed')))).rejects.toThrow('failed')
     await expect(whileOnlineIdle(async () => 'opened')).resolves.toBe('opened')
+  })
+})
+
+describe('a section that holds the lock', () => {
+  it('its token is good while it lasts, and only then', async () => {
+    let kept: Parameters<Parameters<typeof whileOnlineIdle>[0]>[0] | undefined
+    await whileOnlineIdle(async (held) => {
+      kept = held
+      expect(holdsOnlineLock(held)).toBe(true)
+      expect(holdsOnlineLock({ section: {} })).toBe(false)
+    })
+    expect(holdsOnlineLock(kept)).toBe(false)
+    expect(holdsOnlineLock(undefined)).toBe(false)
   })
 })
