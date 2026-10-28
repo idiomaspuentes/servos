@@ -4,7 +4,9 @@
 > superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** The word card shows «En toda la Biblia»: every book and verse where the touched word's Strong's number
-occurs, which of those books are on this device, and which are not.
+occurs, which of those books are on this device, and which are not. The data is bt-synergy's word index: the words
+of each original book numbered within the book, and per book the list of words of each Strong code
+(`PAQUETES_ENLAZADOS.md`, section 4).
 
 **Architecture:** `src/resources/occurrences.ts` wraps bt-synergy's `findOccurrences` with what the device has.
 `src/app/frame/enTodaLaBiblia.ts` turns the result into what the card shows (pure, tested);
@@ -13,13 +15,13 @@ layer of another version instead of refusing the pack.
 
 **Tech Stack:** TypeScript, React, Vite 7, Vitest (node env, fake-indexeddb), bt-synergy `language-pack` from source.
 
-**Spec:** `docs/PAQUETES_ENLAZADOS.md` (sections 4, 5, 7 and 9). The bt-synergy part is
+**Spec:** `docs/PAQUETES_ENLAZADOS.md` (sections 4, 5, 6, 7 and 9). The bt-synergy part is
 `bt-synergy/docs/superpowers/plans/2026-10-28-language-packs-index-stage1.md` (branch `docs/packs-index-stage1`).
 
 ## Global Constraints
 
 - Before any code: Abel says, per task, whether Claude or Cursor writes it.
-- **Starts only when** (a) Servos PR #10 is merged, and (b) bt-synergy Tasks 1–6 are merged into `master` with
+- **Starts only when** (a) Servos PR #10 is merged, and (b) bt-synergy Tasks 1–7 are merged into `master` with
   Abel's yes. Task 1 moves `bt-synergy.ref` to that merge commit; every test run before that uses
   `SERVOS_BT_SYNERGY=C:/Users/LENOVO/Git/Github/wt/tcs-packs-index-impl`.
 - Read `docs/DISENO.md` and `docs/FILOSOFIA_DE_DISENO.md` first (`CLAUDE.md`). Interface and product docs in Spanish;
@@ -83,8 +85,10 @@ layer of another version instead of refusing the pack.
 - Consumes: `findOccurrences`, `Occurrences` (bt-synergy Task 6); `keysUnder` (`src/resources/store.ts`).
 - Produces: `occurrencesOf(stores: ResourceStores, strong: string): Promise<Occurrences | null>`.
 
-- [ ] **Step 1: Write the failing tests** (fake-indexeddb, rows written as a pack would):
-  - `marks the books of the original this device has`: an index row for `G5485` naming `tit` and `rom`, and the book row
+- [ ] **Step 1: Write the failing tests** (fake-indexeddb, rows written as a pack would, with bt-synergy's
+  `encodeWords`):
+  - `marks the books of the original this device has`: rows `index:strong:unfoldingWord/el-x-koine/ugnt:G5485:tit`
+    and `…:G5485:rom` with their `index:verses:…` rows, and the book row
     `scripture-usj:unfoldingWord/el-x-koine/ugnt:tit` → `tit` on the device, `rom` not.
   - `is null without an index`.
   - `takes the text's spelling`: `'G54850'` finds the `G5485` row.

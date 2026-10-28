@@ -3,9 +3,11 @@
 La siguiente versión de los paquetes de idioma ([`PAQUETES_DE_IDIOMA.md`](PAQUETES_DE_IDIOMA.md)): poder ir de una
 palabra, una nota o un artículo a **todos los lugares de la Biblia** donde aparece, aunque cada libro llegue en su
 propia parte. Escrito el 26 de octubre de 2026 y **revisado el 28 de octubre** contra el código de ese día: el formato
-2.0 en partes y su importador (unfoldingWord/tc-study#51, fusionado el 28 en `c663f78`). Todo lo que aquí se propone
-es **propuesto**; lo **hecho** dice el archivo de donde sale. Las medidas son de los paquetes reales del 27 de
-octubre (`wt/paquetes-q9a12`, compat `f1.1-u2.3.0-p6000230-q9-a12-t1`).
+2.0 en partes y su importador (unfoldingWord/tc-study#51, fusionado el 28 en `c663f78`). El mismo 28, con Abel, se
+cambió el modelo: en vez de un índice por pregunta, **las palabras del original numeradas por libro**, y cada enlace
+como la lista de las palabras que toca (sección 4). Todo lo que aquí se propone es **propuesto**; lo **hecho** dice el
+archivo de donde sale. Las medidas son de los paquetes reales del 27 de octubre (`wt/paquetes-q9a12`, compat
+`f1.1-u2.3.0-p6000230-q9-a12-t1`).
 
 - Plan de la etapa 1, parte de bt-synergy: `bt-synergy/docs/superpowers/plans/2026-10-28-language-packs-index-stage1.md`
   (rama `docs/packs-index-stage1`, worktree `wt/tcs-packs-index`).
@@ -80,171 +82,199 @@ Cada punto se comprobó en el código del 28 de octubre (bt-synergy `c663f78`; S
 11. **Sigue igual**: el léxico trae versículos solo para las palabras de más de un sentido (`lexicon.ts:23`); sirve
     para la tarjeta, no como índice.
 
+12. **El constructor ya sabe qué cambió.** La huella de cada parte (`language-pack/src/parts/fingerprint.ts`) sale
+    de los sha de git de sus archivos en Door43, que el Worker lee del árbol sin bajar nada, y del manifiesto sin
+    `version`, `modified`, `issued` ni el `?v=` de las relaciones. Un release que solo sube la versión o cambia el
+    README no mueve ninguna huella; y una parte rehecha con el mismo contenido tiene el mismo sha, así que ningún
+    aparato la vuelve a bajar (`parts/plan.ts`).
+
 ## 3. Cuánto pesa (medido el 28 de octubre)
 
-Con un script sobre los paquetes del 27 de octubre (JSON por línea, como las filas de una parte, gzip nivel 9):
+Con scripts sobre los paquetes del 27 de octubre (gzip nivel 9):
 
-| Índice | Qué junta | Tamaño |
-|---|---|---|
-| Strong → versículos, NT (una fila por Strong) | 137 990 palabras, 5320 números, 27 libros; 1,3 s | 1,6 MB; **325 KB** gz. La fila mayor, ὁ (G3588): 19 808 lugares, 165 KB |
-| Strong → versículos, AT (una fila por Strong) | 300 493 palabras, 9260 números, 39 libros; 3,0 s | 3,3 MB; **734 KB** gz. La fila mayor, אֵת (H0853): 10 977 lugares, 88 KB |
-| Lo mismo, partido por rangos de 1000 | 7 grupos NT, 9 AT | el mayor, 145 KB gz (H0–999) |
-| Lo mismo, una fila por Strong y libro | 59 279 filas | 1,4 MB gz en total: 35 % más que por Strong |
-| Strong → cómo lo tradujo el GLT, por libro | 5674 grupos de alineación en 6 libros | 1,8–18,8 KB gz por libro |
-| Lo mismo, el GST | 2461 grupos en 4 libros | 2,5–10,8 KB gz por libro |
-| Artículo de Academia → notas (es-419, 4 libros) | 376 notas, 45 artículos; `figs-idiom` 52, `figs-explicit` 39, `figs-metaphor` 38 | 2,7 KB gz |
-| Artículo de Palabras → enlaces (es-419, 4 libros) | 770 enlaces, 209 artículos; `kt/yahweh` 41, `kt/god` 32 | 12 KB gz |
+| Qué | Medida |
+|---|---|
+| Palabras del original | 444 472 en 31 103 versículos (UHB v3.0.0, UGNT v0.34); el índice del AT se arma en 3,0 s, el del NT en 1,3 s |
+| Dónde empieza cada versículo, toda la Biblia | 18 KB |
+| Listas de Strong, **numerando por libro** (59 279 listas Strong × libro) | **691 KB** en total; por libro, mediana 6 KB, la mayor (Salmos) 33 KB, la menor (2 Juan) 1 KB |
+| Las mismas listas numerando toda la Biblia de corrido | 599 KB (15 % menos, pero un cambio en un libro movería los números de todos los siguientes) |
+| El índice del plan anterior (versículos como texto, por Strong) | 1,06 MB |
+| Traducción del GLT palabra por palabra, 6 libros | 26 KB; unió 6205 de 6205 palabras alineadas |
+| Traducción del GST, 4 libros | 18 KB; unió 3114 de 3116 (las 2 que faltan, por revisar; tal vez ketiv/qere) |
+| Una consulta («cómo tradujo el GLT χάρις») | menos de 1 ms: «gracia» ×3, «Gracia» ×1 |
+| Notas → artículo de Academia (es-419, 4 libros) | 376 notas, 45 artículos; `figs-idiom` 52, `figs-explicit` 39, `figs-metaphor` 38 |
+| Enlaces TWL (es-419, 4 libros) | 770 enlaces, 209 artículos |
 
-Ejemplos: χάρις está **156 veces en 23 libros** (en Tito, 1:4, 2:11, 3:7 y 3:15); חֵן, 69 en 16. El índice del original
-entero son **1,06 MB** comprimidos, frente a 23 MB del paquete `originals`. El tamaño sigue sin ser el problema; lo son
-que el índice esté al día, que los lectores viejos no se rompan y que se sepa lo que falta.
+χάρις está **156 veces en 23 libros** (en Tito, 1:4, 2:11, 3:7 y 3:15); חֵן, 69 en 16; ὁ, 19 808. El tamaño no es el
+problema; lo son que el índice esté al día sin volver a bajar todo, que los lectores viejos no se rompan y que se sepa
+lo que falta.
 
-## 4. Tres niveles (se mantiene, con un cambio)
+## 4. El modelo: palabras numeradas por libro
 
-1. **El índice del original**: Strong → versículos de toda la Biblia. **Cambio**: ya no viaja «con los originales»,
-   porque en 2.0 llegan por libro. Va en la lista de originales, en partes compartidas propias (sección 5), y en el
-   paquete 1.1 `originals` como capa `index`. Siempre está entero, aunque el aparato tenga pocos libros.
-2. **El detalle del idioma, por libro**: artículo de Academia → notas, artículo de Palabras → enlaces, y Strong → cómo
-   lo tradujo cada texto alineado. Va y viene con su libro, en la unidad `book <libro>`.
-3. **El resumen del idioma**: para cada artículo y cada Strong, cuántas veces aparece en cada libro, con el sello del
-   libro que contó. Números, no lugares; va en la unidad `shared` del idioma y se rehace con cada publicación.
+Todos estos recursos ya están unidos por **las palabras del original**: la alineación dice qué palabras del texto
+puente traducen cuáles del original; la cita de una nota y la de un enlace de TWL se hallan en el original (capa
+`quote`); el número Strong es de cada palabra del original. Entonces:
 
-La consulta «¿dónde más está `figs-metaphor`?» lee el detalle de los libros que están y el resumen de los que no.
-La consulta «¿dónde más está χάρις?» lee el índice del original (todos los libros), y el detalle de cada texto
-alineado que esté en el aparato.
+1. **Cada palabra del original tiene un número dentro de su libro**: su posición, desde 0, en el orden del texto
+   (capítulo 1 en adelante; el capítulo 0, el de los títulos, no cuenta). Una palabra es `{libro}:{posición}`. Se
+   numera por libro y no de Génesis a Apocalipsis para que un cambio en un libro no mueva los números de los demás.
+2. **Cada enlace es la lista ordenada de las palabras que toca**, en un libro: un Strong, una nota, un enlace de TWL,
+   un artículo (la unión de sus notas). Un texto alineado es una **columna**: para cada palabra del original, con qué
+   palabras se tradujo.
+3. **Las preguntas son operaciones con listas**: a qué está conectado (leer una lista), cuántos (su largo; por libro,
+   una lista por libro), si hay de esto en aquello (si dos listas comparten números: «metáforas que tocan χάρις»),
+   cómo lo tradujo cada versión (leer la columna de cada texto en esas palabras).
+4. **El ancla para unir un texto alineado** es `{cap}:{vers} {forma}#{ocurrencia}` de la palabra del original, como la
+   escribe el `alignmentMap`: el constructor la convierte en posición con el texto del original. Es la misma en todo
+   texto alineado contra la misma edición del original, en cualquier idioma: así se comparan GLT, GST, ULT y el texto
+   en portugués palabra por palabra.
+
+Las listas viajan como enteros en orden, guardados como diferencias en LEB128 y en base64 dentro del JSON de la fila
+(las partes son filas JSON; gzip recupera casi todo lo que agrega el base64). Una biblioteca pequeña en bt-synergy,
+TypeScript sin dependencias, las lee igual en el teléfono, en el navegador, en Node y en un Worker.
 
 ## 5. Las claves, las partes y las versiones
 
 ### 5.1 Claves
 
 El recurso va primero, como en las demás capas, para que `scansFor` y `bookOfRow` (`language-pack/src/keys.ts`) lo
-encuentren; después el id; el libro al final, para que una consulta lea todos los libros con un solo rango de claves.
+encuentren; después el id y el libro al final, para que una consulta lea todos los libros con un solo rango de claves
+(terminado en `:`, para que `G548` no traiga `G5485`).
 
-| Clave | Valor | Nivel |
+| Clave | Valor | Etapa |
 |---|---|---|
-| `index:strong:{original}:{código}` | `{ "lemma", "n", "books": { "tit": "1:4 2:11 3:7 3:15" }, "stamps": { "tit": "<sello del libro>" } }` | 1 |
-| `index:render:{texto}:{código}:{libro}` | `{ "stamp", "places": { "2:11": { "χάρις#1": "gracia" } } }` | 2 |
-| `index:ta:{notas}:{artículo}:{libro}` | `{ "stamp", "notes": [{ "id", "ref" }] }` | 2 |
-| `index:tw:{enlaces}:{artículo}:{libro}` | `{ "stamp", "links": [{ "id", "ref", "origWords", "occurrence" }] }` | 2 |
-| `index:summary:{recurso}:{tipo}:{id}` | `{ "books": { "rom": { "n": 12, "stamp": "…" } } }` | 3 |
+| `index:verses:{original}:{libro}` | `{ "stamp", "words": 659, "verses": "1:1 1:2 …", "starts": "<lista>" }` (Tito: 659 palabras) | 1 |
+| `index:strong:{original}:{código}:{libro}` | `{ "stamp", "lemma", "words": "<lista>" }` | 1 |
+| `index:render:{texto}:{libro}` | `{ "stamp", "words": "<lista>", "renderings": "<ids>", "strings": ["gracia", …] }` | 2 |
+| `index:notes:{notas}:{libro}` | `{ "stamp", "notes": [{ "id", "ref", "article", "words": "<lista>" }] }` | 2 |
+| `index:links:{enlaces}:{libro}` | `{ "stamp", "links": [{ "id", "ref", "article", "words": "<lista>" }] }` | 2 |
+| `index:summary:{recurso}` | `{ "books": { "rom": { "stamp", "articles": { "translate/figs-metaphor": 12 } } } }` | 3 |
 
 - `{código}`: `G5485`, `H0853`, `H1121a` (punto 2.5). `{artículo}`: `translate/figs-metaphor`, `bible/kt/grace`.
-- En `books`, los versículos de un libro van en una cadena, sin repetir; `n` cuenta las ocurrencias.
-- `stamp` es el sello del libro del original contra el que se hizo (`bookContentStamp`). Va en el valor, no en la
+- `stamp` es el sello del libro del original contra el que se numeró (`bookContentStamp`). Va en el valor, no en la
   clave, para que un libro nuevo reemplace sus filas en lugar de dejar dos.
-- **El ancla del objetivo 2** es `{libro} {cap}:{vers} {forma}#{ocurrencia}` de la palabra del original, tal como la
-  escribe el `alignmentMap` (`content` y `occurrence` de cada `source`). Es la misma en todo texto alineado contra la
-  misma publicación del original, en cualquier idioma: así se juntan, palabra por palabra, el GLT, el GST, el ULT o el
-  texto en portugués.
+- «Todas las metáforas» se arma leyendo `index:notes:{notas}:` (a lo más 66 filas) y filtrando por artículo; si se
+  usa mucho, la etapa 2 agrega filas pequeñas `index:ta:{notas}:{artículo}:{libro}` con solo los ids.
 
 ### 5.2 Partes
 
-- Una clase de parte nueva, `index`, **aparte** de las partes que ya existen (decisión 1): el índice del original en
-  la lista de originales, unidad `shared`, agrupado por rango de 1000 Strong (`G0`…`G5`, `H0`…`H8`; ninguna pasa de
-  150 KB gz); el detalle de un libro en la unidad `book <libro>` de la lista del idioma, una parte por recurso y libro;
-  el resumen en `shared`, grupo `summary`.
-- Así, una versión nueva del índice rehace solo las partes `index`, y un lector que no conoce la clase o la versión
-  salta esas partes sin tocar los textos.
+- Una clase de parte nueva, `index`, **aparte** de las que ya existen (decisión 1).
+- **Del original**: una parte por libro (`{ kind: 'index', resource: <original>, book }`, unos 1–33 KB), en la lista de
+  originales, **unidad `shared`**: todo aparato baja las 66 (unos 0,7 MB), tenga o no el texto de esos libros. Así el
+  índice cubre siempre toda la Biblia, y cada parte cambia solo cuando cambia su libro. Su huella: el blob de ese libro
+  del original y el `code`.
+- **Del idioma** (etapa 2): una parte `index` por recurso y libro, en la unidad `book <libro>`. Su huella: el blob de
+  ese libro del recurso, el sello del libro del original y el `code`.
+- **El resumen** (etapa 3): una parte en la unidad `shared` del idioma.
 
 ### 5.3 Versiones
 
 - `versions.index.helpsIndex` (decisión 2), con `HELPS_INDEX_VERSION = 1` en `packVersions.ts` y en
   `partsCodeVersions`. **No entra en el compat.** La capa `index` es opcional: no está en `REQUIRED_LAYERS`.
-- Regla del lector: si la versión del índice no es la suya, o no conoce la capa o la clase, **salta el índice** y
-  sigue con lo demás. Esto pide un cambio pequeño en `planParts`/`applyParts` (etapa 1, tarea 1) que debe estar en
-  la versión de bt-synergy que Servos fije con su PR #10 o justo después, antes de publicar la primera parte `index`
+- Regla del lector: si la versión del índice no es la suya, o no conoce la capa o la clase, **salta el índice** y sigue
+  con lo demás. Esto pide un cambio pequeño en `planParts`/`applyParts` (etapa 1, tarea 1) que debe estar en la
+  versión de bt-synergy que Servos fije con su PR #10 o justo después, antes de publicar la primera parte `index`
   (decisión 3).
-- Servos no pone `index` en `RESOURCE_VERSIONS` para rechazar paquetes: si difiere, se salta la capa.
+- Servos no pone `index` en la comprobación que rechaza paquetes enteros: si difiere, se salta la capa.
 
-## 6. Versiones y descargas parciales
+## 6. Qué se recalcula y cuándo
 
-- **Un libro nuevo trae su detalle nuevo.** Las filas `index:…:{libro}` se reemplazan con su parte, por las reglas de
-  hoy: nunca se vuelve atrás (`src/resources/freshness.ts`).
-- **El índice del original y un libro de otra edición.** Si el sello de un libro en `stamps` no es el del original del
-  aparato, se muestran igual sus versículos (casi nunca cambian), pero no se usan para marcar palabras.
-- **El resumen puede ser de otro momento que un libro del aparato.** Para los libros que están, manda su detalle; el
-  resumen solo cuenta los que faltan, y puede no ser exacto; se dice igual, porque sirve para saber qué pedir.
-- **Un aparato sin índice** (paquete viejo, o de otra versión): sin la sección; nada se rehace en el teléfono en la
-  etapa 1. Rehacer el detalle de un libro en segundo plano queda para la etapa 2, si hace falta.
-- **Sin resumen**: solo se habla de los libros que están, sin inventar.
+Se recalcula **solo lo que cambió**, con la maquinaria de huellas que ya existe (punto 2.12): el Worker compara las
+huellas con el árbol de Door43 y pide una construcción solo si alguna se movió; la construcción rehace solo las partes
+cuya huella cambió; el aparato baja solo las partes cuyo sha cambió.
 
-## 7. Cuánto cuesta en un teléfono barato
+| Si cambia… | Se rehace | Cada cuánto |
+|---|---|---|
+| Un libro del griego o del hebreo | Su parte del índice del original; y, en cada idioma, en su siguiente construcción, las partes de índice de ese libro (sus posiciones apuntan al original) | Muy rara vez: el UGNT es v0.34 de 2023, el UHB v3.0.0 de agosto de 2026 |
+| Un libro de un texto alineado (GLT Rut) | Solo la columna del GLT en Rut | Cuando se publica ese texto |
+| Las notas o los enlaces de TWL de un libro | Solo esas filas de ese recurso en ese libro, y el resumen del idioma | En los idiomas activos, a menudo |
+| Solo el manifiesto (versión, fechas), el README o la licencia | Nada | — |
+| El código que hace el índice (`HELPS_INDEX_VERSION`) | Todas las partes `index`; los textos y ayudas no | Cuando cambia el formato del índice |
 
-- **Guardar**: el índice del original, unos 5 MB sin comprimir en IndexedDB (14 580 filas), frente a los 82 MB de la
-  fuente del hebreo. El detalle de un libro, decenas de KB.
-- **Consultar**: una palabra del original es **una lectura**. Un artículo es **un rango de claves**, a lo más una fila
-  por libro. Cómo la tradujeron los textos del aparato es un rango por texto (`keysUnder`, `src/resources/store.ts`).
-  No hace falta un motor de búsqueda.
-- **Las palabras muy comunes** (ὁ, καί, אֵת, וְ) tienen filas de 50 a 165 KB. Se guardan enteras (decisión 4), y la
-  tarjeta muestra primero la cuenta por libro y abre la lista solo a pedido.
-- **Hacer el índice del original en el teléfono**: no; viaja hecho.
+Recalcular es barato (segundos); lo caro son las bajadas a los teléfonos, y por eso cada libro cambia por su lado.
+
+**Mientras un idioma no se reconstruye** tras un cambio del original, sus filas traen el sello viejo: el aparato ve
+que no coincide con el original que tiene y no usa sus posiciones (dice los versículos solo si los tiene de otra
+fuente). Un texto alineado contra otra edición del original se salta como hoy sus citas (`requires`), o se hace una
+tabla de equivalencias de la edición vieja a la nueva para los libros que cambiaron (decisión 5).
+
+## 7. Cómo lo usa cada sistema
+
+| Sistema | Qué guarda | Peso |
+|---|---|---|
+| **Servos** (teléfono, sin internet) | Las 66 partes del original, una vez; las del idioma, de los libros que tiene; en IndexedDB | ~0,7 MB del original, decenas de KB por libro |
+| **tc-study** (web) | Lo mismo, con el mismo código; sus filtros de ayudas por artículo (PR #37) pasan de lo abierto a toda la Biblia | Igual |
+| **translation-helps-mcp** (Worker) | Las mismas filas en R2, por libro; cada pregunta lee solo los libros que necesita | Unos KB por pregunta, sin base de datos nueva |
+| **translationCore 4** (escritorio) | La misma biblioteca; si se quiere SQL libre, una exportación a SQLite hecha desde las mismas listas | Igual |
+
+En el teléfono, una palabra del original es **un rango de claves** (`index:strong:{original}:G5485:`, 23 filas) y las
+tablas de versículos de esos libros; las palabras muy comunes (ὁ, אֵת) traen listas largas, pero son enteros: la
+tarjeta muestra primero la cuenta por libro (decisión 4).
 
 ## 8. Los objetivos 2 y 4, con lo que necesitan
 
-**Objetivo 2, varias versiones.** Necesita:
+**Objetivo 2, varias versiones.** Necesita varios textos alineados por idioma, cada uno con su columna por libro
+(es-419 ya tiene dos: GLT en 6 libros, GST en 4), y varios idiomas en el aparato o en el MCP: el ancla (sección 4) es
+la misma en todo texto alineado contra la misma edición del original. Los grupos de alineación de varias palabras (443
+de 5674 en el GLT, 478 de 2461 en el GST) ponen la misma traducción en cada palabra del grupo, y la vista lo dice. Las
+traducciones se comparan sin mayúsculas ni acentos (como `quoteFolded` de TWL), para que «Gracia» y «gracia» cuenten
+juntas. En el MCP, con todos los idiomas publicados, es donde rinde más: «¿cómo tradujeron χάρις es-419, pt-br y en?».
 
-- **Varios textos alineados por idioma**, cada uno con su fila `index:render` por libro. es-419 ya tiene dos (GLT en
-  6 libros, GST en 4); los demás idiomas, lo que Door43 tenga alineado.
-- **Varios idiomas en el aparato o en el MCP**: el ancla de la sección 5.1 es la misma para todos los textos alineados
-  contra la misma publicación del original. Uno alineado contra otra publicación se salta, igual que hoy sus citas
-  (`requires`, `PAQUETES_DE_IDIOMA.md` 2.2).
-- **Grupos de alineación con varias palabras** (443 de 5674 en el GLT; 478 de 2461 en el GST): la traducción se guarda
-  en cada palabra del grupo, y la vista dice que es una traducción de varias palabras juntas.
-- En el MCP, donde están todos los idiomas publicados, es donde el objetivo 2 rinde más: «¿cómo tradujeron χάρις
-  es-419, pt-br y en?» (etapa 4).
-
-**Objetivo 4, lo que no está.** Para el original, el índice siempre está entero: cada libro se marca «en este aparato»
-o no, por el registro de partes o el catálogo. Para el idioma, el resumen (nivel 3) da las cuentas de los libros que
-faltan.
+**Objetivo 4, lo que no está.** Para el original, el índice siempre está entero: cada libro se marca «en este
+aparato» o no, por las filas del original que tiene. Para el idioma, el resumen (etapa 3) da las cuentas de los libros
+que faltan.
 
 ## 9. Las etapas
 
 ### Etapa 1: el índice del original y «En toda la Biblia» (planes listos)
 
-En bt-synergy: los lectores saltan lo que no conocen; la capa `index`; el constructor del índice del original; sus
-partes en la lista de originales y su capa en el paquete `originals`; `findOccurrences` para leerlo. En Servos: la
-sección «En toda la Biblia» en la tarjeta de la palabra, con los libros del aparato y los que faltan. Detalle y orden
-en los dos planes de arriba. **Lo que toque `packages/language-pack` se escribe sobre `c663f78` o después**: el
-importador de partes (#51) ya está fusionado.
+En bt-synergy: los lectores de partes saltan lo que no conocen; la capa `index`, los códigos Strong y las listas; el
+constructor del índice de un libro del original; sus filas en el paquete `originals` y sus partes en la lista de
+originales, una por libro, rehechas solo si cambió el libro; `findOccurrences` para leerlo. En Servos: la sección
+«En toda la Biblia» en la tarjeta de la palabra, con los libros del aparato y los que faltan. **Lo que toque
+`packages/language-pack` se escribe sobre `c663f78` o después**: el importador de partes (#51) ya está fusionado.
 
 ### Etapa 2: el detalle por libro
 
-- Constructor en `resource-pipeline`: de cada libro, `index:ta`, `index:tw` y `index:render` de cada texto alineado,
-  desde `sot` (notas, enlaces, `alignmentMap`). El de TW usa la cita ya hallada (`quote`) para dar también el Strong
-  de cada enlace, y une así un artículo de Palabras con sus números Strong.
+- Constructor en `resource-pipeline`: de cada libro, la columna de cada texto alineado (`index:render`, desde el
+  `alignmentMap`) y las palabras de cada nota y cada enlace de TWL (`index:notes`, `index:links`, desde la capa
+  `quote`, que ya halla las citas en el original). Así un artículo de Palabras queda unido a sus números Strong.
 - Partes `index` por recurso y libro en la unidad del libro; capa `index` en los paquetes `book` y `language`.
 - Servos: en la tarjeta, cómo lo tradujo cada texto del aparato en cada lugar (objetivo 1 completo) y, lado a lado,
-  GLT y GST (objetivo 2 dentro del idioma); en el artículo de Academia, «Todas las notas que lo citan»; el revisor
-  de palabras compara con los otros libros del proyecto.
-- Medir con el inglés (ULT y UST) antes de decidir si `index:render` cabe en la parte del libro o va aparte.
+  GLT y GST (objetivo 2 dentro del idioma); en el artículo de Academia, «Todas las notas que lo citan»; el revisor de
+  palabras compara con los otros libros del proyecto.
+- Revisar las 2 palabras del GST que no se unieron, y medir con el inglés (ULT, UST).
 
 ### Etapa 3: el resumen del idioma
 
-- `index:summary` en la unidad `shared` del idioma, hecho al final de cada construcción con los sellos de cada libro.
+- `index:summary` en la unidad `shared` del idioma: por libro, su sello y cuántas notas y enlaces tiene cada artículo.
+  Se rehace con cada construcción del idioma (es pequeño).
 - Servos: «y 23 notas en Romanos, Efesios y Hebreos, que no están en este aparato», con cómo conseguirlos (con
   internet, la bajada de ese libro del PR #10).
 
-### Etapa 4: las vistas del MCP y `find_occurrences`
+### Etapa 4: el MCP y `find_occurrences`
 
-- `mcp-views` (que pasará a leer partes) escribe, con esquema 2 y sin cambiar las vistas de esquema 1:
-  `v1/originals/index/strong/{código}.json`, `v1/{idioma}/index/render/{código}.json` (todos los textos del idioma,
-  por libro), `v1/{idioma}/index/ta/{artículo}.json`, `v1/{idioma}/index/tw/{artículo}.json`.
-- Una ruta `GET /api/v1/occurrences` en `translation-helps-mcp` (`src/api/routes/`), que lee esas vistas por
-  `PackViews`, y una herramienta `find_occurrences({ strong | lemma | academy | word, language?, languages?, books? })`
-  en `toolRegistry.ts`. Con `languages`, junta por el ancla cómo tradujo cada idioma (objetivo 2).
+- La biblioteca de listas corre en el Worker. `mcp-views` (que pasará a leer partes) copia las filas `index` a R2 por
+  libro (`v1/originals/index/{libro}.json`, `v1/{idioma}/index/{libro}.json`), con esquema propio y sin cambiar las
+  vistas de esquema 1.
+- Una ruta `GET /api/v1/occurrences` en translation-helps-mcp (`src/api/routes/`) que lee esas filas por `PackViews`,
+  y una herramienta `find_occurrences({ strong | lemma | academy | word, language?, languages?, books? })` en
+  `toolRegistry.ts`. Con `languages`, junta por el ancla cómo tradujo cada idioma (objetivo 2).
 - Sin vistas (producción hoy), la herramienta dice que no hay índice; no lo arma desde Door43.
+- Opcional: una exportación a SQLite para escritorio y análisis (translationCore 4), hecha desde las mismas filas.
 
 ## 10. Decisiones abiertas
 
 | # | Qué | Recomendación |
 |---|---|---|
 | 1 | El índice en partes `index` aparte, o como filas dentro de las partes que ya existen | **Aparte**: una versión nueva rehace solo el índice, y un lector viejo lo salta sin perder los textos |
-| 2 | Un solo nombre de versión (`index.helpsIndex`) o uno por índice | **Uno**: menos combinaciones; subir la versión solo hace que los aparatos salten el índice hasta la próxima construcción |
+| 2 | Un solo nombre de versión (`index.helpsIndex`) o uno por índice | **Uno** |
 | 3 | Cuándo enseñar a los lectores de partes a saltar lo que no conocen | **Antes de que Servos fije su versión de bt-synergy con el PR #10, o en el PR siguiente**, y en todo caso antes de publicar una parte `index` |
-| 4 | Las palabras muy comunes: filas enteras o solo cuentas | **Enteras** (165 KB la mayor); la tarjeta las muestra por libro |
-| 5 | La etapa 1 solo con lugares, o también cómo se tradujo en los libros del aparato, calculado al vuelo | **Solo lugares**; la traducción llega en la etapa 2, ya hecha |
-| 6 | Quién hace cada tarea: Claude o Cursor | Lo decide Abel, tarea por tarea, antes de escribir código |
-| 7 | Subir este documento (`ff72335` y lo que sigue) a GitHub | Lo decide Abel |
+| 4 | Las palabras muy comunes: listas enteras o solo cuentas | **Enteras**; la tarjeta las muestra por libro |
+| 5 | Si el original cambia: saltar los textos alineados a la edición vieja, o hacer una tabla de equivalencias | **Saltarlos** hasta que pase; la tabla solo si un cambio del UHB o del UGNT deja idiomas sin índice mucho tiempo |
+| 6 | La etapa 1 solo con lugares, o también cómo se tradujo, calculado al vuelo | **Solo lugares**; la traducción llega en la etapa 2, ya hecha |
+| 7 | Quién hace cada tarea: Claude o Cursor | Lo decide Abel, tarea por tarea, antes de escribir código |
+| 8 | Subir este documento a GitHub | Lo decide Abel |
 
 ## 11. Lo hecho y lo propuesto
 
@@ -252,11 +282,11 @@ importador de partes (#51) ya está fusionado.
 |---|---|---|
 | Lema, Strong y morfología de cada palabra del original | Hecho, viaja | USJ del original (`original` por libro en 2.0; paquete `originals` en 1.1) |
 | Alineación con Strong, forma y ocurrencia | Hecho, viaja | `alignmentMap` en `sot` (no en `prepared`) |
-| `SupportReference` de las notas (como enlace `rc://`), enlaces de TWL | Hecho, viaja | TN y TWL por libro |
-| Sellos por libro | Hecho | `bookContentStamp`; claves de citas y alineaciones |
+| Citas de notas y TWL halladas en el original | Hecho, viaja | Capa `quote` |
+| Sellos por libro; huellas de partes por blob | Hecho | `bookContentStamp`; `parts/fingerprint.ts` |
 | Partes 2.0 y su importador | Hecho; ninguna app lo usa aún | `language-pack/src/parts/`; Servos PR #10 |
 | Lectores de partes que saltan lo desconocido | Propuesto, etapa 1 | `parts/plan.ts`, `parts/apply.ts` |
-| Capa `index`: original | Propuesto, etapa 1 | Secciones 5 y 9 |
-| Capa `index`: detalle por libro, resumen | Propuesto, etapas 2 y 3 | Sección 9 |
-| `findOccurrences` compartida | Propuesto, etapa 1 | `language-pack` |
-| Vistas del índice y `find_occurrences` en el MCP | Propuesto, etapa 4 | Sección 9 |
+| Palabras numeradas por libro y listas de Strong | Propuesto, etapa 1 | Secciones 4 y 5 |
+| Columnas de traducción, palabras de notas y TWL, resumen | Propuesto, etapas 2 y 3 | Sección 9 |
+| `findOccurrences` y la biblioteca de listas | Propuesto, etapa 1 | `language-pack/src/index/` |
+| `find_occurrences` en el MCP | Propuesto, etapa 4 | Sección 9 |
