@@ -267,3 +267,83 @@ describe('fakeWorker', () => {
     expect(w.maxInFlight).toBe(3)
   })
 })
+
+/** A fetch whose bodies come in `pieces` chunks, one every `everyMs`: a slow link that keeps moving. */
+const slowly =
+  (doFetch: typeof fetch, everyMs: number, pieces: number): typeof fetch =>
+  async (input, init) => {
+    const res = await doFetch(input, init)
+    const bytes = new Uint8Array(await res.arrayBuffer())
+    const size = Math.ceil(bytes.length / pieces)
+    let at = 0
+    const body = new ReadableStream<Uint8Array>({
+      async pull(c) {
+        await new Promise((r) => setTimeout(r, everyMs))
+        if (at >= bytes.length) return c.close()
+        c.enqueue(bytes.slice(at, (at += size)))
+      },
+    })
+    return new Response(body, { status: res.status, headers: res.headers })
+  }
+const never = () => new Promise<void>(() => {})
+
+describe('a stalled link', () => {
+  const IDLE = 150
+
+  it('fetchPart says falla when no headers come, whether or not the fetch heeds the abort', async () => {
+    const { w, part } = await withList()
+    w.setAnswer('part', ANSWERS.colgado)
+    const t = Date.now()
+    expect(await fetchPart(w.server, part.sha256, { fetch: w.fetch, idleMs: IDLE })).toEqual({ kind: 'falla' })
+    expect(Date.now() - t).toBeLessThan(2000)
+
+    // A fetch that never settles, abort or not (here: a gate that never opens).
+    w.setAnswer('part', null)
+    w.gate(never)
+    expect(await fetchPart(w.server, part.sha256, { fetch: w.fetch, idleMs: IDLE })).toEqual({ kind: 'falla' })
+  })
+
+  it('fetchPart says falla when the body stops coming', async () => {
+    const { w, part } = await withList()
+    w.setAnswer('part', ANSWERS.cuerpoColgado)
+    expect(await fetchPart(w.server, part.sha256, { fetch: w.fetch, idleMs: IDLE })).toEqual({ kind: 'falla' })
+  })
+
+  it('never cuts a slow link that keeps moving, though the whole takes longer than the idle time', async () => {
+    const { w, part } = await withList()
+    const t = Date.now()
+    const a = await fetchPart(w.server, part.sha256, { fetch: slowly(w.fetch, IDLE / 3, 8), idleMs: IDLE })
+    expect(a.kind).toBe('listo')
+    expect(Date.now() - t).toBeGreaterThan(IDLE * 2)
+    const l = await fetchList(w.server, w.compat, 'es-419', null, { fetch: slowly(w.fetch, IDLE / 3, 8), idleMs: IDLE })
+    expect(l.kind).toBe('listo')
+  })
+
+  it('fetchOriginals says falla and fetchList says noDisponible (300 s) on a stall', async () => {
+    const { w } = await withList()
+    const ref = await w.setOriginals({ schema: 2, language: 'originals', parts: [], resources: [] } as unknown as PartsList)
+    w.setAnswer('originals', ANSWERS.colgado)
+    expect(await fetchOriginals(w.server, w.compat, ref.sha256, { fetch: w.fetch, idleMs: IDLE })).toEqual({ kind: 'falla' })
+    w.setAnswer('originals', ANSWERS.cuerpoColgado)
+    expect(await fetchOriginals(w.server, w.compat, ref.sha256, { fetch: w.fetch, idleMs: IDLE })).toEqual({ kind: 'falla' })
+
+    w.setAnswer('list', ANSWERS.colgado)
+    expect(await list2(w, IDLE)).toEqual({ kind: 'noDisponible', retryAfter: 300 })
+    w.setAnswer('list', { ...ANSWERS.cuerpoColgado, contentType: 'application/json' })
+    expect(await list2(w, IDLE)).toEqual({ kind: 'noDisponible', retryAfter: 300 })
+  })
+
+  it('ends at once when the caller’s signal aborts, long before the idle time', async () => {
+    const { w, part } = await withList()
+    w.gate(never)
+    const ctrl = new AbortController()
+    setTimeout(() => ctrl.abort(), 20)
+    const t = Date.now()
+    const opts = { fetch: w.fetch, idleMs: 60_000, signal: ctrl.signal }
+    expect(await fetchPart(w.server, part.sha256, opts)).toEqual({ kind: 'falla' })
+    expect(await fetchList(w.server, w.compat, 'es-419', null, opts)).toEqual({ kind: 'noDisponible', retryAfter: 300 })
+    expect(Date.now() - t).toBeLessThan(2000)
+  })
+})
+const list2 = (w: ReturnType<typeof fakeWorker>, idleMs: number) =>
+  fetchList(w.server, w.compat, 'es-419', null, { fetch: w.fetch, idleMs })

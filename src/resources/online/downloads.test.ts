@@ -97,7 +97,23 @@ describe('downloadParts', () => {
   it('a part the Worker no longer has stops the queue: listaOtraVez, and the parts in flight stay staged', async () => {
     const { w, lang, staging } = await setup(8)
     w.parts.delete(lang[0].sha256)
-    const r = await downloadParts({ server: w.server, parts: lang, originals: new Set(), staging, fetchPart: viaFake(w) })
+    // The good parts are held until the 404 has come back to the queue, so they finish after it stopped.
+    let saw404!: () => void
+    const after404 = new Promise<void>((r) => (saw404 = r))
+    w.gate(async (url) => {
+      if (shaOfCall(url) !== lang[0].sha256) await after404
+    })
+    const r = await downloadParts({
+      server: w.server,
+      parts: lang,
+      originals: new Set(),
+      staging,
+      fetchPart: async (server, sha) => {
+        const a = await fetchPart(server, sha, { fetch: w.fetch })
+        if (a.kind === 'parteNoEstá') setTimeout(saw404, 0)
+        return a
+      },
+    })
     expect(r).toEqual({ kind: 'listaOtraVez' })
     // The four started together; the three that came are staged, and none was started after the 404.
     expect(w.calls).toHaveLength(4)
@@ -162,5 +178,128 @@ describe('downloadParts', () => {
       kind: 'listo',
     })
     expect(w.calls).toHaveLength(0)
+  })
+
+  it('takes the default 4 when `at` is not a finite number of at least 1', async () => {
+    for (const at of [NaN, 0, -3, Infinity]) {
+      const { w, lang, staging } = await setup(6)
+      w.gate(() => new Promise((r) => setTimeout(r, 2)))
+      const r = await downloadParts({ server: w.server, parts: lang, originals: new Set(), staging, fetchPart: viaFake(w), at })
+      expect(r).toEqual({ kind: 'listo' })
+      expect(w.maxInFlight).toBe(4)
+    }
+  })
+
+  it('an onProgress that throws ends the run as a falla, once every worker has ended', async () => {
+    const { w, lang, staging } = await setup(8)
+    w.gate(() => new Promise((r) => setTimeout(r, 2)))
+    const r = await downloadParts({
+      server: w.server, parts: lang, originals: new Set(), staging, fetchPart: viaFake(w),
+      onProgress: (p) => {
+        if (p.done > 0) throw new Error('the screen is gone')
+      },
+    })
+    expect(r.kind).toBe('falla')
+    expect(r.kind === 'falla' && r.message).toContain('the screen is gone')
+    expect(w.inFlight).toBe(0)
+    const calls = w.calls.length
+    await new Promise((res) => setTimeout(res, 20))
+    expect(w.calls.length).toBe(calls)
+    expect(calls).toBeLessThan(8)
+  })
+
+  it('an injected fetchPart that throws ends the run as a falla, once every worker has ended', async () => {
+    const { w, lang, staging } = await setup(8)
+    w.gate(() => new Promise((r) => setTimeout(r, 2)))
+    const r = await downloadParts({
+      server: w.server, parts: lang, originals: new Set(), staging,
+      fetchPart: async (server, sha) => {
+        if (sha === lang[1].sha256) throw new Error('bug')
+        return fetchPart(server, sha, { fetch: w.fetch })
+      },
+    })
+    expect(r.kind).toBe('falla')
+    expect(w.inFlight).toBe(0)
+    const calls = w.calls.length
+    await new Promise((res) => setTimeout(res, 20))
+    expect(w.calls.length).toBe(calls)
+  })
+
+  it('a part failing while another gets a 429 is not tried again once the queue has stopped', async () => {
+    const { w, lang, staging } = await setup(2)
+    const [bad, limited] = lang
+    let tries = 0
+    let answered429!: () => void
+    const got429 = new Promise<void>((r) => (answered429 = r))
+    const r = await downloadParts({
+      server: w.server, parts: lang, originals: new Set(), staging, at: 2,
+      fetchPart: async (_server, sha) => {
+        if (sha === limited.sha256) {
+          setTimeout(answered429, 0)
+          return { kind: 'espera', retryAfter: 30 }
+        }
+        expect(sha).toBe(bad.sha256)
+        tries++
+        await got429
+        await new Promise((res) => setTimeout(res, 0))
+        return { kind: 'falla' }
+      },
+    })
+    expect(r).toEqual({ kind: 'espera', retryAfter: 30 })
+    expect(tries).toBe(1)
+  })
+
+  it('a full disk is sinEspacio; a 429 in the same run still wins', async () => {
+    const quota = () => {
+      const s = stagingFrom(memoryByteStore())
+      return { ...s, put: async () => { throw new DOMException('The quota has been exceeded.', 'QuotaExceededError') } }
+    }
+    const { w, lang } = await setup(3)
+    const r = await downloadParts({ server: w.server, parts: lang, originals: new Set(), staging: quota(), fetchPart: viaFake(w) })
+    expect(r).toEqual({ kind: 'sinEspacio' })
+
+    // Another put error is a plain falla.
+    const other = { ...stagingFrom(memoryByteStore()), put: async () => { throw new Error('disk on fire') } }
+    const r2 = await downloadParts({ server: w.server, parts: lang, originals: new Set(), staging: other, fetchPart: viaFake(w) })
+    expect(r2.kind).toBe('falla')
+
+    const two = await setup(2)
+    const r3 = await downloadParts({
+      server: two.w.server, parts: two.lang, originals: new Set(), staging: quota(), at: 2,
+      fetchPart: async (server, sha) =>
+        sha === two.lang[1].sha256 ? { kind: 'espera', retryAfter: 30 } : fetchPart(server, sha, { fetch: two.w.fetch }),
+    })
+    expect(r3).toEqual({ kind: 'espera', retryAfter: 30 })
+  })
+
+  it('a part whose link stalls ends the run as a falla instead of hanging it', async () => {
+    const { w, lang, staging } = await setup(3)
+    w.setAnswer('part', ANSWERS.colgado, 3)
+    const r = await downloadParts({
+      server: w.server, parts: lang, originals: new Set(), staging, at: 1,
+      fetchPart: (server, sha, o) => fetchPart(server, sha, { ...o, fetch: w.fetch, idleMs: 30 }),
+    })
+    expect(r.kind).toBe('falla')
+    expect(w.calls).toHaveLength(3)
+  })
+
+  it('the caller’s signal stops the queue: in-flight parts end, no new one starts, and the run is a falla', async () => {
+    const { w, lang, staging } = await setup(8)
+    w.gate(() => new Promise(() => {}))
+    const ctrl = new AbortController()
+    setTimeout(() => ctrl.abort(), 20)
+    const r = await downloadParts({
+      server: w.server, parts: lang, originals: new Set(), staging, signal: ctrl.signal,
+      fetchPart: (server, sha, o) => fetchPart(server, sha, { ...o, fetch: w.fetch }),
+    })
+    expect(r.kind).toBe('falla')
+    expect(w.calls).toHaveLength(4)
+
+    // Aborted before it starts: nothing is asked.
+    const again = await downloadParts({
+      server: w.server, parts: lang, originals: new Set(), staging, signal: ctrl.signal, fetchPart: viaFake(w),
+    })
+    expect(again.kind).toBe('falla')
+    expect(w.calls).toHaveLength(4)
   })
 })

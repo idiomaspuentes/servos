@@ -17,6 +17,9 @@ export type Forced = {
   contentType?: string
   /** Throw a network error instead of answering (status is then ignored). */
   networkError?: boolean
+  /** A dead link that stalls instead of failing: `headers` never answers (until the request's signal aborts);
+   *  `body` sends the headers and half the body, then nothing more. */
+  stall?: 'headers' | 'body'
 }
 
 /** The answers the Worker's contract names, ready to force. */
@@ -32,6 +35,10 @@ export const ANSWERS = {
   /** The connection drops: `fetch` throws. */
   red: { status: 0, networkError: true },
   limite: { status: 429, body: { error: 'rate limited' }, headers: { 'Retry-After': '30' } },
+  /** The link stalls: no answer ever comes. */
+  colgado: { status: 0, stall: 'headers' },
+  /** The link stalls mid-body: a 200, half the bytes, then nothing. */
+  cuerpoColgado: { status: 200, body: 'x'.repeat(64), contentType: 'application/gzip', stall: 'body' },
   /** A captive portal: HTML with a 200. */
   html: { status: 200, body: '<html><body>Log in to the Wi-Fi</body></html>', contentType: 'text/html' },
 } satisfies Record<string, Forced>
@@ -53,13 +60,26 @@ export function fakeWorker(opts: FakeWorkerOptions = {}) {
   let inFlight = 0
   let maxInFlight = 0
 
-  const reply = (f: Forced) => {
+  const reply = (f: Forced, signal?: AbortSignal | null): Response | Promise<Response> => {
     if (f.networkError) throw new TypeError('Failed to fetch')
+    if (f.stall === 'headers') {
+      // As a real fetch: nothing comes, but aborting the request's signal rejects it.
+      return new Promise<Response>((_, reject) => {
+        signal?.addEventListener('abort', () => reject(signal.reason ?? new DOMException('aborted', 'AbortError')))
+      })
+    }
     const text = typeof f.body === 'string' ? f.body : f.body === undefined ? '' : JSON.stringify(f.body)
-    return new Response(text, {
-      status: f.status,
-      headers: { 'Content-Type': f.contentType ?? 'application/json', ...f.headers },
-    })
+    const headers = { 'Content-Type': f.contentType ?? 'application/json', ...f.headers }
+    if (f.stall === 'body') {
+      const bytes = new TextEncoder().encode(text)
+      const stream = new ReadableStream<Uint8Array>({
+        start(c) {
+          c.enqueue(bytes.slice(0, Math.ceil(bytes.length / 2)))
+        },
+      })
+      return new Response(stream, { status: f.status, headers })
+    }
+    return new Response(text, { status: f.status, headers })
   }
   const take = (kind: Kind): Forced | null => {
     const slot = forced[kind]
@@ -79,20 +99,20 @@ export function fakeWorker(opts: FakeWorkerOptions = {}) {
     maxInFlight = Math.max(maxInFlight, inFlight)
     try {
       if (hold) await hold(url)
-      return await answer(url, headers)
+      return await answer(url, headers, init.signal)
     } finally {
       inFlight--
     }
   }
 
-  const answer = async (url: string, headers: Record<string, string>): Promise<Response> => {
+  const answer = async (url: string, headers: Record<string, string>, signal?: AbortSignal | null): Promise<Response> => {
     if (!url.startsWith(server)) return reply({ status: 404, body: 'not found', contentType: 'text/plain' })
     const path = url.slice(server.length)
 
     let m = /^parts\/([0-9a-f]+)$/.exec(path)
     if (m) {
       const f = take('part')
-      if (f) return reply(f)
+      if (f) return reply(f, signal)
       const bytes = parts.get(m[1])
       return bytes
         ? new Response(bytes.slice(), { status: 200, headers: { 'Content-Type': 'application/gzip' } })
@@ -101,7 +121,7 @@ export function fakeWorker(opts: FakeWorkerOptions = {}) {
     m = new RegExp(`^${compat}/originals/([0-9a-f]+)$`).exec(path)
     if (m) {
       const f = take('originals')
-      if (f) return reply(f)
+      if (f) return reply(f, signal)
       const o = originals.get(m[1])
       return o
         ? new Response(bytesOf(o).slice(), { status: 200, headers: { 'Content-Type': 'application/json' } })
@@ -110,7 +130,7 @@ export function fakeWorker(opts: FakeWorkerOptions = {}) {
     m = new RegExp(`^${compat}/([^/]+)$`).exec(path)
     if (m) {
       const f = take('list')
-      if (f) return reply(f)
+      if (f) return reply(f, signal)
       const list = lists.get(m[1])
       if (!list) return reply(ANSWERS.sinPacks)
       const etag = `"${(await sha256Hex(bytesOf(list))).slice(0, 16)}"`
