@@ -2,16 +2,20 @@
  * «+ Add a project» and «New Bible», as translationCore 4 does them (`src/views/modals/AddProject.jsx`,
  * `NewBible.jsx`): first the three ways to start, then one short form — name, language (searched in Door43's list of
  * languages, its code coming with it), direction, the bridge texts and helps to work with (those the language packs
- * left on this device), the font, and the versification out of the way. Everything can be changed later.
+ * left on this device, or, with internet, a gateway language the server has), the font, and the versification out of
+ * the way. Everything can be changed later.
  */
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { EXAMPLE_LANGUAGE } from '../../prototype/data'
+import { askLanguage } from '../../resources/online/onlineResources'
 import { LanguageSearch } from '../frame/LanguageSearch'
+import { useOnline } from '../frame/online'
 import { MenuRow, Sheet } from '../frame/Sheet'
 import { useI18n, useT } from '../i18n/i18n'
-import { languageLabel, writtenRightToLeft } from '../projects/languages'
+import { languageLabel, loadLanguages, writtenRightToLeft, type LanguageOption } from '../projects/languages'
 import { helpsLanguagesHere } from '../projects/library'
+import { askedSaid, helpsRows, mayChoose, serverLanguagesFound, type Asked } from '../projects/serverHelps'
 import { DEFAULT_MINI_APPS, EXAMPLE_PROJECT_ID, slug, type Privacy, type Project } from '../projects/model'
 import { PrivacyChoice } from './PrivacyChoice'
 
@@ -37,13 +41,35 @@ export function useLanguageLabel(): (code: string) => string {
 
 /**
  * The bridge texts and helps a project works with: the languages whose packs are on this device, each with its books
- * and what it has. A project's own language that is not here is kept, and said so.
+ * and what it has. A project's own language that is not here is kept, and said so. With internet, «Otro idioma…» too:
+ * a gateway language the server has (`serverHelps.ts`), chosen once the Worker says it has its books.
  */
 export function HelpsChoice({ value, onChange, recommend = false }: { value: string; onChange(code: string): void; recommend?: boolean }) {
   const t = useT()
   const label = useLanguageLabel()
+  const online = useOnline()
   const here = helpsLanguagesHere()
-  const away = value && !here.some((h) => h.code === value) ? value : null
+  // The last language the server has (a row, chosen when it came), and the one being asked or refused (said below).
+  const [got, setGot] = useState<Asked | null>(null)
+  const [pending, setPending] = useState<Asked | null>(null)
+  const last = useRef<string | null>(null)
+  const { server, away, other } = helpsRows({ here: here.map((h) => h.code), value, asked: got, online })
+  const ask = (code: string) => {
+    last.current = code
+    setPending({ code, answer: null })
+    void askLanguage(code).then((answer) => {
+      // Another language touched meanwhile: this answer is not the one the person waits for.
+      if (last.current !== code) return
+      if (!mayChoose(answer)) return setPending({ code, answer })
+      setPending(null)
+      setGot({ code, answer })
+      onChange(code)
+    })
+  }
+  const said = (answer: Asked['answer']) => {
+    const s = askedSaid(answer)
+    return t(s.key, s.values)
+  }
   return (
     <>
       {!here.length && <p className="notice">{t('nuevo.ningunPaquete')}</p>}
@@ -61,6 +87,14 @@ export function HelpsChoice({ value, onChange, recommend = false }: { value: str
           </span>
         </button>
       ))}
+      {server && (
+        <button type="button" className={value === server.code ? 'option is-on' : 'option'} aria-pressed={value === server.code} onClick={() => onChange(server.code)}>
+          <span className="option-title">
+            {label(server.code)} ({server.code})
+          </span>
+          <span className="quiet">{said(got!.answer)}</span>
+        </button>
+      )}
       {away && (
         <button type="button" className={value === away ? 'option is-on' : 'option'} aria-pressed={value === away} onClick={() => onChange(away)}>
           <span className="option-title">
@@ -69,7 +103,85 @@ export function HelpsChoice({ value, onChange, recommend = false }: { value: str
           <span className="quiet">{t('nuevo.noEstaAqui')}</span>
         </button>
       )}
+      {other && <OtherHelpsLanguage here={here.map((h) => h.code)} pending={pending} got={got} said={said} onAsk={ask} />}
     </>
+  )
+}
+
+/**
+ * «Otro idioma…», folded: the gateway languages searched by name, as the project's language is, and the one touched
+ * asked of the server. While it is asked, and when it cannot be had, it says so here; once it can, it is a row above,
+ * chosen, and this folds again.
+ */
+function OtherHelpsLanguage({
+  here,
+  pending,
+  got,
+  said,
+  onAsk,
+}: {
+  here: string[]
+  pending: Asked | null
+  got: Asked | null
+  said(answer: Asked['answer']): string
+  onAsk(code: string): void
+}) {
+  const t = useT()
+  const label = useLanguageLabel()
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const [list, setList] = useState<LanguageOption[] | null>(null)
+  useEffect(() => {
+    if (!open || list) return
+    let live = true
+    void loadLanguages().then((l) => live && setList(l))
+    return () => {
+      live = false
+    }
+  }, [open, list])
+  // A language the server has came: it is the row above, chosen.
+  useEffect(() => {
+    if (got) setOpen(false)
+  }, [got])
+  const found = list ? serverLanguagesFound(list, query, here) : []
+  return (
+    <details className="advanced" open={open} onToggle={(e) => setOpen(e.currentTarget.open)}>
+      <summary>{t('enLinea.otroIdioma')}</summary>
+      <div className="field language-search">
+        <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} aria-label={t('enLinea.buscarIdioma')} placeholder={t('enLinea.buscarIdioma')} autoCapitalize="none" />
+        {!list && <p className="quiet">{t('idiomas.leyendo')}</p>}
+        {found.length > 0 && (
+          <ul className="language-results">
+            {found.map((l) => (
+              <li key={l.code}>
+                <button
+                  type="button"
+                  className="language-result"
+                  onClick={() => {
+                    setQuery('')
+                    onAsk(l.code)
+                  }}
+                >
+                  <span className="language-result-name">
+                    {l.name} <span className="badge">{l.code}</span>
+                  </span>
+                  {l.aliases.length > 0 && <span className="quiet language-result-also">{l.aliases.slice(0, 3).join(' · ')}</span>}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {list && query.trim().length > 1 && found.length === 0 && <p className="quiet">{t('enLinea.ningunIdioma')}</p>}
+        {pending && (
+          <div className="helps-asked" role="status">
+            <span className="option-title">
+              {label(pending.code)} ({pending.code})
+            </span>
+            <span className={pending.answer ? 'notice' : 'quiet'}>{said(pending.answer)}</span>
+          </div>
+        )}
+      </div>
+    </details>
   )
 }
 

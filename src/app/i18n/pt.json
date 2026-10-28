@@ -1024,5 +1024,12 @@
   "enLinea.servidorPrincipal": "Principal",
   "enLinea.servidorPrueba": "De teste",
   "enLinea.kb": "{n} KB",
-  "enLinea.mb": "{n} MB"
+  "enLinea.mb": "{n} MB",
+  "enLinea.otroIdioma": "Outro idioma…",
+  "enLinea.buscarIdioma": "Escreva o nome ou o código",
+  "enLinea.ningunIdioma": "Nenhum idioma ponte se chama assim",
+  "enLinea.preguntando": "Perguntando ao servidor…",
+  "enLinea.enServidor": "No servidor · {n} livros",
+  "enLinea.enServidorUno": "No servidor · 1 livro",
+  "enLinea.preparandoIdioma": "Os textos desta língua estão sendo preparados; tente mais tarde"
 }

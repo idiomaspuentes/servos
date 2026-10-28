@@ -1024,5 +1024,12 @@
   "enLinea.servidorPrincipal": "Main",
   "enLinea.servidorPrueba": "For testing",
   "enLinea.kb": "{n} KB",
-  "enLinea.mb": "{n} MB"
+  "enLinea.mb": "{n} MB",
+  "enLinea.otroIdioma": "Another language…",
+  "enLinea.buscarIdioma": "Type its name or its code",
+  "enLinea.ningunIdioma": "No gateway language goes by that name",
+  "enLinea.preguntando": "Asking the server…",
+  "enLinea.enServidor": "On the server · {n} books",
+  "enLinea.enServidorUno": "On the server · 1 book",
+  "enLinea.preparandoIdioma": "The texts of this language are being prepared; try again later"
 }
