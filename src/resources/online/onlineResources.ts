@@ -14,6 +14,8 @@
  * - Staging keeps only what a kept list still names (`pruneStaging`), after an apply and at the end of the heal.
  * - The lists are kept in IndexedDB (`keptLists.ts`), read once into memory before the first run reads one and
  *   written through; those of languages no project reads go. localStorage keeps only the small keys.
+ * - Per window: the runs, the lock (`onlineLock.ts`) and the lists read into memory are this page's. Two tabs of the
+ *   web app (PWA) are not coordinated with each other (accepted, final review M7).
  *
  * One run (a check or a download) at a time: a second call joins the running one, or waits for it. No apply goes
  * beside a pack being opened (`onlineLock.ts`): it waits for the opening, plans again from the register as the pack

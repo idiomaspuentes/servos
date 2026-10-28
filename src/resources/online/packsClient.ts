@@ -178,7 +178,7 @@ export async function fetchList(
 ): Promise<ListAnswer> {
   let r: Request
   try {
-    r = await request(`${server}${compat}/${lang}`, etag ? { headers: { 'If-None-Match': etag } } : {}, opts)
+    r = await request(`${server}${compat}/${encodeURIComponent(lang)}`, etag ? { headers: { 'If-None-Match': etag } } : {}, opts)
   } catch {
     return NOT_AVAILABLE
   }

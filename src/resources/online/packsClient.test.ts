@@ -383,3 +383,15 @@ describe('a stalled link', () => {
 })
 const list2 = (w: ReturnType<typeof fakeWorker>, idleMs: number) =>
   fetchList(w.server, w.compat, 'es-419', null, { fetch: w.fetch, idleMs })
+
+describe('a language code in the list URL (fix round R1)', () => {
+  it('is encoded: a `/` or `?` in it stays in its path segment', async () => {
+    const urls: string[] = []
+    const fetchSpy = (async (input: RequestInfo | URL) => {
+      urls.push(String(input))
+      return new Response(JSON.stringify({ error: 'no packs for this language' }), { status: 404, headers: { 'Content-Type': 'application/json' } })
+    }) as typeof fetch
+    await fetchList('https://w.test/v2/packs/', 'f2.0-test', 'a/b?c', null, { fetch: fetchSpy })
+    expect(urls).toEqual(['https://w.test/v2/packs/f2.0-test/a%2Fb%3Fc'])
+  })
+})

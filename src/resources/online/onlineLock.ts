@@ -16,6 +16,10 @@
  *
  * No deadlock: an apply, once let in, never waits for an opening, and an opening never starts an apply. Nothing that
  * runs inside either may wait for the other (an apply never opens a pack; an opening never waits for Servos online).
+ *
+ * Per window: the lock lives in this page's memory. Two tabs of the web app (PWA) each have their own lock and their
+ * own runs, and are not coordinated with each other: accepted (final review, M7); the apps for phones and computers
+ * have one window.
  */
 
 /** Proof that a section holds the lock: given to `fn` by `whileOnlineIdle`, good only while that section lasts. */

@@ -8,7 +8,9 @@
  * added there would have to be kept in step with it.
  *
  * `onlineResources.ts` reads every row once when it starts and writes each change through; nothing here throws to a
- * caller that does not await it.
+ * caller that does not await it. What it read is that window's: two tabs of the web app (PWA) each keep their own
+ * copy in memory and write the same rows, the last write winning; they are not coordinated (accepted, final review
+ * M7).
  *
  * An open that does not settle (another tab holding the database, a broken browser store) must not hold the online
  * runs, which wait for the lists to be read and for their writes: reading gives up after `timeoutMs` (the lists then
