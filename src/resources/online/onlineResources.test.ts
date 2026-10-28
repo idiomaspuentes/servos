@@ -1861,3 +1861,58 @@ describe('fix round R1: every «noDisponible» is tried again', () => {
     }
   })
 })
+
+describe('fix round R2: the app\'s own waits', () => {
+  it('a connection back within the 300 s: the wait the app set goes, and the book comes at once (minor B)', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const d = device(w)
+    await startOnline([project('es-419', ['tit'])])
+    w.cutAfter(2)
+    await downloadBook('es-419', 'tit')
+    expect(onlineState().blocked).toEqual({ 'es-419': 'noDisponible' })
+    w.online()
+    d.clock += 60_000
+
+    const win = new EventTarget()
+    const page = Object.assign(new EventTarget(), { visibilityState: 'visible' })
+    const checks: Array<Promise<void>> = []
+    const stop = watchOnline(win, page, () => checks.push(checkForUpdates()))
+    win.dispatchEvent(new Event('online'))
+    await Promise.all(checks)
+    stop()
+    expect(onlineState().blocked).toEqual({})
+    expect(bookIsHere(d, 'tit')).toBe(true)
+  })
+
+  it('a wait the Worker asked for stays when the connection comes back', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    device(w)
+    w.setAnswer('list', ANSWERS.preparando, 1)
+    await startOnline([project('es-419', ['tit'])])
+    const win = new EventTarget()
+    const page = Object.assign(new EventTarget(), { visibilityState: 'visible' })
+    const checks: Array<Promise<void>> = []
+    const stop = watchOnline(win, page, () => checks.push(checkForUpdates()))
+    win.dispatchEvent(new Event('online'))
+    page.dispatchEvent(new Event('visibilitychange'))
+    await Promise.all(checks)
+    stop()
+    expect(requests(w, 'list')).toHaveLength(1)
+    expect(onlineState().blocked).toEqual({ 'es-419': 'preparando' })
+  })
+
+  it('languages blocked by the originals route\'s wait wait as long as it does, not 300 s (minor A)', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const d = device(w)
+    d.here = new Set(['tit'])
+    w.setAnswer('originals', { status: 429, body: { error: 'rate limited' }, headers: { 'Retry-After': '1200' } }, 1)
+    await startOnline([project('es-419', ['tit'])])
+    expect(onlineState().blocked).toEqual({ 'es-419': 'noDisponible' })
+    const kept = JSON.parse(d.storage.getItem('servos.enLinea.reintentar')!)
+    expect(Date.parse(kept['es-419'].until)).toBe(d.clock + 1_200_000)
+    expect(nextWaitEnd()).toBe(d.clock + 1_200_000)
+  })
+})

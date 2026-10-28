@@ -9,7 +9,7 @@
  * in view for hours with nothing waiting finds what is new the next time it comes back.
  */
 
-import { checkForUpdates, nextWaitEnd, onWaits } from './onlineResources'
+import { checkForUpdates, forgetOwnWaits, nextWaitEnd, onWaits } from './onlineResources'
 
 type Target = Pick<EventTarget, 'addEventListener' | 'removeEventListener'>
 
@@ -18,9 +18,11 @@ export type Waits = {
   next: () => number | null
   now: () => number
   changed: (fn: () => void) => () => void
+  /** Lets go the waits the app set for itself (not the Worker's), before the check of a connection or a view back. */
+  dropOwn?: () => void
 }
 
-const moduleWaits: Waits = { next: nextWaitEnd, now: () => Date.now(), changed: onWaits }
+const moduleWaits: Waits = { next: nextWaitEnd, now: () => Date.now(), changed: onWaits, dropOwn: forgetOwnWaits }
 
 /** Starts watching; what it returns stops it. The targets, the check and the waits are the page's unless given (tests). */
 export function watchOnline(
@@ -56,10 +58,16 @@ export function watchOnline(
   }
 
   const backInView = () => {
-    if (doc.visibilityState === 'visible') void check()
+    if (doc.visibilityState === 'visible') {
+      waits.dropOwn?.()
+      void check()
+    }
     time()
   }
-  const backOnline = () => void check()
+  const backOnline = () => {
+    waits.dropOwn?.()
+    void check()
+  }
   doc.addEventListener('visibilitychange', backInView)
   win.addEventListener('online', backOnline)
   const unwatch = waits.changed(time)

@@ -182,9 +182,11 @@ const d = (): OnlineDeps => (deps ??= defaults())
 /**
  * A wait the Worker asked for (`Retry-After`), or one set for a «noDisponible» it gave no time for, and the block it
  * leaves meanwhile (rebuilt from it at startup). `by: 'originals'` when the originals list, not the language, could
- * not come: that wait goes as soon as the originals do.
+ * not come: that wait goes as soon as the originals do. `own` when the app set it for itself (no `Retry-After` named
+ * it): those go when the connection comes back or the app comes back into view (`forgetOwnWaits`), so the check then
+ * asks again at once; the Worker's are kept to the second.
  */
-type Wait = { until: string; reason: Blocked | null; by?: 'originals' }
+type Wait = { until: string; reason: Blocked | null; by?: 'originals'; own?: true }
 
 type Memory = {
   listas: Record<string, KeptList>
@@ -213,7 +215,7 @@ const waits = (o: Record<string, unknown>): Record<string, Wait> =>
       const w = v as Partial<Wait> | null
       if (!w || typeof w !== 'object' || typeof w.until !== 'string') return []
       const reason = typeof w.reason === 'string' && BLOCKS.includes(w.reason) ? w.reason : null
-      return [[key, { until: w.until, reason, ...(w.by === 'originals' ? { by: w.by } : {}) }]]
+      return [[key, { until: w.until, reason, ...(w.by === 'originals' ? { by: w.by } : {}), ...(w.own === true ? { own: true as const } : {}) }]]
     }),
   )
 const isKept = (v: unknown): v is KeptList => {
@@ -378,8 +380,8 @@ function waitsMoved() {
   }
 }
 
-function retryLater(key: string, seconds: number, reason: Blocked | null, by?: 'originals') {
-  mem().reintentar[key] = { until: iso(d().now() + seconds * 1000), reason, ...(by ? { by } : {}) }
+function retryLater(key: string, seconds: number, reason: Blocked | null, mark: { by?: 'originals'; own?: true } = {}) {
+  mem().reintentar[key] = { until: iso(d().now() + seconds * 1000), reason, ...mark }
   save('reintentar')
   waitsMoved()
 }
@@ -395,9 +397,22 @@ function noWait(key: string) {
  * keeps then looks again while the app stays in view. Without it, a phone that keeps its connection but gets no data
  * would say «se intentará más tarde» until the person leaves the app.
  */
-function unavailableFor(language: string, by?: 'originals') {
-  if (!waiting(language)) retryLater(language, RETRY.unavailable, 'noDisponible', by)
+function unavailableFor(language: string, by?: 'originals', seconds: number = RETRY.unavailable) {
+  if (!waiting(language)) retryLater(language, seconds, 'noDisponible', { own: true, ...(by ? { by } : {}) })
   setBlocked(language, 'noDisponible')
+}
+
+/**
+ * The connection came back, or the app came back into view: the waits the app set for itself go (their blocks stay
+ * until the check that follows answers), so that check asks again at once instead of up to five minutes later. The
+ * waits the Worker asked for stay.
+ */
+export function forgetOwnWaits(): void {
+  const own = Object.keys(mem().reintentar).filter((key) => mem().reintentar[key].own)
+  if (!own.length) return
+  for (const key of own) delete mem().reintentar[key]
+  save('reintentar')
+  waitsMoved()
 }
 
 /** When the earliest wait the Worker asked for ends (a check then asks again), or null when nothing waits. */
@@ -705,7 +720,11 @@ async function resolveOriginals(ctx: Ctx): Promise<PartsList | null> {
       return found
     }
     const unavailable = () => {
-      for (const l of needing) if (!state.blocked[l]) unavailableFor(l, 'originals')
+      // Inside a wait the originals route asked for, they wait as long as it does, not RETRY.unavailable: the timer
+      // would otherwise lift nothing every five minutes.
+      const end = waitEnd(ORIGINALS_WAIT)
+      const seconds = end === null ? RETRY.unavailable : (end - d().now()) / 1000
+      for (const l of needing) if (!state.blocked[l]) unavailableFor(l, 'originals', seconds)
     }
     if (ctx.signal.aborted || !d().isOnline()) return null
     // Inside a wait the originals route asked for (kept across a restart): the languages that need it say why.
