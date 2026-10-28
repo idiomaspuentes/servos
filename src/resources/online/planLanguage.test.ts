@@ -160,3 +160,33 @@ describe('only what differs is planned again (final review, I2)', () => {
     expect(units).toEqual(chosen)
   })
 })
+
+describe('the final re-review: what the catalog row can tell', () => {
+  const TN = 'o/es-419/tn'
+
+  it('a missing stamp, on the device or in the list, never matches', () => {
+    const l = {
+      ...list('es-419', [entry('a', 'book', TN, 'tit')]),
+      resources: [{ key: TN, stamp: 'nostamp', role: 'language', subject: '', title: '', metadata: 'nostamp' }],
+    } as PartsList
+    const plan = planLanguage({ list: l, originals: null, register: new Map(), chosen: ['book tit'] })!
+    const worth = (device: string) =>
+      unitsWorthPlanning({ list: l, originals: null, register: new Map(), chosen: ['book tit'], plan, here: () => true, deviceStamp: () => device, listStamp: (m) => String(m) })
+    expect(worth('nostamp')).toEqual(['book tit'])
+  })
+
+  it('once a resource has a slot, its catalog row says nothing of the books a pack brought', () => {
+    const l = {
+      ...list('es-419', [entry('a', 'book', TN, 'tit'), entry('b', 'book', TN, 'rut')]),
+      resources: [{ key: TN, stamp: 'v2', role: 'language', subject: '', title: '', metadata: 'v2' }],
+    } as PartsList
+    const register = new Map([['book:o/es-419/tn:rut', { sha256: sha('b'), keys: [], list: 'es-419', at: '' }]])
+    const plan = planLanguage({ list: l, originals: null, register, chosen: ['book tit', 'book rut'] })!
+    const units = unitsWorthPlanning({
+      list: l, originals: null, register, chosen: ['book tit', 'book rut'], plan,
+      here: () => true, deviceStamp: () => 'v2', listStamp: (m) => String(m),
+    })
+    // Titus is planned: tn has a slot (Ruth's), so the row's v2 may be only Ruth's.
+    expect(units).toEqual(['book tit', 'book rut'])
+  })
+})

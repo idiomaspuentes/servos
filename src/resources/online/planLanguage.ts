@@ -141,8 +141,11 @@ export function planLanguage(input: {
  * without a slot: every part it needs fills an empty slot (none holds another sha: that is a part of this list on the
  * device, and only the register tells its content), the unit is here (`here`: a book the library opens; the shared
  * unit), and each of those parts' resources has on the device the release the lists name (`deviceStamp`, the
- * catalog row's `resourceContentStamp`, compared with that of the list's row, B's own measure). A book not here, a
- * resource the lists give no row for, or a part of another sha keeps the unit. The rest are left as they are, so
+ * catalog row's `resourceContentStamp`, compared with that of the list's row, B's own measure). The row is trusted
+ * only for a resource with no slot in the register: B writes the list's row before each unit it applies, so once one
+ * book of a resource came by parts, the row no longer tells the release of the books a pack brought. A book not
+ * here, a resource the lists give no row for, a missing stamp on either side, or a part of another sha keeps the
+ * unit. The rest are left as they are, so
  * their register stays empty, as after a whole pack.
  */
 export function unitsWorthPlanning(input: {
@@ -164,18 +167,27 @@ export function unitsWorthPlanning(input: {
     const unit = unitOfPart(p)
     needed.set(unit, [...(needed.get(unit) ?? []), p])
   }
+  // Resources with any slot: B rewrote their catalog row with the list's release when it applied that slot's unit, so
+  // the row tells the release of the books that came by parts, not of those a pack brought (slot ids are
+  // `kind:resource[:book][:group]`, B's `slotId`).
+  const slotted = new Set([...input.register.keys()].map((id) => id.split(':')[1]))
+  const sameRelease = (resource: string) => {
+    if (slotted.has(resource) || !listed.has(resource)) return false
+    const here = input.deviceStamp(resource)
+    const there = input.listStamp(listed.get(resource))
+    // A missing stamp on either side tells nothing: never a match.
+    return here !== NO_STAMP && there !== NO_STAMP && here === there
+  }
   return input.chosen.filter((unit) => {
     const parts = needed.get(unit)
     // Nothing to download (or only slots to remove): planned as it is.
     if (!parts?.length || !input.here(unit)) return true
-    return parts.some(
-      (p) =>
-        input.register.has(slotId(slotOfEntry(p))) ||
-        !listed.has(p.resource) ||
-        input.deviceStamp(p.resource) !== input.listStamp(listed.get(p.resource)),
-    )
+    return parts.some((p) => input.register.has(slotId(slotOfEntry(p))) || !sameRelease(p.resource))
   })
 }
+
+/** What `resourceContentStamp` gives a row with no release (or no row). */
+export const NO_STAMP = 'nostamp'
 
 /** The resources whose device release `unitsWorthPlanning` compares: those of the parts a plan downloads. */
 export const resourcesOf = (plan: PartsPlan): string[] => [...new Set(plan.download.map((p) => p.resource))]
