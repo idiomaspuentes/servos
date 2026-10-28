@@ -1737,3 +1737,43 @@ describe('the final re-review of F1', () => {
     expect(await bookDownloadSize('es-419', 'tit')).toBe(0)
   }, 5_000)
 })
+
+describe('a run that throws says so (final review)', () => {
+  it('a download whose apply throws is «noDisponible», logged, and nothing stays busy', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      device(w, {
+        applyParts: async () => {
+          throw new Error('broken store')
+        },
+      })
+      await startOnline([project('es-419', ['tit'])])
+      await downloadBook('es-419', 'tit')
+      expect(onlineState()).toMatchObject({ busy: null, blocked: { 'es-419': 'noDisponible' } })
+      expect(errors).toHaveBeenCalledWith('[Servos online]', expect.any(Error))
+    } finally {
+      errors.mockRestore()
+    }
+  })
+
+  it('a check that throws is only logged', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const stores = openResourceStores({ cache: unique('recursos'), catalog: unique('catalogo') })
+      device(w, { stores: () => stores })
+      // The register cannot be read: the check's planning throws.
+      stores.cache.getByPrefix = async () => {
+        throw new Error('broken store')
+      }
+      await startOnline([project('es-419', ['tit'])])
+      expect(onlineState()).toMatchObject({ busy: null, blocked: {} })
+      expect(errors).toHaveBeenCalledWith('[Servos online]', expect.any(Error))
+    } finally {
+      errors.mockRestore()
+    }
+  })
+})

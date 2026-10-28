@@ -578,8 +578,13 @@ function startRun(kind: Run['kind'], body: (ctx: Ctx) => Promise<void>, about: {
     try {
       await listsReady()
       await body(newCtx(kind, ctrl.signal))
-    } catch {
-      // Never to the caller: what failed is tried again at the next check.
+    } catch (error) {
+      // Never to the caller: what failed is tried again at the next check. But said: in the log always, and to the
+      // person when a download was going (the book says «No se pueden bajar ahora», not a «Bajar» as if nothing
+      // happened). A check that throws stays out of the person's way.
+      console.error('[Servos online]', error)
+      const language = run.language ?? state.busy?.language
+      if (language && run.generation === generation && !ctrl.signal.aborted) setBlocked(language, 'noDisponible')
     } finally {
       // What the run kept of the lists is written before it ends.
       await listWrites
