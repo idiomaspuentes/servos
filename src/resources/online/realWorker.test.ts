@@ -17,7 +17,7 @@ import { notesOfVerse, readChapter } from '../reading'
 import { openPartsStaging, openResourceStores, readPartsRegister } from '../store'
 import { downloadBook, onOnline, onlineState, setOnlineDeps, setOnlineProjects } from './onlineResources'
 import type { Progress } from './downloads'
-import type { KeptList } from './planLanguage'
+import { indexedDbKeptStore } from './keptLists'
 import { PACKS_SERVERS } from './packsServer'
 
 const staging = process.env.SERVOS_WORKER === 'staging'
@@ -27,7 +27,9 @@ describe.skipIf(!staging)('the real staging Worker', () => {
     const at = Date.now()
     const stores = openResourceStores({ cache: `real-worker-cache-${at}`, catalog: `real-worker-catalog-${at}` })
     const kept = new Map<string, string>()
+    const lists = indexedDbKeptStore(`real-worker-enlinea-${at}`)
     setOnlineDeps({
+      kept: lists,
       fetch: globalThis.fetch.bind(globalThis),
       server: () => PACKS_SERVERS.staging,
       stores: () => stores,
@@ -61,8 +63,7 @@ describe.skipIf(!staging)('the real staging Worker', () => {
     expect([...register.keys()].some((id) => id.startsWith('book:') && id.endsWith(':tit'))).toBe(true)
 
     // The text and the notes of es-419, as its list names them.
-    const lists = JSON.parse(kept.get('servos.enLinea.listas') ?? '{}') as Record<string, KeptList>
-    const resources = lists['es-419'].list.resources
+    const resources = (await lists.all())['es-419'].list.resources
     const textKey = resources.find((r) => r.subject === 'Aligned Bible' && r.key.endsWith('/glt'))?.key ?? resources.find((r) => r.subject === 'Aligned Bible')!.key
     const notesKey = resources.find((r) => r.subject === 'TSV Translation Notes')!.key
 

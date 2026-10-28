@@ -12,6 +12,8 @@
  *   `watchHelps` → `applyParts` → `refreshLibrary` → `keepHelpsChanges`, as when a pack is received.
  *
  * - Staging keeps only what a kept list still names (`pruneStaging`), after an apply and at the end of the heal.
+ * - The lists are kept in IndexedDB (`keptLists.ts`), read once into memory before the first run reads one and
+ *   written through; those of languages no project reads go. localStorage keeps only the small keys.
  *
  * One run (a check or a download) at a time: a second call joins the running one, or waits for it. No apply goes
  * beside a pack being opened (`onlineLock.ts`): it waits for the opening, plans again from the register as the pack
@@ -45,6 +47,7 @@ import { bookIsHere as realBookIsHere, refreshLibrary as realRefreshLibrary } fr
 import type { Project } from '../../app/projects/model'
 import { RESOURCE_VERSIONS, openPartsStaging, openResourceStores, readPartsRegister, type ResourceStores } from '../store'
 import { downloadParts, type Progress } from './downloads'
+import { indexedDbKeptStore, type KeptStore } from './keptLists'
 import { asOnlineApply } from './onlineLock'
 import { MAX_RETRY, fetchList, fetchOriginals, fetchPart, type ClientOptions } from './packsClient'
 import { packsServer, setPacksServer, type PacksServerId } from './packsServer'
@@ -93,7 +96,7 @@ export type OnlineState = {
 export type BookSize = number | null | undefined
 
 type WakeLock = { release(): Promise<void> }
-type StorageLike = { getItem(key: string): string | null; setItem(key: string, value: string): void }
+type StorageLike = { getItem(key: string): string | null; setItem(key: string, value: string): void; removeItem?(key: string): void }
 
 /** Everything the flow reaches outside itself. */
 export type OnlineDeps = {
@@ -102,7 +105,10 @@ export type OnlineDeps = {
   compat: () => string
   stores: () => ResourceStores
   staging: () => PartsStaging
+  /** The small keys (waits, «Ahora no», the last check). */
   storage: StorageLike | null
+  /** The languages' lists (`keptLists.ts`); null where there is no IndexedDB (then they last this visit). */
+  kept: KeptStore | null
   now: () => number
   isOnline: () => boolean
   whenNotTyping: (run: () => void) => () => void
@@ -122,8 +128,9 @@ const KEYS = {
   buscado: 'servos.enLinea.buscado',
   reintentar: 'servos.enLinea.reintentar',
   ahoraNo: 'servos.enLinea.ahoraNo',
-  listas: 'servos.enLinea.listas',
 } as const
+/** Where an earlier version kept the lists: moved to IndexedDB once (`loadLists`), then removed. */
+const LEGACY_LISTS = 'servos.enLinea.listas'
 
 let openedStores: ResourceStores | null = null
 let openedStaging: PartsStaging | null = null
@@ -142,6 +149,7 @@ function defaults(): OnlineDeps {
     stores: () => (openedStores ??= openResourceStores()),
     staging: () => (openedStaging ??= openPartsStaging()),
     storage,
+    kept: typeof indexedDB === 'undefined' ? null : indexedDbKeptStore(),
     now: () => Date.now(),
     isOnline: realIsOnline,
     whenNotTyping: realWhenNotTyping,
@@ -160,7 +168,8 @@ let deps: OnlineDeps | null = null
 const d = (): OnlineDeps => (deps ??= defaults())
 
 // ---------------------------------------------------------------------------------------------------------------
-// What is kept on the device: lists (for 304s and planning offline), waits, «Ahora no», the last check.
+// What is kept on the device: lists (for 304s and planning offline; IndexedDB), waits, «Ahora no», the last check
+// (localStorage).
 
 /** A wait the Worker asked for (`Retry-After`), and the block it leaves meanwhile (rebuilt from it at startup). */
 type Wait = { until: string; reason: Blocked | null }
@@ -208,12 +217,89 @@ function mem(): Memory {
     /* as never checked */
   }
   memory = {
-    listas: Object.fromEntries(Object.entries(readObject(KEYS.listas)).filter((e): e is [string, KeptList] => isKept(e[1]))),
+    // Read from IndexedDB at the start of the first run (`listsReady`).
+    listas: {},
     reintentar: waits(readObject(KEYS.reintentar)),
     ahoraNo: strings(readObject(KEYS.ahoraNo)),
     buscado,
   }
   return memory
+}
+
+/**
+ * The kept lists, read once into memory: every run waits for it before it reads one (the reads are synchronous
+ * after). Lists an earlier version kept in localStorage are moved over once, and the key removed when they all were.
+ */
+let listsLoaded: Promise<void> | null = null
+const listsReady = (): Promise<void> => (listsLoaded ??= loadLists())
+
+async function loadLists() {
+  const store = d().kept
+  let stored: Record<string, unknown> = {}
+  try {
+    stored = store ? await store.all() : {}
+  } catch {
+    /* unreadable now: the lists are asked for again */
+  }
+  const legacy = readObject(LEGACY_LISTS)
+  let moved = !!store
+  for (const [language, k] of Object.entries(legacy)) {
+    if (!isKept(k) || isKept(stored[language])) continue
+    stored[language] = k
+    try {
+      await store?.put(language, k)
+    } catch {
+      moved = false
+    }
+  }
+  // Without a store to move them to (or when one would not take them), they stay where they are, and are read from
+  // there for this visit.
+  if (moved) {
+    try {
+      d().storage?.removeItem?.(LEGACY_LISTS)
+    } catch {
+      /* removed the next time */
+    }
+  }
+  const m = mem()
+  for (const [language, k] of Object.entries(stored)) if (isKept(k) && !(language in m.listas)) m.listas[language] = k
+}
+
+/** Writes to the lists' store, one after another (a later write never lands before an earlier one). */
+let listWrites: Promise<void> = Promise.resolve()
+
+/** A language's list kept: in memory now, and written through. */
+function keepList(language: string, k: KeptList) {
+  mem().listas[language] = k
+  const store = d().kept
+  if (store) listWrites = listWrites.then(() => store.put(language, k)).catch(() => {})
+}
+
+/** A language's list forgotten: in memory now, and in the store. */
+function forgetList(language: string) {
+  delete mem().listas[language]
+  const store = d().kept
+  if (store) listWrites = listWrites.then(() => store.delete(language)).catch(() => {})
+}
+
+/**
+ * The lists of languages no project reads go (each weighs some 250 KB): once the lists are read, and never while a
+ * run is going (it may be asking for one); the projects as they are then decide.
+ */
+let dropping: Promise<void> | null = null
+function dropUnusedLists(): void {
+  dropping ??= (async () => {
+    try {
+      await listsReady()
+      while (current) await current.promise
+      const read = new Set(languagesOf(projects))
+      for (const language of Object.keys(mem().listas)) if (!read.has(language)) forgetList(language)
+    } catch {
+      /* dropped the next time */
+    } finally {
+      dropping = null
+    }
+  })()
 }
 
 /** Kept for the next times when it can be; for this visit in any case. */
@@ -365,6 +451,7 @@ export function setOnlineProjects(next: Project[]) {
   projects = next
   showOffer()
   moved()
+  dropUnusedLists()
 }
 
 /** What is new for each language (and the units it covers), offered one at a time in the projects' order. */
@@ -440,10 +527,13 @@ function startRun(kind: Run['kind'], body: (ctx: Ctx) => Promise<void>, about: {
   const run: Run = { kind, ...about, ctrl, generation, promise: Promise.resolve() }
   run.promise = (async () => {
     try {
+      await listsReady()
       await body(newCtx(kind, ctrl.signal))
     } catch {
       // Never to the caller: what failed is tried again at the next check.
     } finally {
+      // What the run kept of the lists is written before it ends.
+      await listWrites
       if (current === run) current = null
       if (run.generation === generation && state.busy) set({ busy: null })
     }
@@ -464,6 +554,9 @@ export function setOnlineDeps(over: Partial<OnlineDeps> = {}): void {
   generation++
   deps = { ...defaults(), ...over }
   memory = null
+  listsLoaded = null
+  listWrites = Promise.resolve()
+  dropping = null
   projects = []
   offers.clear()
   wanted.clear()
@@ -488,14 +581,13 @@ async function refreshList(language: string, ctx: Ctx, withEtag: boolean): Promi
     if (answer.kind === 'listo') {
       // Its originals list stays kept only if it still names the same one.
       const originals = before?.originals && before.originals.sha256 === answer.list.originals?.sha256 ? before.originals : undefined
-      mem().listas[language] = {
+      keepList(language, {
         etag: answer.etag,
         list: answer.list,
         at: iso(d().now()),
         server: d().server(),
         ...(originals ? { originals } : {}),
-      }
-      save('listas')
+      })
     } else if (!before) return 'skip'
     noWait(language)
     setBlocked(language, null)
@@ -511,8 +603,7 @@ async function refreshList(language: string, ctx: Ctx, withEtag: boolean): Promi
   // The Worker has no packs for it: its kept list names parts and originals no longer there, and is forgotten.
   if (blocked === 'sinIdioma' && language in mem().listas) {
     const wasUsable = !!kept(language)
-    delete mem().listas[language]
-    save('listas')
+    forgetList(language)
     if (wasUsable) moved()
   }
   setBlocked(language, blocked)
@@ -555,10 +646,7 @@ async function resolveOriginals(ctx: Ctx): Promise<PartsList | null> {
     switch (answer.kind) {
       case 'listo': {
         const entry = mem().listas[ref.from]
-        if (entry) {
-          mem().listas[ref.from] = { ...entry, originals: { sha256: ref.sha256, list: answer.list } }
-          save('listas')
-        }
+        if (entry) keepList(ref.from, { ...entry, originals: { sha256: ref.sha256, list: answer.list } })
         noWait(ORIGINALS_WAIT)
         cleared(needing, ctx)
         moved()
@@ -992,6 +1080,7 @@ export async function startOnline(next: Project[]): Promise<void> {
     if (key !== ORIGINALS_WAIT && wait.reason && waiting(key)) setBlocked(key, wait.reason)
   }
   waitsMoved()
+  dropUnusedLists()
   while (current) await current.promise
   return startRun('check', async (ctx) => {
     await heal(ctx)

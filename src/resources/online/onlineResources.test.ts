@@ -20,6 +20,7 @@ import {
   stopOnline,
   type OnlineDeps,
 } from './onlineResources'
+import { indexedDbKeptStore, type KeptStore } from './keptLists'
 import { whileOnlineIdle } from './onlineLock'
 
 type Worker = ReturnType<typeof fakeWorker>
@@ -88,19 +89,24 @@ async function publish(
 
 const memoryStorage = () => {
   const m = new Map<string, string>()
-  return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), m }
+  return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), removeItem: (k: string) => void m.delete(k), m }
 }
 
 const project = (helpsLanguage: string, books: string[], id = `p-${helpsLanguage}`): Project =>
   ({ id, helpsLanguage, books: books.map((code) => ({ code, phase: 'traduccion' })) }) as unknown as Project
 
 /** A device: fake stores, staging, clock, network, typing, and a library that knows a book once it was read again. */
-function device(w: Worker, over: Partial<OnlineDeps> = {}, keep?: { storage?: ReturnType<typeof memoryStorage>; stores?: ResourceStores; staging?: ReturnType<typeof stagingFrom> }) {
+function device(
+  w: Worker,
+  over: Partial<OnlineDeps> = {},
+  keep?: { storage?: ReturnType<typeof memoryStorage>; stores?: ResourceStores; staging?: ReturnType<typeof stagingFrom>; kept?: KeptStore },
+) {
   const d = {
     w,
     stores: keep?.stores ?? openResourceStores({ cache: unique('recursos'), catalog: unique('catalogo') }),
     staging: keep?.staging ?? stagingFrom(memoryByteStore()),
     storage: keep?.storage ?? memoryStorage(),
+    kept: keep?.kept ?? indexedDbKeptStore(unique('enlinea')),
     clock: Date.parse('2026-10-28T12:00:00Z'),
     online: true,
     typing: false,
@@ -127,6 +133,7 @@ function device(w: Worker, over: Partial<OnlineDeps> = {}, keep?: { storage?: Re
     stores: () => d.stores,
     staging: () => d.staging,
     storage: d.storage,
+    kept: d.kept,
     now: () => d.clock,
     isOnline: () => d.online,
     whenNotTyping: (run) => {
@@ -623,7 +630,7 @@ describe('at startup', () => {
     const d = device(w)
     // A first visit keeps the list and the originals list; nothing is downloaded.
     await startOnline([project('es-419', ['tit'])])
-    expect(JSON.parse(d.storage.getItem('servos.enLinea.listas')!)).toHaveProperty('es-419')
+    expect(await d.kept.all()).toHaveProperty('es-419')
     return { w, d, published }
   }
 
@@ -947,8 +954,11 @@ describe('which kept lists choose the originals', () => {
     w.lists.delete('xx')
     w.originals.delete(xx.ref.sha256)
     setOnlineProjects([project('es-419', ['tit'])])
-    // A new device session: what the last one fetched of O9 is not in memory, only its list in storage.
-    const again = device(w, {}, { ...d, storage: withoutOriginals(d.storage, 'xx') })
+    // A new device session: what the last one fetched of O9 is not kept, only its list.
+    const xxKept = (await d.kept.all()).xx
+    delete xxKept.originals
+    await d.kept.put('xx', xxKept)
+    const again = device(w, {}, d)
     await startOnline([project('es-419', ['tit'])])
     await downloadBook('es-419', 'tit')
     expect(await originalsHeld(again)).toEqual([es.orig[0].sha256])
@@ -959,11 +969,11 @@ describe('which kept lists choose the originals', () => {
     await publish(w, { language: 'xx', books: ['tit'] })
     const d = device(w)
     await startOnline([project('xx', ['tit'])])
-    expect(JSON.parse(d.storage.getItem('servos.enLinea.listas')!)).toHaveProperty('xx')
+    expect(await d.kept.all()).toHaveProperty('xx')
     w.lists.delete('xx')
     await checkForUpdates({ force: true })
     expect(onlineState().blocked).toEqual({ xx: 'sinIdioma' })
-    expect(JSON.parse(d.storage.getItem('servos.enLinea.listas')!)).not.toHaveProperty('xx')
+    expect(await d.kept.all()).not.toHaveProperty('xx')
     d.online = false
     expect(await bookDownloadSize('xx', 'tit')).toBeUndefined()
   })
@@ -983,16 +993,6 @@ describe('which kept lists choose the originals', () => {
     expect(onlineState().blocked).toEqual({ 'es-419': 'preparando', 'pt-br': 'noDisponible' })
   })
 })
-
-/** A copy of a storage without the originals list kept under one language (as if never fetched there). */
-function withoutOriginals(storage: ReturnType<typeof memoryStorage>, language: string) {
-  const copy = memoryStorage()
-  for (const [k, v] of storage.m) copy.setItem(k, v)
-  const listas = JSON.parse(copy.getItem('servos.enLinea.listas')!)
-  delete listas[language].originals
-  copy.setItem('servos.enLinea.listas', JSON.stringify(listas))
-  return copy
-}
 
 describe('staging keeps only what a list still names', () => {
   /** A part no list names, staged: what a download cut before the lists moved on leaves behind. */
@@ -1484,5 +1484,60 @@ describe('only what differs is downloaded again (final review, I2; spec §3 «co
     setOnlineProjects([project('es-419', ['tit'])])
     await d.staging.put(parts[0].sha256, w.parts.get(parts[0].sha256)!)
     expect(await bookDownloadSize('es-419', 'tit')).toBe(parts[1].bytes + orig[0].bytes)
+  })
+})
+
+describe('the lists are kept in IndexedDB (final review, I3)', () => {
+  it('a list is kept in its own database, not in localStorage, and plans without internet the next time', async () => {
+    const w = fakeWorker()
+    const published = await publish(w, { books: ['tit'] })
+    const d = device(w)
+    await startOnline([project('es-419', ['tit'])])
+    expect(Object.keys(await d.kept.all())).toEqual(['es-419'])
+    expect([...d.storage.m.keys()].filter((k) => k.startsWith('servos.enLinea.'))).not.toContain('servos.enLinea.listas')
+    expect(d.storage.m.get('servos.enLinea.listas')).toBeUndefined()
+    for (const p of [...published.parts, ...published.orig]) await d.staging.put(p.sha256, w.parts.get(p.sha256)!)
+    const again = device(w, {}, d)
+    again.online = false
+    await startOnline([project('es-419', ['tit'])])
+    expect(bookIsHere(again, 'tit')).toBe(true)
+  })
+
+  it('lists an earlier version kept in localStorage are moved over once, and the key goes', async () => {
+    const w = fakeWorker()
+    const published = await publish(w, { books: ['tit'] })
+    const first = device(w)
+    await startOnline([project('es-419', ['tit'])])
+    // As an earlier version kept them.
+    const storage = memoryStorage()
+    storage.setItem('servos.enLinea.listas', JSON.stringify(await first.kept.all()))
+    for (const p of [...published.parts, ...published.orig]) await first.staging.put(p.sha256, w.parts.get(p.sha256)!)
+    const again = device(w, {}, { storage, stores: first.stores, staging: first.staging })
+    again.online = false
+    await startOnline([project('es-419', ['tit'])])
+    expect(bookIsHere(again, 'tit')).toBe(true)
+    expect(storage.getItem('servos.enLinea.listas')).toBeNull()
+    expect(Object.keys(await again.kept.all())).toEqual(['es-419'])
+  })
+
+  it('the list of a language no project reads goes, but never while a run is going', async () => {
+    const w = fakeWorker()
+    await publish(w, { language: 'es-419', books: ['tit'] })
+    await publish(w, { language: 'pt-br', books: ['tit'] })
+    const d = device(w)
+    await startOnline([project('es-419', ['tit']), project('pt-br', ['tit'])])
+    expect(Object.keys(await d.kept.all()).sort()).toEqual(['es-419', 'pt-br'])
+
+    let open!: () => void
+    const gate = new Promise<void>((r) => (open = r))
+    w.gate((url) => (url.includes('/parts/') ? gate : Promise.resolve()))
+    const downloading = downloadBook('pt-br', 'tit')
+    await vi.waitFor(() => expect(w.inFlight).toBeGreaterThan(0))
+    setOnlineProjects([project('es-419', ['tit'])])
+    await new Promise((r) => setTimeout(r, 20))
+    expect(await d.kept.all()).toHaveProperty('pt-br')
+    open()
+    await downloading
+    await vi.waitFor(async () => expect(Object.keys(await d.kept.all())).toEqual(['es-419']))
   })
 })

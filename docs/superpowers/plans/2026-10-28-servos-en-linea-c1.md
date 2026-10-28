@@ -28,10 +28,11 @@ Opening a whole pack forgets the register slots it overwrites (`packs.ts`).
   …)` — compute it, do not hard-code it twice). Servers: production `https://tc-helps.mcp.servant.bible/v2/packs/`,
   staging `https://translation-helps-mcp-v2-preview.unfoldingword.workers.dev/v2/packs/`.
 - localStorage keys: `servos.enLinea.servidor`, `servos.enLinea.buscado` (ISO time of the last check),
-  `servos.enLinea.reintentar` (per language: ISO time), `servos.enLinea.ahoraNo` (per language: key of the offer
-  declined, a hash of its sorted part shas — not the list `code`, which is the build's and stays the same across
-  content releases),
-  `servos.enLinea.listas` (per language: `{etag, list}` kept for 304s and for planning offline).
+  `servos.enLinea.reintentar` (per language: `{until, reason}`, the wait and the block it leaves),
+  `servos.enLinea.ahoraNo` (per language: key of the offer declined, a hash of its sorted part shas — not the list
+  `code`, which is the build's and stays the same across content releases). The kept lists (per language: `{etag,
+  list}` for 304s and for planning offline) live in IndexedDB `servos-enlinea` (final review I3; an earlier
+  `servos.enLinea.listas` is moved there once).
 - Staging database name: `servos-partes`.
 - Queue: 4 parts at a time; originals parts first. Recheck interval: 3 h (`RECHECK_MS = 3 * 60 * 60 * 1000`). Free
   space rule: `quota - usage >= 2 * plan.bytes`.

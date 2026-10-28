@@ -11,7 +11,7 @@ import type { ListAnswer } from './packsClient'
 /** What stops a language's texts and helps from coming: codes the interface translates (`enLinea.*`). */
 export type Blocked = 'preparando' | 'actualizarApp' | 'noDisponible' | 'sinIdioma' | 'sinEspacio'
 
-/** A language's list as kept on the device (`servos.enLinea.listas`): for a 304, and for planning without internet. */
+/** A language's list as kept on the device (`keptLists.ts`, IndexedDB): for a 304, and for planning without internet. */
 export type KeptList = {
   etag: string | null
   list: PartsList
