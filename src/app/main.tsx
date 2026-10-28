@@ -12,6 +12,8 @@ import { openPacksInside } from './projects/packsInside'
 import { loadProjects } from './projects/model'
 import { moveWorkToProjects } from './projects/scope'
 import { I18nProvider } from './i18n/i18n'
+import { startOnline } from '../resources/online/onlineResources'
+import { watchOnline } from '../resources/online/watchOnline'
 import './miniapps/registry'
 // The app's letters, inside it so they are there without internet: Onest for the interface, Charis SIL for the scripture.
 import './fonts.css'
@@ -45,7 +47,16 @@ void openBooks()
     moveAlignmentsIn()
     // What the language packs left on this device; the projects' books are then read from it in the background.
     // …and, in the apps for phones and computers, the texts and helps they bring are opened the first time.
-    return openLibrary(projects).then(() => void openPacksInside())
+    // Then Servos online (spec §4), after those packs, so it plans from what they left: B's heal and a check, and a
+    // check again whenever the app comes back into view or the connection comes back. The projects are read again
+    // then: the person may have changed them while the packs opened.
+    return openLibrary(projects).then(() => {
+      const online = () => {
+        void startOnline(loadProjects())
+        watchOnline()
+      }
+      void openPacksInside().then(online, online)
+    })
   })
   .finally(() =>
     createRoot(document.getElementById('root')!).render(

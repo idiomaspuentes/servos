@@ -409,9 +409,21 @@ de elegir. Se dice, con «Ir a juntar» (`publishing.ts`, `door43Copy`, `knowsAl
     citas de sus notas; se dice qué paquete hace falta. Antes, un paquete más nuevo se saltaba sin decir nada.
   - **Compartir** llevará las versiones de las ayudas que usó quien manda el `.servos`, y Recibir dirá si un
     compañero tiene algo más nuevo y a quién pedírselo.
-  - **Con internet**, de vez en cuando y nunca mientras se escribe, se comparará con lo marcado `tc-ready` en Door43
-    para el idioma de ayudas de cada proyecto, y una tarjeta en Inicio lo sugerirá una vez por versión, con «Bajar y
-    preparar» y «Ahora no».
+  - **Con internet** (hecho; plan 3, parte C1, en `src/resources/online/`): los textos y las ayudas bajan por partes
+    del Worker de translation-helps, ya preparados, como en un paquete; ya no se mira Door43.
+    - Un libro que no está en el aparato se baja al elegirlo (al crearlo, o al abrirlo), con su tamaño a la vista
+      («Bajar sus textos y ayudas · 3,4 MB»). Mientras baja, se sigue usando la app.
+    - Al abrir la app, al volver a ella y al volver la conexión, se busca si hay algo nuevo: a lo sumo cada tres
+      horas, y nunca mientras se escribe. Lo nuevo de los libros que ya están se ofrece en Inicio con su tamaño,
+      con «Bajar» y «Ahora no» (que vale hasta la versión siguiente). Lo bajado se aplica sin interrumpir, en una
+      pausa de lo que se escribe, y después se dice qué cambió en lo ya traducido, como al recibir un paquete.
+    - Los paquetes de archivo siguen igual (los que trae la app, «Recibir textos y ayudas», SD o USB). Lo que un
+      paquete trae se vuelve a bajar por partes con internet: cuesta bytes, pero el aparato nunca cree tener lo que ya
+      no tiene.
+    - El servidor es el de producción. Con `?packs=staging` en la dirección se usa el de prueba, para probar; queda
+      elegido, y se cambia en «Acerca de Servos». Mientras producción no sirva partes, la app dice «No se pueden bajar
+      ahora».
+    - Más adelante (C2): bajar todo el idioma de una vez, bajar solo con wifi y saber cómo es la conexión.
   - **Qué cambió en lo ya traducido** (hecho): antes de abrir un paquete que reemplaza algo, para cada proyecto cuyo
     idioma de ayudas es el del paquete y cada libro suyo que el paquete trae, se leen sus versículos ya escritos (los
     de un tramo unido, cada uno): las notas de cada uno (id, texto y cita) y su TPL y TPS. Hay que leerlo antes,
