@@ -103,6 +103,26 @@ describe('fetchList', () => {
     expect(await list(w)).toEqual({ kind: 'noDisponible', retryAfter: 300 })
   })
 
+  it('reads Retry-After as an HTTP date and caps it at a day', async () => {
+    const { w } = await withList()
+    const inAMinute = new Date(Date.now() + 60_000).toUTCString()
+    w.setAnswer('list', { ...ANSWERS.preparando, headers: { 'Retry-After': inAMinute } }, 1)
+    const a = await list(w)
+    expect(a.kind === 'preparando' && a.retryAfter).toBeGreaterThan(50)
+    expect(a.kind === 'preparando' && a.retryAfter).toBeLessThanOrEqual(61)
+    w.setAnswer('list', { ...ANSWERS.preparando, headers: { 'Retry-After': '999999' } }, 1)
+    expect(await list(w)).toEqual({ kind: 'preparando', retryAfter: 86400 })
+    w.setAnswer('list', { ...ANSWERS.preparando, headers: { 'Retry-After': 'soon' } }, 1)
+    expect(await list(w)).toEqual({ kind: 'preparando', retryAfter: 600 })
+  })
+
+  it('treats a list whose entries are not parts as noDisponible', async () => {
+    const { w } = await withList()
+    const bad = { schema: 2, language: 'es-419', resources: [], parts: [{ sha256: 'xyz', bytes: 'many' }] }
+    w.setAnswer('list', { status: 200, body: bad })
+    expect(await list(w)).toEqual({ kind: 'noDisponible', retryAfter: 300 })
+  })
+
   it('says noDisponible when the network fails', async () => {
     const { w } = await withList()
     w.offline()
@@ -130,35 +150,51 @@ describe('fetchOriginals', () => {
   }
   const get = (w: ReturnType<typeof fakeWorker>, sha: string) => fetchOriginals(w.server, w.compat, sha, { fetch: w.fetch })
 
-  it('returns the list when the sha256 of its bytes is its name', async () => {
+  it('listo: the list, when the sha256 of its bytes is its name', async () => {
     const { w, orig, sha } = await withOriginals()
-    expect(await get(w, sha)).toEqual(orig)
+    expect(await get(w, sha)).toEqual({ kind: 'listo', list: orig })
     expect(w.calls[0].url).toBe(`${w.server}${w.compat}/originals/${sha}`)
   })
 
-  it('returns null when the bytes are not the name', async () => {
+  it('noEstá: a 404, so the caller fetches the language list again', async () => {
+    const { w } = await withOriginals()
+    expect(await get(w, 'b'.repeat(64))).toEqual({ kind: 'noEstá' })
+  })
+
+  it('espera: a 429, with its Retry-After or 60 seconds', async () => {
     const { w, sha } = await withOriginals()
+    w.setAnswer('originals', ANSWERS.limite, 1)
+    expect(await get(w, sha)).toEqual({ kind: 'espera', retryAfter: 30 })
+    w.setAnswer('originals', { status: 429, body: {} }, 1)
+    expect(await get(w, sha)).toEqual({ kind: 'espera', retryAfter: 60 })
+  })
+
+  it('falla: a sha256 that is not the name, HTML, a 500, a list that is not originals, a network error', async () => {
+    const { w, sha } = await withOriginals()
+    // The bytes of another list under this name.
     const other = await w.setOriginals({
       schema: 2, language: 'originals', parts: [], resources: [], code: 'other',
     } as unknown as PartsList)
     w.originals.set(sha, w.originals.get(other.sha256)!)
-    expect(await get(w, sha)).toBeNull()
-  })
-
-  it('returns null for a 404, HTML with a 200, a network error, and bytes that are not an originals list', async () => {
-    const { w, sha } = await withOriginals()
-    w.setAnswer('originals', ANSWERS.originalsNoEsta)
-    expect(await get(w, sha)).toBeNull()
+    expect(await get(w, sha)).toEqual({ kind: 'falla' })
     w.setAnswer('originals', ANSWERS.html)
-    expect(await get(w, sha)).toBeNull()
+    expect(await get(w, sha)).toEqual({ kind: 'falla' })
+    w.setAnswer('originals', { status: 500, body: 'boom', contentType: 'text/plain' })
+    expect(await get(w, sha)).toEqual({ kind: 'falla' })
     w.setAnswer('originals', null)
-    // Bytes whose sha256 does match their name, but which are not a list.
-    const html = new TextEncoder().encode('<html></html>')
-    const htmlSha = await sha256Hex(html)
-    w.originals.set(htmlSha, html)
-    expect(await get(w, htmlSha)).toBeNull()
+    // Bytes whose sha256 does match their name, but which are not an originals list.
+    const notOriginals = [
+      '<html></html>',
+      JSON.stringify({ schema: 2, language: 'es-419', parts: [], resources: [] }),
+    ]
+    for (const text of notOriginals) {
+      const bytes = new TextEncoder().encode(text)
+      const name = await sha256Hex(bytes)
+      w.originals.set(name, bytes)
+      expect(await get(w, name)).toEqual({ kind: 'falla' })
+    }
     w.offline()
-    expect(await get(w, sha)).toBeNull()
+    expect(await get(w, sha)).toEqual({ kind: 'falla' })
   })
 })
 
@@ -202,5 +238,32 @@ describe('fetchPart', () => {
     w.setAnswer('part', null)
     w.offline()
     expect(await get(w, part.sha256)).toEqual({ kind: 'falla' })
+  })
+})
+
+describe('fakeWorker', () => {
+  it('drops the connection after n requests, or on a forced network error, until it is online again', async () => {
+    const { w, part } = await withList()
+    w.cutAfter(1)
+    expect((await fetchPart(w.server, part.sha256, { fetch: w.fetch })).kind).toBe('listo')
+    expect(await fetchPart(w.server, part.sha256, { fetch: w.fetch })).toEqual({ kind: 'falla' })
+    w.online()
+    w.setAnswer('part', ANSWERS.red, 1)
+    expect(await fetchPart(w.server, part.sha256, { fetch: w.fetch })).toEqual({ kind: 'falla' })
+    expect((await fetchPart(w.server, part.sha256, { fetch: w.fetch })).kind).toBe('listo')
+  })
+
+  it('holds requests at a gate and counts how many are in flight at once', async () => {
+    const { w, part } = await withList()
+    let open!: () => void
+    const door = new Promise<void>((r) => (open = r))
+    w.gate(() => door)
+    const all = [1, 2, 3].map(() => fetchPart(w.server, part.sha256, { fetch: w.fetch }))
+    await new Promise((r) => setTimeout(r, 0))
+    expect(w.inFlight).toBe(3)
+    open()
+    await Promise.all(all)
+    expect(w.inFlight).toBe(0)
+    expect(w.maxInFlight).toBe(3)
   })
 })

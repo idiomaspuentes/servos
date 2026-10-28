@@ -24,14 +24,29 @@ export type PartAnswer =
   | { kind: 'espera'; retryAfter: number }
   | { kind: 'falla' }
 
+/** An originals list: the list, or why not. `noEstá` is a 404 (fetch the language list again), `falla` is a network
+ *  error, a sha256 that is not the name, or a body that is not an originals list. */
+export type OriginalsAnswer =
+  | { kind: 'listo'; list: PartsList }
+  | { kind: 'noEstá' }
+  | { kind: 'espera'; retryAfter: number }
+  | { kind: 'falla' }
+
 export type ClientOptions = { fetch?: typeof fetch }
 
 /** Seconds to wait when the Worker names no `Retry-After`. */
 export const RETRY = { preparing: 600, unavailable: 300, stopped: 3600, rateLimited: 60 } as const
 
+/** The longest wait a header can ask for: a day. */
+export const MAX_RETRY = 86400
+
+/** `Retry-After` is seconds or an HTTP date; anything else (or not in the future) is the fallback. Capped at a day. */
 const retryAfterOf = (res: Response, fallback: number): number => {
-  const n = Number(res.headers.get('Retry-After'))
-  return Number.isFinite(n) && n > 0 ? n : fallback
+  const raw = res.headers.get('Retry-After')?.trim()
+  let seconds = NaN
+  if (raw && /^\d+$/.test(raw)) seconds = Number(raw)
+  else if (raw) seconds = Math.ceil((Date.parse(raw) - Date.now()) / 1000)
+  return Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds, MAX_RETRY) : fallback
 }
 
 /** The JSON body of an answer, or null when it is not JSON (or not an object). */
@@ -44,11 +59,22 @@ async function jsonBody(res: Response): Promise<Record<string, unknown> | null> 
   }
 }
 
-/** A schema-2 parts list, of this language when one is named. */
+const isEntry = (p: unknown): boolean => {
+  const e = p as { sha256?: unknown; bytes?: unknown } | null
+  return !!e && typeof e === 'object' && typeof e.sha256 === 'string' && /^[0-9a-f]{64}$/.test(e.sha256) && typeof e.bytes === 'number'
+}
+
+/** A schema-2 parts list, of this language when one is named; its entries are checked shallowly. */
 function isPartsList(value: unknown, language?: string): value is PartsList {
   if (!value || typeof value !== 'object') return false
   const v = value as Record<string, unknown>
-  return v.schema === 2 && Array.isArray(v.parts) && Array.isArray(v.resources) && (!language || v.language === language)
+  return (
+    v.schema === 2 &&
+    Array.isArray(v.parts) &&
+    Array.isArray(v.resources) &&
+    (!language || v.language === language) &&
+    v.parts.every(isEntry)
+  )
 }
 
 const NOT_AVAILABLE: ListAnswer = { kind: 'noDisponible', retryAfter: RETRY.unavailable }
@@ -108,23 +134,25 @@ export async function fetchList(
   }
 }
 
-/** The originals list a language list names, when the sha256 of its bytes is its name; null for anything else. */
+/** The originals list a language list names, when the sha256 of its bytes is its name. */
 export async function fetchOriginals(
   server: string,
   compat: string,
   sha: string,
   opts: ClientOptions = {},
-): Promise<PartsList | null> {
+): Promise<OriginalsAnswer> {
   const doFetch = opts.fetch ?? globalThis.fetch
   try {
     const res = await doFetch(`${server}${compat}/originals/${sha}`)
-    if (res.status !== 200) return null
+    if (res.status === 404) return { kind: 'noEstá' }
+    if (res.status === 429) return { kind: 'espera', retryAfter: retryAfterOf(res, RETRY.rateLimited) }
+    if (res.status !== 200) return { kind: 'falla' }
     const bytes = new Uint8Array(await res.arrayBuffer())
-    if ((await sha256Hex(bytes)) !== sha) return null
+    if ((await sha256Hex(bytes)) !== sha) return { kind: 'falla' }
     const list: unknown = JSON.parse(new TextDecoder().decode(bytes))
-    return isPartsList(list) ? list : null
+    return isPartsList(list, 'originals') ? { kind: 'listo', list } : { kind: 'falla' }
   } catch {
-    return null
+    return { kind: 'falla' }
   }
 }
 

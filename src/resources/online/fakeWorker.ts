@@ -10,7 +10,14 @@ export const FAKE_SERVER = 'https://worker.test/v2/packs/'
 export const FAKE_COMPAT = 'f2.0-test'
 
 /** A forced answer: its status, body (JSON-encoded unless a string) and headers. */
-export type Forced = { status: number; body?: unknown; headers?: Record<string, string>; contentType?: string }
+export type Forced = {
+  status: number
+  body?: unknown
+  headers?: Record<string, string>
+  contentType?: string
+  /** Throw a network error instead of answering (status is then ignored). */
+  networkError?: boolean
+}
 
 /** The answers the Worker's contract names, ready to force. */
 export const ANSWERS = {
@@ -22,6 +29,8 @@ export const ANSWERS = {
   sinPacks: { status: 404, body: { error: 'no packs for this language' } },
   parteNoEsta: { status: 404, body: { error: 'part not found' } },
   originalsNoEsta: { status: 404, body: { error: 'originals list not found' } },
+  /** The connection drops: `fetch` throws. */
+  red: { status: 0, networkError: true },
   limite: { status: 429, body: { error: 'rate limited' }, headers: { 'Retry-After': '30' } },
   /** A captive portal: HTML with a 200. */
   html: { status: 200, body: '<html><body>Log in to the Wi-Fi</body></html>', contentType: 'text/html' },
@@ -39,8 +48,13 @@ export function fakeWorker(opts: FakeWorkerOptions = {}) {
   const forced: Record<Kind, { answer: Forced; left: number } | null> = { list: null, originals: null, part: null }
   const calls: { url: string; headers: Record<string, string> }[] = []
   let reachable = true
+  let cutLeft = Infinity
+  let hold: ((url: string) => Promise<void>) | null = null
+  let inFlight = 0
+  let maxInFlight = 0
 
   const reply = (f: Forced) => {
+    if (f.networkError) throw new TypeError('Failed to fetch')
     const text = typeof f.body === 'string' ? f.body : f.body === undefined ? '' : JSON.stringify(f.body)
     return new Response(text, {
       status: f.status,
@@ -56,10 +70,22 @@ export function fakeWorker(opts: FakeWorkerOptions = {}) {
   const bytesOf = (v: PartsList | Uint8Array) => (v instanceof Uint8Array ? v : new TextEncoder().encode(JSON.stringify(v)))
 
   const fetchFake = async (input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> => {
-    if (!reachable) throw new TypeError('Failed to fetch')
     const url = String(input)
     const headers = (init.headers ?? {}) as Record<string, string>
+    if (!reachable || cutLeft <= 0) throw new TypeError('Failed to fetch')
+    cutLeft--
     calls.push({ url, headers })
+    inFlight++
+    maxInFlight = Math.max(maxInFlight, inFlight)
+    try {
+      if (hold) await hold(url)
+      return await answer(url, headers)
+    } finally {
+      inFlight--
+    }
+  }
+
+  const answer = async (url: string, headers: Record<string, string>): Promise<Response> => {
     if (!url.startsWith(server)) return reply({ status: 404, body: 'not found', contentType: 'text/plain' })
     const path = url.slice(server.length)
 
@@ -114,6 +140,22 @@ export function fakeWorker(opts: FakeWorkerOptions = {}) {
     },
     online() {
       reachable = true
+      cutLeft = Infinity
+    },
+    /** The connection drops after `n` more requests are made: the next ones throw until `online()`. */
+    cutAfter(n: number) {
+      cutLeft = n
+    },
+    /** A hook awaited before each request is answered (hold it to keep requests in flight); `null` clears it. */
+    gate(fn: ((url: string) => Promise<void>) | null) {
+      hold = fn
+    },
+    /** Requests being answered right now, and the most there have been at once. */
+    get inFlight() {
+      return inFlight
+    },
+    get maxInFlight() {
+      return maxInFlight
     },
     /** Make a part from rows, keep its bytes under its sha256, and return its list entry. */
     async addPart(
