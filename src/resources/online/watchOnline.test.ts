@@ -41,3 +41,82 @@ describe('when Servos online looks again (spec §4)', () => {
     expect(check).not.toHaveBeenCalled()
   })
 })
+
+describe('the one timer for a wait the Worker asked for (final review, I1)', () => {
+  const waits = (at: { next: number | null }) => {
+    const listeners = new Set<() => void>()
+    return {
+      next: () => at.next,
+      now: () => Date.now(),
+      changed: (fn: () => void) => {
+        listeners.add(fn)
+        return () => void listeners.delete(fn)
+      },
+      tell: () => listeners.forEach((fn) => fn()),
+    }
+  }
+
+  it('fires once when the earliest wait ends, checks, and stops', async () => {
+    vi.useFakeTimers()
+    try {
+      const { win, doc } = page()
+      const at = { next: Date.now() + 600_000 as number | null }
+      const w = waits(at)
+      const check = vi.fn(async () => {
+        at.next = null
+      })
+      watchOnline(win, doc, check, w)
+      await vi.advanceTimersByTimeAsync(599_000)
+      expect(check).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(2_000)
+      expect(check).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(24 * 3_600_000)
+      expect(check).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('no timer while the app is hidden, nor once it stopped watching', async () => {
+    vi.useFakeTimers()
+    try {
+      const { win, doc } = page()
+      const at = { next: Date.now() + 60_000 as number | null }
+      const w = waits(at)
+      const check = vi.fn()
+      doc.visibilityState = 'hidden'
+      const stop = watchOnline(win, doc, check, w)
+      await vi.advanceTimersByTimeAsync(120_000)
+      expect(check).not.toHaveBeenCalled()
+      // Back in view: a check for coming back, then the timer for the wait.
+      doc.visibilityState = 'visible'
+      at.next = Date.now() + 60_000
+      doc.dispatchEvent(new Event('visibilitychange'))
+      expect(check).toHaveBeenCalledTimes(1)
+      stop()
+      await vi.advanceTimersByTimeAsync(120_000)
+      expect(check).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('a wait set later is timed too', async () => {
+    vi.useFakeTimers()
+    try {
+      const { win, doc } = page()
+      const at = { next: null as number | null }
+      const w = waits(at)
+      const check = vi.fn(async () => {
+        at.next = null
+      })
+      watchOnline(win, doc, check, w)
+      at.next = Date.now() + 30_000
+      w.tell()
+      await vi.advanceTimersByTimeAsync(31_000)
+      expect(check).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})

@@ -5,8 +5,9 @@
  * - At startup (`startOnline`), B's heal first: each language's current plan is applied as it is, which applies only
  *   when every part of it is staged and otherwise heals the catalog and receipts alone. Then a check, if online.
  * - A check (`checkForUpdates`) asks only for the lists (with their ETag), at most every three hours unless forced,
- *   and never before a wait the Worker asked for (`servos.enLinea.reintentar`). It finishes a download the person
- *   asked for and that was cut, and offers what is new, with its size.
+ *   and never before a wait the Worker asked for (`servos.enLinea.reintentar`, kept with the block it leaves, so a
+ *   restart inside it still says why); a language whose wait is over is asked at the next check, which `watchOnline`
+ *   times. It finishes a download the person asked for and that was cut, and offers what is new, with its size.
  * - A download (`downloadBook`, `downloadOffer`) goes into staging, then is applied once nobody is typing:
  *   `watchHelps` → `applyParts` → `refreshLibrary` → `keepHelpsChanges`, as when a pack is received.
  *
@@ -44,7 +45,7 @@ import type { Project } from '../../app/projects/model'
 import { RESOURCE_VERSIONS, openPartsStaging, openResourceStores, readPartsRegister, type ResourceStores } from '../store'
 import { downloadParts, type Progress } from './downloads'
 import { asOnlineApply } from './onlineLock'
-import { fetchList, fetchOriginals, fetchPart, type ClientOptions } from './packsClient'
+import { MAX_RETRY, fetchList, fetchOriginals, fetchPart, type ClientOptions } from './packsClient'
 import { packsServer, setPacksServer, type PacksServerId } from './packsServer'
 import {
   SHARED,
@@ -158,9 +159,12 @@ const d = (): OnlineDeps => (deps ??= defaults())
 // ---------------------------------------------------------------------------------------------------------------
 // What is kept on the device: lists (for 304s and planning offline), waits, «Ahora no», the last check.
 
+/** A wait the Worker asked for (`Retry-After`), and the block it leaves meanwhile (rebuilt from it at startup). */
+type Wait = { until: string; reason: Blocked | null }
+
 type Memory = {
   listas: Record<string, KeptList>
-  reintentar: Record<string, string>
+  reintentar: Record<string, Wait>
   ahoraNo: Record<string, string>
   buscado: string | null
 }
@@ -176,6 +180,17 @@ function readObject(key: string): Record<string, unknown> {
 }
 const strings = (o: Record<string, unknown>): Record<string, string> =>
   Object.fromEntries(Object.entries(o).filter((e): e is [string, string] => typeof e[1] === 'string'))
+const BLOCKS: readonly string[] = ['preparando', 'actualizarApp', 'noDisponible', 'sinIdioma', 'sinEspacio']
+/** Waits as kept: `{until, reason}`, or an ISO time alone (as an earlier version kept them). */
+const waits = (o: Record<string, unknown>): Record<string, Wait> =>
+  Object.fromEntries(
+    Object.entries(o).flatMap(([key, v]): Array<[string, Wait]> => {
+      if (typeof v === 'string') return [[key, { until: v, reason: null }]]
+      const w = v as Partial<Wait> | null
+      if (!w || typeof w !== 'object' || typeof w.until !== 'string') return []
+      return [[key, { until: w.until, reason: typeof w.reason === 'string' && BLOCKS.includes(w.reason) ? w.reason : null }]]
+    }),
+  )
 const isKept = (v: unknown): v is KeptList => {
   const k = v as Partial<KeptList> | null
   return !!k && typeof k === 'object' && typeof k.at === 'string' && !!k.list && k.list.schema === 2 && Array.isArray(k.list.parts)
@@ -191,7 +206,7 @@ function mem(): Memory {
   }
   memory = {
     listas: Object.fromEntries(Object.entries(readObject(KEYS.listas)).filter((e): e is [string, KeptList] => isKept(e[1]))),
-    reintentar: strings(readObject(KEYS.reintentar)),
+    reintentar: waits(readObject(KEYS.reintentar)),
     ahoraNo: strings(readObject(KEYS.ahoraNo)),
     buscado,
   }
@@ -235,18 +250,64 @@ function projectLists(): Record<string, KeptList> {
 const ORIGINALS_WAIT = 'originals'
 
 const iso = (ms: number) => new Date(ms).toISOString()
-const waiting = (language: string) => {
-  const until = Date.parse(mem().reintentar[language] ?? '')
-  return Number.isFinite(until) && until > d().now()
+
+/**
+ * When a key's wait ends, while it holds: null when there is none, it is over, or it ends later than the Worker can ask
+ * for (`MAX_RETRY`): a time kept before the clock was set back would otherwise hold for days.
+ */
+function waitEnd(key: string): number | null {
+  const until = Date.parse(mem().reintentar[key]?.until ?? '')
+  const now = d().now()
+  return Number.isFinite(until) && until > now && until <= now + MAX_RETRY * 1000 ? until : null
 }
-function retryLater(language: string, seconds: number) {
-  mem().reintentar[language] = iso(d().now() + seconds * 1000)
-  save('reintentar')
+const waiting = (key: string) => waitEnd(key) !== null
+/** A wait was kept for this key and holds no more: its list is asked again at the next check, whatever `RECHECK_MS`. */
+const waitOver = (key: string) => key in mem().reintentar && !waiting(key)
+
+/** What waits are told when one is kept or let go (`watchOnline` times the earliest). */
+const waitListeners = new Set<() => void>()
+function waitsMoved() {
+  for (const fn of waitListeners) {
+    try {
+      fn()
+    } catch {
+      /* a listener's own trouble */
+    }
+  }
 }
-function noWait(language: string) {
-  if (!(language in mem().reintentar)) return
-  delete mem().reintentar[language]
+
+function retryLater(key: string, seconds: number, reason: Blocked | null) {
+  mem().reintentar[key] = { until: iso(d().now() + seconds * 1000), reason }
   save('reintentar')
+  waitsMoved()
+}
+function noWait(key: string) {
+  if (!(key in mem().reintentar)) return
+  delete mem().reintentar[key]
+  save('reintentar')
+  waitsMoved()
+}
+
+/** When the earliest wait the Worker asked for ends (a check then asks again), or null when nothing waits. */
+export function nextWaitEnd(): number | null {
+  let next: number | null = null
+  for (const key of Object.keys(mem().reintentar)) {
+    const end = waitEnd(key)
+    if (end !== null && (next === null || end < next)) next = end
+  }
+  return next
+}
+
+/** Told whenever a wait is kept or let go. */
+export function onWaits(fn: () => void): () => void {
+  waitListeners.add(fn)
+  return () => void waitListeners.delete(fn)
+}
+
+/** The last check, unless it is in the future (a clock set back): then as never checked. */
+function lastCheck(): number {
+  const last = Date.parse(mem().buscado ?? '')
+  return Number.isFinite(last) && last <= d().now() ? last : -Infinity
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -356,6 +417,7 @@ function served(language: string, units: Iterable<string>) {
 // Runs: one at a time.
 
 type Ctx = {
+  kind: Run['kind']
   signal: AbortSignal
   /** An originals list the Worker did not have made its language list be asked again (once per run). */
   originalsRetried: boolean
@@ -364,7 +426,7 @@ type Ctx = {
   /** Languages refused in this run: nothing more is asked or planned for them. */
   stopped: Set<string>
 }
-const newCtx = (signal: AbortSignal): Ctx => ({ signal, originalsRetried: false, replanned: new Set(), stopped: new Set() })
+const newCtx = (kind: Run['kind'], signal: AbortSignal): Ctx => ({ kind, signal, originalsRetried: false, replanned: new Set(), stopped: new Set() })
 
 type Run = { kind: 'check' | 'download' | 'size'; language?: string; units?: Set<string>; ctrl: AbortController; promise: Promise<void>; generation: number }
 let current: Run | null = null
@@ -375,7 +437,7 @@ function startRun(kind: Run['kind'], body: (ctx: Ctx) => Promise<void>, about: {
   const run: Run = { kind, ...about, ctrl, generation, promise: Promise.resolve() }
   run.promise = (async () => {
     try {
-      await body(newCtx(ctrl.signal))
+      await body(newCtx(kind, ctrl.signal))
     } catch {
       // Never to the caller: what failed is tried again at the next check.
     } finally {
@@ -440,7 +502,9 @@ async function refreshList(language: string, ctx: Ctx, withEtag: boolean): Promi
     return 'ok'
   }
   const { blocked, retryAfter } = blockedByList(answer)
-  if (retryAfter) retryLater(language, retryAfter)
+  // The block is kept with its wait, so a restart inside it still says why; a refusal with no wait keeps none.
+  if (retryAfter) retryLater(language, retryAfter, blocked)
+  else noWait(language)
   // The Worker has no packs for it: its kept list names parts and originals no longer there, and is forgotten.
   if (blocked === 'sinIdioma' && language in mem().listas) {
     const wasUsable = !!kept(language)
@@ -474,12 +538,17 @@ async function resolveOriginals(ctx: Ctx): Promise<PartsList | null> {
       cleared(needing, ctx)
       return found
     }
-    if (ctx.signal.aborted || !d().isOnline() || waiting(ORIGINALS_WAIT)) return null
-    const answer = await fetchOriginals(d().server(), d().compat(), ref.sha256, clientOpts(ctx))
-    if (ctx.signal.aborted) return null
     const unavailable = () => {
       for (const l of needing) if (!state.blocked[l]) setBlocked(l, 'noDisponible')
     }
+    if (ctx.signal.aborted || !d().isOnline()) return null
+    // Inside a wait the originals route asked for (kept across a restart): the languages that need it say why.
+    if (waiting(ORIGINALS_WAIT)) {
+      unavailable()
+      return null
+    }
+    const answer = await fetchOriginals(d().server(), d().compat(), ref.sha256, clientOpts(ctx))
+    if (ctx.signal.aborted) return null
     switch (answer.kind) {
       case 'listo': {
         const entry = mem().listas[ref.from]
@@ -504,7 +573,7 @@ async function resolveOriginals(ctx: Ctx): Promise<PartsList | null> {
         unavailable()
         return null
       case 'espera':
-        retryLater(ORIGINALS_WAIT, answer.retryAfter)
+        retryLater(ORIGINALS_WAIT, answer.retryAfter, null)
         unavailable()
         return null
       case 'falla':
@@ -514,9 +583,14 @@ async function resolveOriginals(ctx: Ctx): Promise<PartsList | null> {
   }
 }
 
-/** Once the originals are had, a `noDisponible` they left goes (not one a wait of the language's own still holds). */
+/**
+ * Once the originals are had, a `noDisponible` they left goes (not one a wait of the language's own still holds). A
+ * size run lifts only those of the languages whose sizes it was asked: another's may be a download cut, which only its
+ * own next try tells.
+ */
 function cleared(languages: string[], ctx: Ctx) {
   for (const l of languages) {
+    if (ctx.kind === 'size' && ![...sizeAsks.values()].some((ask) => ask.language === l)) continue
     if (state.blocked[l] === 'noDisponible' && !waiting(l) && !ctx.stopped.has(l)) setBlocked(l, null)
   }
 }
@@ -718,7 +792,7 @@ async function fetchAndApply(language: string, ctx: Ctx, originalsIn: PartsList 
         originals = await resolveOriginals(ctx)
         continue
       case 'espera':
-        retryLater(language, result.retryAfter)
+        retryLater(language, result.retryAfter, 'noDisponible')
         setBlocked(language, 'noDisponible')
         return
       case 'sinEspacio':
@@ -822,8 +896,7 @@ async function check(force: boolean, ctx: Ctx) {
   // The lists are asked for, and what they bring planned, at a pause in the typing (spec §4).
   if (!(await untilNotTyping(ctx.signal))) return
   const languages = languagesOf(projects)
-  const last = Date.parse(mem().buscado ?? '')
-  if (force || !(d().now() - last < RECHECK_MS)) {
+  if (force || !(d().now() - lastCheck() < RECHECK_MS)) {
     for (const language of languages) {
       if (ctx.signal.aborted) return
       await refreshList(language, ctx, true)
@@ -833,6 +906,13 @@ async function check(force: boolean, ctx: Ctx) {
     if (languages.length) {
       mem().buscado = iso(d().now())
       save('buscado')
+    }
+  } else {
+    // Between the three-hourly checks, a language whose wait is over, or whose download was asked for, is asked again
+    // now: a 202 asked for ten minutes, not three hours.
+    for (const language of languages) {
+      if (ctx.signal.aborted) return
+      if (waitOver(language) || (wanted.has(language) && !waiting(language))) await refreshList(language, ctx, true)
     }
   }
   const originals = await resolveOriginals(ctx)
@@ -872,6 +952,12 @@ async function runDownload(language: string): Promise<void> {
 export async function startOnline(next: Project[]): Promise<void> {
   projects = next
   moved()
+  // What a wait kept from the last visit still blocks says so from the start: inside a `parts-off` hour the book
+  // shows why, not a «Bajar» that would ask nothing.
+  for (const [key, wait] of Object.entries(mem().reintentar)) {
+    if (key !== ORIGINALS_WAIT && wait.reason && waiting(key)) setBlocked(key, wait.reason)
+  }
+  waitsMoved()
   while (current) await current.promise
   return startRun('check', async (ctx) => {
     await heal(ctx)
@@ -992,6 +1078,7 @@ export async function choosePacksServer(id: PacksServerId): Promise<void> {
   setPacksServer(id)
   mem().reintentar = {}
   save('reintentar')
+  waitsMoved()
   mem().buscado = ''
   save('buscado')
   offers.clear()

@@ -12,6 +12,7 @@ import {
   declineOffer,
   downloadBook,
   downloadOffer,
+  nextWaitEnd,
   onOnline,
   onlineState,
   setOnlineDeps,
@@ -1336,5 +1337,73 @@ describe('small guards (Task 8)', () => {
     expect(d.storage.getItem('servos.enLinea.buscado')).toBeNull()
     await startOnline([project('es-419', ['tit'])])
     expect(requests(w, 'list')).toHaveLength(1)
+  })
+})
+
+describe('waits and blocks agree (final review, I1)', () => {
+  it('a restart inside a `parts-off` wait shows the notice, not a silent «Bajar»', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const first = device(w)
+    w.setAnswer('list', ANSWERS.partsOff)
+    await startOnline([project('es-419', ['tit'])])
+    expect(onlineState().blocked).toEqual({ 'es-419': 'noDisponible' })
+    expect(JSON.parse(first.storage.getItem('servos.enLinea.reintentar')!)['es-419']).toMatchObject({ reason: 'noDisponible' })
+
+    // The app is closed and opened again an hour later... minus a minute: the wait (an hour) still holds.
+    const again = device(w, {}, first)
+    again.clock += 59 * 60_000
+    const lists = requests(w, 'list').length
+    await startOnline([project('es-419', ['tit'])])
+    expect(onlineState().blocked).toEqual({ 'es-419': 'noDisponible' })
+    expect(requests(w, 'list')).toHaveLength(lists)
+    expect(await bookDownloadSize('es-419', 'tit')).toBeUndefined()
+  })
+
+  it('a 202 with Retry-After 600 is asked again after 600 s, not after three hours', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const d = device(w)
+    w.setAnswer('list', ANSWERS.preparando, 1)
+    await startOnline([project('es-419', ['tit'])])
+    expect(onlineState().blocked).toEqual({ 'es-419': 'preparando' })
+    expect(nextWaitEnd()).toBe(d.clock + 600_000)
+    d.clock += 300_000
+    await checkForUpdates()
+    expect(requests(w, 'list')).toHaveLength(1)
+    d.clock += 301_000
+    await checkForUpdates()
+    expect(requests(w, 'list')).toHaveLength(2)
+    expect(onlineState().blocked).toEqual({})
+    expect(nextWaitEnd()).toBeNull()
+  })
+
+  it('a time saved in the future (a clock set back) is ignored', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const storage = memoryStorage()
+    const now = Date.parse('2026-10-28T12:00:00Z')
+    // A wait of two days, saved the old way (an ISO time), and a last check tomorrow.
+    storage.setItem('servos.enLinea.reintentar', JSON.stringify({ 'es-419': new Date(now + 2 * 86_400_000).toISOString() }))
+    storage.setItem('servos.enLinea.buscado', new Date(now + 86_400_000).toISOString())
+    device(w, {}, { storage })
+    await startOnline([project('es-419', ['tit'])])
+    expect(requests(w, 'list')).toHaveLength(1)
+    expect(onlineState().blocked).toEqual({})
+  })
+
+  it('a size worked out does not lift another language\'s «noDisponible»', async () => {
+    const w = fakeWorker()
+    await publish(w, { language: 'es-419', books: ['tit'] })
+    await publish(w, { language: 'pt-br', books: ['tit'] })
+    device(w)
+    await startOnline([project('es-419', ['tit']), project('pt-br', ['tit'])])
+    // es-419's download is cut: «noDisponible», with no wait.
+    w.cutAfter(2)
+    await downloadBook('es-419', 'tit')
+    expect(onlineState().blocked).toEqual({ 'es-419': 'noDisponible' })
+    w.online()
+    expect(await bookDownloadSize('pt-br', 'tit')).toBeGreaterThan(0)
+    expect(onlineState().blocked).toEqual({ 'es-419': 'noDisponible' })
   })
 })
