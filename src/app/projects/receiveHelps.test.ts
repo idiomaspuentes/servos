@@ -65,3 +65,37 @@ describe('a received pack and what it changed, under the online lock', () => {
     expect(log).toEqual(['openPack (held)', 'refreshLibrary'])
   })
 })
+
+describe('what the pack replaces is decided under the lock (fix round R1)', () => {
+  it('after an apply in flight, from the device as that apply left it', async () => {
+    const log: string[] = []
+    let finish!: () => void
+    const applying = asOnlineApply(() => new Promise<void>((r) => (finish = r)).then(() => void log.push('applied')))
+    const deps = fakes(log, Promise.resolve())
+    let replaced: readonly string[] = []
+    const open = deps.openPack
+    deps.openPack = async (st, bytes, options) => {
+      replaced = options?.replace ?? []
+      return open(st, bytes, options)
+    }
+    const receiving = openPackSeeingChanges(
+      stores,
+      new Uint8Array(),
+      {
+        language: 'es-419',
+        books: ['tit'],
+        replace: () => {
+          log.push('decide')
+          return log.includes('applied') ? ['after'] : ['before']
+        },
+      },
+      deps,
+    )
+    await tick()
+    expect(log).toEqual([])
+    finish()
+    await Promise.all([applying, receiving])
+    expect(log.slice(0, 3)).toEqual(['applied', 'decide', 'watchHelps'])
+    expect(replaced).toEqual(['after'])
+  })
+})

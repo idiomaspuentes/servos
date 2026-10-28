@@ -28,17 +28,26 @@ const REAL: ReceiveDeps = {
 
 /**
  * Opens a received pack and says what it changed. `replace` names what it takes the place of (`packAgainstDevice`);
- * with nothing replaced nothing translated changes, and nothing is read before. Throws what opening the pack throws.
+ * with nothing replaced nothing translated changes, and nothing is read before. Given as a function, it is decided
+ * inside the section, from the device as an online apply that landed while the summary was open left it. Throws
+ * what opening the pack throws.
  */
 export function openPackSeeingChanges(
   stores: ResourceStores,
   bytes: Uint8Array | ArrayBuffer,
-  pack: { language: string; books: string[]; replace: readonly string[]; file?: string; onProgress?: (done: number, total: number) => void },
+  pack: {
+    language: string
+    books: string[]
+    replace: readonly string[] | (() => readonly string[])
+    file?: string
+    onProgress?: (done: number, total: number) => void
+  },
   deps: ReceiveDeps = REAL,
 ): Promise<{ result: ImportPackResult; changed: BookChanges[] }> {
   return whileOnlineIdle(async (held) => {
-    const watched = pack.replace.length ? await deps.watchHelps(stores, pack.language, pack.books).catch(() => []) : []
-    const result = await deps.openPack(stores, bytes, { replace: pack.replace, file: pack.file, onProgress: pack.onProgress, held })
+    const replace = typeof pack.replace === 'function' ? pack.replace() : pack.replace
+    const watched = replace.length ? await deps.watchHelps(stores, pack.language, pack.books).catch(() => []) : []
+    const result = await deps.openPack(stores, bytes, { replace, file: pack.file, onProgress: pack.onProgress, held })
     await deps.refreshLibrary()
     const changed = watched.length ? await deps.keepHelpsChanges(stores, pack.language, watched).catch((): BookChanges[] => []) : []
     return { result, changed }

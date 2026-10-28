@@ -172,7 +172,7 @@ export function ReceivePack({
                 type="button"
                 className={bringsAnything(step.against) ? 'button-primary' : 'button-secondary'}
                 onClick={async () => {
-                  const { bytes, summary, file, against } = step
+                  const { bytes, summary, file } = step
                   setStep({ kind: 'opening', summary, done: 0, total: 0 })
                   // The screen stays on while it opens: a phone that sleeps can stop it halfway.
                   const lock = await (navigator as { wakeLock?: { request(type: 'screen'): Promise<{ release(): Promise<void> }> } }).wakeLock
@@ -183,11 +183,14 @@ export function ReceivePack({
                     // What the verses already translated read in the resources it replaces, read before their rows
                     // are written over, to say afterwards what changed in them; no downloaded parts land meanwhile.
                     // Only what the pack has newer, or what is here and can no longer be read, takes the place of this
-                    // device's copy; an older one leaves it as it is.
+                    // device's copy; an older one leaves it as it is. Decided again under the lock: an online apply
+                    // may have landed while the summary was open.
                     const { changed } = await openPackSeeingChanges(stores, bytes, {
                       language: summary.language,
                       books: booksOf(summary),
-                      replace: against.replace,
+                      replace: () =>
+                        packAgainstDevice({ resources: summary.resources, books: summary.kind === 'book' ? summary.books : undefined }, copiesOnDevice())
+                          .replace,
                       file,
                       onProgress: (done, total) => setStep({ kind: 'opening', summary, done, total }),
                     })
