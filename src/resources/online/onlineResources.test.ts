@@ -28,8 +28,8 @@ const meta = (key: string, type: string, subject: string) => {
   const [owner, language, resourceId] = key.split('/')
   return { resourceKey: key, owner, language, resourceId, type, subject, title: key, release: { tag_name: 'v1', published_at: '2026-10-01T00:00:00Z' } }
 }
-const resource = (key: string, type: string, subject: string, role: 'language' | 'original') => ({
-  key, stamp: 'v1#2026-10-01T00:00:00Z', role, subject, title: key, metadata: meta(key, type, subject),
+const resource = (key: string, type: string, subject: string, role: 'language' | 'original', stamp = 'v1#2026-10-01T00:00:00Z') => ({
+  key, stamp, role, subject, title: key, metadata: meta(key, type, subject),
 })
 const row = (layer: PartRow['layer'], key: string, text: string): PartRow => ({ layer, key, value: { content: text } })
 
@@ -38,17 +38,19 @@ const unique = (what: string) => `${what}-${Date.now()}-${n++}`
 
 /**
  * What the Worker serves for a language: an originals list with each book's original, and a language list with each
- * book's notes and the shared titles. `version` changes the notes (new shas), `originals` the originals list.
+ * book's notes and the shared titles. `version` changes the notes (new shas), `originals` the originals list (a
+ * higher digit is a later release of the original, unless `stamp` says otherwise).
  */
-async function publish(w: Worker, opts: { language?: string; books: string[]; version?: string; originals?: string; code?: string }) {
+async function publish(w: Worker, opts: { language?: string; books: string[]; version?: string; originals?: string; stamp?: string; code?: string }) {
   const language = opts.language ?? 'es-419'
   const v = opts.version ?? '1'
   const o = opts.originals ?? '1'
+  const stamp = opts.stamp ?? `v${o}#2026-10-0${o}T00:00:00Z`
   const orig: PartEntry[] = []
   for (const b of opts.books) orig.push(await w.addPart({ kind: 'original', resource: UGNT, book: b }, [row('sot', `scripture-usj:${UGNT}:${b}:1`, `ugnt ${o} ${b}`)]))
   const originals = {
     schema: 2, language: 'originals', compat: w.compat, code: `orig-${o}`, versions: RESOURCE_VERSIONS,
-    resources: [resource(UGNT, 'scripture', 'Greek New Testament', 'original')], parts: orig,
+    resources: [resource(UGNT, 'scripture', 'Greek New Testament', 'original', stamp)], parts: orig,
   } as unknown as PartsList
   const ref = await w.setOriginals(originals)
   const tn = tnOf(language)
@@ -63,6 +65,8 @@ async function publish(w: Worker, opts: { language?: string; books: string[]; ve
     versions: RESOURCE_VERSIONS,
     resources: [resource(tn, 'notes', 'TSV Translation Notes', 'language'), resource(tw, 'words', 'Translation Words', 'language')],
     originals: ref,
+    // The stamps the build read: the originals' release among them.
+    stamps: { [UGNT]: stamp, [tn]: 'v1#2026-10-01T00:00:00Z', [tw]: 'v1#2026-10-01T00:00:00Z' },
   } as Partial<PartsList>)
   return { list, originals, ref, parts, orig }
 }
@@ -121,6 +125,7 @@ function device(w: Worker, over: Partial<OnlineDeps> = {}, keep?: { storage?: Re
       d.locks.taken++
       return { release: async () => void d.locks.released++ }
     },
+    bookIsHere: (book) => d.here.has(book),
     refreshLibrary: async () => {
       d.log.push('refreshLibrary')
       const register = await readPartsRegister(d.stores)
@@ -277,6 +282,8 @@ describe('a dropped connection, and one run at a time', () => {
     const w = fakeWorker()
     await publish(w, { books: ['tit', 'rut', 'jon'] })
     const d = device(w)
+    // The three books came in whole packs: here, without slots.
+    d.here = new Set(['tit', 'rut', 'jon'])
     await startOnline([project('es-419', ['tit', 'rut', 'jon'])])
     expect(onlineState().offer?.language).toBe('es-419')
     // The list comes again (a 304), then two parts, then the connection drops.
@@ -296,6 +303,8 @@ describe('a dropped connection, and one run at a time', () => {
     const shas = requests(w, 'part').map((c) => c.url.slice(c.url.lastIndexOf('/') + 1))
     expect(new Set(shas).size).toBe(shas.length)
     expect(await staged(d)).toEqual([])
+    // Applied once, when everything was staged.
+    expect(d.log.filter((l) => l === 'applyParts')).toHaveLength(1)
   })
 
   it('a second check while one runs makes no second queue', async () => {
@@ -517,10 +526,11 @@ describe('the originals', () => {
     const w = fakeWorker()
     await publish(w, { books: ['tit'] })
     const d = device(w)
+    d.here = new Set(['tit'])
     w.setAnswer('originals', ANSWERS.limite, 1)
     await startOnline([project('es-419', ['tit'])])
     expect(onlineState().blocked).toEqual({ 'es-419': 'noDisponible' })
-    expect(JSON.parse(d.storage.getItem('servos.enLinea.reintentar')!)).toHaveProperty('es-419')
+    expect(JSON.parse(d.storage.getItem('servos.enLinea.reintentar')!)).toHaveProperty('originals')
     // During the wait nothing is asked.
     await checkForUpdates({ force: true })
     expect(requests(w, 'originals')).toHaveLength(1)
@@ -589,7 +599,7 @@ describe('at startup', () => {
     const d = device(w)
     // A first visit keeps the list and the originals list; nothing is downloaded.
     await startOnline([project('es-419', ['tit'])])
-    expect(onlineState().offer?.language).toBe('es-419')
+    expect(JSON.parse(d.storage.getItem('servos.enLinea.listas')!)).toHaveProperty('es-419')
     return { w, d, published }
   }
 
@@ -634,5 +644,233 @@ describe('the screen stays on only while applying', () => {
     expect(d.locks.taken).toBeGreaterThan(0)
     expect(d.locks.released).toBe(d.locks.taken)
     expect(onlineState().busy).toBeNull()
+  })
+})
+
+describe('what the Home offer counts', () => {
+  it('the shared unit and the books on the device; a missing book has its own size', async () => {
+    const w = fakeWorker()
+    const { parts, orig } = await publish(w, { books: ['tit', 'jon', 'rut'] })
+    const d = device(w)
+    // As the example project: Titus and Jonah here, Ruth not.
+    d.here = new Set(['tit', 'jon'])
+    await startOnline([project('es-419', ['tit', 'jon', 'rut'])])
+    const [tit, jon, rut, titles] = parts
+    expect(onlineState().offer).toEqual({
+      language: 'es-419', code: 'code-1', bytes: tit.bytes + jon.bytes + titles.bytes + orig[0].bytes + orig[1].bytes,
+    })
+    expect(await bookDownloadSize('es-419', 'rut')).toBe(rut.bytes + titles.bytes + orig[2].bytes)
+    await downloadOffer()
+    const held = [...(await slots(d)).values()].map((r) => r.sha256)
+    expect(held).not.toContain(rut.sha256)
+    expect(held).toEqual(expect.arrayContaining([tit.sha256, jon.sha256]))
+  })
+
+  it('a book with slots of its language counts as here, whatever the library says', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const d = device(w)
+    await startOnline([project('es-419', ['tit'])])
+    expect(onlineState().offer).toBeNull()
+    await downloadBook('es-419', 'tit')
+    d.here = new Set()
+    const v2 = await publish(w, { books: ['tit'], version: '2', code: 'code-2' })
+    await checkForUpdates({ force: true })
+    expect(onlineState().offer).toMatchObject({ code: 'code-2', bytes: v2.parts[0].bytes + v2.parts[1].bytes })
+  })
+})
+
+describe('the originals never go back', () => {
+  const originalsHeld = async (d: ReturnType<typeof device>) =>
+    [...(await slots(d)).values()].filter((r) => r.list === 'originals').map((r) => r.sha256)
+  const last = (c: { url: string }) => c.url.split('/').pop()
+
+  it('a language refused or waiting still takes part in the choice', async () => {
+    const w = fakeWorker()
+    const es = await publish(w, { language: 'es-419', books: ['tit'], originals: '2' })
+    const pt = await publish(w, { language: 'pt-br', books: ['tit'], originals: '1' })
+    const d = device(w)
+    await startOnline([project('es-419', ['tit']), project('pt-br', ['tit'])])
+    await downloadBook('es-419', 'tit')
+    expect(await originalsHeld(d)).toEqual([es.orig[0].sha256])
+
+    // es-419's list is being prepared again (and waits); pt-br, built on the older originals, is downloaded.
+    w.setAnswer('list', ANSWERS.preparando, 1)
+    await checkForUpdates({ force: true })
+    expect(onlineState().blocked).toEqual({ 'es-419': 'preparando' })
+    await downloadBook('pt-br', 'tit')
+    expect(await originalsHeld(d)).toEqual([es.orig[0].sha256])
+    expect(requests(w, 'originals').map(last)).not.toContain(pt.ref.sha256)
+    expect(requests(w, 'part').map(last)).not.toContain(pt.orig[0].sha256)
+  })
+
+  it('a stale list fetched last does not choose', async () => {
+    const w = fakeWorker()
+    const es = await publish(w, { language: 'es-419', books: ['tit'], originals: '2' })
+    const pt = await publish(w, { language: 'pt-br', books: ['tit'], originals: '1' })
+    let tick = Date.parse('2026-10-28T12:00:00Z')
+    const d = device(w, { now: () => (tick += 1000) })
+    // pt-br's list is asked for last, yet it was built on older originals.
+    await startOnline([project('es-419', ['tit']), project('pt-br', ['tit'])])
+    expect(requests(w, 'originals').map(last)).toEqual([es.ref.sha256])
+    await downloadBook('pt-br', 'tit')
+    expect(await originalsHeld(d)).toEqual([es.orig[0].sha256])
+    expect(requests(w, 'part').map(last)).not.toContain(pt.orig[0].sha256)
+  })
+
+  it('when the newest originals list cannot come now, nothing is planned with older ones', async () => {
+    const w = fakeWorker()
+    await publish(w, { language: 'es-419', books: ['tit'], originals: '2' })
+    const pt = await publish(w, { language: 'pt-br', books: ['tit'], originals: '1' })
+    w.setAnswer('originals', { status: 500, body: 'down', contentType: 'text/plain' })
+    const d = device(w)
+    await startOnline([project('es-419', ['tit']), project('pt-br', ['tit'])])
+    await downloadBook('pt-br', 'tit')
+    expect((await slots(d)).size).toBe(0)
+    expect(requests(w, 'originals').map(last)).not.toContain(pt.ref.sha256)
+    expect(requests(w, 'part')).toEqual([])
+  })
+
+  it('a stale «noDisponible» goes once the originals come', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    device(w)
+    w.setAnswer('originals', { status: 500, body: 'down', contentType: 'text/plain' }, 1)
+    await startOnline([project('es-419', ['tit'])])
+    expect(onlineState().blocked).toEqual({ 'es-419': 'noDisponible' })
+    // A check within three hours asks no list; the originals list comes this time.
+    await checkForUpdates()
+    expect(requests(w, 'list')).toHaveLength(1)
+    expect(onlineState().blocked).toEqual({})
+  })
+})
+
+describe('after the app is updated', () => {
+  it('a kept list of another compat is ignored: no plan from it, no «actualice la app»', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const first = device(w)
+    await startOnline([project('es-419', ['tit'])])
+    // The app was updated: its compat moved, and the kept list is of the old one.
+    const again = device(fakeWorker({ compat: 'f2.0-new' }), {}, first)
+    again.online = false
+    await startOnline([project('es-419', ['tit'])])
+    expect(again.applied).toEqual([])
+    expect(onlineState().blocked).toEqual({})
+    expect(await bookDownloadSize('es-419', 'tit')).toBeNull()
+  })
+
+  it('the heal does not say «actualice la app» for a list made with other versions; the next check decides', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const list = w.lists.get('es-419')!
+    w.lists.set('es-419', { ...list, versions: { ...RESOURCE_VERSIONS, sot: { usjProcessing: 'other' } } })
+    const first = device(w)
+    await startOnline([project('es-419', ['tit'])])
+    const again = device(w, {}, first)
+    again.online = false
+    await startOnline([project('es-419', ['tit'])])
+    expect(again.applied).toHaveLength(1)
+    expect(onlineState().blocked).toEqual({})
+  })
+})
+
+describe('typing, and one run at a time (more)', () => {
+  it('a check asks for no list while the person types', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const d = device(w)
+    d.typing = true
+    const starting = startOnline([project('es-419', ['tit'])])
+    await vi.waitFor(() => expect(d.waiting).toHaveLength(1))
+    expect(w.calls).toEqual([])
+    d.stopTyping()
+    await starting
+    expect(requests(w, 'list')).toHaveLength(1)
+  })
+
+  it('the heal waits while the person types', async () => {
+    const w = fakeWorker()
+    const published = await publish(w, { books: ['tit'] })
+    const first = device(w)
+    await startOnline([project('es-419', ['tit'])])
+    for (const p of [...published.parts, ...published.orig]) await first.staging.put(p.sha256, w.parts.get(p.sha256)!)
+    const again = device(w, {}, first)
+    again.online = false
+    again.typing = true
+    const starting = startOnline([project('es-419', ['tit'])])
+    await vi.waitFor(() => expect(again.waiting).toHaveLength(1))
+    expect(again.log).toEqual([])
+    again.stopTyping()
+    await starting
+    expect(again.log).toEqual(['watchHelps es-419 tit', 'applyParts', 'refreshLibrary', 'keepHelpsChanges'])
+  })
+
+  it('the size of a book waits for the run in flight: nothing is asked beside it', async () => {
+    const w = fakeWorker()
+    const { parts, orig } = await publish(w, { books: ['tit'] })
+    device(w)
+    let open!: () => void
+    const gate = new Promise<void>((r) => (open = r))
+    w.gate(() => gate)
+    const starting = startOnline([project('es-419', ['tit'])])
+    let size: number | null | undefined
+    const sizing = bookDownloadSize('es-419', 'tit').then((s) => (size = s))
+    await vi.waitFor(() => expect(w.inFlight).toBe(1))
+    await new Promise((r) => setTimeout(r, 20))
+    expect(w.calls).toHaveLength(1)
+    expect(size).toBeUndefined()
+    open()
+    await Promise.all([starting, sizing])
+    expect(size).toBe(parts[0].bytes + parts[1].bytes + orig[0].bytes)
+    expect(requests(w, 'list')).toHaveLength(1)
+  })
+})
+
+describe('what the queue brings back', () => {
+  it('an abort wins over a wait the queue brought back: nothing blocked, no wait kept', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const d = device(w)
+    await startOnline([project('es-419', ['tit'])])
+    let open!: () => void
+    const gate = new Promise<void>((r) => (open = r))
+    let partNo = 0
+    w.gate((url) => (url.includes('/parts/') && ++partNo > 1 ? gate : Promise.resolve()))
+    // The first part is refused with a 429; the others stay in flight until the run is stopped.
+    w.setAnswer('part', ANSWERS.limite, 1)
+    const running = downloadBook('es-419', 'tit')
+    await vi.waitFor(() => expect(partNo).toBe(3))
+    await new Promise((r) => setTimeout(r, 20))
+    stopOnline()
+    open()
+    await running
+    expect(onlineState().blocked).toEqual({})
+    expect(d.storage.getItem('servos.enLinea.reintentar') ?? '{}').not.toContain('es-419')
+  })
+
+  it('a full disk while staging is «sinEspacio»', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const full = stagingFrom(memoryByteStore())
+    full.put = async () => {
+      throw new DOMException('full', 'QuotaExceededError')
+    }
+    const d = device(w, { staging: () => full })
+    await startOnline([project('es-419', ['tit'])])
+    await downloadBook('es-419', 'tit')
+    expect(onlineState().blocked).toEqual({ 'es-419': 'sinEspacio' })
+    expect((await slots(d)).size).toBe(0)
+  })
+
+  it('a 429 on a part is «noDisponible», with its wait kept', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const d = device(w)
+    await startOnline([project('es-419', ['tit'])])
+    w.setAnswer('part', ANSWERS.limite)
+    await downloadBook('es-419', 'tit')
+    expect(onlineState().blocked).toEqual({ 'es-419': 'noDisponible' })
+    expect(JSON.parse(d.storage.getItem('servos.enLinea.reintentar')!)).toHaveProperty('es-419')
   })
 })

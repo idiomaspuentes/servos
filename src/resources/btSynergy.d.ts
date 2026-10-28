@@ -214,6 +214,8 @@ declare module '@bt-synergy/language-pack' {
   export type Register = Map<string, SlotRecord>
   /** The register from raw rows of the store (rows of other prefixes are skipped). */
   export function readRegister(rows: Iterable<{ key: string; entry: unknown }>): Register
+  /** The unit (`shared`, `book <b>`) a slot id is in. */
+  export function unitOfSlotId(id: string): string
   export type PlanInput = {
     list: PartsList
     originals?: PartsList

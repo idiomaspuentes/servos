@@ -5,6 +5,7 @@
  */
 
 import { planParts, type PartsList, type PartsPlan, type Register } from '@bt-synergy/language-pack'
+import { compareStamps } from '../freshness'
 import type { ListAnswer } from './packsClient'
 
 /** What stops a language's texts and helps from coming: codes the interface translates (`enLinea.*`). */
@@ -42,22 +43,64 @@ export function unitsOf(projects: readonly ProjectLike[], language: string): str
 }
 
 /**
- * The originals list every language plans from: the one named by the most recently fetched of these languages'
- * lists. Planned from an older one, a language would put older originals back over newer ones, and the next language
- * the newer ones again (B's spec §2, "Originals between languages"). Null when none of them names one.
+ * The release stamps of the originals a kept list was built on, by resource key: the language list's `stamps` (every
+ * resource its build read), and its originals list's own resources when it is kept.
+ */
+const originalsStampsOf = (k: KeptList): Record<string, string> => ({
+  ...(k.list.stamps ?? {}),
+  ...Object.fromEntries((k.originals?.list.resources ?? []).map((r) => [r.key, r.stamp])),
+})
+
+/**
+ * Whether the originals behind `a` are newer (> 0), the same (0) or older (< 0) than those behind `b`, by the release
+ * stamps of the resources both name (`keys`, when the originals' keys are known; else every key they share). Null
+ * when the stamps cannot tell: one is newer in a resource and older in another, or a stamp cannot be compared.
+ */
+function compareOriginals(a: Record<string, string>, b: Record<string, string>, keys: ReadonlySet<string> | null): number | null {
+  let sign = 0
+  for (const key of Object.keys(a)) {
+    if (keys && !keys.has(key)) continue
+    const sa = a[key]
+    const sb = b[key]
+    if (!sb) continue
+    const c = compareStamps(sa, sb)
+    if (c === null) return null
+    if (c === 0) continue
+    if (sign && Math.sign(c) !== sign) return null
+    sign = Math.sign(c)
+  }
+  return sign
+}
+
+/**
+ * The originals list every language plans from: the newest named among these languages' lists, by the release
+ * stamps of the originals they were built on; when the stamps cannot tell (the same, mixed, or none in common), the
+ * list fetched last. Planned from an older one, a language would put older originals back over newer ones, and the
+ * next language the newer ones again (B's spec §2, "Originals between languages"). Null when none names one.
  */
 export function newestOriginals(
   kept: Readonly<Record<string, KeptList | undefined>>,
   languages: readonly string[],
 ): { sha256: string; path: string; from: string } | null {
-  let best: { sha256: string; path: string; from: string; at: number } | null = null
+  // The originals' own keys, from any originals list kept: a language's own resources never decide.
+  const known = new Set(Object.values(kept).flatMap((k) => (k?.originals?.list.resources ?? []).map((r) => r.key)))
+  const keys = known.size ? known : null
+  type Candidate = { sha256: string; path: string; from: string; at: number; stamps: Record<string, string> }
+  let best: Candidate | null = null
   for (const language of languages) {
     const k = kept[language]
     const ref = k?.list.originals
     if (!k || !ref) continue
-    const at = Date.parse(k.at)
-    // Equal times (fetched in the same check): the later language in the projects' order.
-    if (!best || !(at < best.at)) best = { ...ref, from: language, at: Number.isFinite(at) ? at : -Infinity }
+    const parsed = Date.parse(k.at)
+    const candidate: Candidate = { ...ref, from: language, at: Number.isFinite(parsed) ? parsed : -Infinity, stamps: originalsStampsOf(k) }
+    if (!best) {
+      best = candidate
+      continue
+    }
+    const order = candidate.sha256 === best.sha256 ? 0 : compareOriginals(candidate.stamps, best.stamps, keys)
+    // Equal fetch times (the same check) go to the later language in the order given.
+    if (order !== null && order > 0) best = candidate
+    else if ((order === null || order === 0) && !(candidate.at < best.at)) best = candidate
   }
   return best && { sha256: best.sha256, path: best.path, from: best.from }
 }

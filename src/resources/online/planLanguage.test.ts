@@ -6,11 +6,14 @@ const sha = (c: string) => c.repeat(64)
 const entry = (s: string, kind: PartEntry['kind'], resource: string, book?: string): PartEntry => ({
   sha256: sha(s), bytes: 100, rows: 1, kind, resource, book, fingerprint: 'f', layers: ['sot'],
 })
-const list = (language: string, parts: PartEntry[], originals?: string): PartsList =>
+const list = (language: string, parts: PartEntry[], originals?: string, stamps?: Record<string, string>): PartsList =>
   ({
     schema: 2, language, compat: 'c', code: `${language}-1`, versions: {}, resources: [], parts,
     ...(originals ? { originals: { path: `catalog/c/originals/${sha(originals)}.json`, sha256: sha(originals) } } : {}),
+    ...(stamps ? { stamps } : {}),
   }) as PartsList
+const UGNT = 'unfoldingWord/el-x-koine/ugnt'
+const UHB = 'unfoldingWord/hbo/uhb'
 const kept = (l: PartsList, at: string, originals?: PartsList): KeptList => ({
   etag: null, list: l, at, ...(originals ? { originals: { sha256: l.originals!.sha256, list: originals } } : {}),
 })
@@ -41,6 +44,38 @@ describe('what a language needs', () => {
     // A kept originals list is found by its sha, whichever language fetched it.
     expect(keptOriginals(all, sha('1'))).toBe(o1)
     expect(keptOriginals(all, sha('2'))).toBeNull()
+  })
+
+  it('the newest originals are told by their release stamps; the fetch time only breaks a tie (Review Focus 4)', () => {
+    const newer = { [UGNT]: 'v2#2026-10-01T00:00:00Z', [UHB]: 'v2#2026-10-01T00:00:00Z', 'o/es-419/tn': 'v9#2026-01-01T00:00:00Z' }
+    const older = { [UGNT]: 'v1#2026-01-01T00:00:00Z', [UHB]: 'v2#2026-10-01T00:00:00Z', 'o/pt-br/tn': 'v99#2026-10-20T00:00:00Z' }
+    // A stale list fetched last does not win: its language's own resources do not count, the originals' stamps do.
+    const all = {
+      'es-419': kept(list('es-419', [], '2', newer), '2026-10-28T10:00:00Z'),
+      'pt-br': kept(list('pt-br', [], '1', older), '2026-10-28T11:00:00Z'),
+    }
+    expect(newestOriginals(all, ['es-419', 'pt-br'])).toMatchObject({ sha256: sha('2'), from: 'es-419' })
+    expect(newestOriginals(all, ['pt-br', 'es-419'])).toMatchObject({ sha256: sha('2'), from: 'es-419' })
+
+    // A kept originals list says its own stamps (its resources'), for a language list without `stamps`.
+    const o2 = { ...list('originals', []), resources: [{ key: UGNT, stamp: 'v2#2026-10-01T00:00:00Z', role: 'original' }] } as unknown as PartsList
+    const kept2 = {
+      'es-419': kept(list('es-419', [], '2'), '2026-10-28T10:00:00Z', o2),
+      'pt-br': kept(list('pt-br', [], '1', older), '2026-10-28T11:00:00Z'),
+    }
+    expect(newestOriginals(kept2, ['es-419', 'pt-br'])).toMatchObject({ sha256: sha('2') })
+
+    // Stamps that cannot tell them apart (equal, mixed, or none in common): the later fetch.
+    const same = {
+      'es-419': kept(list('es-419', [], '2', { [UGNT]: 'v1#2026-01-01T00:00:00Z' }), '2026-10-28T11:00:00Z'),
+      'pt-br': kept(list('pt-br', [], '1', { [UGNT]: 'v1#2026-01-01T00:00:00Z' }), '2026-10-28T10:00:00Z'),
+    }
+    expect(newestOriginals(same, ['es-419', 'pt-br'])).toMatchObject({ sha256: sha('2') })
+    const mixed = {
+      'es-419': kept(list('es-419', [], '2', { [UGNT]: 'v2#2026-10-01T00:00:00Z', [UHB]: 'v1#2026-01-01T00:00:00Z' }), '2026-10-28T10:00:00Z'),
+      'pt-br': kept(list('pt-br', [], '1', { [UGNT]: 'v1#2026-01-01T00:00:00Z', [UHB]: 'v2#2026-10-01T00:00:00Z' }), '2026-10-28T11:00:00Z'),
+    }
+    expect(newestOriginals(mixed, ['es-419', 'pt-br'])).toMatchObject({ sha256: sha('1') })
   })
 
   it('a list that names originals is not planned without them; one that names none plans alone', () => {

@@ -23,6 +23,7 @@ import {
   compatKeyOf,
   packTargetFrom,
   unitOfPart,
+  unitOfSlotId,
   type ApplyInput,
   type ApplyResult,
   type PackVersions,
@@ -33,7 +34,7 @@ import {
 } from '@bt-synergy/language-pack'
 import { isOnline as realIsOnline, whenNotTyping as realWhenNotTyping } from '../../app/frame/online'
 import { keepHelpsChanges as realKeepHelpsChanges, watchHelps as realWatchHelps, type BookChanges, type Watched } from '../../app/projects/helpsWatch'
-import { refreshLibrary as realRefreshLibrary } from '../../app/projects/library'
+import { bookIsHere as realBookIsHere, refreshLibrary as realRefreshLibrary } from '../../app/projects/library'
 import type { Project } from '../../app/projects/model'
 import { RESOURCE_VERSIONS, openPartsStaging, openResourceStores, readPartsRegister, type ResourceStores } from '../store'
 import { downloadParts, type Progress } from './downloads'
@@ -87,6 +88,8 @@ export type OnlineDeps = {
   /** `navigator.storage.estimate`; null where there is none (then the free-space check is skipped). */
   estimate: (() => Promise<{ quota?: number; usage?: number }>) | null
   wakeLock: () => Promise<WakeLock | null>
+  /** Whether a book can be opened in a language: on the device (from parts or whole packs), or bundled. */
+  bookIsHere: (book: string, language: string) => boolean
   refreshLibrary: () => Promise<void>
   watchHelps: (stores: ResourceStores, language: string, books: readonly string[]) => Promise<Watched[]>
   keepHelpsChanges: (stores: ResourceStores, language: string, watched: readonly Watched[]) => Promise<BookChanges[]>
@@ -123,6 +126,7 @@ function defaults(): OnlineDeps {
     whenNotTyping: realWhenNotTyping,
     estimate: nav?.storage?.estimate ? () => nav.storage.estimate() : null,
     wakeLock: async () => (nav?.wakeLock ? nav.wakeLock.request('screen') : null),
+    bookIsHere: realBookIsHere,
     refreshLibrary: realRefreshLibrary,
     watchHelps: realWatchHelps,
     keepHelpsChanges: realKeepHelpsChanges,
@@ -186,6 +190,24 @@ function save(key: keyof typeof KEYS) {
     /* a full or blocked storage: kept in memory for this visit */
   }
 }
+
+/**
+ * A language's kept list, when it is of this app's compat: one kept by an earlier version of the app names parts
+ * this one cannot read (its catalog folder), and is neither planned from nor sent as an ETag.
+ */
+function kept(language: string): KeptList | undefined {
+  const k = mem().listas[language]
+  return k && k.list.compat === d().compat() ? k : undefined
+}
+
+/** Every kept list of this app's compat, by language. */
+function keptLists(): Record<string, KeptList> {
+  const compat = d().compat()
+  return Object.fromEntries(Object.entries(mem().listas).filter(([, k]) => k.list.compat === compat))
+}
+
+/** The wait the originals route asked for, kept beside the languages' (`servos.enLinea.reintentar`). */
+const ORIGINALS_WAIT = 'originals'
 
 const iso = (ms: number) => new Date(ms).toISOString()
 const waiting = (language: string) => {
@@ -252,8 +274,8 @@ export function setOnlineProjects(next: Project[]) {
   showOffer()
 }
 
-/** What is new for each language, offered one at a time in the projects' order. */
-const offers = new Map<string, { bytes: number; code: string }>()
+/** What is new for each language (and the units it covers), offered one at a time in the projects' order. */
+const offers = new Map<string, { bytes: number; code: string; units: string[] }>()
 
 function showOffer() {
   const declined = mem().ahoraNo
@@ -261,7 +283,9 @@ function showOffer() {
     const o = offers.get(language)
     if (o && declined[language] !== o.code) {
       const current = state.offer
-      if (current?.language !== language || current.bytes !== o.bytes || current.code !== o.code) set({ offer: { language, ...o } })
+      if (current?.language !== language || current.bytes !== o.bytes || current.code !== o.code) {
+        set({ offer: { language, bytes: o.bytes, code: o.code } })
+      }
       return
     }
   }
@@ -310,7 +334,7 @@ type Ctx = {
 }
 const newCtx = (signal: AbortSignal): Ctx => ({ signal, originalsRetried: false, replanned: new Set(), stopped: new Set() })
 
-type Run = { kind: 'check' | 'download'; language?: string; units?: Set<string>; ctrl: AbortController; promise: Promise<void>; generation: number }
+type Run = { kind: 'check' | 'download' | 'size'; language?: string; units?: Set<string>; ctrl: AbortController; promise: Promise<void>; generation: number }
 let current: Run | null = null
 let generation = 0
 
@@ -352,26 +376,22 @@ export function setOnlineDeps(over: Partial<OnlineDeps> = {}): void {
 
 const clientOpts = (ctx: Ctx): ClientOptions => ({ fetch: d().fetch, signal: ctx.signal })
 
-/** Languages that may choose the originals now: not refused in this run, nor waiting for the Worker. */
-const choosing = (languages: string[], ctx: Ctx) => languages.filter((l) => !ctx.stopped.has(l) && !waiting(l))
-const languagesWith = (language: string) => [...new Set([...languagesOf(projects), language])]
-
 // ---------------------------------------------------------------------------------------------------------------
 // The lists.
 
 /** Asks for a language's list (with its ETag unless told not to): `ok` when a list is kept to plan from. */
 async function refreshList(language: string, ctx: Ctx, withEtag: boolean): Promise<'ok' | 'blocked' | 'skip'> {
   if (waiting(language) || ctx.signal.aborted) return 'skip'
-  const kept = mem().listas[language]
-  const answer = await fetchList(d().server(), d().compat(), language, withEtag ? kept?.etag : null, clientOpts(ctx))
+  const before = kept(language)
+  const answer = await fetchList(d().server(), d().compat(), language, withEtag ? before?.etag : null, clientOpts(ctx))
   if (ctx.signal.aborted) return 'skip'
   if (answer.kind === 'listo' || answer.kind === 'igual') {
     if (answer.kind === 'listo') {
       // Its originals list stays kept only if it still names the same one.
-      const originals = kept?.originals && kept.originals.sha256 === answer.list.originals?.sha256 ? kept.originals : undefined
+      const originals = before?.originals && before.originals.sha256 === answer.list.originals?.sha256 ? before.originals : undefined
       mem().listas[language] = { etag: answer.etag, list: answer.list, at: iso(d().now()), ...(originals ? { originals } : {}) }
       save('listas')
-    } else if (!kept) return 'skip'
+    } else if (!before) return 'skip'
     noWait(language)
     setBlocked(language, null)
     return 'ok'
@@ -384,20 +404,30 @@ async function refreshList(language: string, ctx: Ctx, withEtag: boolean): Promi
 }
 
 /**
- * The originals list every language plans from: the newest named among `languages`, kept or fetched. A 404 asks its
- * language's list again, once per run (a list naming an originals list that is gone is stale); another 404 is
- * `noDisponible`. A 429 waits its time; a failure waits for the next check. Null when there is none to plan from.
+ * The originals list every language plans from: the newest named by any kept list of this compat, whatever its
+ * language's state (one refused or waiting now still holds its originals on the device), kept or fetched. When it
+ * cannot be had now, null: languages whose lists name originals are not planned in this run, so no plan puts older
+ * originals back. A 404 asks its language's list again, once per run (a list naming an originals list that is gone
+ * is stale); another 404 is `noDisponible`. A 429 waits its time; a failure waits for the next check.
  */
-async function resolveOriginals(languages: string[], ctx: Ctx): Promise<PartsList | null> {
+async function resolveOriginals(ctx: Ctx): Promise<PartsList | null> {
   for (;;) {
-    const ref = newestOriginals(mem().listas, languages)
+    const lists = keptLists()
+    const ref = newestOriginals(lists, Object.keys(lists))
     if (!ref) return null
-    const kept = keptOriginals(mem().listas, ref.sha256)
-    if (kept) return kept
-    if (ctx.signal.aborted || !d().isOnline() || waiting(ref.from)) return null
+    // The projects' languages that cannot be planned without it.
+    const needing = languagesOf(projects).filter((l) => lists[l]?.list.originals)
+    const found = keptOriginals(lists, ref.sha256)
+    if (found) {
+      cleared(needing, ctx)
+      return found
+    }
+    if (ctx.signal.aborted || !d().isOnline() || waiting(ORIGINALS_WAIT)) return null
     const answer = await fetchOriginals(d().server(), d().compat(), ref.sha256, clientOpts(ctx))
     if (ctx.signal.aborted) return null
-    const needing = languages.filter((l) => mem().listas[l]?.list.originals)
+    const unavailable = () => {
+      for (const l of needing) if (!state.blocked[l]) setBlocked(l, 'noDisponible')
+    }
     switch (answer.kind) {
       case 'listo': {
         const entry = mem().listas[ref.from]
@@ -405,6 +435,8 @@ async function resolveOriginals(languages: string[], ctx: Ctx): Promise<PartsLis
           mem().listas[ref.from] = { ...entry, originals: { sha256: ref.sha256, list: answer.list } }
           save('listas')
         }
+        noWait(ORIGINALS_WAIT)
+        cleared(needing, ctx)
         return answer.list
       }
       case 'noEstá':
@@ -413,37 +445,56 @@ async function resolveOriginals(languages: string[], ctx: Ctx): Promise<PartsLis
           if ((await refreshList(ref.from, ctx, false)) === 'ok') continue
           return null
         }
-        for (const l of needing) setBlocked(l, 'noDisponible')
+        unavailable()
         return null
       case 'espera':
-        for (const l of needing) {
-          retryLater(l, answer.retryAfter)
-          setBlocked(l, 'noDisponible')
-        }
+        retryLater(ORIGINALS_WAIT, answer.retryAfter)
+        unavailable()
         return null
       case 'falla':
-        for (const l of needing) setBlocked(l, 'noDisponible')
+        unavailable()
         return null
     }
   }
 }
 
+/** Once the originals are had, a `noDisponible` they left goes (not one a wait of the language's own still holds). */
+function cleared(languages: string[], ctx: Ctx) {
+  for (const l of languages) {
+    if (state.blocked[l] === 'noDisponible' && !waiting(l) && !ctx.stopped.has(l)) setBlocked(l, null)
+  }
+}
+
 /** The originals list to plan from without asking anyone (startup). */
-function keptNewestOriginals(languages: string[]): PartsList | null {
-  const ref = newestOriginals(mem().listas, languages)
-  return ref ? keptOriginals(mem().listas, ref.sha256) : null
+function keptNewestOriginals(): PartsList | null {
+  const lists = keptLists()
+  const ref = newestOriginals(lists, Object.keys(lists))
+  return ref ? keptOriginals(lists, ref.sha256) : null
 }
 
 type Planned = { plan: PartsPlan; register: Register; list: PartsList; originals?: PartsList; chosen: string[] }
 
-/** A language's plan for some units, from its kept list and the register as it is now. */
+/** A language's plan for some units, from its kept list (of this compat) and the register as it is now. */
 async function planFor(language: string, chosen: string[], originals: PartsList | null): Promise<Planned | null> {
-  const kept = mem().listas[language]
-  if (!kept) return null
+  const k = kept(language)
+  if (!k) return null
   const register = await readPartsRegister(d().stores())
-  const plan = planLanguage({ list: kept.list, originals, register, chosen })
+  const plan = planLanguage({ list: k.list, originals, register, chosen })
   if (!plan) return null
-  return { plan, register, list: kept.list, chosen, ...(kept.list.originals && originals ? { originals } : {}) }
+  return { plan, register, list: k.list, chosen, ...(k.list.originals && originals ? { originals } : {}) }
+}
+
+/**
+ * The units the Home offer covers: the shared unit and the language's project books already on the device (slots
+ * of its list, or a book the library can open, whole packs included: spec §3's accepted cost). A book not on the
+ * device is not offered; it is downloaded from its own screen (`downloadBook`). None when no book is here.
+ */
+function offerUnits(language: string, register: Register): string[] {
+  const held = new Set<string>()
+  for (const [id, record] of register) if (record.list === language) held.add(unitOfSlotId(id))
+  const books = unitsOf(projects, language).filter((u) => u !== SHARED)
+  const here = books.filter((u) => held.has(u) || d().bookIsHere(u.slice('book '.length), language))
+  return here.length ? [SHARED, ...here] : []
 }
 
 /** Room for twice the download, when the browser can say (spec §3). */
@@ -481,9 +532,15 @@ function untilNotTyping(signal: AbortSignal): Promise<boolean> {
 
 /**
  * Applies a plan once nobody is typing, with the screen kept on: what the translated verses read is watched, the plan
- * applied, the library read again, and what changed kept. `missing` when a part is not staged after all.
+ * applied, the library read again, and what changed kept. `missing` when a part is not staged after all. A list made
+ * with other versions says «actualice la app» unless told not to (the startup heal, which asked no one).
  */
-async function applyPlan(language: string, planned: Planned, ctx: Ctx): Promise<'applied' | 'missing' | 'stopped'> {
+async function applyPlan(
+  language: string,
+  planned: Planned,
+  ctx: Ctx,
+  { blockOnVersions = true }: { blockOnVersions?: boolean } = {},
+): Promise<'applied' | 'missing' | 'stopped'> {
   if (!(await untilNotTyping(ctx.signal))) return 'stopped'
   const lock = await d()
     .wakeLock()
@@ -508,7 +565,7 @@ async function applyPlan(language: string, planned: Planned, ctx: Ctx): Promise<
       now: d().now,
     })
     if (result.refused?.reason === 'versions') {
-      setBlocked(language, 'actualizarApp')
+      if (blockOnVersions) setBlocked(language, 'actualizarApp')
       return 'stopped'
     }
     if (result.refused?.reason === 'missing') return 'missing'
@@ -584,7 +641,7 @@ async function fetchAndApply(language: string, ctx: Ctx, originalsIn: PartsList 
         }
         ctx.replanned.add(language)
         if ((await refreshList(language, ctx, false)) !== 'ok') return
-        originals = await resolveOriginals(choosing(languagesWith(language), ctx), ctx)
+        originals = await resolveOriginals(ctx)
         continue
       case 'espera':
         retryLater(language, result.retryAfter)
@@ -613,25 +670,25 @@ async function wantedFromStaging(languages: string[], originals: PartsList | nul
   let staged: Set<string> | null = null
   for (const language of languages) {
     if (wanted.has(language) || listBlocked(language)) continue
-    const kept = mem().listas[language]
-    if (!kept) continue
     const planned = await planFor(language, unitsOf(projects, language), originals)
     if (!planned?.plan.download.length) continue
     // Originals parts are shared: staged for one language, they say nothing of what another was asked for.
-    const own = new Set(kept.list.parts.map((p) => p.sha256))
+    const own = new Set(planned.list.parts.map((p) => p.sha256))
     staged ??= new Set((await d().staging().list()).map((s) => s.sha))
     const units = new Set(planned.plan.download.filter((p) => own.has(p.sha256) && staged!.has(p.sha256)).map((p) => unitOfPart(p)))
     if (units.size) want(language, [SHARED, ...units])
   }
 }
 
-/** What is new for a language, offered unless it is being downloaded or refused. */
+/** What is new for a language's books on the device, offered unless it is being downloaded or refused. */
 async function updateOffer(language: string, originals: PartsList | null, ctx: Ctx) {
   if (ctx.signal.aborted) return
-  let offer: { bytes: number; code: string } | null = null
-  if (!wanted.has(language) && !ctx.stopped.has(language) && !listBlocked(language)) {
-    const planned = await planFor(language, unitsOf(projects, language), originals)
-    if (planned?.plan.download.length) offer = { bytes: planned.plan.bytes, code: planned.list.code }
+  let offer: { bytes: number; code: string; units: string[] } | null = null
+  if (!wanted.has(language) && !ctx.stopped.has(language) && !listBlocked(language) && kept(language)) {
+    const register = await readPartsRegister(d().stores())
+    const units = offerUnits(language, register)
+    const planned = units.length ? await planFor(language, units, originals) : null
+    if (planned?.plan.download.length) offer = { bytes: planned.plan.bytes, code: planned.list.code, units }
   }
   if (ctx.signal.aborted) return
   if (offer) offers.set(language, offer)
@@ -642,19 +699,23 @@ async function updateOffer(language: string, originals: PartsList | null, ctx: C
 // ---------------------------------------------------------------------------------------------------------------
 // The runs.
 
-/** B's startup heal: each language's current plan applied as it is; nothing is asked of the Worker. */
+/**
+ * B's startup heal: each language's current plan applied as it is; nothing is asked of the Worker. A list made with
+ * other versions is left to the next check, which asks the Worker before saying «actualice la app».
+ */
 async function heal(ctx: Ctx) {
-  const languages = languagesOf(projects)
-  const originals = keptNewestOriginals(languages)
-  for (const language of languages) {
+  const originals = keptNewestOriginals()
+  for (const language of languagesOf(projects)) {
     if (ctx.signal.aborted) return
     const planned = await planFor(language, unitsOf(projects, language), originals)
-    if (planned) await applyPlan(language, planned, ctx)
+    if (planned) await applyPlan(language, planned, ctx, { blockOnVersions: false })
   }
 }
 
 async function check(force: boolean, ctx: Ctx) {
   if (!d().isOnline()) return
+  // The lists are asked for, and what they bring planned, at a pause in the typing (spec §4).
+  if (!(await untilNotTyping(ctx.signal))) return
   const languages = languagesOf(projects)
   const last = Date.parse(mem().buscado ?? '')
   if (force || !(d().now() - last < RECHECK_MS)) {
@@ -666,7 +727,7 @@ async function check(force: boolean, ctx: Ctx) {
     mem().buscado = iso(d().now())
     save('buscado')
   }
-  const originals = await resolveOriginals(choosing(languages, ctx), ctx)
+  const originals = await resolveOriginals(ctx)
   await wantedFromStaging(languages, originals)
   for (const language of languages) {
     if (ctx.signal.aborted) return
@@ -679,7 +740,7 @@ async function check(force: boolean, ctx: Ctx) {
 async function download(language: string, ctx: Ctx) {
   if (!d().isOnline()) return
   if ((await refreshList(language, ctx, true)) !== 'ok') return
-  const originals = await resolveOriginals(choosing(languagesWith(language), ctx), ctx)
+  const originals = await resolveOriginals(ctx)
   await fetchAndApply(language, ctx, originals)
   await updateOffer(language, originals, ctx)
 }
@@ -709,9 +770,14 @@ export async function startOnline(next: Project[]): Promise<void> {
   })
 }
 
-/** Asks for the lists (every three hours unless forced; never before a wait the Worker asked for). */
+/**
+ * Asks for the lists (every three hours unless forced; never before a wait the Worker asked for; never while the
+ * person types). A check or download in flight is joined; a size being worked out is waited for.
+ */
 export function checkForUpdates(opts: { force?: boolean } = {}): Promise<void> {
-  if (current) return current.promise
+  const run = current
+  if (run?.kind === 'size') return run.promise.then(() => checkForUpdates(opts))
+  if (run) return run.promise
   return startRun('check', (ctx) => check(Boolean(opts.force), ctx))
 }
 
@@ -721,11 +787,12 @@ export function downloadBook(language: string, book: string): Promise<void> {
   return runDownload(language)
 }
 
-/** The Home card's «Bajar»: everything new for its language. */
+/** The Home card's «Bajar»: the update of the language's books on the device, and its shared unit. */
 export function downloadOffer(): Promise<void> {
   const offer = state.offer
-  if (!offer) return Promise.resolve()
-  want(offer.language, unitsOf(projects, offer.language))
+  const units = offer && offers.get(offer.language)?.units
+  if (!offer || !units?.length) return Promise.resolve()
+  want(offer.language, units)
   offers.delete(offer.language)
   showOffer()
   return runDownload(offer.language)
@@ -733,20 +800,21 @@ export function downloadOffer(): Promise<void> {
 
 /**
  * What downloading a book would bring now (its parts and the shared ones not on the device), in bytes; null when its
- * language has no list to plan from or names no part of it. Asks for the list when none is kept.
+ * language has no list to plan from or names no part of it. Asks for the list when none is kept. A run of its own, so
+ * it never asks the Worker or changes the state beside a check or a download: it waits for the one in flight.
  */
 export async function bookDownloadSize(language: string, book: string): Promise<number | null> {
-  try {
-    const ctx = newCtx(new AbortController().signal)
-    if (!mem().listas[language]) {
-      if (!d().isOnline() || (await refreshList(language, ctx, true)) !== 'ok') return null
+  while (current) await current.promise
+  let size: number | null = null
+  await startRun('size', async (ctx) => {
+    if (!kept(language)) {
+      if (!d().isOnline() || (await refreshList(language, ctx, true)) !== 'ok') return
     }
-    const kept = mem().listas[language]
-    if (!kept || !listHasBook(kept.list, book)) return null
-    const originals = await resolveOriginals(choosing(languagesWith(language), ctx), ctx)
+    const k = kept(language)
+    if (!k || !listHasBook(k.list, book)) return
+    const originals = await resolveOriginals(ctx)
     const planned = await planFor(language, [SHARED, bookUnitOf(book)], originals)
-    return planned ? planned.plan.bytes : null
-  } catch {
-    return null
-  }
+    size = planned ? planned.plan.bytes : null
+  })
+  return size
 }
