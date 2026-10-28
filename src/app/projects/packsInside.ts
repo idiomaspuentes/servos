@@ -9,9 +9,10 @@
  * it, and what the device already has newer or the same is left as it is (`packAgainstDevice`).
  */
 
-import { bringsAnything, packAgainstDevice } from '../../resources/freshness'
+import { bringsAnything, packAgainstDevice, type PackAgainstDevice } from '../../resources/freshness'
+import { whileOnlineIdle } from '../../resources/online/onlineLock'
 import { describePack, openPack } from '../../resources/packs'
-import { openResourceStores } from '../../resources/store'
+import { openResourceStores, type ResourceStores } from '../../resources/store'
 import { copiesOnDevice, refreshLibrary } from './library'
 
 export interface PackInside {
@@ -63,6 +64,26 @@ export function onInside(fn: (s: InsideState) => void): () => void {
   return () => void listeners.delete(fn)
 }
 
+/**
+ * Opens a pack once what it replaces is decided (`decide`, `packAgainstDevice` against the copies here) inside the
+ * section that holds Servos online's applies back: an apply that landed meanwhile is part of what it is decided
+ * against. False when the pack brings nothing new, and it is not opened.
+ */
+export function openDecidingUnderLock(
+  stores: ResourceStores,
+  bytes: Uint8Array,
+  decide: () => PackAgainstDevice,
+  options: { file?: string; onProgress?: (done: number, total: number) => void },
+  open: (stores: ResourceStores, bytes: Uint8Array, options: Parameters<typeof openPack>[2]) => Promise<unknown> = openPack,
+): Promise<boolean> {
+  return whileOnlineIdle(async (held) => {
+    const against = decide()
+    if (!bringsAnything(against)) return false
+    await open(stores, bytes, { ...options, replace: against.replace, held })
+    return true
+  })
+}
+
 /** Opens the packs the app brings that this device has not opened yet. Runs once, after the library is read. */
 export async function openPacksInside(): Promise<void> {
   const mode = import.meta.env.MODE
@@ -84,13 +105,11 @@ export async function openPacksInside(): Promise<void> {
       const summary = await describePack(bytes)
       // A pack made for another version of the app is not opened; it is not tried again either.
       if (!summary.otherVersion) {
-        const against = packAgainstDevice({ resources: summary.resources, books: summary.kind === 'book' ? summary.books : undefined }, copiesOnDevice())
-        if (bringsAnything(against))
-          await openPack(stores, bytes, {
-            replace: against.replace,
-            file: pack.file,
-            onProgress: (done, total) => tell({ opening: true, part: (i + (total ? done / total : 0)) / todo.length }),
-          })
+        const decide = () => packAgainstDevice({ resources: summary.resources, books: summary.kind === 'book' ? summary.books : undefined }, copiesOnDevice())
+        await openDecidingUnderLock(stores, bytes, decide, {
+          file: pack.file,
+          onProgress: (done, total) => tell({ opening: true, part: (i + (total ? done / total : 0)) / todo.length }),
+        })
       }
       opened.push(pack.id)
       keepOpened(opened)

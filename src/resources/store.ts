@@ -3,10 +3,10 @@
  * under Servos's own database names. A language pack opens straight into them.
  */
 
-import { IndexedDBCacheAdapter } from '@bt-synergy/cache-adapter-indexeddb'
+import { IndexedDBByteStore, IndexedDBCacheAdapter } from '@bt-synergy/cache-adapter-indexeddb'
 import { IndexedDBCatalogAdapter } from '@bt-synergy/catalog-adapter-indexeddb'
 import { USJ_PROCESSING_VERSION } from '@bt-synergy/usj-processor'
-import type { PackVersions } from '@bt-synergy/language-pack'
+import { REGISTER_PREFIX, readRegister, stagingFrom, type PackVersions, type PartsStaging, type Register } from '@bt-synergy/language-pack'
 import { HELPS_ALIGN_VERSION } from '@bt-synergy/resource-pipeline/helps/helpsAlignCache'
 import { HELPS_TEXT_VERSION } from '@bt-synergy/resource-pipeline/helps/helpsCacheKeys'
 import { HELPS_QUOTE_VERSION } from '@bt-synergy/resource-pipeline/helps/helpsQuoteCache'
@@ -28,6 +28,19 @@ export function openResourceStores(names: { cache?: string; catalog?: string } =
     catalog: new IndexedDBCatalogAdapter({ dbName: names.catalog ?? 'servos-catalogo', storeName: 'catalog-entries' }),
     cacheName,
   }
+}
+
+/**
+ * Where downloaded parts wait, verified, until `applyParts` puts them into the stores: a database of their own, so
+ * megabytes of waiting bytes never sit among the resource rows.
+ */
+export function openPartsStaging(name = 'servos-partes'): PartsStaging {
+  return stagingFrom(new IndexedDBByteStore({ dbName: name }))
+}
+
+/** What the device holds of the parts lists: which part fills each slot (the register rows live among the resources). */
+export async function readPartsRegister(stores: ResourceStores): Promise<Register> {
+  return readRegister(await stores.cache.getByPrefix(REGISTER_PREFIX))
 }
 
 /**

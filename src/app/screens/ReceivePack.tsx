@@ -6,12 +6,13 @@
 import { Fragment, useState } from 'react'
 import { LEXICON_SUBJECTS } from '../../resources/companions'
 import { bringsAnything, packAgainstDevice, type PackAgainstDevice, type PackResourceStanding } from '../../resources/freshness'
-import { describePack, openPack, openingLeft, type PackSummary } from '../../resources/packs'
+import { describePack, openingLeft, type PackSummary } from '../../resources/packs'
 import { openResourceStores } from '../../resources/store'
 import { RowButton } from '../frame/Actions'
 import { useChangeSummary } from '../miniapps/editor/HelpsChanged'
-import { keepHelpsChanges, watchHelps, type BookChanges } from '../projects/helpsWatch'
-import { availabilityOf, copiesOnDevice, loadBook, onDevice, refreshLibrary } from '../projects/library'
+import type { BookChanges } from '../projects/helpsWatch'
+import { availabilityOf, copiesOnDevice, loadBook, onDevice } from '../projects/library'
+import { openPackSeeingChanges } from '../projects/receiveHelps'
 import { bookName, loadProjects } from '../projects/model'
 import { useT } from '../i18n/i18n'
 
@@ -171,7 +172,7 @@ export function ReceivePack({
                 type="button"
                 className={bringsAnything(step.against) ? 'button-primary' : 'button-secondary'}
                 onClick={async () => {
-                  const { bytes, summary, file, against } = step
+                  const { bytes, summary, file } = step
                   setStep({ kind: 'opening', summary, done: 0, total: 0 })
                   // The screen stays on while it opens: a phone that sleeps can stop it halfway.
                   const lock = await (navigator as { wakeLock?: { request(type: 'screen'): Promise<{ release(): Promise<void> }> } }).wakeLock
@@ -180,17 +181,19 @@ export function ReceivePack({
                   try {
                     const stores = openResourceStores()
                     // What the verses already translated read in the resources it replaces, read before their rows
-                    // are written over, to say afterwards what changed in them.
-                    const watched = against.replace.length ? await watchHelps(stores, summary.language, booksOf(summary)).catch(() => []) : []
+                    // are written over, to say afterwards what changed in them; no downloaded parts land meanwhile.
                     // Only what the pack has newer, or what is here and can no longer be read, takes the place of this
-                    // device's copy; an older one leaves it as it is.
-                    await openPack(stores, bytes, {
-                      replace: against.replace,
+                    // device's copy; an older one leaves it as it is. Decided again under the lock: an online apply
+                    // may have landed while the summary was open.
+                    const { changed } = await openPackSeeingChanges(stores, bytes, {
+                      language: summary.language,
+                      books: booksOf(summary),
+                      replace: () =>
+                        packAgainstDevice({ resources: summary.resources, books: summary.kind === 'book' ? summary.books : undefined }, copiesOnDevice())
+                          .replace,
                       file,
                       onProgress: (done, total) => setStep({ kind: 'opening', summary, done, total }),
                     })
-                    await refreshLibrary()
-                    const changed = watched.length ? await keepHelpsChanges(stores, summary.language, watched).catch(() => []) : []
                     // The books with changed verses are read first, so the editor opens at once on one of them.
                     for (const c of changed) await loadBook(c.book, summary.language)
                     const brought = booksOf(summary)
