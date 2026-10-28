@@ -196,6 +196,9 @@ export const resourcesOf = (plan: PartsPlan): string[] => [...new Set(plan.downl
 export const listHasBook = (list: PartsList, book: string): boolean =>
   list.parts.some((p) => p.book === book.toLowerCase())
 
+/** The books a language's list names parts of, once each, in the list's order. */
+export const booksOfList = (list: PartsList): string[] => [...new Set(list.parts.flatMap((p) => (p.book ? [p.book] : [])))]
+
 /** What a list answer that is not a list means: what to tell the person, and when to ask again (seconds). */
 export function blockedByList(answer: Exclude<ListAnswer, { kind: 'listo' } | { kind: 'igual' }>): {
   blocked: Blocked
