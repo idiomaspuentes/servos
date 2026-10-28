@@ -15,6 +15,7 @@ import { inProject, setProject } from './projects/scope'
 import { bookState, languageOf, libraryVersion, loadBook, setProjects as setLibraryProjects, subscribeLibrary } from './projects/library'
 import { firstUndone, placeLabel, stepPercent } from './projects/progress'
 import { keepLastApp, keepPlace, lastAppOf, placeOf } from './projects/work'
+import { setOnlineProjects } from '../resources/online/onlineResources'
 import { AddBookSheet } from './screens/AddBook'
 import { BookScreen } from './screens/BookScreen'
 import { GatherScreen } from './screens/GatherScreen'
@@ -158,6 +159,8 @@ export function App() {
     setProjectsState(next)
     saveProjects(next)
     setLibraryProjects(next)
+    // What Servos online plans and offers: the books of these projects, in their helps languages.
+    setOnlineProjects(next)
   }
   const setResume = (r: Resume) => {
     setResumeState(r)

@@ -11,6 +11,10 @@
  *
  * On a phone with a memory card and no copy of the work on it yet, the copy is offered once (`frame/copies.ts`); and
  * when a copy could not be made, it is said there.
+ *
+ * Servos online (spec §2): new texts and helps for a project's language are offered in the same one place for a
+ * suggestion, with their size, «Bajar» and «Ahora no»; while they come, a status line says how far; once applied, a
+ * line that goes by itself says how many translated verses they changed (none, nothing said).
  */
 
 import { useEffect, useState } from 'react'
@@ -20,9 +24,15 @@ import { answerSuggestion, cardInPhone, copiesHere, suggestionAnswered } from '.
 import { useWider } from '../frame/Panes'
 import { MenuRow, Sheet } from '../frame/Sheet'
 import { useCopies } from './CopiesSheet'
-import { useT } from '../i18n/i18n'
+import { useLanguageLabel } from './NewProject'
+import { useI18n } from '../i18n/i18n'
 import { titleOf, type Phase, type Project } from '../projects/model'
 import { insideState, onInside } from '../projects/packsInside'
+import { doneSaid, percentOf, sizeIn } from '../projects/onlineWords'
+import { clearDone, declineOffer, downloadOffer, useOnlineResources } from '../../resources/online/onlineResources'
+
+/** How long the line that says what an update changed stays on home. */
+const DONE_SHOWN_MS = 6000
 
 export interface Resume {
   projectId: string
@@ -65,11 +75,20 @@ export function Home({
   /** Opens the copy on a memory card. */
   onCopies(): void
 }) {
-  const t = useT()
+  const { t, language: lang } = useI18n()
+  const languageLabel = useLanguageLabel()
   const wide = useWider()
   const [inside, setInside] = useState(insideState)
   useEffect(() => onInside(setInside), [])
   const copies = useCopies()
+  const net = useOnlineResources()
+  const done = net.done ? doneSaid(net.done.changedVerses) : null
+  // The line of what changed goes by itself, once home has shown it a while.
+  useEffect(() => {
+    if (!net.done) return
+    const gone = window.setTimeout(clearDone, DONE_SHOWN_MS)
+    return () => window.clearTimeout(gone)
+  }, [net.done])
   // A card in the phone and no copy yet: offered once, on home (philosophy, principles 9 and 12).
   const [card, setCard] = useState(false)
   const [answered, setAnswered] = useState(suggestionAnswered)
@@ -93,6 +112,8 @@ export function Home({
   const sizeOf = (p: Project) => `${p.languageName} (${p.languageCode}) · ${p.books.length === 1 ? t('inicio.unLibro') : t('inicio.libros', { n: p.books.length })}`
   const others = project ? project.books.filter((b) => b !== current) : []
 
+  // The one place for a suggestion: a copy that failed first (something went wrong), then new texts and helps, then the
+  // copy offered once.
   const suggestion =
     copies.place && copies.failed ? (
       // Said only when it fails (principle 6), once, under what continues the work.
@@ -104,6 +125,14 @@ export function Home({
           </button>
         </div>
       </section>
+    ) : net.offer && !net.busy ? (
+      <Suggestion
+        text={t('enLinea.hayNuevos', { idioma: languageLabel(net.offer.language), tamano: sizeIn(t, net.offer.bytes, lang) })}
+        action={t('enLinea.bajarNuevos')}
+        mark="↓"
+        onAction={() => void downloadOffer()}
+        onDismiss={declineOffer}
+      />
     ) : (
       !copies.place &&
       card &&
@@ -138,6 +167,18 @@ export function Home({
           <p className="status" role="status">
             {t('inicio.dentroAbriendo', { pct: Math.floor(100 * inside.part) })}
           </p>
+        )}
+        {/* Texts and helps coming from the Worker, until they are applied; then, for a while, what they changed. */}
+        {net.busy ? (
+          <p className="status" role="status">
+            {t('enLinea.bajando', { pct: percentOf(net.busy.progress) })}
+          </p>
+        ) : (
+          done && (
+            <p className="status" role="status">
+              {t(done.key, done.values)}
+            </p>
+          )
         )}
         {!project ? (
           // The first time, the one thing to do: the team's project. With no project there is nothing to copy yet.

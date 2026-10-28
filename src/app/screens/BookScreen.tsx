@@ -9,16 +9,19 @@
  * The steps are kinds of work, not stages the book has to be moved through: any is opened at any time, a team studies
  * one chapter while it translates another, and nobody has to decide for everyone that the book «is» in one (philosophy,
  * principle 5). A step is marked ✓ when its work is done. A book whose texts and helps are not on the phone says so,
- * and how to get them (principle 8).
+ * and how to get them (principle 8): with internet, downloading them is the filled button, with its size once known,
+ * and receiving a pack the outlined one; while they come, how far they went, and the book opens once they are applied.
+ * When they cannot come now, the notice says why, with no button to try again: the app tries by itself (spec §2).
  */
 
 import type { BookState } from '../projects/library'
 import { useEffect, useRef, useState } from 'react'
 import type { PrototypeData } from '../../prototype/data'
 import { RowButton, Suggestion } from '../frame/Actions'
+import { useOnline } from '../frame/online'
 import { useWider } from '../frame/Panes'
 import { MenuRow, Sheet } from '../frame/Sheet'
-import { useT } from '../i18n/i18n'
+import { useI18n, useT } from '../i18n/i18n'
 import type { MiniApp } from '../miniapps/contract'
 import { miniApp } from '../miniapps/registry'
 import { PHASES, bookName, titleOf, type BookEntry, type Phase, type Project } from '../projects/model'
@@ -28,6 +31,9 @@ import { sectionsToGather, versesToChoose, versionsFrom } from '../projects/vers
 import { BOOK_NOTE_CHAPTER, introNoteOn, workOf } from '../projects/work'
 import { saveFile } from '../frame/saveFile'
 import { bookUsfm } from '../projects/usfmExport'
+import { askForBook, useBookAsked, useDownloadSize } from '../projects/onlineBooks'
+import { blockedKey, downloadSaid, percentOf, sizeIn } from '../projects/onlineWords'
+import { useOnlineResources } from '../../resources/online/onlineResources'
 import { ShareSheet } from './ShareSheet'
 
 type Place = { chapter: number; verse: number }
@@ -78,7 +84,7 @@ export function BookScreen({
   /** Where the person left a mini app in this book, if they opened it. */
   placeFor(app: string): Place | null
 }) {
-  const t = useT()
+  const { t, language: lang } = useI18n()
   // The book as the team named it in its language; the bridge text's name, until then and beside it.
   const name = titleOf(project, book.code)
   const source = bookName(book.code)
@@ -120,6 +126,25 @@ export function BookScreen({
     return null
   }
   const stepPct = (phase: Phase) => stepPercent(project, book.code, phase, chapters)
+
+  // Not on this device: brought from the Worker when there is internet and nothing stops its language.
+  const missing = !chapters.length && (!state || state.state === 'missing' || state.state === 'error')
+  const helps = project.helpsLanguage
+  const online = useOnline()
+  const net = useOnlineResources()
+  const asked = useBookAsked(helps, book.code)
+  const busy = net.busy && net.busy.language === helps && net.busy.books.includes(book.code) ? net.busy : null
+  // Asked for and not yet coming (its list, or another download first): it is said as coming, at 0 %.
+  const coming = missing && (busy !== null || asked)
+  const blocked = missing && !coming ? net.blocked[helps] : undefined
+  const size = useDownloadSize(helps, book.code, missing && online && !coming && !blocked)
+  // The Worker has nothing of this book (a size of null): as without internet, its pack is received.
+  const canDownload = missing && online && !coming && !blocked && size !== null
+  const downloadLabel = (() => {
+    const said = downloadSaid('bajar', typeof size === 'number' ? sizeIn(t, size, lang) : null)
+    return t(said.key, said.values)
+  })()
+  const comingPct = busy ? percentOf(busy.progress) : 0
 
   const toChoose = versesToChoose(book.code, chapters.map((c) => ({ chapter: c.chapter, verses: versesOf(c) }))).length
   // Everyone translated the same: what waits is said by section, with whose versions came.
@@ -245,9 +270,28 @@ export function BookScreen({
             {t('libro.noSeLeyo', { libro: name, error: state.message })}
           </p>
         )}
-        {!chapters.length && (!state || state.state === 'missing' || state.state === 'error') && (
+        {missing && coming && (
+          // Coming from the Worker: how far, and that nothing waits for it. Nothing to press meanwhile.
+          <section className="download-progress" role="status">
+            <span>{t('enLinea.bajando', { pct: comingPct })}</span>
+            {bar(comingPct, 100)}
+            <span className="quiet">{t('enLinea.seguirUsando')}</span>
+          </section>
+        )}
+        {missing && canDownload && (
           <>
-            <p className="notice">
+            <p className="notice">{t('enLinea.faltan', { libro: name })}</p>
+            <button type="button" className="button-primary" onClick={() => void askForBook(helps, book.code)}>
+              {downloadLabel}
+            </button>
+            <button type="button" className="button-secondary" onClick={onReceive}>
+              {t('libro.recibirPaquete')}
+            </button>
+          </>
+        )}
+        {missing && !coming && !canDownload && (
+          <>
+            <p className="notice" role={blocked ? 'alert' : undefined}>
               {t(
                 state?.state === 'missing' && state.availability?.interrupted
                   ? 'libro.paqueteInterrumpido'
@@ -255,6 +299,13 @@ export function BookScreen({
                     ? 'libro.paqueteAnterior'
                     : 'libro.faltaPaquete',
                 { libro: name }
+              )}
+              {/* Why they cannot come now; the app tries again by itself, so there is no button for it. */}
+              {blocked && (
+                <>
+                  <br />
+                  {t(blockedKey(blocked))}
+                </>
               )}
             </p>
             <button type="button" className="button-primary" onClick={onReceive}>

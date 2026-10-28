@@ -260,7 +260,7 @@
   .home-current > .button-primary { grid-column: 2; grid-row: 1 / span 6; align-self: center; min-width: 0; margin: 0; }
 
   .screen:has(.book-steps) { max-width: 64rem; }
-  .main > :is(.tool-cards, .suggestion, .book-choose) { max-width: 34rem; }
+  .main > :is(.tool-cards, .suggestion, .book-choose, .download-progress) { max-width: 34rem; }
   .tool-columns { display: grid; grid-template-columns: minmax(0, 34rem) minmax(0, 1fr); align-items: start; gap: 1rem 1.5rem; }
 }
 
