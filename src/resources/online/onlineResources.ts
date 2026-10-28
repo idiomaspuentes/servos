@@ -192,18 +192,26 @@ function save(key: keyof typeof KEYS) {
 }
 
 /**
- * A language's kept list, when it is of this app's compat: one kept by an earlier version of the app names parts
- * this one cannot read (its catalog folder), and is neither planned from nor sent as an ETag.
+ * Whether a kept list can be planned from: of this app's compat (one kept by an earlier version of the app names
+ * parts this one cannot read) and from the server in use (one from `?packs=staging` names parts and originals
+ * production may not have). Any other is neither planned from nor sent as an ETag.
  */
+const usable = (k: KeptList | undefined): k is KeptList => !!k && k.list.compat === d().compat() && k.server === d().server()
+
 function kept(language: string): KeptList | undefined {
   const k = mem().listas[language]
-  return k && k.list.compat === d().compat() ? k : undefined
+  return usable(k) ? k : undefined
 }
 
-/** Every kept list of this app's compat, by language. */
+/** Every usable kept list, by language. */
 function keptLists(): Record<string, KeptList> {
-  const compat = d().compat()
-  return Object.fromEntries(Object.entries(mem().listas).filter(([, k]) => k.list.compat === compat))
+  return Object.fromEntries(Object.entries(mem().listas).filter(([, k]) => usable(k)))
+}
+
+/** The usable kept lists of the projects' languages: those that choose the originals, whatever their state. */
+function projectLists(): Record<string, KeptList> {
+  const lists = keptLists()
+  return Object.fromEntries(languagesOf(projects).flatMap((l) => (lists[l] ? [[l, lists[l]]] : [])))
 }
 
 /** The wait the originals route asked for, kept beside the languages' (`servos.enLinea.reintentar`). */
@@ -389,7 +397,13 @@ async function refreshList(language: string, ctx: Ctx, withEtag: boolean): Promi
     if (answer.kind === 'listo') {
       // Its originals list stays kept only if it still names the same one.
       const originals = before?.originals && before.originals.sha256 === answer.list.originals?.sha256 ? before.originals : undefined
-      mem().listas[language] = { etag: answer.etag, list: answer.list, at: iso(d().now()), ...(originals ? { originals } : {}) }
+      mem().listas[language] = {
+        etag: answer.etag,
+        list: answer.list,
+        at: iso(d().now()),
+        server: d().server(),
+        ...(originals ? { originals } : {}),
+      }
       save('listas')
     } else if (!before) return 'skip'
     noWait(language)
@@ -398,26 +412,33 @@ async function refreshList(language: string, ctx: Ctx, withEtag: boolean): Promi
   }
   const { blocked, retryAfter } = blockedByList(answer)
   if (retryAfter) retryLater(language, retryAfter)
+  // The Worker has no packs for it: its kept list names parts and originals no longer there, and is forgotten.
+  if (blocked === 'sinIdioma' && language in mem().listas) {
+    delete mem().listas[language]
+    save('listas')
+  }
   setBlocked(language, blocked)
   ctx.stopped.add(language)
   return 'blocked'
 }
 
 /**
- * The originals list every language plans from: the newest named by any kept list of this compat, whatever its
- * language's state (one refused or waiting now still holds its originals on the device), kept or fetched. When it
- * cannot be had now, null: languages whose lists name originals are not planned in this run, so no plan puts older
- * originals back. A 404 asks its language's list again, once per run (a list naming an originals list that is gone
- * is stale); another 404 is `noDisponible`. A 429 waits its time; a failure waits for the next check.
+ * The originals list every language plans from: the newest named by the kept lists of the projects' languages (of
+ * this compat and server), whatever their state (one refused or waiting now still holds its originals on the
+ * device), kept or fetched. When it cannot be had now, null, and the languages that need it hear «noDisponible»:
+ * languages whose lists name originals are not planned in this run, so no plan puts older originals back. A 404 asks
+ * its language's list again, once per run (a list naming an originals list that is gone is stale); another 404 is
+ * `noDisponible`. A 429 waits its time; a failure waits for the next check.
  */
 async function resolveOriginals(ctx: Ctx): Promise<PartsList | null> {
   for (;;) {
-    const lists = keptLists()
+    const lists = projectLists()
     const ref = newestOriginals(lists, Object.keys(lists))
     if (!ref) return null
     // The projects' languages that cannot be planned without it.
-    const needing = languagesOf(projects).filter((l) => lists[l]?.list.originals)
-    const found = keptOriginals(lists, ref.sha256)
+    const needing = Object.keys(lists).filter((l) => lists[l].list.originals)
+    // Fetched under any language (of this server and compat), it is the same list.
+    const found = keptOriginals(keptLists(), ref.sha256)
     if (found) {
       cleared(needing, ctx)
       return found
@@ -442,7 +463,10 @@ async function resolveOriginals(ctx: Ctx): Promise<PartsList | null> {
       case 'noEstá':
         if (!ctx.originalsRetried) {
           ctx.originalsRetried = true
-          if ((await refreshList(ref.from, ctx, false)) === 'ok') continue
+          const again = await refreshList(ref.from, ctx, false)
+          if (again === 'ok') continue
+          // Refused (its own block says why) or not asked: the others are told they cannot download now.
+          if (!ctx.signal.aborted) unavailable()
           return null
         }
         unavailable()
@@ -467,9 +491,9 @@ function cleared(languages: string[], ctx: Ctx) {
 
 /** The originals list to plan from without asking anyone (startup). */
 function keptNewestOriginals(): PartsList | null {
-  const lists = keptLists()
+  const lists = projectLists()
   const ref = newestOriginals(lists, Object.keys(lists))
-  return ref ? keptOriginals(lists, ref.sha256) : null
+  return ref ? keptOriginals(keptLists(), ref.sha256) : null
 }
 
 type Planned = { plan: PartsPlan; register: Register; list: PartsList; originals?: PartsList; chosen: string[] }

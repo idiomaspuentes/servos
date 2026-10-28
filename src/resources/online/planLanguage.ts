@@ -17,6 +17,8 @@ export type KeptList = {
   list: PartsList
   /** When this list's content was fetched (ISO): a 304 does not change it. */
   at: string
+  /** The Worker it came from (`packsServer()`): a list of another server is not planned from. */
+  server?: string
   /** The originals list it names, once fetched. */
   originals?: { sha256: string; list: PartsList }
 }
@@ -86,23 +88,26 @@ export function newestOriginals(
   const known = new Set(Object.values(kept).flatMap((k) => (k?.originals?.list.resources ?? []).map((r) => r.key)))
   const keys = known.size ? known : null
   type Candidate = { sha256: string; path: string; from: string; at: number; stamps: Record<string, string> }
-  let best: Candidate | null = null
+  const candidates: Candidate[] = []
   for (const language of languages) {
     const k = kept[language]
     const ref = k?.list.originals
     if (!k || !ref) continue
     const parsed = Date.parse(k.at)
-    const candidate: Candidate = { ...ref, from: language, at: Number.isFinite(parsed) ? parsed : -Infinity, stamps: originalsStampsOf(k) }
-    if (!best) {
-      best = candidate
-      continue
-    }
-    const order = candidate.sha256 === best.sha256 ? 0 : compareOriginals(candidate.stamps, best.stamps, keys)
-    // Equal fetch times (the same check) go to the later language in the order given.
-    if (order !== null && order > 0) best = candidate
-    else if ((order === null || order === 0) && !(candidate.at < best.at)) best = candidate
+    candidates.push({ ...ref, from: language, at: Number.isFinite(parsed) ? parsed : -Infinity, stamps: originalsStampsOf(k) })
   }
-  return best && { sha256: best.sha256, path: best.path, from: best.from }
+  if (!candidates.length) return null
+  // Over all of them, whatever their order: those no other is newer than by its stamps (all of them, should the
+  // stamps contradict each other in a circle), then the one fetched last, then the greatest sha256 and language.
+  const newerThan = (a: Candidate, b: Candidate) => a.sha256 !== b.sha256 && (compareOriginals(a.stamps, b.stamps, keys) ?? 0) > 0
+  const maximal = candidates.filter((c) => !candidates.some((o) => newerThan(o, c)))
+  const pool = maximal.length ? maximal : candidates
+  const best = pool.reduce((x, y) => {
+    if (x.at !== y.at) return y.at > x.at ? y : x
+    if (x.sha256 !== y.sha256) return y.sha256 > x.sha256 ? y : x
+    return y.from > x.from ? y : x
+  })
+  return { sha256: best.sha256, path: best.path, from: best.from }
 }
 
 /** The originals list with this sha256 among the kept ones, whichever language fetched it. */

@@ -78,6 +78,19 @@ describe('what a language needs', () => {
     expect(newestOriginals(mixed, ['es-419', 'pt-br'])).toMatchObject({ sha256: sha('1') })
   })
 
+  it('the choice does not depend on the order of the lists, with three of them and mixed stamps', () => {
+    const at = (h: number) => `2026-10-28T${String(h).padStart(2, '0')}:00:00Z`
+    // A is newer than B; C is newer than both in one original and older in the other (cannot be told).
+    const a = kept(list('a', [], 'a', { [UGNT]: 'v3#2026-03-01T00:00:00Z', [UHB]: 'v2#2026-02-01T00:00:00Z' }), at(10))
+    const b = kept(list('b', [], 'b', { [UGNT]: 'v2#2026-02-01T00:00:00Z', [UHB]: 'v2#2026-02-01T00:00:00Z' }), at(12))
+    const c = kept(list('c', [], 'c', { [UGNT]: 'v1#2026-01-01T00:00:00Z', [UHB]: 'v3#2026-03-01T00:00:00Z' }), at(11))
+    const all = { a, b, c }
+    // B is older than A, so it is out; of A and C, which nothing is newer than, the one fetched last.
+    for (const order of [['a', 'b', 'c'], ['b', 'c', 'a'], ['c', 'a', 'b'], ['b', 'a', 'c']]) {
+      expect(newestOriginals(all, order)).toMatchObject({ sha256: sha('c') })
+    }
+  })
+
   it('a list that names originals is not planned without them; one that names none plans alone', () => {
     const tn = entry('a', 'book', 'o/es-419/tn', 'tit')
     const orig = entry('b', 'original', 'unfoldingWord/el-x-koine/ugnt', 'tit')

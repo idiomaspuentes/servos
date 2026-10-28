@@ -7,6 +7,7 @@ import {
   RECHECK_MS,
   bookDownloadSize,
   checkForUpdates,
+  setOnlineProjects,
   declineOffer,
   downloadBook,
   downloadOffer,
@@ -718,17 +719,29 @@ describe('the originals never go back', () => {
     expect(requests(w, 'part').map(last)).not.toContain(pt.orig[0].sha256)
   })
 
-  it('when the newest originals list cannot come now, nothing is planned with older ones', async () => {
+  it('when the newest originals list cannot come now, an older one kept on the device is not used', async () => {
     const w = fakeWorker()
-    await publish(w, { language: 'es-419', books: ['tit'], originals: '2' })
     const pt = await publish(w, { language: 'pt-br', books: ['tit'], originals: '1' })
-    w.setAnswer('originals', { status: 500, body: 'down', contentType: 'text/plain' })
     const d = device(w)
-    await startOnline([project('es-419', ['tit']), project('pt-br', ['tit'])])
+    // pt-br alone first: its originals list (O1) is kept, and Titus applied with it.
+    await startOnline([project('pt-br', ['tit'])])
     await downloadBook('pt-br', 'tit')
-    expect((await slots(d)).size).toBe(0)
-    expect(requests(w, 'originals').map(last)).not.toContain(pt.ref.sha256)
-    expect(requests(w, 'part')).toEqual([])
+    expect(await originalsHeld(d)).toEqual([pt.orig[0].sha256])
+
+    // es-419 comes, built on newer originals (O2) that cannot be had now; pt-br's notes change meanwhile.
+    const es = await publish(w, { language: 'es-419', books: ['tit'], originals: '2' })
+    const pt2 = await publish(w, { language: 'pt-br', books: ['tit'], originals: '1', version: '2', code: 'code-2' })
+    w.setAnswer('originals', { status: 500, body: 'down', contentType: 'text/plain' })
+    setOnlineProjects([project('es-419', ['tit']), project('pt-br', ['tit'])])
+    await checkForUpdates({ force: true })
+    expect(requests(w, 'originals').map(last)).toContain(es.ref.sha256)
+    // O1 is kept and would plan pt-br's update: it is not used, nothing is offered or downloaded.
+    expect(onlineState().offer).toBeNull()
+    const parts = requests(w, 'part').length
+    await downloadBook('pt-br', 'tit')
+    expect(requests(w, 'part')).toHaveLength(parts)
+    expect([...(await slots(d)).values()].map((r) => r.sha256)).not.toContain(pt2.parts[0].sha256)
+    expect(onlineState().blocked).toEqual({ 'es-419': 'noDisponible', 'pt-br': 'noDisponible' })
   })
 
   it('a stale «noDisponible» goes once the originals come', async () => {
@@ -874,3 +887,85 @@ describe('what the queue brings back', () => {
     expect(JSON.parse(d.storage.getItem('servos.enLinea.reintentar')!)).toHaveProperty('es-419')
   })
 })
+
+describe('which kept lists choose the originals', () => {
+  const originalsHeld = async (d: ReturnType<typeof device>) =>
+    [...(await slots(d)).values()].filter((r) => r.list === 'originals').map((r) => r.sha256)
+
+  it('a list kept from another server is not used: after `?packs=staging`, production plans again', async () => {
+    const staging = fakeWorker({ server: 'https://staging.test/v2/packs/' })
+    await publish(staging, { language: 'es-419', books: ['tit'], originals: '1' })
+    // A test language only staging has, built on the newest originals.
+    await publish(staging, { language: 'xx', books: ['tit'], originals: '9' })
+    const first = device(staging)
+    const both = [project('es-419', ['tit']), project('xx', ['tit'])]
+    await startOnline(both)
+
+    // Back to production, which has es-419 (on O1) and neither xx nor O9.
+    const production = fakeWorker({ server: 'https://prod.test/v2/packs/' })
+    const es = await publish(production, { language: 'es-419', books: ['tit'], originals: '1' })
+    const d = device(production, {}, first)
+    await startOnline(both)
+    await checkForUpdates({ force: true })
+    await downloadBook('es-419', 'tit')
+    expect(await originalsHeld(d)).toEqual([es.orig[0].sha256])
+    expect(d.here.has('tit')).toBe(true)
+    expect(onlineState().blocked).toEqual({ xx: 'sinIdioma' })
+  })
+
+  it('a list kept for a language no project reads any more does not choose', async () => {
+    const w = fakeWorker()
+    const es = await publish(w, { language: 'es-419', books: ['tit'], originals: '1' })
+    const xx = await publish(w, { language: 'xx', books: ['tit'], originals: '9' })
+    const d = device(w)
+    await startOnline([project('es-419', ['tit']), project('xx', ['tit'])])
+    // The xx project is gone, and the Worker no longer has xx nor its originals.
+    w.lists.delete('xx')
+    w.originals.delete(xx.ref.sha256)
+    setOnlineProjects([project('es-419', ['tit'])])
+    // A new device session: what the last one fetched of O9 is not in memory, only its list in storage.
+    const again = device(w, {}, { ...d, storage: withoutOriginals(d.storage, 'xx') })
+    await startOnline([project('es-419', ['tit'])])
+    await downloadBook('es-419', 'tit')
+    expect(await originalsHeld(again)).toEqual([es.orig[0].sha256])
+  })
+
+  it('a language list answered «sinIdioma» is forgotten', async () => {
+    const w = fakeWorker()
+    await publish(w, { language: 'xx', books: ['tit'] })
+    const d = device(w)
+    await startOnline([project('xx', ['tit'])])
+    expect(JSON.parse(d.storage.getItem('servos.enLinea.listas')!)).toHaveProperty('xx')
+    w.lists.delete('xx')
+    await checkForUpdates({ force: true })
+    expect(onlineState().blocked).toEqual({ xx: 'sinIdioma' })
+    expect(JSON.parse(d.storage.getItem('servos.enLinea.listas')!)).not.toHaveProperty('xx')
+    d.online = false
+    expect(await bookDownloadSize('xx', 'tit')).toBeNull()
+  })
+
+  it('an originals list gone whose language list is then refused says «noDisponible» to the others', async () => {
+    const w = fakeWorker()
+    const es = await publish(w, { language: 'es-419', books: ['tit'], originals: '2' })
+    await publish(w, { language: 'pt-br', books: ['tit'], originals: '1' })
+    w.originals.delete(es.ref.sha256)
+    device(w)
+    // es-419's list is asked for again after the 404, and is being prepared.
+    let lists = 0
+    w.gate(async (url) => {
+      if (url.endsWith('/es-419') && ++lists === 2) w.setAnswer('list', ANSWERS.preparando, 1)
+    })
+    await startOnline([project('es-419', ['tit']), project('pt-br', ['tit'])])
+    expect(onlineState().blocked).toEqual({ 'es-419': 'preparando', 'pt-br': 'noDisponible' })
+  })
+})
+
+/** A copy of a storage without the originals list kept under one language (as if never fetched there). */
+function withoutOriginals(storage: ReturnType<typeof memoryStorage>, language: string) {
+  const copy = memoryStorage()
+  for (const [k, v] of storage.m) copy.setItem(k, v)
+  const listas = JSON.parse(copy.getItem('servos.enLinea.listas')!)
+  delete listas[language].originals
+  copy.setItem('servos.enLinea.listas', JSON.stringify(listas))
+  return copy
+}
