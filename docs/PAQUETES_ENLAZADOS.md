@@ -169,7 +169,7 @@ encuentren; después el id y el libro al final, para que una consulta lea todos 
 
 ### 5.3 Versiones
 
-- `versions.index.helpsIndex` (decisión 2), con `HELPS_INDEX_VERSION = 1` en `packVersions.ts` y en
+- `versions.index.helpsIndex` (decisión 2), con `HELPS_INDEX_VERSION = 1` (definida en `resource-pipeline/src/language/bookIndex.ts`, tarea 3) y en
   `partsCodeVersions`. **No entra en el compat.** La capa `index` es opcional: no está en `REQUIRED_LAYERS`.
 - Regla del lector: si la versión del índice no es la suya, o no conoce la capa o la clase, **salta el índice** y sigue
   con lo demás. Esto pide un cambio pequeño en `planParts`/`applyParts` (etapa 1, tarea 1) que debe estar en la
@@ -189,7 +189,7 @@ cuya huella cambió; el aparato baja solo las partes cuyo sha cambió.
 | Un libro de un texto alineado (GLT Rut) | Solo la columna del GLT en Rut | Cuando se publica ese texto |
 | Las notas o los enlaces de TWL de un libro | Solo esas filas de ese recurso en ese libro, y el resumen del idioma | En los idiomas activos, a menudo |
 | Solo el manifiesto (versión, fechas), el README o la licencia | Nada | — |
-| El código que hace el índice (`HELPS_INDEX_VERSION`) | Todas las partes `index`; los textos y ayudas no | Cuando cambia el formato del índice |
+| El código que hace el índice (`HELPS_INDEX_VERSION`) | El servidor rehace todas las partes (la versión entra en el `code` de todas las huellas), pero las de textos y ayudas salen con los mismos bytes y el mismo sha: los aparatos solo vuelven a bajar las partes `index` | Cuando cambia el formato del índice |
 
 Recalcular es barato (segundos); lo caro son las bajadas a los teléfonos, y por eso cada libro cambia por su lado.
 
