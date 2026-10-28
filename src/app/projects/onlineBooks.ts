@@ -31,7 +31,7 @@ export function useDownloadSize(language: string, book: string | null, wanted: b
   const net = useOnlineResources()
   const library = useSyncExternalStore(subscribeLibrary, libraryVersion)
   const online = useOnline()
-  const moved = [net.version, JSON.stringify(net.blocked), net.offer?.language, net.offer?.code, net.busy?.language, library, online].join('|')
+  const moved = [net.version, JSON.stringify(net.blocked), net.offer?.language, net.offer?.key, net.busy?.language, library, online].join('|')
   const [size, setSize] = useState<{ of: string; bytes: BookSize } | null>(null)
   const of = book ? `${language} ${book}` : ''
   useEffect(() => {

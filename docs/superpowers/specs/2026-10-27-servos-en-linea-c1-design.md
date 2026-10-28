@@ -64,8 +64,9 @@ En `src/resources/online/`:
   - `noDisponible`: «No se pueden bajar ahora; se intentará más tarde»;
   - sin espacio: «No hay espacio en el teléfono para bajarlos».
 - **Actualizaciones** (Inicio, el lugar único de sugerencias): «Hay textos y ayudas nuevos para Español (340 KB)», con
-  «Bajar» y «Ahora no». «Ahora no» la quita hasta otra versión (se recuerda el `code` de la lista). Mientras baja y se
-  aplica, una línea de estado en Inicio: «Bajando textos y ayudas · 45 %».
+  «Bajar» y «Ahora no». «Ahora no» la quita hasta otra versión: se recuerda lo ofrecido (una huella de las partes
+  que trae), no el `code` de la lista, que es el de la construcción y no cambia de una versión a otra. Mientras baja
+  y se aplica, una línea de estado en Inicio: «Bajando textos y ayudas · 45 %».
 - **Después de aplicar**: el «qué cambió» de siempre en el editor, y en Inicio una línea que se va sola: «Textos y
   ayudas al día · cambiaron 3 versículos traducidos». Si nada traducido cambió, no hay aviso.
 - Los textos van en el grupo `enLinea.*` en es, pt y en; los que dicen «teléfono» tienen su `.computadora`. Cada
@@ -114,8 +115,8 @@ En `src/resources/online/`:
   cliente (cada respuesta, ETag/304, sha256 equivocado), de la cola (4 a la vez, originales primero, un corte sigue
   desde la zona de espera, 404 de una parte → lista otra vez, 429 → espera) y del flujo (libro nuevo → bajada →
   aplicado y `bookIsHere`; actualización ofrecida → aplicada al dejar de escribir con su «qué cambió»; «Ahora no»
-  recordado por el `code`; reparación al arrancar; abrir un paquete borra sus huecos del registro; sin espacio → aviso
-  sin empezar); el servidor (`?packs=staging` guardado) y la CSP con los dos orígenes.
+  recordado por lo ofrecido, también cuando el `code` de la lista no cambia; reparación al arrancar; abrir un paquete
+  borra sus huecos del registro; sin espacio → aviso sin empezar); el servidor (`?packs=staging` guardado) y la CSP con los dos orígenes.
 - Con el Worker real de preview, solo con una variable: un proyecto de es-419 con Tito en almacenes vacíos baja y
   aplica, y las notas de Tito 1 tienen sus citas alineadas.
 - En la app: servidor de desarrollo con `?packs=staging` a 375 px — un proyecto nuevo con un libro que no está se baja

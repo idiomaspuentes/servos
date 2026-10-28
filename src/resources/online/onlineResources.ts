@@ -24,6 +24,7 @@ import { useSyncExternalStore } from 'react'
 import {
   PARTS_FORMAT_VERSION,
   applyParts as realApplyParts,
+  sha256Hex,
   compatKeyOf,
   packTargetFrom,
   unitOfPart,
@@ -66,8 +67,11 @@ export type { Blocked } from './planLanguage'
 export const RECHECK_MS = 3 * 60 * 60 * 1000
 
 export type OnlineState = {
-  /** The Home card: what is new for a language, its bytes, and its list's code («Ahora no» remembers it). */
-  offer: { language: string; bytes: number; code: string } | null
+  /**
+   * The Home card: what is new for a language, its bytes, and the key of what it offers (a hash of its parts' shas):
+   * «Ahora no» remembers the key, so the same download is not offered again and the next release is.
+   */
+  offer: { language: string; bytes: number; key: string } | null
   /** A download running, until it is applied. */
   busy: { language: string; books: string[]; progress: Progress } | null
   /** Why a language's texts and helps cannot come now (codes the interface translates). */
@@ -300,16 +304,16 @@ export function setOnlineProjects(next: Project[]) {
 }
 
 /** What is new for each language (and the units it covers), offered one at a time in the projects' order. */
-const offers = new Map<string, { bytes: number; code: string; units: string[] }>()
+const offers = new Map<string, { bytes: number; key: string; units: string[] }>()
 
 function showOffer() {
   const declined = mem().ahoraNo
   for (const language of languagesOf(projects)) {
     const o = offers.get(language)
-    if (o && declined[language] !== o.code) {
+    if (o && declined[language] !== o.key) {
       const current = state.offer
-      if (current?.language !== language || current.bytes !== o.bytes || current.code !== o.code) {
-        set({ offer: { language, bytes: o.bytes, code: o.code } })
+      if (current?.language !== language || current.bytes !== o.bytes || current.key !== o.key) {
+        set({ offer: { language, bytes: o.bytes, key: o.key } })
       }
       return
     }
@@ -317,11 +321,14 @@ function showOffer() {
   if (state.offer) set({ offer: null })
 }
 
-/** «Ahora no»: the offer goes away until its language's list has another code. */
+/**
+ * «Ahora no»: the offer goes away until something else is offered for its language. Not the list's `code`: that is the
+ * build's (compat and builder code) and stays the same across content releases, so it would silence them for months.
+ */
 export function declineOffer(): void {
   const offer = state.offer
   if (!offer) return
-  mem().ahoraNo[offer.language] = offer.code
+  mem().ahoraNo[offer.language] = offer.key
   save('ahoraNo')
   showOffer()
 }
@@ -749,15 +756,19 @@ async function wantedFromStaging(languages: string[], originals: PartsList | nul
   }
 }
 
+/** What an offer brings, as «Ahora no» remembers it: the sha256 of its parts' shas, sorted. */
+const offerKey = (plan: PartsPlan): Promise<string> =>
+  sha256Hex(new TextEncoder().encode(plan.download.map((p) => p.sha256).sort().join(' ')))
+
 /** What is new for a language's books on the device, offered unless it is being downloaded or refused. */
 async function updateOffer(language: string, originals: PartsList | null, ctx: Ctx) {
   if (ctx.signal.aborted) return
-  let offer: { bytes: number; code: string; units: string[] } | null = null
+  let offer: { bytes: number; key: string; units: string[] } | null = null
   if (!wanted.has(language) && !ctx.stopped.has(language) && !listBlocked(language) && kept(language)) {
     const register = await readPartsRegister(d().stores())
     const units = offerUnits(language, register)
     const planned = units.length ? await planFor(language, units, originals) : null
-    if (planned?.plan.download.length) offer = { bytes: planned.plan.bytes, code: planned.list.code, units }
+    if (planned?.plan.download.length) offer = { bytes: planned.plan.bytes, key: await offerKey(planned.plan), units }
   }
   if (ctx.signal.aborted) return
   if (offer) offers.set(language, offer)

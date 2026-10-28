@@ -28,7 +28,9 @@ Opening a whole pack forgets the register slots it overwrites (`packs.ts`).
   …)` — compute it, do not hard-code it twice). Servers: production `https://tc-helps.mcp.servant.bible/v2/packs/`,
   staging `https://translation-helps-mcp-v2-preview.unfoldingword.workers.dev/v2/packs/`.
 - localStorage keys: `servos.enLinea.servidor`, `servos.enLinea.buscado` (ISO time of the last check),
-  `servos.enLinea.reintentar` (per language: ISO time), `servos.enLinea.ahoraNo` (per language: list `code` declined),
+  `servos.enLinea.reintentar` (per language: ISO time), `servos.enLinea.ahoraNo` (per language: key of the offer
+  declined, a hash of its sorted part shas — not the list `code`, which is the build's and stays the same across
+  content releases),
   `servos.enLinea.listas` (per language: `{etag, list}` kept for 304s and for planning offline).
 - Staging database name: `servos-partes`.
 - Queue: 4 parts at a time; originals parts first. Recheck interval: 3 h (`RECHECK_MS = 3 * 60 * 60 * 1000`). Free
@@ -141,7 +143,7 @@ chosen, to hide the setting); `setPacksServer(id)`.
 `keepHelpsChanges`), `online.ts` (`isOnline`, `whenNotTyping`), `store.ts`. **Produces** (deps injectable for tests):
 ```ts
 type OnlineState = {
-  offer: { language: string; bytes: number; code: string } | null      // the Home card
+  offer: { language: string; bytes: number; key: string } | null       // the Home card
   busy: { language: string; books: string[]; progress: Progress } | null
   blocked: Record<string /* language */, 'preparando' | 'actualizarApp' | 'noDisponible' | 'sinIdioma' | 'sinEspacio'>
   done: { language: string; changedVerses: number } | null               // the line that goes away
@@ -151,7 +153,7 @@ function startOnline(projects: Project[]): Promise<void>      // heal (applyPart
 function checkForUpdates(opts?: { force?: boolean }): Promise<void>  // respects RECHECK_MS and reintentar
 function downloadBook(language: string, book: string): Promise<void> // the project's book now
 function downloadOffer(): Promise<void>                       // the Home card's «Bajar»
-function declineOffer(): void                                 // «Ahora no», remembered by list code
+function declineOffer(): void                                 // «Ahora no», remembered by the offer's key (hash of its part shas)
 ```
 Rules (spec §3–§4): units per language = `shared` + `book <b>` of every project book with that `helpsLanguage`;
 originals from the newest originals list kept in `servos.enLinea.listas` (by the list's fetch time) — Review Focus 4;
@@ -161,8 +163,8 @@ apply via `whenNotTyping` (never while typing — Review Focus 3): `watchHelps` 
 `quota` → `sinEspacio`; wake lock where available during apply. Originals `noEstá` → fetch the language list again once in that check; a second `noEstá` → `noDisponible` (no loop); originals `espera` → `reintentar`; `falla` → try at the next check.
 
 - [ ] Steps: tests with the fake Worker and fake stores — new book downloaded and applied (`bookIsHere` after
-  `refreshLibrary`); an offer appears with its bytes and code; «Ahora no» hides it until the code changes; apply waits
-  while typing (simulate `whenNotTyping` holding) and runs at the pause; a cut queue then a second check finishes;
+  `refreshLibrary`); an offer appears with its bytes and key; «Ahora no» hides it until what is offered changes (a
+  new release with the same list code is offered again); apply waits while typing (simulate `whenNotTyping` holding) and runs at the pause; a cut queue then a second check finishes;
   `preparando`/`actualizarApp`/`sinIdioma`/`noDisponible`/`sinEspacio` set `blocked` and nothing is written;
   `reintentar` respected; two languages plan originals once from the newest list; startup heal calls `applyParts`
   with an empty-download plan. RED; implement; GREEN; commit `Parts: check, download and apply, without getting in

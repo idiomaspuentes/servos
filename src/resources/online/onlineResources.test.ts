@@ -41,8 +41,9 @@ const unique = (what: string) => `${what}-${Date.now()}-${n++}`
 
 /**
  * What the Worker serves for a language: an originals list with each book's original, and a language list with each
- * book's notes and the shared titles. `version` changes the notes (new shas), `originals` the originals list (a
- * higher digit is a later release of the original, unless `stamp` says otherwise).
+ * book's notes and the shared titles. `version` changes the notes (new shas) and their release, `originals` the
+ * originals list (a higher digit is a later release of the original, unless `stamp` says otherwise). The list's `code`
+ * stays the build's whatever the content, as the real Worker's does, unless `code` names another.
  */
 async function publish(w: Worker, opts: { language?: string; books: string[]; version?: string; originals?: string; stamp?: string; code?: string }) {
   const language = opts.language ?? 'es-419'
@@ -64,7 +65,7 @@ async function publish(w: Worker, opts: { language?: string; books: string[]; ve
   }
   parts.push(await w.addPart({ kind: 'titles', resource: tw }, [row('text', `helps-text:titles:${tw}@v1:all`, `titles ${v}`)]))
   const list = await w.setList(language, parts, {
-    code: opts.code ?? `code-${v}`,
+    ...(opts.code ? { code: opts.code } : {}),
     versions: RESOURCE_VERSIONS,
     resources: [resource(tn, 'notes', 'TSV Translation Notes', 'language'), resource(tw, 'words', 'Translation Words', 'language')],
     originals: ref,
@@ -227,11 +228,11 @@ describe('updates offered, and applied without getting in the way', () => {
 
   it('an offer appears with its bytes and code, and «Bajar» applies it with what changed', async () => {
     const { w, d } = await applied()
-    const v2 = await publish(w, { books: ['tit'], version: '2', code: 'code-2' })
+    const v2 = await publish(w, { books: ['tit'], version: '2' })
     const partsBefore = requests(w, 'part').length
     await checkForUpdates({ force: true })
     // The notes of tit and the shared titles changed; the originals did not.
-    expect(onlineState().offer).toEqual({ language: 'es-419', bytes: v2.parts[0].bytes + v2.parts[1].bytes, code: 'code-2' })
+    expect(onlineState().offer).toMatchObject({ language: 'es-419', bytes: v2.parts[0].bytes + v2.parts[1].bytes })
     // A check only asks for the lists.
     expect(requests(w, 'part')).toHaveLength(partsBefore)
 
@@ -242,24 +243,29 @@ describe('updates offered, and applied without getting in the way', () => {
     expect(onlineState()).toMatchObject({ offer: null, busy: null, done: { language: 'es-419', changedVerses: 3 } })
   })
 
-  it('«Ahora no» hides the offer until the list has another code', async () => {
+  it('«Ahora no» hides the offer until something else is offered, though the list keeps its code', async () => {
     const { w, d } = await applied()
-    await publish(w, { books: ['tit'], version: '2', code: 'code-2' })
+    const code = w.lists.get('es-419')!.code
+    await publish(w, { books: ['tit'], version: '2' })
     await checkForUpdates({ force: true })
-    expect(onlineState().offer?.code).toBe('code-2')
+    const first = onlineState().offer!.key
+    expect(first).toMatch(/^[0-9a-f]{64}$/)
     declineOffer()
     expect(onlineState().offer).toBeNull()
-    expect(JSON.parse(d.storage.getItem('servos.enLinea.ahoraNo')!)).toEqual({ 'es-419': 'code-2' })
+    expect(JSON.parse(d.storage.getItem('servos.enLinea.ahoraNo')!)).toEqual({ 'es-419': first })
     await checkForUpdates({ force: true })
     expect(onlineState().offer).toBeNull()
-    await publish(w, { books: ['tit'], version: '3', code: 'code-3' })
+    // A new release: the build, and so the list's code, are the same; what is offered is not.
+    await publish(w, { books: ['tit'], version: '3' })
+    expect(w.lists.get('es-419')!.code).toBe(code)
     await checkForUpdates({ force: true })
-    expect(onlineState().offer?.code).toBe('code-3')
+    expect(onlineState().offer).toMatchObject({ language: 'es-419' })
+    expect(onlineState().offer!.key).not.toBe(first)
   })
 
   it('never applies while the person types; it applies at the pause (Review Focus 3)', async () => {
     const { w, d } = await applied()
-    await publish(w, { books: ['tit'], version: '2', code: 'code-2' })
+    await publish(w, { books: ['tit'], version: '2' })
     await checkForUpdates({ force: true })
     d.log.length = 0
     d.typing = true
@@ -661,8 +667,8 @@ describe('what the Home offer counts', () => {
     d.here = new Set(['tit', 'jon'])
     await startOnline([project('es-419', ['tit', 'jon', 'rut'])])
     const [tit, jon, rut, titles] = parts
-    expect(onlineState().offer).toEqual({
-      language: 'es-419', code: 'code-1', bytes: tit.bytes + jon.bytes + titles.bytes + orig[0].bytes + orig[1].bytes,
+    expect(onlineState().offer).toMatchObject({
+      language: 'es-419', bytes: tit.bytes + jon.bytes + titles.bytes + orig[0].bytes + orig[1].bytes,
     })
     expect(await bookDownloadSize('es-419', 'rut')).toBe(rut.bytes + titles.bytes + orig[2].bytes)
     await downloadOffer()
@@ -679,9 +685,9 @@ describe('what the Home offer counts', () => {
     expect(onlineState().offer).toBeNull()
     await downloadBook('es-419', 'tit')
     d.here = new Set()
-    const v2 = await publish(w, { books: ['tit'], version: '2', code: 'code-2' })
+    const v2 = await publish(w, { books: ['tit'], version: '2' })
     await checkForUpdates({ force: true })
-    expect(onlineState().offer).toMatchObject({ code: 'code-2', bytes: v2.parts[0].bytes + v2.parts[1].bytes })
+    expect(onlineState().offer).toMatchObject({ bytes: v2.parts[0].bytes + v2.parts[1].bytes })
   })
 })
 
@@ -734,7 +740,7 @@ describe('the originals never go back', () => {
 
     // es-419 comes, built on newer originals (O2) that cannot be had now; pt-br's notes change meanwhile.
     const es = await publish(w, { language: 'es-419', books: ['tit'], originals: '2' })
-    const pt2 = await publish(w, { language: 'pt-br', books: ['tit'], originals: '1', version: '2', code: 'code-2' })
+    const pt2 = await publish(w, { language: 'pt-br', books: ['tit'], originals: '1', version: '2' })
     w.setAnswer('originals', { status: 500, body: 'down', contentType: 'text/plain' })
     setOnlineProjects([project('es-419', ['tit']), project('pt-br', ['tit'])])
     await checkForUpdates({ force: true })

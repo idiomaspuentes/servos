@@ -8,6 +8,12 @@ import { sha256Hex, writePart, type PartEntry, type PartRow, type PartsList } fr
 
 export const FAKE_SERVER = 'https://worker.test/v2/packs/'
 export const FAKE_COMPAT = 'f2.0-test'
+/**
+ * A list's `code`, as the real Worker gives it: the compat and the builder's code, the same for every content release
+ * (the staging es-419 list's is `f2.0-…+7bc31e739fbeed69` whatever its resources' releases). Lists keep it unless a
+ * test names another.
+ */
+export const FAKE_CODE = `${FAKE_COMPAT}+build1`
 
 /** A forced answer: its status, body (JSON-encoded unless a string) and headers. */
 export type Forced = {
@@ -213,7 +219,7 @@ export function fakeWorker(opts: FakeWorkerOptions = {}) {
         schema: 2,
         language,
         compat,
-        code: 'code-1',
+        code: `${compat}+build1`,
         versions: {},
         resources: [],
         parts: entries,
