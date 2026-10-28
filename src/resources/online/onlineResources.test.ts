@@ -1246,3 +1246,27 @@ describe('a pack opened while Servos online works (Task 8)', () => {
     expect(requests(w, 'list')).toHaveLength(1)
   })
 })
+
+describe('small guards (Task 8)', () => {
+  it('a list the app cannot plan from (another compat) moves no version: a size screen does not ask again and again', async () => {
+    const w = fakeWorker()
+    const { parts } = await publish(w, { books: ['tit'] })
+    await w.setList('es-419', parts, { compat: 'f9.9-other' } as Partial<PartsList>)
+    device(w)
+    setOnlineProjects([project('es-419', ['tit'])])
+    const before = onlineState().version
+    expect(await bookDownloadSize('es-419', 'tit')).toBeUndefined()
+    expect(requests(w, 'list')).toHaveLength(1)
+    expect(onlineState().version).toBe(before)
+  })
+
+  it('a check before the projects are known is not the last check: the first real one asks for the lists', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const d = device(w)
+    await checkForUpdates({ force: true })
+    expect(d.storage.getItem('servos.enLinea.buscado')).toBeNull()
+    await startOnline([project('es-419', ['tit'])])
+    expect(requests(w, 'list')).toHaveLength(1)
+  })
+})

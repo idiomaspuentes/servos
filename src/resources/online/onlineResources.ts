@@ -427,16 +427,19 @@ async function refreshList(language: string, ctx: Ctx, withEtag: boolean): Promi
     } else if (!before) return 'skip'
     noWait(language)
     setBlocked(language, null)
-    moved()
+    // Only a list the app can plan from changes a size: one it cannot use (another compat) would make a size screen
+    // ask again, get the same list, and ask again.
+    if (kept(language)) moved()
     return 'ok'
   }
   const { blocked, retryAfter } = blockedByList(answer)
   if (retryAfter) retryLater(language, retryAfter)
   // The Worker has no packs for it: its kept list names parts and originals no longer there, and is forgotten.
   if (blocked === 'sinIdioma' && language in mem().listas) {
+    const wasUsable = !!kept(language)
     delete mem().listas[language]
     save('listas')
-    moved()
+    if (wasUsable) moved()
   }
   setBlocked(language, blocked)
   ctx.stopped.add(language)
@@ -798,8 +801,11 @@ async function check(force: boolean, ctx: Ctx) {
       await refreshList(language, ctx, true)
     }
     if (ctx.signal.aborted) return
-    mem().buscado = iso(d().now())
-    save('buscado')
+    // A check before the projects are known (startup not done yet) asked for nothing: it is not the last check.
+    if (languages.length) {
+      mem().buscado = iso(d().now())
+      save('buscado')
+    }
   }
   const originals = await resolveOriginals(ctx)
   await wantedFromStaging(languages, originals)
