@@ -22,12 +22,29 @@ declare module '@bt-synergy/usj-processor' {
 
 declare module '@bt-synergy/cache-adapter-indexeddb' {
   export type CacheRow = { key: string; entry: unknown }
+  /** What a `transactRaw` reads: rows by exact key, and the keys under each prefix. */
+  export type RawRead = { keys: string[]; prefixes: string[] }
+  /** `rows`: key to the stored entry (absent keys are missing); `prefixKeys`: prefix to the keys that start with it. */
+  export type RawFound = { rows: Map<string, unknown>; prefixKeys: Map<string, string[]> }
+  /** What a `transactRaw` writes. */
+  export type RawWrite = { puts: CacheRow[]; deletes: string[] }
   export class IndexedDBCacheAdapter {
     constructor(options?: { dbName?: string; storeName?: string; version?: number })
     get(key: string): Promise<unknown>
     getByPrefix(prefix: string): Promise<CacheRow[]>
     putRawMany(rows: CacheRow[]): Promise<void>
     hasRawKeys(keys: string[]): Promise<Set<string>>
+    /** Reads keys and prefixes, decides (synchronously), then puts and deletes, all in one readwrite transaction. */
+    transactRaw(read: RawRead, decide: (found: RawFound) => RawWrite): Promise<void>
+  }
+  /** Raw bytes by key in a database of their own (parts staging); the bytes are checked by whoever puts them. */
+  export class IndexedDBByteStore {
+    constructor(options: { dbName: string; storeName?: string })
+    put(key: string, bytes: Uint8Array): Promise<void>
+    get(key: string): Promise<Uint8Array | null>
+    has(key: string): Promise<boolean>
+    delete(key: string): Promise<void>
+    list(): Promise<Array<{ key: string; size: number; at: string }>>
   }
 }
 
@@ -67,7 +84,25 @@ declare module '@bt-synergy/language-pack' {
     versions?: PackVersions
     resources: PackManifestResource[]
   }
-  export type PackTarget = unknown
+  export type PackResourceRole = 'language' | 'original'
+  /** What a `transactRaw` reads: rows by exact key, and the keys under each prefix. */
+  export type RawRead = { keys: string[]; prefixes: string[] }
+  /** `rows`: key to the stored entry (absent keys are missing); `prefixKeys`: prefix to the keys that start with it. */
+  export type RawFound = { rows: Map<string, unknown>; prefixKeys: Map<string, string[]> }
+  /** What a `transactRaw` writes. */
+  export type RawWrite = { puts: CacheRow[]; deletes: string[] }
+  /** Where a pack or a part is written: rows as given, catalog rows, and `transactRaw` for applying parts. */
+  export type PackTarget = {
+    /** Writes rows exactly as given: no splitting, no envelope. */
+    putRows(rows: CacheRow[]): Promise<void>
+    /** Keys already in the store among `keys`. */
+    existingKeys?(keys: string[]): Promise<Set<string>>
+    putCatalogRows(rows: Array<{ key: string; metadata: Record<string, unknown> }>): Promise<void>
+    /** The catalog row the device already has for a resource. */
+    catalogRow?(resourceKey: string): Promise<Record<string, unknown> | null>
+    /** Read keys and prefixes, decide, then put and delete in one readwrite transaction (all or nothing). */
+    transactRaw?(read: RawRead, decide: (found: RawFound) => RawWrite): Promise<void>
+  }
   export type ImportPackResult = {
     manifest: PackManifest
     written: number
@@ -101,6 +136,163 @@ declare module '@bt-synergy/language-pack' {
   }): Promise<{ bytes: Uint8Array; manifest: PackManifest; skipped: Array<{ key: string; why: string }> }>
   export function packTargetFrom(stores: { cache: unknown; catalog: unknown }): PackTarget
   export function packSourceFrom(stores: { cache: unknown; catalog: unknown }): PackSource
+
+  // The parts importer (format 2.0): a language's parts list, the plan against the register, staging, apply.
+  /** The format of a parts list and its parts, used in their compat key. */
+  export const PARTS_FORMAT_VERSION: '2.0.0'
+  /** The folder a list lives in: the format (major.minor) and the five versions that decide whether rows are reusable. */
+  export function compatKeyOf(formatVersion: string, versions: PackVersions): string
+  export type PartKind = 'book' | 'alignments' | 'original' | 'macula' | 'tw' | 'ta' | 'titles' | 'lexicon' | 'obs'
+  export type PartEntry = {
+    sha256: string
+    bytes: number
+    rows: number
+    kind: PartKind
+    resource: string
+    /** Lowercase. */
+    book?: string
+    group?: string
+    /** What the next build compares to carry it. */
+    fingerprint: string
+    layers: PackLayer[]
+  }
+  /** A unit (`shared`, `book <b>`) and the fingerprint of everything it is built from. */
+  export type PartsUnit = { id: string; fingerprint: string }
+  export type PartsListResource = {
+    key: string
+    /** `resourceContentStamp` of its catalog row. */
+    stamp: string
+    role: PackResourceRole
+    subject: string
+    title: string
+    books?: string[]
+    /** The resource's catalog row, without the catalog's own bookkeeping. */
+    metadata: unknown
+  }
+  /** The parts list (schema 2): every part of a language, with each resource's catalog row and release stamp. */
+  export type PartsList = {
+    schema: 2
+    /** `es-419`, or `originals`. */
+    language: string
+    compat: string
+    /** The code its parts were built and fingerprinted with. */
+    code: string
+    versions: PackVersions
+    resources: PartsListResource[]
+    parts: PartEntry[]
+    /** A language's list: the originals list its quote and align rows were made against, at its content address. */
+    originals?: { path: string; sha256: string }
+    units?: PartsUnit[]
+    /** Language list only: the stamp of every resource the build read, by key. */
+    stamps?: Record<string, string>
+  }
+  export type PartRow = { layer: PackLayer; key: string; value: unknown }
+  /** The bytes of a part file (gzipped rows) with its sha256 name. */
+  export function writePart(rows: Iterable<PartRow>): Promise<{ bytes: Uint8Array; sha256: string; rows: number }>
+  export function sha256Hex(bytes: Uint8Array): Promise<string>
+  /** The unit (`shared`, `book <b>`) a part belongs to. */
+  export function unitOfPart(part: Pick<PartEntry, 'kind' | 'book'>): string
+  /** `catalog/{compat}/{language}.json`. */
+  export function partsListPath(compat: string, language: string): string
+  /** `catalog/{compat}/originals/{sha256}.json`. */
+  export function originalsListPath(compat: string, sha256: string): string
+  /** `parts/{sha256}.part.gz`. */
+  export function partPath(sha256: string): string
+  /** The register's prefix in the resources store. */
+  export const REGISTER_PREFIX: 'parts-slot:'
+  export type SlotRecord = {
+    /** The part that fills the slot. */
+    sha256: string
+    /** Every row key the part wrote, chapter chunks included. */
+    keys: string[]
+    /** The list that named it: its `language`, or `originals`. */
+    list: string
+    /** When it was applied (ISO). */
+    at: string
+  }
+  /** What the device holds, by slot id. */
+  export type Register = Map<string, SlotRecord>
+  /** The register from raw rows of the store (rows of other prefixes are skipped). */
+  export function readRegister(rows: Iterable<{ key: string; entry: unknown }>): Register
+  export type PlanInput = {
+    list: PartsList
+    originals?: PartsList
+    register: Register
+    /** Unit ids: `shared`, `book <b>`. */
+    chosen: string[]
+  }
+  export type PartsPlan = {
+    /** Parts of the chosen units whose slot the device lacks or holds with another sha, one per slot. */
+    download: PartEntry[]
+    /** Slot ids this language's list put on the device in the chosen units that the lists no longer name. */
+    remove: string[]
+    /** The chosen units `download` or `remove` touch, in apply order. */
+    units: string[]
+    /** Sum of `download[].bytes`. */
+    bytes: number
+  }
+  export type Coverage = Map<string, { present: number; missing: number; missingBytes: number; whole: boolean }>
+  /** What to download and remove for the chosen units; pure. Throws when a list names an originals list not given. */
+  export function planParts(input: PlanInput): PartsPlan
+  /** Per resource: its chosen parts held and missing, the missing ones' bytes, and whether all its parts are held. */
+  export function partsCoverage(input: PlanInput): Coverage
+  /** Where downloaded parts wait, verified, until they are applied. */
+  export interface PartsStaging {
+    put(sha: string, bytes: Uint8Array): Promise<void>
+    get(sha: string): Promise<Uint8Array | null>
+    has(sha: string): Promise<boolean>
+    delete(sha: string): Promise<void>
+    list(): Promise<Array<{ sha: string; size: number; at: string }>>
+  }
+  /** Bytes by key: `IndexedDBByteStore` satisfies it, as does `memoryByteStore()`. */
+  export type ByteStore = {
+    put(key: string, bytes: Uint8Array): Promise<void>
+    get(key: string): Promise<Uint8Array | null>
+    has(key: string): Promise<boolean>
+    delete(key: string): Promise<void>
+    list(): Promise<Array<{ key: string; size: number; at: string }>>
+  }
+  /** Staging over a byte store; `put` refuses bytes whose sha256 is not their name. */
+  export function stagingFrom(store: ByteStore): PartsStaging
+  /** A byte store in memory, for tests. */
+  export function memoryByteStore(): ByteStore
+  export type ApplyInput = {
+    target: PackTarget
+    staging: PartsStaging
+    plan: PartsPlan
+    list: PartsList
+    originals?: PartsList
+    /** The register the plan was made from. */
+    register: Register
+    /** The units the person chose (the plan's input). */
+    chosen: string[]
+    /** This app's processing versions, by layer. */
+    versions: PackVersions
+    /** Apply time (ms); `Date.now` by default. */
+    now?: () => number
+  }
+  /** Why: `quota` is a full disk, `missing` a part not in staging, `versions` a list made with other versions. */
+  export type ApplyFailureReason = 'missing' | 'quota' | 'invalid' | 'versions' | 'error'
+  /** What failed, by `scope`: a unit not applied, catalog rows not written (a stale flag), or the receipts pass. */
+  export type ApplyFailure =
+    | { scope: 'unit'; unit: string; reason: ApplyFailureReason; message: string }
+    | { scope: 'catalog'; unit?: string; reason: ApplyFailureReason; message: string }
+    | { scope: 'receipts'; reason: ApplyFailureReason; message: string }
+  export type ApplyResult = {
+    /** Set when no unit was applied: `versions` (update the app) or `missing` (a part is not yet staged). */
+    refused?: { reason: 'versions' | 'missing'; message: string }
+    /** Units whose transaction committed, in apply order. */
+    applied: string[]
+    failed: ApplyFailure[]
+    /** Resources an applied unit touched that are whole afterwards. */
+    completed: string[]
+    /** An original or MACULA slot was replaced: other languages' aligned quotes may miss. */
+    originalsReplaced: boolean
+    /** Sum of the applied parts' `bytes`. */
+    bytesApplied: number
+  }
+  /** Applies one plan, a unit at a time, each in one transaction with its register rows. */
+  export function applyParts(input: ApplyInput): Promise<ApplyResult>
 }
 
 declare module '@bt-synergy/resource-pipeline/prepare/prepareKeys' {
