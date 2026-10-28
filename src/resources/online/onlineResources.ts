@@ -52,6 +52,7 @@ import { asOnlineApply } from './onlineLock'
 import { MAX_RETRY, fetchList, fetchOriginals, fetchPart, type ClientOptions } from './packsClient'
 import { packsServer, setPacksServer, type PacksServerId } from './packsServer'
 import {
+  NO_STAMP,
   SHARED,
   blockedByList,
   bookUnitOf,
@@ -392,6 +393,17 @@ export function nextWaitEnd(): number | null {
   return next
 }
 
+/**
+ * What a wait kept from the last visit still blocks says so from the start (the projects set before the first render,
+ * then `startOnline`): inside a `parts-off` hour the book shows why, not a «Bajar» that would ask nothing. A block
+ * set since is left as it is.
+ */
+function restoreBlocks() {
+  for (const [key, wait] of Object.entries(mem().reintentar)) {
+    if (key !== ORIGINALS_WAIT && wait.reason && waiting(key) && !state.blocked[key]) setBlocked(key, wait.reason)
+  }
+}
+
 /** Told whenever a wait is kept or let go. */
 export function onWaits(fn: () => void): () => void {
   waitListeners.add(fn)
@@ -455,6 +467,7 @@ let projects: Project[] = []
 export function setOnlineProjects(next: Project[]) {
   projects = next
   wantedOfProjects()
+  restoreBlocks()
   showOffer()
   moved()
   dropUnusedLists()
@@ -759,7 +772,7 @@ async function planWith(language: string, list: PartsList, originals: PartsList 
     chosen: asked,
     plan: whole,
     here: (unit) => unit === SHARED || d().bookIsHere(unit.slice('book '.length), language),
-    deviceStamp: (key) => stamps.get(key) ?? 'nostamp',
+    deviceStamp: (key) => stamps.get(key) ?? NO_STAMP,
     listStamp: resourceContentStamp,
   })
   const plan = chosen.length === asked.length ? whole : planLanguage({ list, originals, register, chosen })!
@@ -1144,11 +1157,7 @@ async function runDownload(language: string): Promise<void> {
 export async function startOnline(next: Project[]): Promise<void> {
   projects = next
   moved()
-  // What a wait kept from the last visit still blocks says so from the start: inside a `parts-off` hour the book
-  // shows why, not a «Bajar» that would ask nothing.
-  for (const [key, wait] of Object.entries(mem().reintentar)) {
-    if (key !== ORIGINALS_WAIT && wait.reason && waiting(key)) setBlocked(key, wait.reason)
-  }
+  restoreBlocks()
   waitsMoved()
   dropUnusedLists()
   while (current) await current.promise

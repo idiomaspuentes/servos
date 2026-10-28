@@ -1,6 +1,7 @@
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { REGISTER_PREFIX, applyParts, memoryByteStore, stagingFrom, writePart, type ApplyInput, type PartEntry, type PartRow, type PartsList } from '@bt-synergy/language-pack'
+import { resourceContentStamp } from '@bt-synergy/resource-catalog'
 import { RESOURCE_VERSIONS, openResourceStores, readPartsRegister, type ResourceStores } from '../store'
 import { ANSWERS, fakeWorker } from './fakeWorker'
 import {
@@ -1680,4 +1681,59 @@ describe('deps given without `isTyping` (the real Worker test, after F1)', () =>
     await running
     expect(onlineState().offer).toBeNull()
   })
+})
+
+describe('the final re-review of F1', () => {
+  const last = (c: { url: string }) => c.url.split('/').pop()
+
+  it('a book downloaded in a new release does not make the books a pack brought look current (Important)', async () => {
+    const w = fakeWorker()
+    const v1 = await publish(w, { books: ['tit', 'jon', 'rut'] })
+    const d = device(w)
+    // The bundled pack: Titus and Jonah at tn v1.
+    await wholePack(d, v1, ['tit', 'jon'])
+    await startOnline([project('es-419', ['tit', 'jon'])])
+    expect(onlineState().offer).toBeNull()
+    // The Worker publishes tn v2: Home offers Titus and Jonah.
+    const v2 = await publish(w, { books: ['tit', 'jon', 'rut'], version: '2', releases: { tn: 'v2#2026-10-02T00:00:00Z' } })
+    await checkForUpdates({ force: true })
+    const [tit, jon, rut] = v2.parts
+    const offered = tit.bytes + jon.bytes + v2.orig[0].bytes + v2.orig[1].bytes
+    expect(onlineState().offer).toMatchObject({ bytes: offered })
+    // The person adds Ruth instead: B writes tn's catalog row as v2.
+    setOnlineProjects([project('es-419', ['tit', 'jon', 'rut'])])
+    await downloadBook('es-419', 'rut')
+    expect(requests(w, 'part').map(last)).toContain(rut.sha256)
+    const v2Row = meta(tnOf('es-419'), 'notes', 'TSV Translation Notes', 'v2#2026-10-02T00:00:00Z')
+    expect(resourceContentStamp(await d.stores.catalog.get(tnOf('es-419')))).toBe(resourceContentStamp(v2Row))
+    // Titus and Jonah are still v1 here: still offered.
+    await checkForUpdates({ force: true })
+    expect(onlineState().offer).toMatchObject({ bytes: offered })
+  })
+
+  it('a block kept with its wait shows as soon as the projects are known, before startOnline (minor)', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const storage = memoryStorage()
+    const now = Date.parse('2026-10-28T12:00:00Z')
+    storage.setItem('servos.enLinea.reintentar', JSON.stringify({ 'es-419': { until: new Date(now + 3_600_000).toISOString(), reason: 'noDisponible' } }))
+    device(w, {}, { storage })
+    setOnlineProjects([project('es-419', ['tit'])])
+    expect(onlineState().blocked).toEqual({ 'es-419': 'noDisponible' })
+  })
+
+  it('an IndexedDB that never opens holds no run: the lists last the session in memory (minor)', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const hung = indexedDbKeptStore(unique('enlinea'), { open: () => new Promise<IDBDatabase>(() => {}), timeoutMs: 50 })
+    const d = device(w, {}, { kept: hung })
+    await startOnline([project('es-419', ['tit'])])
+    await downloadBook('es-419', 'tit')
+    expect(bookIsHere(d, 'tit')).toBe(true)
+    // Kept in memory: a check within three hours asks no list, and the size is told from it.
+    await checkForUpdates()
+    expect(requests(w, 'list')).toHaveLength(2)
+    d.online = false
+    expect(await bookDownloadSize('es-419', 'tit')).toBe(0)
+  }, 5_000)
 })
