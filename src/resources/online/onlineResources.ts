@@ -58,6 +58,7 @@ import {
   SHARED,
   blockedByList,
   bookUnitOf,
+  booksOfList,
   resourcesOf,
   unitsWorthPlanning,
   booksOfUnits,
@@ -298,8 +299,16 @@ function forgetList(language: string) {
 }
 
 /**
+ * The language last asked for by name (`askLanguage`) that no project reads yet: its list is kept for the project
+ * being made with it, so the book's size and download read it instead of asking again. Only the last one: a language
+ * asked before it and not chosen goes with the next drop. In memory, so a project never made lets it go at the next
+ * launch.
+ */
+let askedLanguage: string | null = null
+
+/**
  * The lists of languages no project reads go (each weighs some 250 KB): once the lists are read, and never while a
- * run is going (it may be asking for one); the projects as they are then decide.
+ * run is going (it may be asking for one); the projects as they are then decide, and the language last asked for.
  */
 let dropping: Promise<void> | null = null
 function dropUnusedLists(): void {
@@ -308,6 +317,7 @@ function dropUnusedLists(): void {
       await listsReady()
       while (current) await current.promise
       const read = new Set(languagesOf(projects))
+      if (askedLanguage) read.add(askedLanguage)
       for (const language of Object.keys(mem().listas)) if (!read.has(language)) forgetList(language)
     } catch {
       /* dropped the next time */
@@ -498,6 +508,8 @@ export const useOnlineResources = (): OnlineState => useSyncExternalStore(subscr
 let projects: Project[] = []
 export function setOnlineProjects(next: Project[]) {
   projects = next
+  // A project now reads the language asked for: the projects keep its list from here, and let it go with them.
+  if (askedLanguage && languagesOf(next).includes(askedLanguage)) askedLanguage = null
   wantedOfProjects()
   restoreBlocks()
   showOffer()
@@ -599,7 +611,7 @@ type Ctx = {
 }
 const newCtx = (kind: Run['kind'], signal: AbortSignal): Ctx => ({ kind, signal, originalsRetried: false, replanned: new Set(), stopped: new Set() })
 
-type Run = { kind: 'check' | 'download' | 'size'; language?: string; units?: Set<string>; ctrl: AbortController; promise: Promise<void>; generation: number }
+type Run = { kind: 'check' | 'download' | 'size' | 'ask'; language?: string; units?: Set<string>; ctrl: AbortController; promise: Promise<void>; generation: number }
 let current: Run | null = null
 let generation = 0
 
@@ -644,6 +656,8 @@ export function setOnlineDeps(over: Partial<OnlineDeps> = {}): void {
   listWrites = Promise.resolve()
   dropping = null
   projects = []
+  askedLanguage = null
+  asking.clear()
   offers.clear()
   wanted.clear()
   failures.clear()
@@ -1219,7 +1233,8 @@ export async function startOnline(next: Project[]): Promise<void> {
  */
 export function checkForUpdates(opts: { force?: boolean } = {}): Promise<void> {
   const run = current
-  if (run?.kind === 'size') return run.promise.then(() => checkForUpdates(opts))
+  // A size or a language asked for by name asks for none of the projects' lists: the check goes after it.
+  if (run?.kind === 'size' || run?.kind === 'ask') return run.promise.then(() => checkForUpdates(opts))
   if (run) return run.promise
   return startRun('check', (ctx) => check(Boolean(opts.force), ctx))
 }
@@ -1317,6 +1332,62 @@ async function sizesRun(ctx: Ctx) {
       ask.answer(size)
     }
   }
+}
+
+/** What the Worker says of a language asked for by name: the books its list names, or why it cannot be had now. */
+export type LanguageAnswer = { kind: 'listo'; books: string[] } | { kind: Exclude<Blocked, 'sinEspacio'> }
+
+/** Asks in flight, by language: the same language asked again while its answer is coming gets the same answer. */
+const asking = new Map<string, Promise<LanguageAnswer>>()
+
+/**
+ * A helps language chosen by name for a project (`HelpsChoice`), before any project reads it: its list is asked for,
+ * that language's alone (a request may start a build on the server), and kept as a check keeps it, so the book's size
+ * and download read it (`bookDownloadSize` asks for no list; `downloadBook` asks with its ETag, a 304). Kept until a
+ * project reads it, or another language is asked for instead (`askedLanguage`). A run of its own (never beside a
+ * check or a download: it waits for the one in flight), inside the waits the Worker asked for (the wait's own reason
+ * is said, nothing is asked). Without internet, `noDisponible` and nothing asked. Never rejects.
+ */
+export function askLanguage(language: string): Promise<LanguageAnswer> {
+  const inFlight = asking.get(language)
+  if (inFlight) return inFlight
+  // Spared from the start (a drop while it is asked must not take its list); a refusal gives the place back.
+  const before = askedLanguage
+  askedLanguage = language
+  const promise = (async (): Promise<LanguageAnswer> => {
+    while (current) await current.promise
+    let answer: LanguageAnswer = { kind: 'noDisponible' }
+    await startRun('ask', async (ctx) => {
+      answer = await askList(language, ctx)
+    })
+    return answer
+  })()
+    .catch((): LanguageAnswer => ({ kind: 'noDisponible' }))
+    .then((answer) => {
+      const usable = answer.kind === 'listo' && answer.books.length > 0
+      if (!usable && askedLanguage === language) askedLanguage = before
+      return answer
+    })
+    .finally(() => {
+      if (asking.get(language) === promise) asking.delete(language)
+    })
+  asking.set(language, promise)
+  return promise
+}
+
+const NOT_NOW: LanguageAnswer = { kind: 'noDisponible' }
+/** A block as an answer (`sinEspacio` is not one a list gives). */
+const answerOf = (why: Blocked | null | undefined): LanguageAnswer => (why && why !== 'sinEspacio' ? { kind: why } : NOT_NOW)
+
+async function askList(language: string, ctx: Ctx): Promise<LanguageAnswer> {
+  if (!d().isOnline()) return NOT_NOW
+  if (waiting(language)) return answerOf(mem().reintentar[language]?.reason)
+  const asked = await refreshList(language, ctx, true)
+  if (asked === 'ok') {
+    const k = kept(language)
+    return k ? { kind: 'listo', books: booksOfList(k.list) } : NOT_NOW
+  }
+  return asked === 'blocked' ? answerOf(state.blocked[language]) : NOT_NOW
 }
 
 /**

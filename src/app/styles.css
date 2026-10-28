@@ -366,6 +366,8 @@ textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
 .language-result { display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem; width: 100%; min-height: var(--touch); padding: 0.4rem 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--text); text-align: start; }
 .language-result-name { font-weight: 600; }
 .language-result-also { font-size: 0.85rem; overflow-wrap: anywhere; }
+/* A helps language asked of the server: its name, then whether it is being asked or why it cannot be had. */
+.helps-asked { display: flex; flex-direction: column; gap: 0.35rem; }
 .language-chosen { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-height: var(--touch); padding: 0.25rem 0.75rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
 .language-chosen .button-quiet, .language-by-hand { width: auto; align-self: flex-start; }
 /* Translating the app a phrase at a time: where it is seen, the original, the box, and on */
