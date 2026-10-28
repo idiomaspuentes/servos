@@ -20,8 +20,9 @@ layer of another version instead of refusing the pack.
 
 ## Global Constraints
 
-- Before any code: Abel says, per task, whether Claude or Cursor writes it.
-- **Starts only when** (a) Servos PR #10 is merged, and (b) bt-synergy Tasks 1–7 are merged into `master` with
+- Who does it: Servos is Idiomas Puentes work, so Claude writes, tests and reviews it (with subagents); no Cursor or
+  Codex. It starts after the bt-synergy part, which Cursor writes and Codex reviews, is merged.
+- **Starts only when** (a) Servos is on bt-synergy `dc6b3f3` or later (done in idiomaspuentes/servos#13), and (b) bt-synergy Tasks 1–7 are merged into `master` with
   Abel's yes. Task 1 moves `bt-synergy.ref` to that merge commit; every test run before that uses
   `SERVOS_BT_SYNERGY=C:/Users/LENOVO/Git/Github/wt/tcs-packs-index-impl`.
 - Read `docs/DISENO.md` and `docs/FILOSOFIA_DE_DISENO.md` first (`CLAUDE.md`). Interface and product docs in Spanish;
