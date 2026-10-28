@@ -4,12 +4,14 @@
  */
 
 import {
+  REGISTER_PREFIX,
   importLanguagePack,
   packTargetFrom,
   readPackManifest,
   type ImportPackResult,
   type PackManifest,
 } from '@bt-synergy/language-pack'
+import { resourceContentStamp } from '@bt-synergy/resource-catalog'
 import { RESOURCE_VERSIONS, type ResourceStores } from './store'
 
 export interface PackSummary {
@@ -99,6 +101,73 @@ function keepOpening(opening: Opening | null) {
 }
 
 /**
+ * The slot kinds whose id names a book right after the resource (`kind:resource:book`, B's `slotId` in
+ * `parts/partSlots.ts`): B's book kinds, and MACULA, whose parts go by book though its unit is shared. Every other
+ * kind is shared: what follows its resource is a group.
+ */
+const BOOK_SLOT_KINDS = new Set(['book', 'alignments', 'original', 'macula'])
+
+/** What a pack writes of each resource it brings: its books (null: all it has) and whether its shared rows too. */
+type Brought = Map<string, { books: Set<string> | null; shared: boolean }>
+
+/**
+ * The resources a pack writes rows of, but those named in `left` (the importer leaves them as they are). A `book`
+ * pack brings the books it names and no shared rows; any other brings each resource's books (its manifest says them
+ * for a book-scoped resource of the language) or, when it does not say them (an original, which comes whole), all of
+ * them. A resource with no rows in the pack (a `base` pack's books) brings nothing.
+ */
+function broughtBy(manifest: PackManifest, left: ReadonlySet<string>): Brought {
+  const brought: Brought = new Map()
+  const bookPack = manifest.kind === 'book'
+  for (const r of manifest.resources) {
+    if (left.has(r.key) || !Object.values(r.rows).some((count) => (count ?? 0) > 0)) continue
+    const books = bookPack ? (manifest.books ?? []) : r.books
+    brought.set(r.key, { books: books ? new Set(books.map((b) => b.toLowerCase())) : null, shared: !bookPack })
+  }
+  return brought
+}
+
+/** Whether a slot holds rows of what the pack brings: a book it brings of its resource, or its resource's shared rows. */
+function broughtSlot(slot: string, brought: Brought): boolean {
+  const kind = slot.slice(0, slot.indexOf(':'))
+  for (const [key, what] of brought) {
+    const head = `${kind}:${key}`
+    if (slot !== head && !slot.startsWith(`${head}:`)) continue
+    if (!BOOK_SLOT_KINDS.has(kind)) return what.shared
+    const book = slot.slice(head.length + 1).split(':')[0].toLowerCase()
+    return !what.books || what.books.has(book)
+  }
+  return false
+}
+
+/**
+ * Spec §3, «Paquetes de archivo y partes juntos»: the register forgets the slots of what a pack brings, in one
+ * transaction. The next check sees them as missing and, online and with something different, downloads them again: it
+ * costs bytes, but the device never believes it holds what it no longer holds.
+ */
+async function forgetSlots(stores: ResourceStores, brought: Brought): Promise<void> {
+  if (!brought.size) return
+  await stores.cache.transactRaw({ keys: [], prefixes: [REGISTER_PREFIX] }, (found) => ({
+    puts: [],
+    deletes: (found.prefixKeys.get(REGISTER_PREFIX) ?? []).filter((key) => broughtSlot(key.slice(REGISTER_PREFIX.length), brought)),
+  }))
+}
+
+/**
+ * The resources the importer will leave as they are: the device has them in another release and the pack is not told
+ * to replace them (`importLanguagePack`'s own rule, read before it runs).
+ */
+async function keptByDevice(stores: ResourceStores, manifest: PackManifest, replace: readonly string[]): Promise<Set<string>> {
+  const kept = new Set<string>()
+  for (const r of manifest.resources) {
+    if (replace.includes(r.key)) continue
+    const mine = await stores.catalog.get(r.key)
+    if (mine && resourceContentStamp(mine) !== r.stamp) kept.add(r.key)
+  }
+  return kept
+}
+
+/**
  * Opens a pack: catalog rows, then each resource's rows, receipts last. What the device has stays unless replaced:
  * `replace` names the resources whose copy here the pack's takes the place of (`packAgainstDevice`): a newer release,
  * or a copy made for an earlier version of the app (`ResourceHere.stale`), whose rows have the same keys as the
@@ -107,18 +176,25 @@ function keepOpening(opening: Opening | null) {
  * Before writing, the pack and its resources are noted (`openingLeft`); when it ends they are crossed out. If the
  * app closes or the phone goes off halfway, the note stays: a resource whose receipt (written last) is not there is
  * then known as interrupted, and opening the same pack again fills what is missing.
+ *
+ * The parts register forgets the slots of the resources and books the pack writes (`forgetSlots`) before the first
+ * row is written, so an opening cut halfway never leaves a slot claiming rows the pack wrote over; at worst the slot
+ * is downloaded again. It forgets them once more when the import ends: parts applied meanwhile by the online flow, or
+ * a resource the importer took after all, are the pack's too.
  */
 export async function openPack(
   stores: ResourceStores,
   bytes: Uint8Array | ArrayBuffer,
   options: { replace?: readonly string[]; file?: string; onProgress?: (done: number, total: number) => void } = {}
 ): Promise<ImportPackResult> {
-  const keys = (await readPackManifest(bytes)).resources.map((r) => r.key)
+  const manifest = await readPackManifest(bytes)
+  const keys = manifest.resources.map((r) => r.key)
   const before = openingLeft()
   keepOpening({
     files: [...new Set([...(before?.files ?? []), options.file ?? ''])].filter(Boolean),
     keys: [...new Set([...(before?.keys ?? []), ...keys])],
   })
+  await forgetSlots(stores, broughtBy(manifest, await keptByDevice(stores, manifest, options.replace ?? [])))
   const result = await importLanguagePack({
     bytes,
     target: packTargetFrom({ cache: stores.cache, catalog: stores.catalog }),
@@ -126,6 +202,7 @@ export async function openPack(
     overwrite: options.replace ?? false,
     onProgress: options.onProgress,
   })
+  await forgetSlots(stores, broughtBy(manifest, new Set(result.skippedResources.map((s) => s.key))))
   const now = openingLeft()
   const left = (now?.keys ?? []).filter((k) => !keys.includes(k))
   keepOpening(left.length ? { files: (now?.files ?? []).filter((f) => f !== options.file), keys: left } : null)
