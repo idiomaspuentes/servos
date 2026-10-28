@@ -1350,6 +1350,8 @@ const asking = new Map<string, Promise<LanguageAnswer>>()
 export function askLanguage(language: string): Promise<LanguageAnswer> {
   const inFlight = asking.get(language)
   if (inFlight) return inFlight
+  // Spared from the start (a drop while it is asked must not take its list); a refusal gives the place back.
+  const before = askedLanguage
   askedLanguage = language
   const promise = (async (): Promise<LanguageAnswer> => {
     while (current) await current.promise
@@ -1360,6 +1362,11 @@ export function askLanguage(language: string): Promise<LanguageAnswer> {
     return answer
   })()
     .catch((): LanguageAnswer => ({ kind: 'noDisponible' }))
+    .then((answer) => {
+      const usable = answer.kind === 'listo' && answer.books.length > 0
+      if (!usable && askedLanguage === language) askedLanguage = before
+      return answer
+    })
     .finally(() => {
       if (asking.get(language) === promise) asking.delete(language)
     })

@@ -1919,13 +1919,14 @@ describe('fix round R2: the app\'s own waits', () => {
 })
 
 describe('a helps language asked for by name, before a project reads it', () => {
-  it('«listo» names the books its list has, asking only that language\'s list', async () => {
+  it('«listo» names the Bible books its list has, in their order, asking only that language\'s list', async () => {
     const w = fakeWorker()
-    await publish(w, { language: 'es-419', books: ['tit', 'rut'] })
+    // Front matter (`frt`) and other non-book USFM codes are not books of the Bible.
+    await publish(w, { language: 'es-419', books: ['tit', 'frt', 'rut', 'glo'] })
     await publish(w, { language: 'pt-br', books: ['jon'] })
     device(w)
     setOnlineProjects([])
-    expect(await askLanguage('es-419')).toEqual({ kind: 'listo', books: ['tit', 'rut'] })
+    expect(await askLanguage('es-419')).toEqual({ kind: 'listo', books: ['rut', 'tit'] })
     // Only the language chosen: no other list, no originals, no part.
     expect(w.calls.map((c) => c.url)).toEqual([`${w.server}${w.compat}/es-419`])
   })
@@ -2015,6 +2016,21 @@ describe('a helps language asked for by name, before a project reads it', () => 
     expect(Object.keys(await d.kept.all()).sort()).toEqual(['fr', 'pt-br'])
     setOnlineProjects([project('pt-br', ['tit'])])
     await vi.waitFor(async () => expect(Object.keys(await d.kept.all())).toEqual(['pt-br']))
+  })
+
+  it('a language refused leaves the one asked before it kept: the language that could be had is still the one to keep', async () => {
+    const w = fakeWorker()
+    await publish(w, { language: 'es-419', books: ['tit'] })
+    await publish(w, { language: 'pt-br', books: ['tit'] })
+    const d = device(w)
+    setOnlineProjects([])
+    expect((await askLanguage('es-419')).kind).toBe('listo')
+    w.setAnswer('list', ANSWERS.red, 1)
+    expect(await askLanguage('pt-br')).toEqual({ kind: 'noDisponible' })
+    expect(await askLanguage('xx')).toEqual({ kind: 'sinIdioma' })
+    setOnlineProjects([])
+    await new Promise((r) => setTimeout(r, 20))
+    expect(Object.keys(await d.kept.all())).toEqual(['es-419'])
   })
 
   it('goes through the one-run lock: it waits for the run in flight, a check waits for it, and the same ask is joined', async () => {

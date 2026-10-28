@@ -15,7 +15,18 @@ import { MenuRow, Sheet } from '../frame/Sheet'
 import { useI18n, useT } from '../i18n/i18n'
 import { languageLabel, loadLanguages, writtenRightToLeft, type LanguageOption } from '../projects/languages'
 import { helpsLanguagesHere } from '../projects/library'
-import { askedSaid, helpsRows, mayChoose, serverLanguagesFound, type Asked } from '../projects/serverHelps'
+import {
+  NO_ASK,
+  askAnswered,
+  askStarted,
+  askedSaid,
+  helpsNoteKey,
+  helpsRows,
+  rowChosen,
+  serverLanguagesFound,
+  type AskFlow,
+  type Asked,
+} from '../projects/serverHelps'
 import { DEFAULT_MINI_APPS, EXAMPLE_PROJECT_ID, slug, type Privacy, type Project } from '../projects/model'
 import { PrivacyChoice } from './PrivacyChoice'
 
@@ -49,21 +60,25 @@ export function HelpsChoice({ value, onChange, recommend = false }: { value: str
   const label = useLanguageLabel()
   const online = useOnline()
   const here = helpsLanguagesHere()
-  // The last language the server has (a row, chosen when it came), and the one being asked or refused (said below).
-  const [got, setGot] = useState<Asked | null>(null)
-  const [pending, setPending] = useState<Asked | null>(null)
-  const last = useRef<string | null>(null)
-  const { server, away, other } = helpsRows({ here: here.map((h) => h.code), value, asked: got, online })
+  // Where the asking stands (`serverHelps.ts`): read by the answers as it is when they come, drawn from its copy.
+  const flow = useRef<AskFlow>(NO_ASK)
+  const [{ pending, got }, setFlow] = useState<AskFlow>(NO_ASK)
+  const move = (next: AskFlow) => {
+    flow.current = next
+    setFlow(next)
+  }
+  const { server, away, other, noPacks } = helpsRows({ here: here.map((h) => h.code), value, got, online })
+  // Every row goes through here: an answer still coming no longer changes what the person chose.
+  const choose = (code: string) => {
+    move(rowChosen(flow.current))
+    onChange(code)
+  }
   const ask = (code: string) => {
-    last.current = code
-    setPending({ code, answer: null })
+    move(askStarted(flow.current, code))
     void askLanguage(code).then((answer) => {
-      // Another language touched meanwhile: this answer is not the one the person waits for.
-      if (last.current !== code) return
-      if (!mayChoose(answer)) return setPending({ code, answer })
-      setPending(null)
-      setGot({ code, answer })
-      onChange(code)
+      const next = askAnswered(flow.current, code, answer)
+      move(next.flow)
+      if (next.choose) onChange(next.choose)
     })
   }
   const said = (answer: Asked['answer']) => {
@@ -72,9 +87,9 @@ export function HelpsChoice({ value, onChange, recommend = false }: { value: str
   }
   return (
     <>
-      {!here.length && <p className="notice">{t('nuevo.ningunPaquete')}</p>}
+      {noPacks && <p className="notice">{t('nuevo.ningunPaquete')}</p>}
       {here.map((h, i) => (
-        <button key={h.code} type="button" className={value === h.code ? 'option is-on' : 'option'} aria-pressed={value === h.code} onClick={() => onChange(h.code)}>
+        <button key={h.code} type="button" className={value === h.code ? 'option is-on' : 'option'} aria-pressed={value === h.code} onClick={() => choose(h.code)}>
           <span className="option-title">
             {label(h.code)} ({h.code}) {recommend && i === 0 && here.length > 1 && <span className="badge">{t('nuevo.recomendado')}</span>}
           </span>
@@ -88,7 +103,7 @@ export function HelpsChoice({ value, onChange, recommend = false }: { value: str
         </button>
       ))}
       {server && (
-        <button type="button" className={value === server.code ? 'option is-on' : 'option'} aria-pressed={value === server.code} onClick={() => onChange(server.code)}>
+        <button type="button" className={value === server.code ? 'option is-on' : 'option'} aria-pressed={value === server.code} onClick={() => choose(server.code)}>
           <span className="option-title">
             {label(server.code)} ({server.code})
           </span>
@@ -96,7 +111,7 @@ export function HelpsChoice({ value, onChange, recommend = false }: { value: str
         </button>
       )}
       {away && (
-        <button type="button" className={value === away ? 'option is-on' : 'option'} aria-pressed={value === away} onClick={() => onChange(away)}>
+        <button type="button" className={value === away ? 'option is-on' : 'option'} aria-pressed={value === away} onClick={() => choose(away)}>
           <span className="option-title">
             {label(away)} ({away})
           </span>
@@ -143,12 +158,24 @@ function OtherHelpsLanguage({
   useEffect(() => {
     if (got) setOpen(false)
   }, [got])
-  const found = list ? serverLanguagesFound(list, query, here) : []
+  // Not the languages here, nor the one already chosen from the server; also by the names the app says them in.
+  const found = list ? serverLanguagesFound(list, query, { leaveOut: got ? [...here, got.code] : here, labelOf: label }) : []
   return (
     <details className="advanced" open={open} onToggle={(e) => setOpen(e.currentTarget.open)}>
       <summary>{t('enLinea.otroIdioma')}</summary>
       <div className="field language-search">
-        <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} aria-label={t('enLinea.buscarIdioma')} placeholder={t('enLinea.buscarIdioma')} autoCapitalize="none" />
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          // Inside the New Bible form: Enter searches, it does not create the project.
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') e.preventDefault()
+          }}
+          aria-label={t('enLinea.buscarIdioma')}
+          placeholder={t('enLinea.buscarIdioma')}
+          autoCapitalize="none"
+        />
         {!list && <p className="quiet">{t('idiomas.leyendo')}</p>}
         {found.length > 0 && (
           <ul className="language-results">
@@ -188,6 +215,7 @@ function OtherHelpsLanguage({
 export function NewProject({ existing, onCancel, onCreate }: { existing: Project[]; onCancel(): void; onCreate(p: Project): void }) {
   const t = useT()
   const label = useLanguageLabel()
+  const online = useOnline()
   const [name, setName] = useState('')
   // Whether the person wrote the name: until then it follows the language chosen.
   const [named, setNamed] = useState(false)
@@ -292,7 +320,7 @@ export function NewProject({ existing, onCancel, onCreate }: { existing: Project
 
               <fieldset className="field">
                 <legend className="field-label">{t('nuevo.ayudas')}</legend>
-                <p className="quiet">{t('nuevo.ayudasNota')}</p>
+                <p className="quiet">{t(helpsNoteKey(online))}</p>
                 <HelpsChoice value={helps} onChange={setHelps} recommend />
               </fieldset>
 

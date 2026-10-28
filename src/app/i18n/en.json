@@ -1027,9 +1027,12 @@
   "enLinea.mb": "{n} MB",
   "enLinea.otroIdioma": "Another language…",
   "enLinea.buscarIdioma": "Type its name or its code",
-  "enLinea.ningunIdioma": "No gateway language goes by that name",
+  "enLinea.ningunIdioma": "No language with bridge texts goes by that name",
   "enLinea.preguntando": "Asking the server…",
   "enLinea.enServidor": "On the server · {n} books",
   "enLinea.enServidorUno": "On the server · 1 book",
-  "enLinea.preparandoIdioma": "The texts of this language are being prepared; try again later"
+  "enLinea.preparandoIdioma": "Texts for this language are being prepared; try again later",
+  "enLinea.noRespondeIdioma": "The server couldn't be asked; try again later",
+  "nuevo.ayudasNotaEnLinea": "The team translates and checks with the bridge texts and helps of one language. The ones on this phone come first; with internet, you can choose another from the server.",
+  "nuevo.ayudasNotaEnLinea.computadora": "The team translates and checks with the bridge texts and helps of one language. The ones on this computer come first; with internet, you can choose another from the server."
 }
