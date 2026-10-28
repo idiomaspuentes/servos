@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { applyParts, memoryByteStore, stagingFrom, type ApplyInput, type PartEntry, type PartRow, type PartsList } from '@bt-synergy/language-pack'
+import { applyParts, memoryByteStore, stagingFrom, writePart, type ApplyInput, type PartEntry, type PartRow, type PartsList } from '@bt-synergy/language-pack'
 import { RESOURCE_VERSIONS, openResourceStores, readPartsRegister, type ResourceStores } from '../store'
 import { ANSWERS, fakeWorker } from './fakeWorker'
 import {
@@ -969,3 +969,100 @@ function withoutOriginals(storage: ReturnType<typeof memoryStorage>, language: s
   copy.setItem('servos.enLinea.listas', JSON.stringify(listas))
   return copy
 }
+
+describe('staging keeps only what a list still names', () => {
+  /** A part no list names, staged: what a download cut before the lists moved on leaves behind. */
+  async function stray(d: ReturnType<typeof device>, text = 'stray') {
+    const made = await writePart([row('sot', `tn:o/xx/tn:tit:${text}`, text)])
+    await d.staging.put(made.sha256, made.bytes)
+    return made.sha256
+  }
+
+  it('a part named by no list is deleted after an apply', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const d = device(w)
+    await startOnline([project('es-419', ['tit'])])
+    const sha = await stray(d)
+    await downloadBook('es-419', 'tit')
+    expect(bookIsHere(d, 'tit')).toBe(true)
+    expect(await staged(d)).not.toContain(sha)
+  })
+
+  it('a part named by another project language\'s kept list is kept', async () => {
+    const w = fakeWorker()
+    await publish(w, { language: 'es-419', books: ['tit'] })
+    const pt = await publish(w, { language: 'pt-br', books: ['tit'] })
+    const d = device(w)
+    await startOnline([project('es-419', ['tit']), project('pt-br', ['tit'])])
+    // pt-br's notes of Titus came before the download was cut.
+    await d.staging.put(pt.parts[0].sha256, w.parts.get(pt.parts[0].sha256)!)
+    const sha = await stray(d)
+    await downloadBook('es-419', 'tit')
+    expect(await staged(d)).toContain(pt.parts[0].sha256)
+    expect(await staged(d)).not.toContain(sha)
+  })
+
+  it('the startup heal prunes, without internet, from the lists kept', async () => {
+    const w = fakeWorker()
+    const published = await publish(w, { books: ['tit'] })
+    const d = device(w)
+    await startOnline([project('es-419', ['tit'])])
+    // A part of the kept list, staged and not applied, stays for the next check to apply.
+    await d.staging.put(published.parts[1].sha256, w.parts.get(published.parts[1].sha256)!)
+    const sha = await stray(d)
+    const again = device(w, {}, d)
+    again.online = false
+    await startOnline([project('es-419', ['tit'])])
+    expect(await staged(again)).toEqual([published.parts[1].sha256])
+    expect(sha).not.toBe(published.parts[1].sha256)
+  })
+
+  it('nothing is pruned when no usable list is kept: offline at the first launch, or lists of another server', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const d = device(w)
+    d.online = false
+    const sha = await stray(d)
+    await startOnline([project('es-419', ['tit'])])
+    expect(await staged(d)).toEqual([sha])
+
+    // Lists kept from another Worker (`?packs=staging`) name nothing this one can use.
+    d.online = true
+    await startOnline([project('es-419', ['tit'])])
+    const again = device(w, { server: () => 'https://other.test/v2/packs/' }, d)
+    again.online = false
+    await startOnline([project('es-419', ['tit'])])
+    expect(await staged(again)).toEqual([sha])
+  })
+
+  it('prune never runs while a queue runs', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const d = device(w)
+    await startOnline([project('es-419', ['tit'])])
+    const sha = await stray(d)
+    // Every delete from staging is seen with the requests in flight at that moment.
+    const deletes: number[] = []
+    const remove = d.staging.delete.bind(d.staging)
+    d.staging.delete = async (s) => {
+      deletes.push(w.inFlight)
+      return remove(s)
+    }
+    let open!: () => void
+    const gate = new Promise<void>((r) => (open = r))
+    w.gate((url) => (url.includes('/parts/') ? gate : Promise.resolve()))
+    const running = downloadBook('es-419', 'tit')
+    await vi.waitFor(() => expect(w.inFlight).toBeGreaterThan(0))
+    // A check asked meanwhile joins the run; nothing is pruned under the queue.
+    const joined = checkForUpdates({ force: true })
+    await new Promise((r) => setTimeout(r, 20))
+    expect(await staged(d)).toContain(sha)
+    expect(deletes).toEqual([])
+    open()
+    await Promise.all([running, joined])
+    expect(await staged(d)).not.toContain(sha)
+    expect(deletes.length).toBeGreaterThan(0)
+    expect(deletes.every((inFlight) => inFlight === 0)).toBe(true)
+  })
+})

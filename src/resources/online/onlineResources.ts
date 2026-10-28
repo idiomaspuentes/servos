@@ -10,6 +10,8 @@
  * - A download (`downloadBook`, `downloadOffer`) goes into staging, then is applied once nobody is typing:
  *   `watchHelps` → `applyParts` → `refreshLibrary` → `keepHelpsChanges`, as when a pack is received.
  *
+ * - Staging keeps only what a kept list still names (`pruneStaging`), after an apply and at the end of the heal.
+ *
  * One run (a check or a download) at a time: a second call joins the running one, or waits for it. Every language
  * plans its originals from the newest originals list on the device (`planLanguage.ts`). The state lives in this
  * module (as `packsInside`), read by the screens through `useOnlineResources`. Everything outside is injectable
@@ -593,6 +595,7 @@ async function applyPlan(
       return 'stopped'
     }
     if (result.refused?.reason === 'missing') return 'missing'
+    await pruneStaging()
     if (result.applied.length) {
       await d()
         .refreshLibrary()
@@ -720,12 +723,36 @@ async function updateOffer(language: string, originals: PartsList | null, ctx: C
   showOffer()
 }
 
+/**
+ * Deletes the staged parts that no usable kept list names: no language list, and no originals list kept with one, of
+ * this server and compat. What a cut download left of a list that moved on, or of a language no longer asked for,
+ * would otherwise stay on the phone for good. Without any usable list (offline at the first launch, or only lists of
+ * another server or an earlier app) nothing is known to be useless, and nothing is deleted. Called only inside a run,
+ * after its queue ended: a part being downloaded is never pruned under it.
+ */
+async function pruneStaging(): Promise<void> {
+  try {
+    const lists = Object.values(keptLists())
+    if (!lists.length) return
+    const named = new Set<string>()
+    for (const k of lists) {
+      for (const p of k.list.parts) named.add(p.sha256)
+      for (const p of k.originals?.list.parts ?? []) named.add(p.sha256)
+    }
+    const staging = d().staging()
+    for (const { sha } of await staging.list()) if (!named.has(sha)) await staging.delete(sha)
+  } catch {
+    // What is left is pruned at the next apply.
+  }
+}
+
 // ---------------------------------------------------------------------------------------------------------------
 // The runs.
 
 /**
  * B's startup heal: each language's current plan applied as it is; nothing is asked of the Worker. A list made with
- * other versions is left to the next check, which asks the Worker before saying «actualice la app».
+ * other versions is left to the next check, which asks the Worker before saying «actualice la app». Then staging is
+ * pruned from the lists kept.
  */
 async function heal(ctx: Ctx) {
   const originals = keptNewestOriginals()
@@ -734,6 +761,7 @@ async function heal(ctx: Ctx) {
     const planned = await planFor(language, unitsOf(projects, language), originals)
     if (planned) await applyPlan(language, planned, ctx, { blockOnVersions: false })
   }
+  if (!ctx.signal.aborted) await pruneStaging()
 }
 
 async function check(force: boolean, ctx: Ctx) {
