@@ -22,6 +22,7 @@
  */
 
 import { useSyncExternalStore } from 'react'
+import { resourceContentStamp } from '@bt-synergy/resource-catalog'
 import {
   PARTS_FORMAT_VERSION,
   applyParts as realApplyParts,
@@ -51,6 +52,8 @@ import {
   SHARED,
   blockedByList,
   bookUnitOf,
+  resourcesOf,
+  unitsWorthPlanning,
   booksOfUnits,
   keptOriginals,
   languagesOf,
@@ -602,22 +605,53 @@ function keptNewestOriginals(): PartsList | null {
   return ref ? keptOriginals(keptLists(), ref.sha256) : null
 }
 
-type Planned = { plan: PartsPlan; register: Register; list: PartsList; originals?: PartsList; chosen: string[] }
+/** A plan, and the units it was made for: those asked (`asked`), less those already on the device (`chosen`). */
+type Planned = { plan: PartsPlan; register: Register; list: PartsList; originals?: PartsList; chosen: string[]; asked: string[] }
 
-/** A language's plan for some units, from its kept list (of this compat) and the register as it is now. */
-async function planFor(language: string, chosen: string[], originals: PartsList | null): Promise<Planned | null> {
+/**
+ * A language's plan for some units, from its kept list (of this compat) and the register as it is now, without the
+ * units already on the device in the release the lists name (`unitsWorthPlanning`: what a whole pack brought, or a
+ * pack whose slots were forgot, is not downloaded again for nothing).
+ */
+async function planFor(language: string, asked: string[], originals: PartsList | null): Promise<Planned | null> {
   const k = kept(language)
-  if (!k) return null
-  const register = await readPartsRegister(d().stores())
-  const plan = planLanguage({ list: k.list, originals, register, chosen })
-  if (!plan) return null
-  return { plan, register, list: k.list, chosen, ...(k.list.originals && originals ? { originals } : {}) }
+  return k ? planWith(language, k.list, originals, asked) : null
+}
+
+async function planWith(language: string, list: PartsList, originals: PartsList | null, asked: string[]): Promise<Planned | null> {
+  const stores = d().stores()
+  const register = await readPartsRegister(stores)
+  const whole = planLanguage({ list, originals, register, chosen: asked })
+  if (!whole) return null
+  const stamps = new Map<string, string>()
+  for (const key of resourcesOf(whole)) {
+    stamps.set(key, resourceContentStamp(await stores.catalog.get(key).catch(() => null)))
+  }
+  const chosen = unitsWorthPlanning({
+    list,
+    originals,
+    register,
+    chosen: asked,
+    plan: whole,
+    here: (unit) => unit === SHARED || d().bookIsHere(unit.slice('book '.length), language),
+    deviceStamp: (key) => stamps.get(key) ?? 'nostamp',
+    listStamp: resourceContentStamp,
+  })
+  const plan = chosen.length === asked.length ? whole : planLanguage({ list, originals, register, chosen })!
+  return { plan, register, list, chosen, asked, ...(list.originals && originals ? { originals } : {}) }
+}
+
+/** The bytes of a plan still to fetch: those of its parts not staged yet (a cut download left them). */
+async function toFetch(plan: PartsPlan): Promise<number> {
+  const staged = new Set((await d().staging().list().catch(() => [])).map((s) => s.sha))
+  return plan.download.reduce((n, p) => (staged.has(p.sha256) ? n : n + p.bytes), 0)
 }
 
 /**
  * The units the Home offer covers: the shared unit and the language's project books already on the device (slots
- * of its list, or a book the library can open, whole packs included: spec §3's accepted cost). A book not on the
- * device is not offered; it is downloaded from its own screen (`downloadBook`). None when no book is here.
+ * of its list, or a book the library can open, whole packs included; `planFor` then leaves out those whose release on
+ * the device is the lists'). A book not on the device is not offered; it is downloaded from its own screen
+ * (`downloadBook`). None when no book is here.
  */
 function offerUnits(language: string, register: Register): string[] {
   const held = new Set<string>()
@@ -686,10 +720,10 @@ async function applyPlanLocked(
   { blockOnVersions = true }: { blockOnVersions?: boolean },
 ): Promise<'applied' | 'missing' | 'stopped'> {
   if (ctx.signal.aborted) return 'stopped'
-  const register = await readPartsRegister(d().stores())
-  const plan = planLanguage({ list: before.list, originals: before.originals ?? null, register, chosen: before.chosen })
-  if (!plan) return 'stopped'
-  const planned: Planned = { ...before, plan, register }
+  // From the units asked, as the plan before: a unit a pack left in another release meanwhile is planned again.
+  const planned = await planWith(language, before.list, before.originals ?? null, before.asked)
+  if (!planned) return 'stopped'
+  const { plan } = planned
   const lock = await d()
     .wakeLock()
     .catch(() => null)
@@ -732,7 +766,7 @@ async function applyPlanLocked(
       return 'stopped'
     }
     // A unit that failed for another reason keeps its parts staged; the next check tries it again.
-    if (!result.failed.some((f) => f.scope === 'unit')) served(language, planned.chosen)
+    if (!result.failed.some((f) => f.scope === 'unit')) served(language, planned.asked)
     return 'applied'
   } finally {
     try {
@@ -842,7 +876,7 @@ async function updateOffer(language: string, originals: PartsList | null, ctx: C
     const register = await readPartsRegister(d().stores())
     const units = offerUnits(language, register)
     const planned = units.length ? await planFor(language, units, originals) : null
-    if (planned?.plan.download.length) offer = { bytes: planned.plan.bytes, key: await offerKey(planned.plan), units }
+    if (planned?.plan.download.length) offer = { bytes: await toFetch(planned.plan), key: await offerKey(planned.plan), units }
   }
   if (ctx.signal.aborted) return
   if (offer) offers.set(language, offer)
@@ -1048,7 +1082,7 @@ async function sizesRun(ctx: Ctx) {
     if (originals === undefined) originals = await resolveOriginals(ctx)
     if (k.list.originals && !originals) return undefined
     const planned = await planFor(language, [SHARED, bookUnitOf(book)], originals)
-    return planned ? planned.plan.bytes : undefined
+    return planned ? toFetch(planned.plan) : undefined
   }
   for (;;) {
     if (ctx.signal.aborted) return

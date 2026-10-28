@@ -4,7 +4,7 @@
  * reads a store or keeps state; `onlineResources.ts` does that around it.
  */
 
-import { planParts, type PartsList, type PartsPlan, type Register } from '@bt-synergy/language-pack'
+import { planParts, slotId, slotOfEntry, unitOfPart, type PartEntry, type PartsList, type PartsPlan, type Register } from '@bt-synergy/language-pack'
 import { compareStamps } from '../freshness'
 import type { ListAnswer } from './packsClient'
 
@@ -134,6 +134,51 @@ export function planLanguage(input: {
     chosen: input.chosen,
   })
 }
+
+/**
+ * The chosen units worth planning (spec §3: what a pack left, or forgot the slots of, is downloaded again only «con
+ * internet y algo distinto»). A unit is left out when everything its plan would download is already on the device
+ * without a slot: every part it needs fills an empty slot (none holds another sha: that is a part of this list on the
+ * device, and only the register tells its content), the unit is here (`here`: a book the library opens; the shared
+ * unit), and each of those parts' resources has on the device the release the lists name (`deviceStamp`, the
+ * catalog row's `resourceContentStamp`, compared with that of the list's row, B's own measure). A book not here, a
+ * resource the lists give no row for, or a part of another sha keeps the unit. The rest are left as they are, so
+ * their register stays empty, as after a whole pack.
+ */
+export function unitsWorthPlanning(input: {
+  list: PartsList
+  originals: PartsList | null
+  register: Register
+  chosen: string[]
+  /** Its whole plan for `chosen`. */
+  plan: PartsPlan
+  here: (unit: string) => boolean
+  deviceStamp: (resource: string) => string
+  listStamp: (metadata: unknown) => string
+}): string[] {
+  const listed = new Map<string, unknown>()
+  for (const r of input.list.resources) listed.set(r.key, r.metadata)
+  if (input.list.originals) for (const r of input.originals?.resources ?? []) listed.set(r.key, r.metadata)
+  const needed = new Map<string, PartEntry[]>()
+  for (const p of input.plan.download) {
+    const unit = unitOfPart(p)
+    needed.set(unit, [...(needed.get(unit) ?? []), p])
+  }
+  return input.chosen.filter((unit) => {
+    const parts = needed.get(unit)
+    // Nothing to download (or only slots to remove): planned as it is.
+    if (!parts?.length || !input.here(unit)) return true
+    return parts.some(
+      (p) =>
+        input.register.has(slotId(slotOfEntry(p))) ||
+        !listed.has(p.resource) ||
+        input.deviceStamp(p.resource) !== input.listStamp(listed.get(p.resource)),
+    )
+  })
+}
+
+/** The resources whose device release `unitsWorthPlanning` compares: those of the parts a plan downloads. */
+export const resourcesOf = (plan: PartsPlan): string[] => [...new Set(plan.download.map((p) => p.resource))]
 
 /** Whether a language's list names any part of a book (else that book cannot be downloaded in it). */
 export const listHasBook = (list: PartsList, book: string): boolean =>

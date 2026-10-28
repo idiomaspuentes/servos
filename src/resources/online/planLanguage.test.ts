@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { PartEntry, PartsList } from '@bt-synergy/language-pack'
-import { blockedByList, booksOfUnits, keptOriginals, languagesOf, listHasBook, newestOriginals, planLanguage, unitsOf, type KeptList } from './planLanguage'
+import { blockedByList, booksOfUnits, keptOriginals, languagesOf, listHasBook, newestOriginals, planLanguage, unitsOf, unitsWorthPlanning, type KeptList } from './planLanguage'
 
 const sha = (c: string) => c.repeat(64)
 const entry = (s: string, kind: PartEntry['kind'], resource: string, book?: string): PartEntry => ({
@@ -111,5 +111,52 @@ describe('what a language needs', () => {
     expect(blockedByList({ kind: 'espera', retryAfter: 30 })).toEqual({ blocked: 'noDisponible', retryAfter: 30 })
     expect(blockedByList({ kind: 'actualizarApp' })).toEqual({ blocked: 'actualizarApp' })
     expect(blockedByList({ kind: 'sinIdioma' })).toEqual({ blocked: 'sinIdioma' })
+  })
+})
+
+describe('only what differs is planned again (final review, I2)', () => {
+  const TN = 'o/es-419/tn'
+  const TW = 'o/es-419/tw'
+  const l = {
+    ...list('es-419', [entry('a', 'book', TN, 'tit'), entry('b', 'book', TN, 'rut'), entry('c', 'titles', TW)]),
+    resources: [
+      { key: TN, stamp: 'v2', role: 'language', subject: '', title: '', metadata: 'v2' },
+      { key: TW, stamp: 'v1', role: 'language', subject: '', title: '', metadata: 'v1' },
+    ],
+  } as PartsList
+  const chosen = ['shared', 'book tit', 'book rut']
+  const worth = (register: Map<string, { sha256: string; keys: string[]; list: string; at: string }>, here: string[], device: Record<string, string>) =>
+    unitsWorthPlanning({
+      list: l, originals: null, register, chosen,
+      plan: planLanguage({ list: l, originals: null, register, chosen })!,
+      here: (u) => u === 'shared' || here.includes(u),
+      deviceStamp: (key) => device[key] ?? 'nostamp',
+      listStamp: (metadata) => String(metadata),
+    })
+  const slot = (s: string) => ({ sha256: sha(s), keys: [], list: 'es-419', at: '' })
+
+  it("a unit here in the lists' release, without slots, is left out; one here in another release is not", () => {
+    expect(worth(new Map(), ['book tit', 'book rut'], { [TN]: 'v2', [TW]: 'v1' })).toEqual([])
+    expect(worth(new Map(), ['book tit', 'book rut'], { [TN]: 'v1', [TW]: 'v1' })).toEqual(['book tit', 'book rut'])
+  })
+
+  it('a book not here is planned, whatever the release of its resources on the device', () => {
+    expect(worth(new Map(), ['book tit'], { [TN]: 'v2', [TW]: 'v1' })).toEqual(['book rut'])
+  })
+
+  it('a slot of another sha keeps its unit: the catalog row may be the release another book brought', () => {
+    // Titus was applied from parts in v2 (the catalog row says v2); Ruth still holds v1's notes.
+    const register = new Map([['book:o/es-419/tn:tit', slot('a')], ['book:o/es-419/tn:rut', slot('z')], ['titles:o/es-419/tw', slot('c')]])
+    expect(worth(register, ['book tit', 'book rut'], { [TN]: 'v2', [TW]: 'v1' })).toEqual(['shared', 'book tit', 'book rut'])
+  })
+
+  it('a resource the lists give no row for keeps its unit', () => {
+    const bare = { ...l, resources: [] } as PartsList
+    const units = unitsWorthPlanning({
+      list: bare, originals: null, register: new Map(), chosen,
+      plan: planLanguage({ list: bare, originals: null, register: new Map(), chosen })!,
+      here: () => true, deviceStamp: () => 'v1', listStamp: (m) => String(m),
+    })
+    expect(units).toEqual(chosen)
   })
 })

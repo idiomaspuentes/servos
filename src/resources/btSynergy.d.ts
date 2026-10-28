@@ -216,6 +216,12 @@ declare module '@bt-synergy/language-pack' {
   export function readRegister(rows: Iterable<{ key: string; entry: unknown }>): Register
   /** The unit (`shared`, `book <b>`) a slot id is in. */
   export function unitOfSlotId(id: string): string
+  /** Where a part goes: its kind, resource, and book or group. */
+  export type PartSlot = { kind: PartKind; resource: string; book?: string; group?: string }
+  /** `kind:resource[:book][:group]`: the register's key for a slot. */
+  export function slotId(slot: PartSlot): string
+  /** The slot a list entry fills. */
+  export function slotOfEntry(entry: PartEntry): PartSlot
   export type PlanInput = {
     list: PartsList
     originals?: PartsList

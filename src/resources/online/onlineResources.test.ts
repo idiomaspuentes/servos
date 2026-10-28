@@ -28,12 +28,15 @@ type Project = Parameters<typeof startOnline>[0][number]
 const UGNT = 'unfoldingWord/el-x-koine/ugnt'
 const tnOf = (language: string) => `o/${language}/tn`
 const twOf = (language: string) => `o/${language}/tw`
-const meta = (key: string, type: string, subject: string) => {
+/** A catalog row of the release a stamp (`tag#published_at`) names. */
+const meta = (key: string, type: string, subject: string, stamp: string) => {
   const [owner, language, resourceId] = key.split('/')
-  return { resourceKey: key, owner, language, resourceId, type, subject, title: key, release: { tag_name: 'v1', published_at: '2026-10-01T00:00:00Z' } }
+  const [tag_name, published_at] = stamp.split('#')
+  return { resourceKey: key, owner, language, resourceId, type, subject, title: key, release: { tag_name, published_at } }
 }
-const resource = (key: string, type: string, subject: string, role: 'language' | 'original', stamp = 'v1#2026-10-01T00:00:00Z') => ({
-  key, stamp, role, subject, title: key, metadata: meta(key, type, subject),
+const V1 = 'v1#2026-10-01T00:00:00Z'
+const resource = (key: string, type: string, subject: string, role: 'language' | 'original', stamp = V1) => ({
+  key, stamp, role, subject, title: key, metadata: meta(key, type, subject, stamp),
 })
 const row = (layer: PartRow['layer'], key: string, text: string): PartRow => ({ layer, key, value: { content: text } })
 
@@ -42,11 +45,15 @@ const unique = (what: string) => `${what}-${Date.now()}-${n++}`
 
 /**
  * What the Worker serves for a language: an originals list with each book's original, and a language list with each
- * book's notes and the shared titles. `version` changes the notes (new shas) and their release, `originals` the
- * originals list (a higher digit is a later release of the original, unless `stamp` says otherwise). The list's `code`
- * stays the build's whatever the content, as the real Worker's does, unless `code` names another.
+ * book's notes and the shared titles. `version` changes the notes and titles (new shas), `releases` the release stamps
+ * of the notes and words (`v1` unless given), `originals` the originals list (a higher digit is a later release of the
+ * original, unless `stamp` says otherwise). The list's `code` stays the build's whatever the content, as the real
+ * Worker's does, unless `code` names another.
  */
-async function publish(w: Worker, opts: { language?: string; books: string[]; version?: string; originals?: string; stamp?: string; code?: string }) {
+async function publish(
+  w: Worker,
+  opts: { language?: string; books: string[]; version?: string; originals?: string; stamp?: string; code?: string; releases?: { tn?: string; tw?: string } },
+) {
   const language = opts.language ?? 'es-419'
   const v = opts.version ?? '1'
   const o = opts.originals ?? '1'
@@ -68,10 +75,13 @@ async function publish(w: Worker, opts: { language?: string; books: string[]; ve
   const list = await w.setList(language, parts, {
     ...(opts.code ? { code: opts.code } : {}),
     versions: RESOURCE_VERSIONS,
-    resources: [resource(tn, 'notes', 'TSV Translation Notes', 'language'), resource(tw, 'words', 'Translation Words', 'language')],
+    resources: [
+      resource(tn, 'notes', 'TSV Translation Notes', 'language', opts.releases?.tn),
+      resource(tw, 'words', 'Translation Words', 'language', opts.releases?.tw),
+    ],
     originals: ref,
     // The stamps the build read: the originals' release among them.
-    stamps: { [UGNT]: stamp, [tn]: 'v1#2026-10-01T00:00:00Z', [tw]: 'v1#2026-10-01T00:00:00Z' },
+    stamps: { [UGNT]: stamp, [tn]: opts.releases?.tn ?? V1, [tw]: opts.releases?.tw ?? V1 },
   } as Partial<PartsList>)
   return { list, originals, ref, parts, orig }
 }
@@ -98,6 +108,8 @@ function device(w: Worker, over: Partial<OnlineDeps> = {}, keep?: { storage?: Re
     free: { quota: 1e12, usage: 0 } as { quota: number; usage: number } | null,
     log: [] as string[],
     here: new Set<string>(),
+    /** Books a whole pack brought: here whatever the register says. */
+    packed: new Set<string>(),
     applied: [] as ApplyInput[],
     locks: { taken: 0, released: 0 },
     changes: 0,
@@ -134,7 +146,7 @@ function device(w: Worker, over: Partial<OnlineDeps> = {}, keep?: { storage?: Re
     refreshLibrary: async () => {
       d.log.push('refreshLibrary')
       const register = await readPartsRegister(d.stores)
-      d.here = new Set([...register.keys()].filter((id) => id.startsWith('book:')).map((id) => id.split(':').pop()!))
+      d.here = new Set([...d.packed, ...[...register.keys()].filter((id) => id.startsWith('book:')).map((id) => id.split(':').pop()!)])
     },
     watchHelps: async (_stores, language, books) => {
       d.log.push(`watchHelps ${language} ${books.join(',')}`)
@@ -1244,7 +1256,7 @@ describe('a pack opened while Servos online works (Task 8)', () => {
     await downloadBook('es-419', 'tit')
     expect([...(await slots(d)).values()].map((r) => r.sha256)).toContain(titles.sha256)
 
-    // Ruth comes; while its parts come, a pack that brings the titles is opened.
+    // Ruth comes; while its parts come, a pack that brings the titles of another release is opened.
     let open!: () => void
     const gate = new Promise<void>((r) => (open = r))
     w.gate((url) => (url.includes('/parts/') ? gate : Promise.resolve()))
@@ -1254,7 +1266,11 @@ describe('a pack opened while Servos online works (Task 8)', () => {
     await vi.waitFor(() => expect(requests(w, 'part').length).toBeGreaterThan(0))
     // The queue was planned before the pack: Ruth's parts only, the titles held.
     expect(requests(w, 'part').map((c) => c.url.split('/').pop())).not.toContain(titles.sha256)
-    await whileOnlineIdle(() => forget(d, (id) => id.startsWith('titles:')))
+    await whileOnlineIdle(async () => {
+      await forget(d, (id) => id.startsWith('titles:'))
+      const tw = w.lists.get('es-419')!.resources.find((r) => r.key === twOf('es-419'))!
+      await d.stores.catalog.set(tw.key, meta(tw.key, 'words', 'Translation Words', 'v0#2026-09-01T00:00:00Z'))
+    })
     open()
     await downloading
 
@@ -1405,5 +1421,68 @@ describe('waits and blocks agree (final review, I1)', () => {
     w.online()
     expect(await bookDownloadSize('pt-br', 'tit')).toBeGreaterThan(0)
     expect(onlineState().blocked).toEqual({ 'es-419': 'noDisponible' })
+  })
+})
+
+/** What a whole pack of these lists leaves: its books here, the catalog rows of their releases, and no slot. */
+async function wholePack(d: ReturnType<typeof device>, published: { list: PartsList; originals: PartsList }, books: string[]) {
+  for (const r of [...published.list.resources, ...published.originals.resources]) {
+    await d.stores.catalog.set(r.key, r.metadata as Record<string, unknown>)
+  }
+  d.packed = new Set(books)
+  d.here = new Set(books)
+}
+
+describe('only what differs is downloaded again (final review, I2; spec §3 «con internet y algo distinto»)', () => {
+  const last = (c: { url: string }) => c.url.split('/').pop()
+
+  it('after whole packs of the same release nothing is offered, and a missing book still downloads alone', async () => {
+    const w = fakeWorker()
+    const v1 = await publish(w, { books: ['tit', 'jon', 'rut'] })
+    const d = device(w)
+    await wholePack(d, v1, ['tit', 'jon'])
+    await startOnline([project('es-419', ['tit', 'jon', 'rut'])])
+    expect(onlineState().offer).toBeNull()
+    expect(requests(w, 'part')).toEqual([])
+
+    // Ruth is not here: its notes and original come; the titles, of the release on the device, do not.
+    const [, , rut, titles] = v1.parts
+    expect(await bookDownloadSize('es-419', 'rut')).toBe(rut.bytes + v1.orig[2].bytes)
+    await downloadBook('es-419', 'rut')
+    expect(requests(w, 'part').map(last).sort()).toEqual([rut.sha256, v1.orig[2].sha256].sort())
+    expect(requests(w, 'part').map(last)).not.toContain(titles.sha256)
+    expect(bookIsHere(d, 'rut')).toBe(true)
+  })
+
+  it('a newer release of one resource offers only the units that have it', async () => {
+    const w = fakeWorker()
+    const v1 = await publish(w, { books: ['tit', 'jon'] })
+    const d = device(w)
+    await wholePack(d, v1, ['tit', 'jon'])
+    await startOnline([project('es-419', ['tit', 'jon'])])
+    expect(onlineState().offer).toBeNull()
+
+    // A new build: every part has new bytes, but only the words have a new release. Only the shared unit has them.
+    const v2 = await publish(w, { books: ['tit', 'jon'], version: '2', releases: { tw: 'v2#2026-10-02T00:00:00Z' } })
+    await checkForUpdates({ force: true })
+    expect(onlineState().offer).toMatchObject({ language: 'es-419', bytes: v2.parts[2].bytes })
+    await downloadOffer()
+    expect(requests(w, 'part').map(last)).toEqual([v2.parts[2].sha256])
+
+    // Then the notes: both books, whole (a unit is planned as one, its original with it).
+    const v3 = await publish(w, { books: ['tit', 'jon'], version: '3', releases: { tn: 'v2#2026-10-02T00:00:00Z', tw: 'v2#2026-10-02T00:00:00Z' } })
+    await checkForUpdates({ force: true })
+    // The titles were applied from parts: their slot holds v2, so v3's new bytes are an update too.
+    const [tit, jon, titles] = v3.parts
+    expect(onlineState().offer).toMatchObject({ bytes: tit.bytes + jon.bytes + titles.bytes + v3.orig[0].bytes + v3.orig[1].bytes })
+  })
+
+  it('a size leaves out the parts already staged (M5)', async () => {
+    const w = fakeWorker()
+    const { parts, orig } = await publish(w, { books: ['tit'] })
+    const d = device(w)
+    setOnlineProjects([project('es-419', ['tit'])])
+    await d.staging.put(parts[0].sha256, w.parts.get(parts[0].sha256)!)
+    expect(await bookDownloadSize('es-419', 'tit')).toBe(parts[1].bytes + orig[0].bytes)
   })
 })
