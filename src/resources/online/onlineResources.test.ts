@@ -1629,3 +1629,55 @@ describe('small things of the final review', () => {
     expect(d.applied).toHaveLength(4)
   })
 })
+
+describe('deps given without `isTyping` (the real Worker test, after F1)', () => {
+  it('an apply asks the given `whenNotTyping` whether someone types, and never a page that is not there', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const stores = openResourceStores({ cache: unique('recursos'), catalog: unique('catalogo') })
+    const staging = stagingFrom(memoryByteStore())
+    let typing = false
+    let waiting: Array<() => void> = []
+    // As realWorker.test.ts gives them: `whenNotTyping`, and no `isTyping`; no `document` in Node.
+    setOnlineDeps({
+      fetch: w.fetch,
+      server: () => w.server,
+      compat: () => w.compat,
+      stores: () => stores,
+      staging: () => staging,
+      storage: memoryStorage(),
+      kept: indexedDbKeptStore(unique('enlinea')),
+      isOnline: () => true,
+      whenNotTyping: (run) => {
+        if (!typing) {
+          run()
+          return () => {}
+        }
+        waiting.push(run)
+        return () => void (waiting = waiting.filter((r) => r !== run))
+      },
+      estimate: null,
+      wakeLock: async () => null,
+      bookIsHere: () => false,
+      refreshLibrary: async () => {},
+      watchHelps: async () => [],
+      keepHelpsChanges: async () => [],
+      applyParts,
+    })
+    setOnlineProjects([project('es-419', ['tit'])])
+    await downloadBook('es-419', 'tit')
+    expect([...(await readPartsRegister(stores)).keys()].some((id) => id.startsWith('book:') && id.endsWith(':tit'))).toBe(true)
+    expect(onlineState().blocked).toEqual({})
+
+    // The same `whenNotTyping` says when someone types: an update staged then waits for the pause.
+    await publish(w, { books: ['tit'], version: '2' })
+    await checkForUpdates({ force: true })
+    typing = true
+    const running = downloadOffer()
+    await vi.waitFor(() => expect(waiting).toHaveLength(1))
+    typing = false
+    waiting.splice(0).forEach((r) => r())
+    await running
+    expect(onlineState().offer).toBeNull()
+  })
+})

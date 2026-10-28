@@ -35,9 +35,12 @@ export function useWaiting(person: string): Errand[] {
 /** What `whenNotTyping` looks at: the page's document unless given (tests). */
 type TypingDoc = Pick<Document, 'addEventListener' | 'removeEventListener' | 'activeElement' | 'visibilityState'>
 
+/** The page's document; none outside a browser (then nothing is ever being typed). */
+const page = (): TypingDoc | null => (typeof document === 'undefined' ? null : document)
+
 /** Whether something is being typed: a field or an editable text has the focus. */
-export function isTyping(doc: Pick<Document, 'activeElement'> = document): boolean {
-  const el = doc.activeElement as HTMLElement | null
+export function isTyping(doc: Pick<Document, 'activeElement'> | null = page()): boolean {
+  const el = doc?.activeElement as HTMLElement | null | undefined
   return Boolean(el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)))
 }
 
@@ -49,8 +52,8 @@ const LOOK_AGAIN_MS = 2000
  * looks again when the focus leaves a field, when the app comes back into view, and every two seconds meanwhile: a
  * focused field the page removes sends no `focusout`, and would otherwise hold it for ever.
  */
-export function whenNotTyping(run: () => void, doc: TypingDoc = document): () => void {
-  if (!isTyping(doc)) {
+export function whenNotTyping(run: () => void, doc: TypingDoc | null = page()): () => void {
+  if (!doc || !isTyping(doc)) {
     run()
     return () => {}
   }

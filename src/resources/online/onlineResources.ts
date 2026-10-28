@@ -41,7 +41,7 @@ import {
   type PartsStaging,
   type Register,
 } from '@bt-synergy/language-pack'
-import { isOnline as realIsOnline, isTyping as realIsTyping, whenNotTyping as realWhenNotTyping } from '../../app/frame/online'
+import { isOnline as realIsOnline, whenNotTyping as realWhenNotTyping } from '../../app/frame/online'
 import { keepHelpsChanges as realKeepHelpsChanges, watchHelps as realWatchHelps, type BookChanges, type Watched } from '../../app/projects/helpsWatch'
 import { bookIsHere as realBookIsHere, refreshLibrary as realRefreshLibrary } from '../../app/projects/library'
 import type { Project } from '../../app/projects/model'
@@ -112,8 +112,11 @@ export type OnlineDeps = {
   now: () => number
   isOnline: () => boolean
   whenNotTyping: (run: () => void) => () => void
-  /** Whether something is being typed now (the apply looks again once it holds the lock). */
-  isTyping: () => boolean
+  /**
+   * Whether something is being typed now (the apply looks again once it holds the lock). Without it, `whenNotTyping`
+   * is asked (it runs at once when nobody types), so the two never disagree.
+   */
+  isTyping?: () => boolean
   /** `navigator.storage.estimate`; null where there is none (then the free-space check is skipped). */
   estimate: (() => Promise<{ quota?: number; usage?: number }>) | null
   wakeLock: () => Promise<WakeLock | null>
@@ -155,7 +158,6 @@ function defaults(): OnlineDeps {
     now: () => Date.now(),
     isOnline: realIsOnline,
     whenNotTyping: (run) => realWhenNotTyping(run),
-    isTyping: () => realIsTyping(),
     estimate: nav?.storage?.estimate ? () => nav.storage.estimate() : null,
     wakeLock: async () => (nav?.wakeLock ? nav.wakeLock.request('screen') : null),
     bookIsHere: realBookIsHere,
@@ -800,6 +802,16 @@ async function roomFor(bytes: number): Promise<boolean> {
 // ---------------------------------------------------------------------------------------------------------------
 // Downloading and applying.
 
+/** Whether something is typed now: the deps' `isTyping`, else their `whenNotTyping`, which runs at once when not. */
+function typingNow(): boolean {
+  const given = d().isTyping
+  if (given) return given()
+  let ran = false
+  const cancel = d().whenNotTyping(() => void (ran = true))
+  if (!ran) cancel()
+  return !ran
+}
+
 /** Waits until nobody is typing: false when the run was stopped meanwhile. */
 function untilNotTyping(signal: AbortSignal): Promise<boolean> {
   return new Promise((resolve) => {
@@ -837,7 +849,7 @@ async function applyPlan(
     if (!(await untilNotTyping(ctx.signal))) return 'stopped'
     // Typing may have started while the lock was awaited (a pack opening): then the lock is let go, and the pause
     // waited for again.
-    const done = await asOnlineApply(() => (d().isTyping() ? Promise.resolve('typing' as const) : applyPlanLocked(language, before, ctx, options)))
+    const done = await asOnlineApply(() => (typingNow() ? Promise.resolve('typing' as const) : applyPlanLocked(language, before, ctx, options)))
     if (done !== 'typing') return done
   }
 }
