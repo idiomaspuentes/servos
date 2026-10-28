@@ -49,7 +49,7 @@ import { RESOURCE_VERSIONS, openPartsStaging, openResourceStores, readPartsRegis
 import { downloadParts, type Progress } from './downloads'
 import { indexedDbKeptStore, type KeptStore } from './keptLists'
 import { asOnlineApply } from './onlineLock'
-import { MAX_RETRY, fetchList, fetchOriginals, fetchPart, type ClientOptions } from './packsClient'
+import { MAX_RETRY, RETRY, fetchList, fetchOriginals, fetchPart, type ClientOptions } from './packsClient'
 import { packsServer, setPacksServer, type PacksServerId } from './packsServer'
 import {
   NO_STAMP,
@@ -177,8 +177,12 @@ const d = (): OnlineDeps => (deps ??= defaults())
 // What is kept on the device: lists (for 304s and planning offline; IndexedDB), waits, «Ahora no», the last check
 // (localStorage).
 
-/** A wait the Worker asked for (`Retry-After`), and the block it leaves meanwhile (rebuilt from it at startup). */
-type Wait = { until: string; reason: Blocked | null }
+/**
+ * A wait the Worker asked for (`Retry-After`), or one set for a «noDisponible» it gave no time for, and the block it
+ * leaves meanwhile (rebuilt from it at startup). `by: 'originals'` when the originals list, not the language, could
+ * not come: that wait goes as soon as the originals do.
+ */
+type Wait = { until: string; reason: Blocked | null; by?: 'originals' }
 
 type Memory = {
   listas: Record<string, KeptList>
@@ -206,7 +210,8 @@ const waits = (o: Record<string, unknown>): Record<string, Wait> =>
       if (typeof v === 'string') return [[key, { until: v, reason: null }]]
       const w = v as Partial<Wait> | null
       if (!w || typeof w !== 'object' || typeof w.until !== 'string') return []
-      return [[key, { until: w.until, reason: typeof w.reason === 'string' && BLOCKS.includes(w.reason) ? w.reason : null }]]
+      const reason = typeof w.reason === 'string' && BLOCKS.includes(w.reason) ? w.reason : null
+      return [[key, { until: w.until, reason, ...(w.by === 'originals' ? { by: w.by } : {}) }]]
     }),
   )
 const isKept = (v: unknown): v is KeptList => {
@@ -371,8 +376,8 @@ function waitsMoved() {
   }
 }
 
-function retryLater(key: string, seconds: number, reason: Blocked | null) {
-  mem().reintentar[key] = { until: iso(d().now() + seconds * 1000), reason }
+function retryLater(key: string, seconds: number, reason: Blocked | null, by?: 'originals') {
+  mem().reintentar[key] = { until: iso(d().now() + seconds * 1000), reason, ...(by ? { by } : {}) }
   save('reintentar')
   waitsMoved()
 }
@@ -381,6 +386,16 @@ function noWait(key: string) {
   delete mem().reintentar[key]
   save('reintentar')
   waitsMoved()
+}
+
+/**
+ * «noDisponible» for a language, with a wait (`RETRY.unavailable`) unless one holds already: the timer `watchOnline`
+ * keeps then looks again while the app stays in view. Without it, a phone that keeps its connection but gets no data
+ * would say «se intentará más tarde» until the person leaves the app.
+ */
+function unavailableFor(language: string, by?: 'originals') {
+  if (!waiting(language)) retryLater(language, RETRY.unavailable, 'noDisponible', by)
+  setBlocked(language, 'noDisponible')
 }
 
 /** When the earliest wait the Worker asked for ends (a check then asks again), or null when nothing waits. */
@@ -584,7 +599,7 @@ function startRun(kind: Run['kind'], body: (ctx: Ctx) => Promise<void>, about: {
       // happened). A check that throws stays out of the person's way.
       console.error('[Servos online]', error)
       const language = run.language ?? state.busy?.language
-      if (language && run.generation === generation && !ctrl.signal.aborted) setBlocked(language, 'noDisponible')
+      if (language && run.generation === generation && !ctrl.signal.aborted) unavailableFor(language)
     } finally {
       // What the run kept of the lists is written before it ends.
       await listWrites
@@ -688,7 +703,7 @@ async function resolveOriginals(ctx: Ctx): Promise<PartsList | null> {
       return found
     }
     const unavailable = () => {
-      for (const l of needing) if (!state.blocked[l]) setBlocked(l, 'noDisponible')
+      for (const l of needing) if (!state.blocked[l]) unavailableFor(l, 'originals')
     }
     if (ctx.signal.aborted || !d().isOnline()) return null
     // Inside a wait the originals route asked for (kept across a restart): the languages that need it say why.
@@ -737,7 +752,10 @@ async function resolveOriginals(ctx: Ctx): Promise<PartsList | null> {
 function cleared(languages: string[], ctx: Ctx) {
   for (const l of languages) {
     if (ctx.kind === 'size' && ![...sizeAsks.values()].some((ask) => ask.language === l)) continue
-    if (state.blocked[l] === 'noDisponible' && !waiting(l) && !ctx.stopped.has(l)) setBlocked(l, null)
+    const byOriginals = mem().reintentar[l]?.by === 'originals'
+    if (state.blocked[l] !== 'noDisponible' || (waiting(l) && !byOriginals) || ctx.stopped.has(l)) continue
+    if (byOriginals) noWait(l)
+    setBlocked(l, null)
   }
 }
 
@@ -979,7 +997,7 @@ async function fetchAndApply(language: string, ctx: Ctx, originalsIn: PartsList 
     switch (result.kind) {
       case 'listaOtraVez':
         if (ctx.replanned.has(language)) {
-          setBlocked(language, 'noDisponible')
+          unavailableFor(language)
           return
         }
         ctx.replanned.add(language)
@@ -996,7 +1014,7 @@ async function fetchAndApply(language: string, ctx: Ctx, originalsIn: PartsList 
       case 'falla':
         // A dropped connection (not an abort, which returned above): what came is staged, the next check goes on
         // from it, and meanwhile the book says why it did not come (spec §2).
-        setBlocked(language, 'noDisponible')
+        unavailableFor(language)
         return
       case 'listo':
         break
@@ -1019,7 +1037,8 @@ async function wantedFromStaging(languages: string[], originals: PartsList | nul
     if (!planned?.plan.download.length) continue
     // Originals parts are shared: staged for one language, they say nothing of what another was asked for.
     const own = new Set(planned.list.parts.map((p) => p.sha256))
-    staged ??= new Set((await d().staging().list()).map((s) => s.sha))
+    // Unreadable staging: nothing is known to be staged, and the check goes on.
+    staged ??= new Set((await d().staging().list().catch(() => [])).map((s) => s.sha))
     const units = new Set(planned.plan.download.filter((p) => own.has(p.sha256) && staged!.has(p.sha256)).map((p) => unitOfPart(p)))
     if (units.size) want(language, [SHARED, ...units])
   }

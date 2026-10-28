@@ -15,6 +15,7 @@ import {
   downloadOffer,
   nextWaitEnd,
   onOnline,
+  onWaits,
   onlineState,
   setOnlineDeps,
   startOnline,
@@ -23,6 +24,7 @@ import {
 } from './onlineResources'
 import { indexedDbKeptStore, type KeptStore } from './keptLists'
 import { whileOnlineIdle } from './onlineLock'
+import { watchOnline } from './watchOnline'
 
 type Worker = ReturnType<typeof fakeWorker>
 type Project = Parameters<typeof startOnline>[0][number]
@@ -327,7 +329,10 @@ describe('a dropped connection, and one run at a time', () => {
     expect(d.log).not.toContain('applyParts')
 
     w.online()
-    // Within the recheck time: no list is asked again, the wanted download goes on from staging.
+    // Before its wait (RETRY.unavailable) nothing is tried; after it, the wanted download goes on from staging.
+    await checkForUpdates()
+    expect(onlineState().blocked).toEqual({ 'es-419': 'noDisponible' })
+    d.clock += 300_000
     await checkForUpdates()
     expect(onlineState().blocked).toEqual({})
     const register = await slots(d)
@@ -1772,6 +1777,85 @@ describe('a run that throws says so (final review)', () => {
       await startOnline([project('es-419', ['tit'])])
       expect(onlineState()).toMatchObject({ busy: null, blocked: {} })
       expect(errors).toHaveBeenCalledWith('[Servos online]', expect.any(Error))
+    } finally {
+      errors.mockRestore()
+    }
+  })
+})
+
+describe('fix round R1: every «noDisponible» is tried again', () => {
+  it('a cut download waits RETRY.unavailable; the timer then checks, and the block can go', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const d = device(w)
+    await startOnline([project('es-419', ['tit'])])
+    w.cutAfter(2)
+    await downloadBook('es-419', 'tit')
+    expect(onlineState().blocked).toEqual({ 'es-419': 'noDisponible' })
+    expect(JSON.parse(d.storage.getItem('servos.enLinea.reintentar')!)['es-419']).toMatchObject({ reason: 'noDisponible' })
+    expect(nextWaitEnd()).toBe(d.clock + 300_000)
+    w.online()
+
+    // The app stays in view with its connection: only the timer can look again.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const checks: Array<Promise<void>> = []
+    const page = Object.assign(new EventTarget(), { visibilityState: 'visible' })
+    const stop = watchOnline(new EventTarget(), page, () => checks.push(checkForUpdates()), { next: nextWaitEnd, now: () => d.clock, changed: onWaits })
+    try {
+      await vi.advanceTimersByTimeAsync(299_000)
+      expect(checks).toHaveLength(0)
+      d.clock += 300_000
+      await vi.advanceTimersByTimeAsync(1_000)
+      expect(checks).toHaveLength(1)
+    } finally {
+      vi.useRealTimers()
+    }
+    await Promise.all(checks)
+    stop()
+    expect(onlineState().blocked).toEqual({})
+    expect(bookIsHere(d, 'tit')).toBe(true)
+  })
+
+  it('a run that throws, and originals that cannot come, wait too', async () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const w = fakeWorker()
+      await publish(w, { books: ['tit'] })
+      const d = device(w, {
+        applyParts: async () => {
+          throw new Error('broken store')
+        },
+      })
+      await startOnline([project('es-419', ['tit'])])
+      await downloadBook('es-419', 'tit')
+      expect(nextWaitEnd()).toBe(d.clock + 300_000)
+
+      const w2 = fakeWorker()
+      await publish(w2, { books: ['tit'] })
+      const d2 = device(w2)
+      w2.setAnswer('originals', { status: 500, body: 'down', contentType: 'text/plain' }, 1)
+      await startOnline([project('es-419', ['tit'])])
+      expect(onlineState().blocked).toEqual({ 'es-419': 'noDisponible' })
+      expect(nextWaitEnd()).toBe(d2.clock + 300_000)
+    } finally {
+      errors.mockRestore()
+    }
+  })
+
+  it('an unreadable staging does not make the check throw (minor 2)', async () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const w = fakeWorker()
+      await publish(w, { books: ['tit'] })
+      const broken = stagingFrom(memoryByteStore())
+      broken.list = async () => {
+        throw new Error('unreadable')
+      }
+      const d = device(w, { staging: () => broken })
+      d.here = new Set(['tit'])
+      await startOnline([project('es-419', ['tit'])])
+      expect(errors).not.toHaveBeenCalled()
+      expect(onlineState().offer).toMatchObject({ language: 'es-419' })
     } finally {
       errors.mockRestore()
     }
