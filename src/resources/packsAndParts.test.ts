@@ -260,7 +260,9 @@ describe('a pack opened over parts', () => {
     expect(ids).not.toContain(`book:${GLT}:tit`)
     expect(ids).not.toContain(`book:${TN}:tit`)
     expect(ids).not.toContain(`tw:${TW}:kt:6`)
-    expect(ids).toContain(`book:${TN}:rut`)
+    // Since tc-study#52 the importer itself forgets every slot of a resource a whole-language pack overwrites, so
+    // Ruth's notes are planned again too: a re-download, never a wrong claim.
+    expect(ids).not.toContain(`book:${TN}:rut`)
   })
 
   it('waits for an online apply in flight before it forgets or writes anything', async () => {
