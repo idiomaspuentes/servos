@@ -241,6 +241,42 @@ describe('fetchPart', () => {
   })
 })
 
+describe('a refused answer frees its connection', () => {
+  it('fetchPart cancels the unread body of a 404, a 429 and a 500', async () => {
+    const { w, part } = await withList()
+    const url = `${w.server}parts/${part.sha256}`
+    const missing = `${w.server}parts/${'a'.repeat(64)}`
+    expect(await fetchPart(w.server, 'a'.repeat(64), { fetch: w.fetch })).toEqual({ kind: 'parteNoEstá' })
+    w.setAnswer('part', ANSWERS.limite, 1)
+    expect((await fetchPart(w.server, part.sha256, { fetch: w.fetch })).kind).toBe('espera')
+    w.setAnswer('part', { status: 500, body: 'boom', contentType: 'text/plain' }, 1)
+    expect(await fetchPart(w.server, part.sha256, { fetch: w.fetch })).toEqual({ kind: 'falla' })
+    expect(w.cancelled).toEqual([missing, url, url])
+  })
+
+  it('fetchOriginals cancels the unread body of a 404, a 429 and a 500', async () => {
+    const { w } = await withList()
+    const sha = 'b'.repeat(64)
+    const url = `${w.server}${w.compat}/originals/${sha}`
+    const get = () => fetchOriginals(w.server, w.compat, sha, { fetch: w.fetch })
+    expect(await get()).toEqual({ kind: 'noEstá' })
+    w.setAnswer('originals', ANSWERS.limite, 1)
+    expect((await get()).kind).toBe('espera')
+    w.setAnswer('originals', { status: 500, body: 'boom', contentType: 'text/plain' }, 1)
+    expect(await get()).toEqual({ kind: 'falla' })
+    expect(w.cancelled).toEqual([url, url, url])
+  })
+
+  it('fetchList cancels the unread body of a 429, and a read body is not cancelled', async () => {
+    const { w } = await withList()
+    w.setAnswer('list', ANSWERS.limite, 1)
+    expect((await list(w)).kind).toBe('espera')
+    w.setAnswer('list', ANSWERS.sinPacks, 1)
+    expect(await list(w)).toEqual({ kind: 'sinIdioma' })
+    expect(w.cancelled).toEqual([`${w.server}${w.compat}/es-419`])
+  })
+})
+
 describe('fakeWorker', () => {
   it('drops the connection after n requests, or on a forced network error, until it is online again', async () => {
     const { w, part } = await withList()

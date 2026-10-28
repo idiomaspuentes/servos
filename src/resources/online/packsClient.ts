@@ -47,12 +47,12 @@ export type ClientOptions = {
 /** The default idle timeout. */
 export const IDLE_MS = 30_000
 
-type Request = { res: Response; bytes: () => Promise<Uint8Array>; text: () => Promise<string>; end: () => void }
+type Request = { res: Response; bytes: () => Promise<Uint8Array>; text: () => Promise<string>; release: () => void }
 
 /**
  * One request under an idle timeout and the caller's signal. Every wait is raced against the abort, so it ends even
- * with a fetch that ignores its signal. `bytes()` reads the body by chunks, restarting the clock on each; `end()`
- * stops the clock (call it in a `finally`).
+ * with a fetch that ignores its signal. `bytes()` reads the body by chunks, restarting the clock on each; `release()`
+ * stops the clock and lets go of a body not read, freeing the connection (call it in a `finally`).
  */
 async function request(url: string, init: RequestInit, opts: ClientOptions): Promise<Request> {
   const doFetch = opts.fetch ?? globalThis.fetch
@@ -116,7 +116,11 @@ async function request(url: string, init: RequestInit, opts: ClientOptions): Pro
   }
   const bytes = () => (read ??= readAll().finally(end))
   const text = async () => new TextDecoder().decode(await bytes())
-  return { res, bytes, text, end }
+  const release = () => {
+    end()
+    if (!res.bodyUsed) res.body?.cancel().catch(() => {})
+  }
+  return { res, bytes, text, release }
 }
 
 /** Seconds to wait when the Worker names no `Retry-After`. */
@@ -217,9 +221,8 @@ export async function fetchList(
   } catch {
     return NOT_AVAILABLE
   } finally {
-    // A body not read (a 304, a 202) is let go, and its clock stopped.
-    r.end()
-    if (!res.bodyUsed) res.body?.cancel().catch(() => {})
+    // A body not read (a 202, a 429) is let go, and its clock stopped.
+    r.release()
   }
 }
 
@@ -244,7 +247,8 @@ export async function fetchOriginals(
   } catch {
     return { kind: 'falla' }
   } finally {
-    r?.end()
+    // A refusal's body (a 404, a 429, a 500) is not read: let it go, so its connection is freed.
+    r?.release()
   }
 }
 
@@ -262,6 +266,7 @@ export async function fetchPart(server: string, sha: string, opts: ClientOptions
   } catch {
     return { kind: 'falla' }
   } finally {
-    r?.end()
+    // A refusal's body (a 404, a 429, a 500) is not read: let it go, so its connection is freed.
+    r?.release()
   }
 }

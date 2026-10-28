@@ -59,8 +59,9 @@ export function fakeWorker(opts: FakeWorkerOptions = {}) {
   let hold: ((url: string) => Promise<void>) | null = null
   let inFlight = 0
   let maxInFlight = 0
+  const cancelled: string[] = []
 
-  const reply = (f: Forced, signal?: AbortSignal | null): Response | Promise<Response> => {
+  const reply = (f: Forced, signal?: AbortSignal | null, url = ''): Response | Promise<Response> => {
     if (f.networkError) throw new TypeError('Failed to fetch')
     if (f.stall === 'headers') {
       // As a real fetch: nothing comes, but aborting the request's signal rejects it.
@@ -79,7 +80,18 @@ export function fakeWorker(opts: FakeWorkerOptions = {}) {
       })
       return new Response(stream, { status: f.status, headers })
     }
-    return new Response(text, { status: f.status, headers })
+    // Handed out on demand, so a body let go unread is seen in `cancelled`.
+    const bytes = new TextEncoder().encode(text)
+    const body = new ReadableStream<Uint8Array>({
+      pull(c) {
+        if (bytes.length) c.enqueue(bytes)
+        c.close()
+      },
+      cancel() {
+        cancelled.push(url)
+      },
+    })
+    return new Response(body, { status: f.status, headers })
   }
   const take = (kind: Kind): Forced | null => {
     const slot = forced[kind]
@@ -106,33 +118,33 @@ export function fakeWorker(opts: FakeWorkerOptions = {}) {
   }
 
   const answer = async (url: string, headers: Record<string, string>, signal?: AbortSignal | null): Promise<Response> => {
-    if (!url.startsWith(server)) return reply({ status: 404, body: 'not found', contentType: 'text/plain' })
+    if (!url.startsWith(server)) return reply({ status: 404, body: 'not found', contentType: 'text/plain' }, signal, url)
     const path = url.slice(server.length)
 
     let m = /^parts\/([0-9a-f]+)$/.exec(path)
     if (m) {
       const f = take('part')
-      if (f) return reply(f, signal)
+      if (f) return reply(f, signal, url)
       const bytes = parts.get(m[1])
       return bytes
         ? new Response(bytes.slice(), { status: 200, headers: { 'Content-Type': 'application/gzip' } })
-        : reply(ANSWERS.parteNoEsta)
+        : reply(ANSWERS.parteNoEsta, signal, url)
     }
     m = new RegExp(`^${compat}/originals/([0-9a-f]+)$`).exec(path)
     if (m) {
       const f = take('originals')
-      if (f) return reply(f, signal)
+      if (f) return reply(f, signal, url)
       const o = originals.get(m[1])
       return o
         ? new Response(bytesOf(o).slice(), { status: 200, headers: { 'Content-Type': 'application/json' } })
-        : reply(ANSWERS.originalsNoEsta)
+        : reply(ANSWERS.originalsNoEsta, signal, url)
     }
     m = new RegExp(`^${compat}/([^/]+)$`).exec(path)
     if (m) {
       const f = take('list')
-      if (f) return reply(f, signal)
+      if (f) return reply(f, signal, url)
       const list = lists.get(m[1])
-      if (!list) return reply(ANSWERS.sinPacks)
+      if (!list) return reply(ANSWERS.sinPacks, signal, url)
       const etag = `"${(await sha256Hex(bytesOf(list))).slice(0, 16)}"`
       if (headers['If-None-Match'] === etag) return new Response(null, { status: 304, headers: { ETag: etag } })
       return new Response(JSON.stringify(list), {
@@ -140,7 +152,7 @@ export function fakeWorker(opts: FakeWorkerOptions = {}) {
         headers: { 'Content-Type': 'application/json', ETag: etag },
       })
     }
-    return reply({ status: 400, body: { error: 'bad pack path' } })
+    return reply({ status: 400, body: { error: 'bad pack path' } }, signal, url)
   }
 
   return {
@@ -151,6 +163,8 @@ export function fakeWorker(opts: FakeWorkerOptions = {}) {
     originals,
     parts,
     calls,
+    /** The URLs of answers (forced ones and the 404s) whose body the client cancelled instead of reading. */
+    cancelled,
     /** Force this answer on the next `times` requests of a kind (all of them by default); `null` clears it. */
     setAnswer(kind: Kind, answer: Forced | null, times = Infinity) {
       forced[kind] = answer ? { answer, left: times } : null
