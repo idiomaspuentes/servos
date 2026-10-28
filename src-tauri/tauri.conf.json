@@ -31,7 +31,7 @@
         "font-src": "'self' data: https://fonts.gstatic.com",
         "img-src": "'self' data: blob:",
         "media-src": "'self' data: blob:",
-        "connect-src": "'self' ipc: http://ipc.localhost https://git.door43.org https://qa.door43.org http://localhost:8787 http://127.0.0.1:8787",
+        "connect-src": "'self' ipc: http://ipc.localhost https://git.door43.org https://qa.door43.org https://tc-helps.mcp.servant.bible https://translation-helps-mcp-v2-preview.unfoldingword.workers.dev http://localhost:8787 http://127.0.0.1:8787",
         "object-src": "'none'",
         "base-uri": "'self'",
         "form-action": "'none'",
