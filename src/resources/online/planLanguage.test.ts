@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { PartEntry, PartsList } from '@bt-synergy/language-pack'
+import { RESOURCE_VERSIONS } from '../store'
 import { blockedByList, booksOfUnits, keptOriginals, languagesOf, listHasBook, newestOriginals, planLanguage, unitsOf, unitsWorthPlanning, type KeptList } from './planLanguage'
 
 const sha = (c: string) => c.repeat(64)
@@ -95,11 +96,11 @@ describe('what a language needs', () => {
     const tn = entry('a', 'book', 'o/es-419/tn', 'tit')
     const orig = entry('b', 'original', 'unfoldingWord/el-x-koine/ugnt', 'tit')
     const named = list('es-419', [tn], 'b')
-    expect(planLanguage({ list: named, originals: null, register: new Map(), chosen: ['book tit'] })).toBeNull()
-    const plan = planLanguage({ list: named, originals: list('originals', [orig]), register: new Map(), chosen: ['book tit'] })
+    expect(planLanguage({ list: named, originals: null, register: new Map(), chosen: ['book tit'], versions: RESOURCE_VERSIONS })).toBeNull()
+    const plan = planLanguage({ list: named, originals: list('originals', [orig]), register: new Map(), chosen: ['book tit'], versions: RESOURCE_VERSIONS })
     expect(plan?.download.map((p) => p.sha256).sort()).toEqual([sha('a'), sha('b')])
     // Originals given to a list that names none are not planned with it.
-    const alone = planLanguage({ list: list('es-419', [tn]), originals: list('originals', [orig]), register: new Map(), chosen: ['book tit'] })
+    const alone = planLanguage({ list: list('es-419', [tn]), originals: list('originals', [orig]), register: new Map(), chosen: ['book tit'], versions: RESOURCE_VERSIONS })
     expect(alone?.download.map((p) => p.sha256)).toEqual([sha('a')])
     expect(listHasBook(named, 'TIT')).toBe(true)
     expect(listHasBook(named, 'rut')).toBe(false)
@@ -128,7 +129,7 @@ describe('only what differs is planned again (final review, I2)', () => {
   const worth = (register: Map<string, { sha256: string; keys: string[]; list: string; at: string }>, here: string[], device: Record<string, string>) =>
     unitsWorthPlanning({
       list: l, originals: null, register, chosen,
-      plan: planLanguage({ list: l, originals: null, register, chosen })!,
+      plan: planLanguage({ list: l, originals: null, register, chosen, versions: RESOURCE_VERSIONS })!,
       here: (u) => u === 'shared' || here.includes(u),
       deviceStamp: (key) => device[key] ?? 'nostamp',
       listStamp: (metadata) => String(metadata),
@@ -154,7 +155,7 @@ describe('only what differs is planned again (final review, I2)', () => {
     const bare = { ...l, resources: [] } as PartsList
     const units = unitsWorthPlanning({
       list: bare, originals: null, register: new Map(), chosen,
-      plan: planLanguage({ list: bare, originals: null, register: new Map(), chosen })!,
+      plan: planLanguage({ list: bare, originals: null, register: new Map(), chosen, versions: RESOURCE_VERSIONS })!,
       here: () => true, deviceStamp: () => 'v1', listStamp: (m) => String(m),
     })
     expect(units).toEqual(chosen)
@@ -169,7 +170,7 @@ describe('the final re-review: what the catalog row can tell', () => {
       ...list('es-419', [entry('a', 'book', TN, 'tit')]),
       resources: [{ key: TN, stamp: 'nostamp', role: 'language', subject: '', title: '', metadata: 'nostamp' }],
     } as PartsList
-    const plan = planLanguage({ list: l, originals: null, register: new Map(), chosen: ['book tit'] })!
+    const plan = planLanguage({ list: l, originals: null, register: new Map(), chosen: ['book tit'], versions: RESOURCE_VERSIONS })!
     const worth = (device: string) =>
       unitsWorthPlanning({ list: l, originals: null, register: new Map(), chosen: ['book tit'], plan, here: () => true, deviceStamp: () => device, listStamp: (m) => String(m) })
     expect(worth('nostamp')).toEqual(['book tit'])
@@ -181,7 +182,7 @@ describe('the final re-review: what the catalog row can tell', () => {
       resources: [{ key: TN, stamp: 'v2', role: 'language', subject: '', title: '', metadata: 'v2' }],
     } as PartsList
     const register = new Map([['book:o/es-419/tn:rut', { sha256: sha('b'), keys: [], list: 'es-419', at: '' }]])
-    const plan = planLanguage({ list: l, originals: null, register, chosen: ['book tit', 'book rut'] })!
+    const plan = planLanguage({ list: l, originals: null, register, chosen: ['book tit', 'book rut'], versions: RESOURCE_VERSIONS })!
     const units = unitsWorthPlanning({
       list: l, originals: null, register, chosen: ['book tit', 'book rut'], plan,
       here: () => true, deviceStamp: () => 'v2', listStamp: (m) => String(m),

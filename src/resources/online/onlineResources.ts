@@ -803,7 +803,8 @@ async function planFor(language: string, asked: string[], originals: PartsList |
 async function planWith(language: string, list: PartsList, originals: PartsList | null, asked: string[]): Promise<Planned | null> {
   const stores = d().stores()
   const register = await readPartsRegister(stores)
-  const whole = planLanguage({ list, originals, register, chosen: asked })
+  const versions = d().versions
+  const whole = planLanguage({ list, originals, register, chosen: asked, versions })
   if (!whole) return null
   const stamps = new Map<string, string>()
   for (const key of resourcesOf(whole)) {
@@ -819,7 +820,7 @@ async function planWith(language: string, list: PartsList, originals: PartsList 
     deviceStamp: (key) => stamps.get(key) ?? NO_STAMP,
     listStamp: resourceContentStamp,
   })
-  const plan = chosen.length === asked.length ? whole : planLanguage({ list, originals, register, chosen })!
+  const plan = chosen.length === asked.length ? whole : planLanguage({ list, originals, register, chosen, versions })!
   return { plan, register, list, chosen, asked, ...(list.originals && originals ? { originals } : {}) }
 }
 
