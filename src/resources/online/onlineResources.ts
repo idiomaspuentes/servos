@@ -12,7 +12,8 @@
  *
  * - Staging keeps only what a kept list still names (`pruneStaging`), after an apply and at the end of the heal.
  *
- * One run (a check or a download) at a time: a second call joins the running one, or waits for it. Every language
+ * One run (a check or a download) at a time: a second call joins the running one, or waits for it. No run goes beside
+ * a pack being opened (`onlineLock.ts`): it waits for the opening, and an opening waits for it. Every language
  * plans its originals from the newest originals list on the device (`planLanguage.ts`). The state lives in this
  * module (as `packsInside`), read by the screens through `useOnlineResources`. Everything outside is injectable
  * (`setOnlineDeps`), so the tests need neither network nor DOM. Nothing here throws to its caller.
@@ -40,6 +41,7 @@ import { bookIsHere as realBookIsHere, refreshLibrary as realRefreshLibrary } fr
 import type { Project } from '../../app/projects/model'
 import { RESOURCE_VERSIONS, openPartsStaging, openResourceStores, readPartsRegister, type ResourceStores } from '../store'
 import { downloadParts, type Progress } from './downloads'
+import { asOnlineRun } from './onlineLock'
 import { fetchList, fetchOriginals, fetchPart, type ClientOptions } from './packsClient'
 import { packsServer, setPacksServer, type PacksServerId } from './packsServer'
 import {
@@ -365,7 +367,8 @@ function startRun(kind: Run['kind'], body: (ctx: Ctx) => Promise<void>, about: {
   const run: Run = { kind, ...about, ctrl, generation, promise: Promise.resolve() }
   run.promise = (async () => {
     try {
-      await body(newCtx(ctrl.signal))
+      // Never beside a pack being opened (`onlineLock.ts`): it waits for one in flight, and holds new ones back.
+      await asOnlineRun(() => body(newCtx(ctrl.signal)))
     } catch {
       // Never to the caller: what failed is tried again at the next check.
     } finally {

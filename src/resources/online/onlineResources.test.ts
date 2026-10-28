@@ -19,6 +19,7 @@ import {
   stopOnline,
   type OnlineDeps,
 } from './onlineResources'
+import { whileOnlineIdle } from './onlineLock'
 
 type Worker = ReturnType<typeof fakeWorker>
 type Project = Parameters<typeof startOnline>[0][number]
@@ -1198,5 +1199,50 @@ describe('switching the server (Task 7, fix round 1)', () => {
     expect(requests(staging, 'list')).toHaveLength(1)
     expect(onlineState().blocked['es-419']).toBeUndefined()
     expect(d.storage.getItem('servos.enLinea.buscado')).toBeTruthy()
+  })
+})
+
+describe('a pack opened while Servos online works (Task 8)', () => {
+  it('an apply in flight delays the opening; a check asked during the opening waits for it', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    let open!: () => void
+    const gate = new Promise<void>((r) => (open = r))
+    const d = device(w, {
+      applyParts: async (input) => {
+        d.log.push('applyParts')
+        await gate
+        const result = await applyParts(input)
+        d.log.push('applied')
+        return result
+      },
+    })
+    setOnlineProjects([project('es-419', ['tit'])])
+    const downloading = downloadBook('es-419', 'tit')
+    await vi.waitFor(() => expect(d.log).toContain('applyParts'))
+
+    // The pack waits for the apply in flight.
+    let ending!: () => void
+    const importing = new Promise<void>((r) => (ending = r))
+    const opening = whileOnlineIdle(async () => {
+      d.log.push('pack')
+      await importing
+      d.log.push('pack opened')
+    })
+    await new Promise((r) => setTimeout(r, 20))
+    expect(d.log).not.toContain('pack')
+    open()
+    await downloading
+    await vi.waitFor(() => expect(d.log).toContain('pack'))
+    expect(d.log.indexOf('pack')).toBeGreaterThan(d.log.indexOf('applied'))
+
+    // A check asked while the pack opens asks for nothing until it ends.
+    w.calls.length = 0
+    const checking = checkForUpdates({ force: true })
+    await new Promise((r) => setTimeout(r, 20))
+    expect(w.calls).toEqual([])
+    ending()
+    await Promise.all([opening, checking])
+    expect(requests(w, 'list')).toHaveLength(1)
   })
 })

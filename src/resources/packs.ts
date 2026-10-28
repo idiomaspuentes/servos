@@ -12,6 +12,7 @@ import {
   type PackManifest,
 } from '@bt-synergy/language-pack'
 import { resourceContentStamp } from '@bt-synergy/resource-catalog'
+import { whileOnlineIdle } from './online/onlineLock'
 import { RESOURCE_VERSIONS, type ResourceStores } from './store'
 
 export interface PackSummary {
@@ -113,15 +114,16 @@ type Brought = Map<string, { books: Set<string> | null; shared: boolean }>
 /**
  * The resources a pack writes rows of, but those named in `left` (the importer leaves them as they are). A `book`
  * pack brings the books it names and no shared rows; any other brings each resource's books (its manifest says them
- * for a book-scoped resource of the language) or, when it does not say them (an original, which comes whole), all of
- * them. A resource with no rows in the pack (a `base` pack's books) brings nothing.
+ * for a book-scoped resource of the language). When the manifest does not say the books (an original, which comes
+ * whole, or a book pack that does not name them), all of them count. A resource with no rows in the pack (a `base`
+ * pack's books) brings nothing.
  */
 function broughtBy(manifest: PackManifest, left: ReadonlySet<string>): Brought {
   const brought: Brought = new Map()
   const bookPack = manifest.kind === 'book'
   for (const r of manifest.resources) {
     if (left.has(r.key) || !Object.values(r.rows).some((count) => (count ?? 0) > 0)) continue
-    const books = bookPack ? (manifest.books ?? []) : r.books
+    const books = bookPack ? manifest.books : r.books
     brought.set(r.key, { books: books ? new Set(books.map((b) => b.toLowerCase())) : null, shared: !bookPack })
   }
   return brought
@@ -179,13 +181,23 @@ async function keptByDevice(stores: ResourceStores, manifest: PackManifest, repl
  *
  * The parts register forgets the slots of the resources and books the pack writes (`forgetSlots`) before the first
  * row is written, so an opening cut halfway never leaves a slot claiming rows the pack wrote over; at worst the slot
- * is downloaded again. It forgets them once more when the import ends: parts applied meanwhile by the online flow, or
- * a resource the importer took after all, are the pack's too.
+ * is downloaded again. It forgets them once more when the import ends: a resource the importer took after all is the
+ * pack's too, and so would be parts applied meanwhile. Servos online applies none then: the whole opening waits for
+ * its run in flight and holds new runs back (`whileOnlineIdle`), here, where every caller (ReceivePack, the packs
+ * inside the app, a card or USB) goes through. The second pass stays for a mispredicted skip, and costs one read.
  */
 export async function openPack(
   stores: ResourceStores,
   bytes: Uint8Array | ArrayBuffer,
   options: { replace?: readonly string[]; file?: string; onProgress?: (done: number, total: number) => void } = {}
+): Promise<ImportPackResult> {
+  return whileOnlineIdle(() => openPackAlone(stores, bytes, options))
+}
+
+async function openPackAlone(
+  stores: ResourceStores,
+  bytes: Uint8Array | ArrayBuffer,
+  options: { replace?: readonly string[]; file?: string; onProgress?: (done: number, total: number) => void }
 ): Promise<ImportPackResult> {
   const manifest = await readPackManifest(bytes)
   const keys = manifest.resources.map((r) => r.key)

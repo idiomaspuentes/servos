@@ -1,5 +1,19 @@
 import 'fake-indexeddb/auto'
 import { describe, expect, it, vi } from 'vitest'
+
+/** A book pack whose manifest does not say its books (one made before they were said): `openPack` reads it so. */
+const manifestWithoutBooks = vi.hoisted(() => ({ on: false }))
+vi.mock('@bt-synergy/language-pack', async (importOriginal) => {
+  const real = await importOriginal<typeof import('@bt-synergy/language-pack')>()
+  return {
+    ...real,
+    readPackManifest: async (bytes: Uint8Array | ArrayBuffer) => {
+      const manifest = await real.readPackManifest(bytes)
+      if (manifestWithoutBooks.on) delete manifest.books
+      return manifest
+    },
+  }
+})
 import {
   applyParts,
   buildLanguagePack,
@@ -16,6 +30,7 @@ import {
 } from '@bt-synergy/language-pack'
 import { resourceContentStamp } from '@bt-synergy/resource-catalog'
 import { USJ_PROCESSING_VERSION } from '@bt-synergy/usj-processor'
+import { asOnlineRun } from './online/onlineLock'
 import { openPack } from './packs'
 import { RESOURCE_VERSIONS, openResourceStores, readPartsRegister, type ResourceStores } from './store'
 
@@ -135,7 +150,7 @@ async function deviceWithParts(meta = META) {
       `original:${UGNT}:rut`, `original:${UGNT}:tit`, `tw:${TW}:kt:6`,
     ].sort(),
   )
-  return { stores, lists, made, chosen }
+  return { stores, lists, made, chosen, staging }
 }
 
 const slotIds = async (stores: ResourceStores) => [...(await readPartsRegister(stores)).keys()].sort()
@@ -203,5 +218,62 @@ describe('a pack opened over parts', () => {
     expect(ids).not.toContain(`book:${GLT}:tit`)
     expect(ids).not.toContain(`book:${TN}:tit`)
     expect(ids).toContain(`book:${TN}:rut`)
+  })
+
+  it('a book pack whose manifest does not say its books forgets every book slot of its resources', async () => {
+    const { stores } = await deviceWithParts()
+    manifestWithoutBooks.on = true
+    try {
+      await openPack(stores, await pack({ kind: 'book', books: ['tit'] }))
+    } finally {
+      manifestWithoutBooks.on = false
+    }
+    // Ruth goes too: which books it holds cannot be told. The words' shared slot and the originals stay.
+    expect(await slotIds(stores)).toEqual([`book:${PT_TN}:tit`, `original:${UGNT}:rut`, `original:${UGNT}:tit`, `tw:${TW}:kt:6`].sort())
+  })
+
+  it('an apply that lands while the rows are written is forgotten by the second pass', async () => {
+    const { stores, lists, made, staging } = await deviceWithParts()
+    // Parts of Titus applied in the middle of the import, after the first pass forgot their slots. Servos online
+    // cannot do this any more (`onlineLock.ts`); the second pass is what keeps the register right if anything does.
+    for (const m of Object.values(made)) await staging.put(m.entry.sha256, m.bytes)
+    const write = stores.cache.putRawMany.bind(stores.cache)
+    let landed = false
+    vi.spyOn(stores.cache, 'putRawMany').mockImplementation(async (...args) => {
+      if (!landed) {
+        landed = true
+        const register = await readPartsRegister(stores)
+        const plan = planParts({ list: lists.es, register, chosen: ['shared', 'book tit'] })
+        const result = await applyParts({
+          target: packTargetFrom({ cache: stores.cache, catalog: stores.catalog }),
+          staging, plan, list: lists.es, register, chosen: ['shared', 'book tit'], versions: RESOURCE_VERSIONS,
+        })
+        expect(result.applied).toContain('book tit')
+        expect(await slotIds(stores)).toContain(`book:${GLT}:tit`)
+      }
+      return write(...args)
+    })
+    // The pack takes the place of the parts' rows, as a newer release would (the same release only fills gaps).
+    await openPack(stores, await pack(), { replace: [GLT, TN, TW] })
+    expect(landed).toBe(true)
+    const ids = await slotIds(stores)
+    expect(ids).not.toContain(`book:${GLT}:tit`)
+    expect(ids).not.toContain(`book:${TN}:tit`)
+    expect(ids).not.toContain(`tw:${TW}:kt:6`)
+    expect(ids).toContain(`book:${TN}:rut`)
+  })
+
+  it('waits for an online run in flight before it forgets or writes anything', async () => {
+    const { stores } = await deviceWithParts()
+    let open!: () => void
+    const gate = new Promise<void>((r) => (open = r))
+    const run = asOnlineRun(() => gate)
+    const before = await slotIds(stores)
+    const opening = openPack(stores, await pack())
+    await new Promise((r) => setTimeout(r, 30))
+    expect(await slotIds(stores)).toEqual(before)
+    open()
+    await Promise.all([run, opening])
+    expect(await slotIds(stores)).not.toContain(`book:${GLT}:tit`)
   })
 })
