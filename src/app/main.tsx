@@ -12,7 +12,7 @@ import { openPacksInside } from './projects/packsInside'
 import { loadProjects } from './projects/model'
 import { moveWorkToProjects } from './projects/scope'
 import { I18nProvider } from './i18n/i18n'
-import { startOnline } from '../resources/online/onlineResources'
+import { setOnlineProjects, startOnline } from '../resources/online/onlineResources'
 import { watchOnline } from '../resources/online/watchOnline'
 import './miniapps/registry'
 // The app's letters, inside it so they are there without internet: Onest for the interface, Charis SIL for the scripture.
@@ -58,7 +58,10 @@ void openBooks()
       void openPacksInside().then(online, online)
     })
   })
-  .finally(() =>
+  .finally(() => {
+    // Servos online knows the projects before any screen asks it for a size (AddBook, a missing book): without them
+    // it cannot choose the originals, and the size would wait for startOnline.
+    setOnlineProjects(loadProjects())
     createRoot(document.getElementById('root')!).render(
       <StrictMode>
         <LastResort>
@@ -70,4 +73,4 @@ void openBooks()
         </LastResort>
       </StrictMode>
     )
-  )
+  })

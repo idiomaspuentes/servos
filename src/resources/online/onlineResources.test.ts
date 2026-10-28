@@ -144,6 +144,7 @@ function device(
       d.waiting.push(run)
       return () => void (d.waiting = d.waiting.filter((r) => r !== run))
     },
+    isTyping: () => d.typing,
     estimate: async () => d.free ?? {},
     wakeLock: async () => {
       d.locks.taken++
@@ -1032,14 +1033,14 @@ describe('staging keeps only what a list still names', () => {
     const published = await publish(w, { books: ['tit'] })
     const d = device(w)
     await startOnline([project('es-419', ['tit'])])
-    // A part of the kept list, staged and not applied, stays for the next check to apply.
-    await d.staging.put(published.parts[1].sha256, w.parts.get(published.parts[1].sha256)!)
+    // A part of the kept list, staged and not applied (its unit lacks its original), stays for the next check.
+    await d.staging.put(published.parts[0].sha256, w.parts.get(published.parts[0].sha256)!)
     const sha = await stray(d)
     const again = device(w, {}, d)
     again.online = false
     await startOnline([project('es-419', ['tit'])])
-    expect(await staged(again)).toEqual([published.parts[1].sha256])
-    expect(sha).not.toBe(published.parts[1].sha256)
+    expect(await staged(again)).toEqual([published.parts[0].sha256])
+    expect(sha).not.toBe(published.parts[0].sha256)
   })
 
   it('nothing is pruned when no usable list is kept: offline at the first launch, or lists of another server', async () => {
@@ -1539,5 +1540,92 @@ describe('the lists are kept in IndexedDB (final review, I3)', () => {
     open()
     await downloading
     await vi.waitFor(async () => expect(Object.keys(await d.kept.all())).toEqual(['es-419']))
+  })
+})
+
+describe('typing, once more (final review, I4)', () => {
+  it('typing that starts while the apply waits for the lock makes it wait again, without the lock', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const d = device(w)
+    setOnlineProjects([project('es-419', ['tit'])])
+    let ending!: () => void
+    const importing = new Promise<void>((r) => (ending = r))
+    const opening = whileOnlineIdle(async () => {
+      await importing
+    })
+    const downloading = downloadBook('es-419', 'tit')
+    await vi.waitFor(async () => expect(await staged(d)).toHaveLength(3))
+    await new Promise((r) => setTimeout(r, 20))
+    // The person starts typing; then the pack's opening ends.
+    d.typing = true
+    ending()
+    await opening
+    await vi.waitFor(() => expect(d.waiting).toHaveLength(1))
+    expect(d.log).not.toContain('applyParts')
+    // Not holding the lock while it waits: another opening goes at once.
+    let opened = false
+    await whileOnlineIdle(async () => void (opened = true))
+    expect(opened).toBe(true)
+    d.stopTyping()
+    await downloading
+    expect(d.log).toContain('applyParts')
+    expect(bookIsHere(d, 'tit')).toBe(true)
+  })
+})
+
+describe('small things of the final review', () => {
+  it('the heal applies on its own a book fully staged, though another is missing parts (M1)', async () => {
+    const w = fakeWorker()
+    const published = await publish(w, { books: ['tit', 'rut'] })
+    const first = device(w)
+    await startOnline([project('es-419', ['tit', 'rut'])])
+    // Titus came whole (its notes, its original, the shared titles); the app closed before its apply. Ruth: nothing.
+    const [tit, , titles] = published.parts
+    for (const p of [tit, titles, published.orig[0]]) await first.staging.put(p.sha256, w.parts.get(p.sha256)!)
+    const again = device(w, {}, first)
+    again.online = false
+    await startOnline([project('es-419', ['tit', 'rut'])])
+    expect(w.calls.filter((c) => c.url.includes('/parts/'))).toEqual([])
+    expect(bookIsHere(again, 'tit')).toBe(true)
+    expect(bookIsHere(again, 'rut')).toBe(false)
+  })
+
+  it('a book taken out of the projects is no longer wanted (M6)', async () => {
+    const w = fakeWorker()
+    const { parts } = await publish(w, { books: ['tit', 'rut'] })
+    const d = device(w)
+    await startOnline([project('es-419', ['tit', 'rut'])])
+    // Ruth's download is cut after the list.
+    w.cutAfter(1)
+    await downloadBook('es-419', 'rut')
+    expect(onlineState().blocked).toEqual({ 'es-419': 'noDisponible' })
+    w.online()
+    setOnlineProjects([project('es-419', ['tit'])])
+    w.calls.length = 0
+    await checkForUpdates()
+    expect(requests(w, 'part').map((c) => c.url)).not.toContain(`${w.server}parts/${parts[1].sha256}`)
+    expect(bookIsHere(d, 'rut')).toBe(false)
+  })
+
+  it('a unit that fails three times in a session (not for room) is no longer wanted (M6)', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    const d = device(w, {
+      applyParts: async (input) => {
+        d.applied.push(input)
+        return {
+          applied: [], completed: [], originalsReplaced: false, bytesApplied: 0,
+          failed: input.plan.units.map((unit) => ({ scope: 'unit' as const, unit, reason: 'error' as const, message: 'broken' })),
+        }
+      },
+    })
+    await startOnline([project('es-419', ['tit'])])
+    await downloadBook('es-419', 'tit')
+    for (let i = 0; i < 5; i++) await checkForUpdates()
+    expect(d.applied).toHaveLength(3)
+    // Asked for again, it is tried again.
+    await downloadBook('es-419', 'tit')
+    expect(d.applied).toHaveLength(4)
   })
 })

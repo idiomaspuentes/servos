@@ -41,7 +41,7 @@ import {
   type PartsStaging,
   type Register,
 } from '@bt-synergy/language-pack'
-import { isOnline as realIsOnline, whenNotTyping as realWhenNotTyping } from '../../app/frame/online'
+import { isOnline as realIsOnline, isTyping as realIsTyping, whenNotTyping as realWhenNotTyping } from '../../app/frame/online'
 import { keepHelpsChanges as realKeepHelpsChanges, watchHelps as realWatchHelps, type BookChanges, type Watched } from '../../app/projects/helpsWatch'
 import { bookIsHere as realBookIsHere, refreshLibrary as realRefreshLibrary } from '../../app/projects/library'
 import type { Project } from '../../app/projects/model'
@@ -112,6 +112,8 @@ export type OnlineDeps = {
   now: () => number
   isOnline: () => boolean
   whenNotTyping: (run: () => void) => () => void
+  /** Whether something is being typed now (the apply looks again once it holds the lock). */
+  isTyping: () => boolean
   /** `navigator.storage.estimate`; null where there is none (then the free-space check is skipped). */
   estimate: (() => Promise<{ quota?: number; usage?: number }>) | null
   wakeLock: () => Promise<WakeLock | null>
@@ -152,7 +154,8 @@ function defaults(): OnlineDeps {
     kept: typeof indexedDB === 'undefined' ? null : indexedDbKeptStore(),
     now: () => Date.now(),
     isOnline: realIsOnline,
-    whenNotTyping: realWhenNotTyping,
+    whenNotTyping: (run) => realWhenNotTyping(run),
+    isTyping: () => realIsTyping(),
     estimate: nav?.storage?.estimate ? () => nav.storage.estimate() : null,
     wakeLock: async () => (nav?.wakeLock ? nav.wakeLock.request('screen') : null),
     bookIsHere: realBookIsHere,
@@ -449,6 +452,7 @@ export const useOnlineResources = (): OnlineState => useSyncExternalStore(subscr
 let projects: Project[] = []
 export function setOnlineProjects(next: Project[]) {
   projects = next
+  wantedOfProjects()
   showOffer()
   moved()
   dropUnusedLists()
@@ -493,14 +497,44 @@ export function clearDone(): void {
 const wanted = new Map<string, Set<string>>()
 function want(language: string, units: Iterable<string>) {
   const set = wanted.get(language) ?? new Set<string>()
-  for (const u of units) set.add(u)
-  wanted.set(language, set)
+  for (const u of units) if (!givenUp(language, u)) set.add(u)
+  if (set.size) wanted.set(language, set)
 }
 function served(language: string, units: Iterable<string>) {
   const set = wanted.get(language)
   if (!set) return
   for (const u of units) set.delete(u)
   if (!set.size) wanted.delete(language)
+}
+
+/** What is wanted keeps to the projects: a book taken out of them (or a language none reads) is no longer wanted. */
+function wantedOfProjects() {
+  const languages = new Set(languagesOf(projects))
+  for (const [language, set] of wanted) {
+    const units = new Set(unitsOf(projects, language))
+    for (const u of [...set]) if (!languages.has(language) || !units.has(u)) set.delete(u)
+    if (!set.size) wanted.delete(language)
+  }
+}
+
+/**
+ * Units that failed to apply in this session, for a reason other than room (`sinEspacio` says that one), by
+ * `language unit`. After three, the unit is no longer wanted, nor wanted again from what it left staged, until the
+ * person asks for it again: a part B cannot apply would otherwise be tried at every check.
+ */
+const failures = new Map<string, number>()
+const MAX_FAILURES = 3
+const givenUp = (language: string, unit: string) => (failures.get(`${language} ${unit}`) ?? 0) >= MAX_FAILURES
+function failedToApply(language: string, units: string[]) {
+  for (const u of units) {
+    const key = `${language} ${u}`
+    failures.set(key, (failures.get(key) ?? 0) + 1)
+    if (givenUp(language, u)) served(language, [u])
+  }
+}
+/** Asked for again by the person: tried again, however often it failed. */
+function askedAgain(language: string, units: Iterable<string>) {
+  for (const u of units) failures.delete(`${language} ${u}`)
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -560,6 +594,7 @@ export function setOnlineDeps(over: Partial<OnlineDeps> = {}): void {
   projects = []
   offers.clear()
   wanted.clear()
+  failures.clear()
   for (const ask of sizeAsks.values()) ask.answer(undefined)
   sizeAsks.clear()
   state = EMPTY
@@ -792,13 +827,19 @@ function untilNotTyping(signal: AbortSignal): Promise<boolean> {
  * and a plan made before would pass over them. When the new plan needs parts not staged, B applies no unit and says
  * `missing`, and the caller downloads them; staged parts it no longer needs are pruned.
  */
-function applyPlan(
+async function applyPlan(
   language: string,
   before: Planned,
   ctx: Ctx,
   options: { blockOnVersions?: boolean } = {},
 ): Promise<'applied' | 'missing' | 'stopped'> {
-  return untilNotTyping(ctx.signal).then((go) => (go ? asOnlineApply(() => applyPlanLocked(language, before, ctx, options)) : 'stopped'))
+  for (;;) {
+    if (!(await untilNotTyping(ctx.signal))) return 'stopped'
+    // Typing may have started while the lock was awaited (a pack opening): then the lock is let go, and the pause
+    // waited for again.
+    const done = await asOnlineApply(() => (d().isTyping() ? Promise.resolve('typing' as const) : applyPlanLocked(language, before, ctx, options)))
+    if (done !== 'typing') return done
+  }
 }
 
 async function applyPlanLocked(
@@ -853,7 +894,9 @@ async function applyPlanLocked(
       setBlocked(language, 'sinEspacio')
       return 'stopped'
     }
-    // A unit that failed for another reason keeps its parts staged; the next check tries it again.
+    // A unit that failed for another reason keeps its parts staged; the next check tries it again, up to three times.
+    const unitsFailed = result.failed.flatMap((f) => (f.scope === 'unit' && f.reason !== 'quota' ? [f.unit] : []))
+    if (unitsFailed.length) failedToApply(language, unitsFailed)
     if (!result.failed.some((f) => f.scope === 'unit')) served(language, planned.asked)
     return 'applied'
   } finally {
@@ -1008,9 +1051,24 @@ async function heal(ctx: Ctx) {
   for (const language of languagesOf(projects)) {
     if (ctx.signal.aborted) return
     const planned = await planFor(language, unitsOf(projects, language), originals)
-    if (planned) await applyPlan(language, planned, ctx, { blockOnVersions: false })
+    if (!planned) continue
+    const done = await applyPlan(language, planned, ctx, { blockOnVersions: false })
+    // B applies no unit while one part is missing: the units staged whole are applied on their own, so a book whose
+    // download ended just before its apply opens without internet.
+    if (done !== 'missing' || ctx.signal.aborted) continue
+    const ready = await stagedUnits(planned.plan)
+    const again = ready.length ? await planFor(language, ready, originals) : null
+    if (again?.plan.units.length) await applyPlan(language, again, ctx, { blockOnVersions: false })
   }
   if (!ctx.signal.aborted) await pruneStaging()
+}
+
+/** The units of a plan whose every part to download is staged. */
+async function stagedUnits(plan: PartsPlan): Promise<string[]> {
+  const staged = new Set((await d().staging().list().catch(() => [])).map((s) => s.sha))
+  const whole = new Map<string, boolean>()
+  for (const p of plan.download) whole.set(unitOfPart(p), (whole.get(unitOfPart(p)) ?? true) && staged.has(p.sha256))
+  return [...whole].flatMap(([unit, all]) => (all ? [unit] : []))
 }
 
 async function check(force: boolean, ctx: Ctx) {
@@ -1101,6 +1159,7 @@ export function checkForUpdates(opts: { force?: boolean } = {}): Promise<void> {
 
 /** The project's book, now: its parts and the shared ones, downloaded and applied. */
 export function downloadBook(language: string, book: string): Promise<void> {
+  askedAgain(language, [SHARED, bookUnitOf(book)])
   want(language, [SHARED, bookUnitOf(book)])
   return runDownload(language)
 }
@@ -1110,6 +1169,7 @@ export function downloadOffer(): Promise<void> {
   const offer = state.offer
   const units = offer && offers.get(offer.language)?.units
   if (!offer || !units?.length) return Promise.resolve()
+  askedAgain(offer.language, units)
   want(offer.language, units)
   offers.delete(offer.language)
   showOffer()
