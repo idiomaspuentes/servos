@@ -58,7 +58,8 @@ declare module '@bt-synergy/catalog-adapter-indexeddb' {
 }
 
 declare module '@bt-synergy/language-pack' {
-  export type PackLayer = 'receipt' | 'sot' | 'prepared' | 'quote' | 'align' | 'text'
+  /** `index` is optional (`OPTIONAL_LAYERS`): a reader that does not state its versions skips its parts. */
+  export type PackLayer = 'receipt' | 'sot' | 'prepared' | 'quote' | 'align' | 'text' | 'index'
   export type PackKind = 'language' | 'originals' | 'base' | 'book'
   export type PackVersions = Partial<Record<PackLayer, Record<string, string | number>>>
   export type PackRequirement = { key: string; stamp: string }
@@ -142,7 +143,7 @@ declare module '@bt-synergy/language-pack' {
   export const PARTS_FORMAT_VERSION: '2.0.0'
   /** The folder a list lives in: the format (major.minor) and the five versions that decide whether rows are reusable. */
   export function compatKeyOf(formatVersion: string, versions: PackVersions): string
-  export type PartKind = 'book' | 'alignments' | 'original' | 'macula' | 'tw' | 'ta' | 'titles' | 'lexicon' | 'obs'
+  export type PartKind = 'book' | 'alignments' | 'original' | 'macula' | 'tw' | 'ta' | 'titles' | 'lexicon' | 'obs' | 'index'
   export type PartEntry = {
     sha256: string
     bytes: number
@@ -228,7 +229,11 @@ declare module '@bt-synergy/language-pack' {
     register: Register
     /** Unit ids: `shared`, `book <b>`. */
     chosen: string[]
+    /** This app's processing versions, by layer: the same it gives `applyParts`. Without them, optional layers' parts are skipped. */
+    versions?: PackVersions
   }
+  /** Why a reader leaves a listed part out: a kind or a layer it does not know, or an optional layer of other versions. */
+  export type SkipReason = 'kind' | 'layer' | 'version'
   export type PartsPlan = {
     /** Parts of the chosen units whose slot the device lacks or holds with another sha, one per slot. */
     download: PartEntry[]
@@ -238,6 +243,13 @@ declare module '@bt-synergy/language-pack' {
     units: string[]
     /** Sum of `download[].bytes`. */
     bytes: number
+    /**
+     * Parts the lists name that this reader cannot use: neither downloaded nor removed. One of an unknown kind or layer
+     * leaves its resource incomplete (no receipt, not `offline`); one of optional layers alone is left out as if unlisted.
+     */
+    skipped: Array<{ entry: PartEntry; reason: SkipReason }>
+    /** The versions the plan judged parts by (`PlanInput.versions`), when given. */
+    versions?: PackVersions
   }
   export type Coverage = Map<string, { present: number; missing: number; missingBytes: number; whole: boolean }>
   /** What to download and remove for the chosen units; pure. Throws when a list names an originals list not given. */

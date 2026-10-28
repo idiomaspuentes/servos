@@ -61,7 +61,7 @@ describe('the parts importer, reached from Servos', () => {
     expect(before.size).toBe(0)
 
     const chosen = ['book rut']
-    const plan = planParts({ list, register: before, chosen })
+    const plan = planParts({ list, register: before, chosen, versions: RESOURCE_VERSIONS })
     expect(plan.download.map((p) => p.sha256)).toEqual([entry.sha256])
 
     const result = await applyParts({
@@ -76,6 +76,6 @@ describe('the parts importer, reached from Servos', () => {
     expect([...after.values()][0].list).toBe('es-419')
     // The rows are in the store, and a second plan has nothing left to download.
     expect([...(await stores.cache.hasRawKeys([`tn:${TN}:rut:1`]))]).toEqual([`tn:${TN}:rut:1`])
-    expect(planParts({ list, register: after, chosen }).download).toEqual([])
+    expect(planParts({ list, register: after, chosen, versions: RESOURCE_VERSIONS }).download).toEqual([])
   })
 })

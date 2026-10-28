@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { REGISTER_PREFIX, applyParts, memoryByteStore, stagingFrom, writePart, type ApplyInput, type PartEntry, type PartRow, type PartsList } from '@bt-synergy/language-pack'
+import { REGISTER_PREFIX, applyParts, memoryByteStore, stagingFrom, writePart, type ApplyInput, type ApplyResult, type PartEntry, type PartRow, type PartsList } from '@bt-synergy/language-pack'
 import { resourceContentStamp } from '@bt-synergy/resource-catalog'
 import { RESOURCE_VERSIONS, openResourceStores, readPartsRegister, type ResourceStores } from '../store'
 import { ANSWERS, fakeWorker } from './fakeWorker'
@@ -466,6 +466,46 @@ describe('when it cannot', () => {
     expect(onlineState().blocked).toEqual({ 'es-419': 'actualizarApp' })
     expect((await slots(d)).size).toBe(0)
     expect(await d.stores.catalog.get(tnOf('es-419'))).toBeFalsy()
+  })
+
+  it('a list with an index part Servos does not read: the part is skipped, the shared unit applies, nothing is refused', async () => {
+    const w = fakeWorker()
+    const { parts, orig } = await publish(w, { books: ['tit'] })
+    const tn = tnOf('es-419')
+    const indexKey = `index:strong:${tn}:G0001:tit`
+    // An index part is in the shared unit; the list states an index version Servos does not (RESOURCE_VERSIONS has none).
+    const index = await w.addPart({ kind: 'index', resource: tn, book: 'tit', layers: ['index'] }, [row('index', indexKey, 'index')])
+    const list = w.lists.get('es-419')!
+    w.lists.set('es-419', { ...list, versions: { ...RESOURCE_VERSIONS, index: { helpsIndex: 1 } }, parts: [...list.parts, index] })
+    const results: ApplyResult[] = []
+    const d = device(w, {
+      applyParts: async (input) => {
+        d.applied.push(input)
+        const result = await applyParts(input)
+        results.push(result)
+        return result
+      },
+    })
+    await startOnline([project('es-419', ['tit'])])
+    await downloadBook('es-419', 'tit')
+
+    // Planned with the versions it is applied with; the index part is skipped for its version and never fetched.
+    expect(d.applied.length).toBeGreaterThan(0)
+    for (const input of d.applied) {
+      expect(input.plan.versions).toBe(input.versions)
+      expect(input.plan.skipped).toEqual([{ entry: index, reason: 'version' }])
+      expect(input.plan.download.map((p) => p.sha256)).not.toContain(index.sha256)
+    }
+    expect(requests(w, 'part').some((c) => c.url.includes(index.sha256))).toBe(false)
+    // Nothing refused or failed: the book and the shared unit are applied.
+    expect(results.every((r) => !r.refused && r.failed.length === 0)).toBe(true)
+    expect(results.flatMap((r) => r.applied)).toEqual(expect.arrayContaining(['shared', 'book tit']))
+    expect([...(await slots(d)).values()].map((r) => r.sha256).sort()).toEqual([parts[0].sha256, parts[1].sha256, orig[0].sha256].sort())
+    expect(onlineState()).toMatchObject({ busy: null, blocked: {} })
+    // The notes are whole without their index part, as if it were not listed; its rows are not written.
+    expect(((await d.stores.catalog.get(tn)) as { availability?: unknown } | null)?.availability).toMatchObject({ offline: true, partial: false })
+    expect([...(await d.stores.cache.hasRawKeys([indexKey]))]).toEqual([])
+    expect(bookIsHere(d, 'tit')).toBe(true)
   })
 
   it('a wait the Worker asks for is kept, and no list is asked before it ends', async () => {

@@ -136,7 +136,7 @@ async function deviceWithParts(meta = META) {
   const chosen = ['shared', 'book tit', 'book rut']
   for (const list of Object.values(lists)) {
     const register = await readPartsRegister(stores)
-    const plan = planParts({ list, register, chosen })
+    const plan = planParts({ list, register, chosen, versions: RESOURCE_VERSIONS })
     const result = await applyParts({
       target: packTargetFrom({ cache: stores.cache, catalog: stores.catalog }),
       staging, plan, list, register, chosen, versions: RESOURCE_VERSIONS,
@@ -166,7 +166,7 @@ describe('a pack opened over parts', () => {
       [`book:${GLT}:rut`, `book:${PT_TN}:tit`, `book:${TN}:rut`, `original:${UGNT}:rut`, `original:${UGNT}:tit`].sort(),
     )
     // Review Focus 5: the next check plans Titus and the words again, and only them.
-    const plan = planParts({ list: lists.es, register: await readPartsRegister(stores), chosen })
+    const plan = planParts({ list: lists.es, register: await readPartsRegister(stores), chosen, versions: RESOURCE_VERSIONS })
     expect(plan.download.map((p) => p.sha256).sort()).toEqual([made.gltTit, made.tnTit, made.tw].map((m) => m.entry.sha256).sort())
     expect(plan.units).toEqual(expect.arrayContaining(['shared', 'book tit']))
     expect(plan.units).not.toContain('book rut')
@@ -243,7 +243,7 @@ describe('a pack opened over parts', () => {
       if (!landed) {
         landed = true
         const register = await readPartsRegister(stores)
-        const plan = planParts({ list: lists.es, register, chosen: ['shared', 'book tit'] })
+        const plan = planParts({ list: lists.es, register, chosen: ['shared', 'book tit'], versions: RESOURCE_VERSIONS })
         const result = await applyParts({
           target: packTargetFrom({ cache: stores.cache, catalog: stores.catalog }),
           staging, plan, list: lists.es, register, chosen: ['shared', 'book tit'], versions: RESOURCE_VERSIONS,

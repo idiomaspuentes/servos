@@ -4,7 +4,7 @@
  * reads a store or keeps state; `onlineResources.ts` does that around it.
  */
 
-import { planParts, slotId, slotOfEntry, unitOfPart, type PartEntry, type PartsList, type PartsPlan, type Register } from '@bt-synergy/language-pack'
+import { planParts, slotId, slotOfEntry, unitOfPart, type PartEntry, type PackVersions, type PartsList, type PartsPlan, type Register } from '@bt-synergy/language-pack'
 import { compareStamps } from '../freshness'
 import { BIBLE_ORDER } from '../reading'
 import type { ListAnswer } from './packsClient'
@@ -120,12 +120,14 @@ export function keptOriginals(kept: Readonly<Record<string, KeptList | undefined
 /**
  * A language's plan for some units. Its list's originals are always the shared newest ones, never its own when they
  * differ; a list that names originals cannot be planned without them (null). A list that names none plans alone.
+ * `versions` are the app's, the same `applyParts` gets: the plan skips the parts they cannot read (`plan.skipped`).
  */
 export function planLanguage(input: {
   list: PartsList
   originals: PartsList | null
   register: Register
   chosen: string[]
+  versions: PackVersions
 }): PartsPlan | null {
   if (input.list.originals && !input.originals) return null
   return planParts({
@@ -133,6 +135,7 @@ export function planLanguage(input: {
     originals: input.list.originals ? input.originals! : undefined,
     register: input.register,
     chosen: input.chosen,
+    versions: input.versions,
   })
 }
 
