@@ -14,17 +14,17 @@ import { appLabel } from '../frame/version'
 import { LEXICON_SUBJECTS } from '../../resources/companions'
 import { creditsOnDevice, type Credit } from '../../resources/credits'
 import { openResourceStores } from '../../resources/store'
-import { checkForUpdates } from '../../resources/online/onlineResources'
-import { PACKS_SERVERS, packsServerChoice, setPacksServer, type PacksServerId } from '../../resources/online/packsServer'
+import { choosePacksServer as switchPacksServer } from '../../resources/online/onlineResources'
+import { PACKS_SERVERS, packsServerChoice, type PacksServerId } from '../../resources/online/packsServer'
 
 const SERVER_NAMES: Record<PacksServerId, string> = { produccion: 'enLinea.servidorPrincipal', staging: 'enLinea.servidorPrueba' }
 
 /**
- * Chooses the server for the next times. The `?packs=` the app was opened with goes from the address, or it would
- * choose again over the person's choice; then the lists are asked of the server chosen.
+ * Chooses the server for the next times. The `?packs=` the app was opened with goes from the address first, or it
+ * would choose again over the person's choice; then what was kept of the last server's answers goes, and the lists are
+ * asked of the server chosen (`onlineResources.ts`).
  */
 function choosePacksServer(id: PacksServerId) {
-  setPacksServer(id)
   try {
     const url = new URL(location.href)
     if (url.searchParams.has('packs')) {
@@ -34,7 +34,7 @@ function choosePacksServer(id: PacksServerId) {
   } catch {
     /* an address that cannot be rewritten: the choice is still kept */
   }
-  void checkForUpdates({ force: true })
+  void switchPacksServer(id)
 }
 
 /** «A, B y C», in the language of the app. */

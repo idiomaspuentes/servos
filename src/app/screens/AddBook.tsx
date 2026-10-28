@@ -44,8 +44,9 @@ export function AddBookSheet({
   const has = new Set(project.books.map((b) => b.code))
   const here = new Set(BOOKS.map(([code]) => code).filter((code) => bookIsHere(code, project.helpsLanguage)))
   const ready = BOOKS.filter(([code]) => here.has(code) && !has.has(code))
-  // A book not here, with internet and nothing that stops its language: creating it downloads it, unless the Worker
-  // said it has nothing of that book. Without internet, as before: its pack is received when it is opened.
+  // A book not here, with internet and nothing that stops its language: creating it downloads it, unless the Worker's
+  // list names nothing of that book (a size of null). A size not known yet, or that cannot be told now, waits for
+  // nothing: the line says it without the size. Without internet, as before: its pack is received when it is opened.
   const helps = project.helpsLanguage
   const online = useOnline()
   const blocked = useOnlineResources().blocked[helps]
@@ -53,7 +54,8 @@ export function AddBookSheet({
   const size = useDownloadSize(helps, picked, mayDownload)
   const downloads = mayDownload && size !== null
   const createLine = (() => {
-    const said = downloadSaid('alCrear', typeof size === 'number' ? sizeIn(t, size, lang) : null)
+    // Nothing left to bring (0 bytes) has no size worth saying.
+    const said = downloadSaid('alCrear', typeof size === 'number' && size > 0 ? sizeIn(t, size, lang) : null)
     return t(said.key, said.values)
   })()
 

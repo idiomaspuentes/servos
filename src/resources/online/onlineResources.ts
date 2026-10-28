@@ -41,7 +41,7 @@ import type { Project } from '../../app/projects/model'
 import { RESOURCE_VERSIONS, openPartsStaging, openResourceStores, readPartsRegister, type ResourceStores } from '../store'
 import { downloadParts, type Progress } from './downloads'
 import { fetchList, fetchOriginals, fetchPart, type ClientOptions } from './packsClient'
-import { packsServer } from './packsServer'
+import { packsServer, setPacksServer, type PacksServerId } from './packsServer'
 import {
   SHARED,
   blockedByList,
@@ -71,7 +71,15 @@ export type OnlineState = {
   blocked: Record<string, Blocked>
   /** The line that goes away: what was applied changed this many translated verses. */
   done: { language: string; changedVerses: number } | null
+  /**
+   * Moves whenever what a book's size depends on changes: a list kept or forgotten, an originals list fetched, the
+   * projects, the server. A screen that shows a size asks again when it moves.
+   */
+  version: number
 }
+
+/** A book's download size: bytes; null when the kept list names no part of the book; undefined when it cannot be told now. */
+export type BookSize = number | null | undefined
 
 type WakeLock = { release(): Promise<void> }
 type StorageLike = { getItem(key: string): string | null; setItem(key: string, value: string): void }
@@ -237,7 +245,7 @@ function noWait(language: string) {
 // ---------------------------------------------------------------------------------------------------------------
 // The state the screens read.
 
-const EMPTY: OnlineState = { offer: null, busy: null, blocked: {}, done: null }
+const EMPTY: OnlineState = { offer: null, busy: null, blocked: {}, done: null, version: 0 }
 let state: OnlineState = EMPTY
 const listeners = new Set<(s: OnlineState) => void>()
 
@@ -251,6 +259,9 @@ function set(patch: Partial<OnlineState>) {
     }
   }
 }
+
+/** What a book's size depends on changed. */
+const moved = () => set({ version: state.version + 1 })
 
 function setBlocked(language: string, why: Blocked | null) {
   if ((state.blocked[language] ?? null) === why) return
@@ -282,6 +293,7 @@ let projects: Project[] = []
 export function setOnlineProjects(next: Project[]) {
   projects = next
   showOffer()
+  moved()
 }
 
 /** What is new for each language (and the units it covers), offered one at a time in the projects' order. */
@@ -380,6 +392,8 @@ export function setOnlineDeps(over: Partial<OnlineDeps> = {}): void {
   projects = []
   offers.clear()
   wanted.clear()
+  for (const ask of sizeAsks.values()) ask.answer(undefined)
+  sizeAsks.clear()
   state = EMPTY
   set({})
 }
@@ -410,6 +424,7 @@ async function refreshList(language: string, ctx: Ctx, withEtag: boolean): Promi
     } else if (!before) return 'skip'
     noWait(language)
     setBlocked(language, null)
+    moved()
     return 'ok'
   }
   const { blocked, retryAfter } = blockedByList(answer)
@@ -418,6 +433,7 @@ async function refreshList(language: string, ctx: Ctx, withEtag: boolean): Promi
   if (blocked === 'sinIdioma' && language in mem().listas) {
     delete mem().listas[language]
     save('listas')
+    moved()
   }
   setBlocked(language, blocked)
   ctx.stopped.add(language)
@@ -460,6 +476,7 @@ async function resolveOriginals(ctx: Ctx): Promise<PartsList | null> {
         }
         noWait(ORIGINALS_WAIT)
         cleared(needing, ctx)
+        moved()
         return answer.list
       }
       case 'noEstá':
@@ -678,7 +695,9 @@ async function fetchAndApply(language: string, ctx: Ctx, originalsIn: PartsList 
         setBlocked(language, 'sinEspacio')
         return
       case 'falla':
-        // A dropped connection: what came is staged, the next check goes on from it.
+        // A dropped connection (not an abort, which returned above): what came is staged, the next check goes on
+        // from it, and meanwhile the book says why it did not come (spec §2).
+        setBlocked(language, 'noDisponible')
         return
       case 'listo':
         break
@@ -815,6 +834,7 @@ async function runDownload(language: string): Promise<void> {
 /** At startup, after the library is read: B's heal with each language's current plan, then a check if online. */
 export async function startOnline(next: Project[]): Promise<void> {
   projects = next
+  moved()
   while (current) await current.promise
   return startRun('check', async (ctx) => {
     await heal(ctx)
@@ -850,23 +870,99 @@ export function downloadOffer(): Promise<void> {
   return runDownload(offer.language)
 }
 
+/** Sizes asked for and not yet answered, by language and book: one ask in flight each. */
+type SizeAsk = { language: string; book: string; promise: Promise<BookSize>; answer: (size: BookSize) => void }
+const sizeAsks = new Map<string, SizeAsk>()
+let sizing = false
+
 /**
- * What downloading a book would bring now (its parts and the shared ones not on the device), in bytes; null when its
- * language has no list to plan from or names no part of it. Asks for the list when none is kept. A run of its own, so
- * it never asks the Worker or changes the state beside a check or a download: it waits for the one in flight.
+ * What downloading a book would bring now (its parts and the shared ones not on the device), in bytes. Null only when
+ * a usable kept list (this server and compat) names no part of the book; undefined whenever it cannot be told now:
+ * no list (offline, a wait the Worker asked for, refused), or the originals it needs cannot be had yet (among them,
+ * before the projects are known). Asks for the list when none is kept.
+ *
+ * The same book asked again while its answer is coming gets the same answer. Sizes are worked out in runs of their own
+ * (never beside a check or a download: they wait for the one in flight), each answering every size asked by then, so
+ * trying several books makes no queue of runs.
  */
-export async function bookDownloadSize(language: string, book: string): Promise<number | null> {
-  while (current) await current.promise
-  let size: number | null = null
-  await startRun('size', async (ctx) => {
-    if (!kept(language)) {
-      if (!d().isOnline() || (await refreshList(language, ctx, true)) !== 'ok') return
+export function bookDownloadSize(language: string, book: string): Promise<BookSize> {
+  const key = `${language} ${book}`
+  const asked = sizeAsks.get(key)
+  if (asked) return asked.promise
+  let answer!: (size: BookSize) => void
+  const promise = new Promise<BookSize>((resolve) => (answer = resolve))
+  sizeAsks.set(key, { language, book, promise, answer })
+  if (!sizing) void answerSizes()
+  return promise
+}
+
+async function answerSizes() {
+  sizing = true
+  try {
+    while (sizeAsks.size) {
+      while (current) await current.promise
+      if (!sizeAsks.size) break
+      // An aborted run leaves its asks; the next run answers them.
+      await startRun('size', sizesRun)
+    }
+  } finally {
+    sizing = false
+  }
+}
+
+/** Answers the sizes asked, each list asked for at most once and the originals resolved once in the run. */
+async function sizesRun(ctx: Ctx) {
+  const listed = new Set<string>()
+  let originals: PartsList | null | undefined
+  const sizeOf = async (language: string, book: string): Promise<BookSize> => {
+    if (!kept(language) && !listed.has(language)) {
+      listed.add(language)
+      if (d().isOnline() && (await refreshList(language, ctx, true)) === 'ok') originals = undefined
     }
     const k = kept(language)
-    if (!k || !listHasBook(k.list, book)) return
-    const originals = await resolveOriginals(ctx)
+    if (!k) return undefined
+    if (!listHasBook(k.list, book)) return null
+    if (originals === undefined) originals = await resolveOriginals(ctx)
+    if (k.list.originals && !originals) return undefined
     const planned = await planFor(language, [SHARED, bookUnitOf(book)], originals)
-    size = planned ? planned.plan.bytes : null
-  })
-  return size
+    return planned ? planned.plan.bytes : undefined
+  }
+  for (;;) {
+    if (ctx.signal.aborted) return
+    const next = sizeAsks.entries().next()
+    if (next.done) return
+    const [key, ask] = next.value
+    let size: BookSize
+    try {
+      size = await sizeOf(ask.language, ask.book)
+    } catch {
+      size = undefined
+    }
+    if (ctx.signal.aborted) return
+    if (sizeAsks.get(key) === ask) {
+      sizeAsks.delete(key)
+      ask.answer(size)
+    }
+  }
+}
+
+/**
+ * Another server chosen («Acerca de»): what was kept of the last one's answers goes (its waits, the last check, the
+ * blocks and offers; its kept lists are ignored by themselves), then the new one is asked at once, after the run in
+ * flight, which a check would otherwise join and so never ask.
+ */
+export async function choosePacksServer(id: PacksServerId): Promise<void> {
+  setPacksServer(id)
+  mem().reintentar = {}
+  save('reintentar')
+  mem().buscado = ''
+  save('buscado')
+  offers.clear()
+  set({ blocked: {}, offer: null })
+  moved()
+  for (;;) {
+    const run = current
+    if (!run) return startRun('check', (ctx) => check(true, ctx))
+    await run.promise
+  }
 }

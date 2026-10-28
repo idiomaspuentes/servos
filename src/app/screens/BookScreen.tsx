@@ -138,10 +138,13 @@ export function BookScreen({
   const coming = missing && (busy !== null || asked)
   const blocked = missing && !coming ? net.blocked[helps] : undefined
   const size = useDownloadSize(helps, book.code, missing && online && !coming && !blocked)
-  // The Worker has nothing of this book (a size of null): as without internet, its pack is received.
-  const canDownload = missing && online && !coming && !blocked && size !== null
+  // The Worker's list names nothing of this book (a size of null): as without internet, its pack is received. A size
+  // not known yet, or that cannot be told now, still offers «Bajar», without the size. A book the device could not read
+  // is not offered a download: what is wrong is on the device.
+  const canDownload = missing && state?.state !== 'error' && online && !coming && !blocked && size !== null
   const downloadLabel = (() => {
-    const said = downloadSaid('bajar', typeof size === 'number' ? sizeIn(t, size, lang) : null)
+    // Nothing left to bring (0 bytes) has no size worth saying.
+    const said = downloadSaid('bajar', typeof size === 'number' && size > 0 ? sizeIn(t, size, lang) : null)
     return t(said.key, said.values)
   })()
   const comingPct = busy ? percentOf(busy.progress) : 0

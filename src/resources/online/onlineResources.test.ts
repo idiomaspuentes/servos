@@ -7,6 +7,7 @@ import {
   RECHECK_MS,
   bookDownloadSize,
   checkForUpdates,
+  choosePacksServer,
   setOnlineProjects,
   declineOffer,
   downloadBook,
@@ -292,12 +293,14 @@ describe('a dropped connection, and one run at a time', () => {
     await downloadOffer()
     expect((await slots(d)).size).toBe(0)
     expect(await staged(d)).toHaveLength(2)
-    expect(onlineState()).toMatchObject({ busy: null, blocked: {} })
+    // The book says why it did not come (spec §2); nothing waits for it, the next check goes on.
+    expect(onlineState()).toMatchObject({ busy: null, blocked: { 'es-419': 'noDisponible' } })
     expect(d.log).not.toContain('applyParts')
 
     w.online()
     // Within the recheck time: no list is asked again, the wanted download goes on from staging.
     await checkForUpdates()
+    expect(onlineState().blocked).toEqual({})
     const register = await slots(d)
     expect(register.size).toBe(7)
     expect(['tit', 'rut', 'jon'].every((b) => bookIsHere(d, b))).toBe(true)
@@ -770,7 +773,8 @@ describe('after the app is updated', () => {
     await startOnline([project('es-419', ['tit'])])
     expect(again.applied).toEqual([])
     expect(onlineState().blocked).toEqual({})
-    expect(await bookDownloadSize('es-419', 'tit')).toBeNull()
+    // No usable list: the size cannot be told (not «nothing for this book»).
+    expect(await bookDownloadSize('es-419', 'tit')).toBeUndefined()
   })
 
   it('the heal does not say «actualice la app» for a list made with other versions; the next check decides', async () => {
@@ -941,7 +945,7 @@ describe('which kept lists choose the originals', () => {
     expect(onlineState().blocked).toEqual({ xx: 'sinIdioma' })
     expect(JSON.parse(d.storage.getItem('servos.enLinea.listas')!)).not.toHaveProperty('xx')
     d.online = false
-    expect(await bookDownloadSize('xx', 'tit')).toBeNull()
+    expect(await bookDownloadSize('xx', 'tit')).toBeUndefined()
   })
 
   it('an originals list gone whose language list is then refused says «noDisponible» to the others', async () => {
@@ -1064,5 +1068,135 @@ describe('staging keeps only what a list still names', () => {
     expect(await staged(d)).not.toContain(sha)
     expect(deletes.length).toBeGreaterThan(0)
     expect(deletes.every((inFlight) => inFlight === 0)).toBe(true)
+  })
+})
+
+describe('the size of a book: nothing for it, or cannot be told now (Task 7, fix round 1)', () => {
+  it('unknown before any list while offline; with the list, a number, or null for a book it does not name', async () => {
+    const w = fakeWorker()
+    const { parts, orig } = await publish(w, { books: ['tit'] })
+    const d = device(w)
+    setOnlineProjects([project('es-419', ['tit'])])
+    d.online = false
+    expect(await bookDownloadSize('es-419', 'tit')).toBeUndefined()
+    expect(w.calls).toEqual([])
+    d.online = true
+    expect(await bookDownloadSize('es-419', 'tit')).toBe(parts[0].bytes + parts[1].bytes + orig[0].bytes)
+    expect(await bookDownloadSize('es-419', 'rut')).toBeNull()
+  })
+
+  it('unknown while the list waits for its Retry-After, asking nothing; told once the wait is over', async () => {
+    const w = fakeWorker()
+    const { parts, orig } = await publish(w, { books: ['tit'] })
+    const d = device(w)
+    setOnlineProjects([project('es-419', ['tit'])])
+    w.setAnswer('list', ANSWERS.nodisponible, 1)
+    await checkForUpdates({ force: true })
+    expect(onlineState().blocked).toEqual({ 'es-419': 'noDisponible' })
+    w.calls.length = 0
+    expect(await bookDownloadSize('es-419', 'tit')).toBeUndefined()
+    expect(w.calls).toEqual([])
+    d.clock += 301_000
+    expect(await bookDownloadSize('es-419', 'tit')).toBe(parts[0].bytes + parts[1].bytes + orig[0].bytes)
+  })
+
+  it('unknown while the originals cannot be chosen (before the projects are known), told once they are', async () => {
+    const w = fakeWorker()
+    const { parts, orig } = await publish(w, { books: ['tit'] })
+    device(w)
+    expect(await bookDownloadSize('es-419', 'tit')).toBeUndefined()
+    expect(requests(w, 'list')).toHaveLength(1)
+    setOnlineProjects([project('es-419', ['tit'])])
+    expect(await bookDownloadSize('es-419', 'tit')).toBe(parts[0].bytes + parts[1].bytes + orig[0].bytes)
+    expect(requests(w, 'list')).toHaveLength(1)
+  })
+
+  it('unknown when the originals list cannot be fetched now', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    device(w)
+    setOnlineProjects([project('es-419', ['tit'])])
+    w.setAnswer('originals', ANSWERS.red, 1)
+    expect(await bookDownloadSize('es-419', 'tit')).toBeUndefined()
+  })
+
+  it('what a size depends on moves the version; a size that changes nothing does not (no asking in a loop)', async () => {
+    const w = fakeWorker()
+    await publish(w, { books: ['tit'] })
+    device(w)
+    const before = onlineState().version
+    setOnlineProjects([project('es-419', ['tit'])])
+    const projects = onlineState().version
+    expect(projects).toBeGreaterThan(before)
+    await bookDownloadSize('es-419', 'tit')
+    const listed = onlineState().version
+    expect(listed).toBeGreaterThan(projects)
+    await bookDownloadSize('es-419', 'tit')
+    await bookDownloadSize('es-419', 'rut')
+    expect(onlineState().version).toBe(listed)
+  })
+
+  it('one ask in flight per book; several books asked together are all answered, asking nothing twice', async () => {
+    const w = fakeWorker()
+    const { parts, orig } = await publish(w, { books: ['tit', 'rut', 'jon'] })
+    device(w)
+    let open!: () => void
+    const gate = new Promise<void>((r) => (open = r))
+    w.gate(() => gate)
+    const starting = startOnline([project('es-419', ['tit'])])
+    await vi.waitFor(() => expect(w.inFlight).toBe(1))
+    const tit = bookDownloadSize('es-419', 'tit')
+    expect(bookDownloadSize('es-419', 'tit')).toBe(tit)
+    const rut = bookDownloadSize('es-419', 'rut')
+    const jon = bookDownloadSize('es-419', 'jon')
+    expect(bookDownloadSize('es-419', 'jon')).toBe(jon)
+    open()
+    await starting
+    expect(await Promise.all([tit, rut, jon])).toEqual([
+      parts[0].bytes + parts[3].bytes + orig[0].bytes,
+      parts[1].bytes + parts[3].bytes + orig[1].bytes,
+      parts[2].bytes + parts[3].bytes + orig[2].bytes,
+    ])
+    expect(requests(w, 'list')).toHaveLength(1)
+    expect(requests(w, 'originals')).toHaveLength(1)
+    // Answered, an ask is asked anew (the next one may know more).
+    expect(bookDownloadSize('es-419', 'tit')).not.toBe(tit)
+  })
+})
+
+describe('switching the server (Task 7, fix round 1)', () => {
+  it('forgets the waits, the last check and the blocks, and asks the new server after the run in flight', async () => {
+    const prod = fakeWorker()
+    const staging = fakeWorker({ server: 'https://staging.test/v2/packs/' })
+    await publish(prod, { books: ['tit'] })
+    await publish(staging, { books: ['tit'] })
+    let server = prod
+    const d = device(prod, {
+      server: () => server.server,
+      fetch: ((input: RequestInfo | URL, init?: RequestInit) =>
+        (String(input).startsWith(staging.server) ? staging : prod).fetch(input, init)) as typeof fetch,
+    })
+    prod.setAnswer('list', ANSWERS.nodisponible, 1)
+    await startOnline([project('es-419', ['tit'])])
+    expect(onlineState().blocked).toEqual({ 'es-419': 'noDisponible' })
+    expect(JSON.parse(d.storage.getItem('servos.enLinea.reintentar')!)).toHaveProperty('es-419')
+    expect(d.storage.getItem('servos.enLinea.buscado')).toBeTruthy()
+
+    // A download in flight when the server changes: the check is not swallowed by it.
+    let open!: () => void
+    const gate = new Promise<void>((r) => (open = r))
+    prod.gate(() => gate)
+    const downloading = downloadBook('xx', 'tit')
+    await vi.waitFor(() => expect(prod.inFlight).toBe(1))
+    server = staging
+    const switched = choosePacksServer('staging')
+    expect(onlineState().blocked).toEqual({})
+    expect(JSON.parse(d.storage.getItem('servos.enLinea.reintentar')!)).toEqual({})
+    expect(d.storage.getItem('servos.enLinea.buscado')).toBeFalsy()
+    open()
+    await Promise.all([downloading, switched])
+    expect(requests(staging, 'list')).toHaveLength(1)
+    expect(onlineState().blocked['es-419']).toBeUndefined()
+    expect(d.storage.getItem('servos.enLinea.buscado')).toBeTruthy()
   })
 })

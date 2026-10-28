@@ -83,12 +83,14 @@ export function Home({
   const copies = useCopies()
   const net = useOnlineResources()
   const done = net.done ? doneSaid(net.done.changedVerses) : null
-  // The line of what changed goes by itself, once home has shown it a while.
+  // The line of what changed goes by itself, once home has shown it a while: counted only while it is in sight (the
+  // line of a download running takes its place).
+  const doneShown = Boolean(net.done) && !net.busy
   useEffect(() => {
-    if (!net.done) return
+    if (!doneShown) return
     const gone = window.setTimeout(clearDone, DONE_SHOWN_MS)
     return () => window.clearTimeout(gone)
-  }, [net.done])
+  }, [doneShown, net.done])
   // A card in the phone and no copy yet: offered once, on home (philosophy, principles 9 and 12).
   const [card, setCard] = useState(false)
   const [answered, setAnswered] = useState(suggestionAnswered)
