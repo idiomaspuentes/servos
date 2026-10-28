@@ -1024,5 +1024,15 @@
   "enLinea.servidorPrincipal": "Principal",
   "enLinea.servidorPrueba": "De teste",
   "enLinea.kb": "{n} KB",
-  "enLinea.mb": "{n} MB"
+  "enLinea.mb": "{n} MB",
+  "enLinea.otroIdioma": "Outro idioma…",
+  "enLinea.buscarIdioma": "Escreva o nome ou o código",
+  "enLinea.ningunIdioma": "Nenhum idioma com textos ponte se chama assim",
+  "enLinea.preguntando": "Perguntando ao servidor…",
+  "enLinea.enServidor": "No servidor · {n} livros",
+  "enLinea.enServidorUno": "No servidor · 1 livro",
+  "enLinea.preparandoIdioma": "Os textos desta língua estão sendo preparados; tente mais tarde",
+  "enLinea.noRespondeIdioma": "Não foi possível perguntar ao servidor; tente mais tarde",
+  "nuevo.ayudasNotaEnLinea": "A equipe traduz e revisa com os textos ponte e as ajudas de um idioma. Primeiro estão os que há neste telefone; com internet, pode escolher outro do servidor.",
+  "nuevo.ayudasNotaEnLinea.computadora": "A equipe traduz e revisa com os textos ponte e as ajudas de um idioma. Primeiro estão os que há neste computador; com internet, pode escolher outro do servidor."
 }

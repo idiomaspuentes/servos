@@ -6,6 +6,7 @@
 
 import { planParts, slotId, slotOfEntry, unitOfPart, type PartEntry, type PartsList, type PartsPlan, type Register } from '@bt-synergy/language-pack'
 import { compareStamps } from '../freshness'
+import { BIBLE_ORDER } from '../reading'
 import type { ListAnswer } from './packsClient'
 
 /** What stops a language's texts and helps from coming: codes the interface translates (`enLinea.*`). */
@@ -195,6 +196,16 @@ export const resourcesOf = (plan: PartsPlan): string[] => [...new Set(plan.downl
 /** Whether a language's list names any part of a book (else that book cannot be downloaded in it). */
 export const listHasBook = (list: PartsList, book: string): boolean =>
   list.parts.some((p) => p.book === book.toLowerCase())
+
+/**
+ * The books of the Bible a language's list names parts of, once each, in the Bible's order. Other USFM codes a list
+ * may carry parts of (`frt` front matter, `bak`, `glo`, `int`…, the deuterocanonicals) are not counted: «Add a book»
+ * offers the 66.
+ */
+export const booksOfList = (list: PartsList): string[] => {
+  const books = new Set(list.parts.flatMap((p) => (p.book ? [p.book.toLowerCase()] : [])))
+  return BIBLE_ORDER.filter((b) => books.has(b))
+}
 
 /** What a list answer that is not a list means: what to tell the person, and when to ask again (seconds). */
 export function blockedByList(answer: Exclude<ListAnswer, { kind: 'listo' } | { kind: 'igual' }>): {

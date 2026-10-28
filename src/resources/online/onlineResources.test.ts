@@ -6,6 +6,7 @@ import { RESOURCE_VERSIONS, openResourceStores, readPartsRegister, type Resource
 import { ANSWERS, fakeWorker } from './fakeWorker'
 import {
   RECHECK_MS,
+  askLanguage,
   bookDownloadSize,
   checkForUpdates,
   choosePacksServer,
@@ -1914,5 +1915,158 @@ describe('fix round R2: the app\'s own waits', () => {
     const kept = JSON.parse(d.storage.getItem('servos.enLinea.reintentar')!)
     expect(Date.parse(kept['es-419'].until)).toBe(d.clock + 1_200_000)
     expect(nextWaitEnd()).toBe(d.clock + 1_200_000)
+  })
+})
+
+describe('a helps language asked for by name, before a project reads it', () => {
+  it('«listo» names the Bible books its list has, in their order, asking only that language\'s list', async () => {
+    const w = fakeWorker()
+    // Front matter (`frt`) and other non-book USFM codes are not books of the Bible.
+    await publish(w, { language: 'es-419', books: ['tit', 'frt', 'rut', 'glo'] })
+    await publish(w, { language: 'pt-br', books: ['jon'] })
+    device(w)
+    setOnlineProjects([])
+    expect(await askLanguage('es-419')).toEqual({ kind: 'listo', books: ['rut', 'tit'] })
+    // Only the language chosen: no other list, no originals, no part.
+    expect(w.calls.map((c) => c.url)).toEqual([`${w.server}${w.compat}/es-419`])
+  })
+
+  it('a list being built is «preparando», and its wait is honoured: nothing is asked again before it ends', async () => {
+    const w = fakeWorker()
+    await publish(w, { language: 'es-419', books: ['tit'] })
+    const d = device(w)
+    setOnlineProjects([])
+    w.setAnswer('list', ANSWERS.preparando, 1)
+    expect(await askLanguage('es-419')).toEqual({ kind: 'preparando' })
+    expect(requests(w, 'list')).toHaveLength(1)
+    d.clock += 599_000
+    expect(await askLanguage('es-419')).toEqual({ kind: 'preparando' })
+    expect(requests(w, 'list')).toHaveLength(1)
+    d.clock += 2_000
+    expect(await askLanguage('es-419')).toEqual({ kind: 'listo', books: ['tit'] })
+    expect(requests(w, 'list')).toHaveLength(2)
+  })
+
+  it('a language the Worker has no packs for is «sinIdioma»; an old app is «actualizarApp»', async () => {
+    const w = fakeWorker()
+    await publish(w, { language: 'es-419', books: ['tit'] })
+    device(w)
+    setOnlineProjects([])
+    expect(await askLanguage('xx')).toEqual({ kind: 'sinIdioma' })
+    w.setAnswer('list', ANSWERS.oldCompat, 1)
+    expect(await askLanguage('es-419')).toEqual({ kind: 'actualizarApp' })
+  })
+
+  it('a dropped connection is «noDisponible», and waits like any other; without internet nothing is asked', async () => {
+    const w = fakeWorker()
+    await publish(w, { language: 'es-419', books: ['tit'] })
+    const d = device(w)
+    setOnlineProjects([])
+    w.setAnswer('list', ANSWERS.red, 1)
+    expect(await askLanguage('es-419')).toEqual({ kind: 'noDisponible' })
+    expect(await askLanguage('es-419')).toEqual({ kind: 'noDisponible' })
+    expect(requests(w, 'list')).toHaveLength(1)
+    d.clock += 301_000
+    d.online = false
+    expect(await askLanguage('es-419')).toEqual({ kind: 'noDisponible' })
+    expect(requests(w, 'list')).toHaveLength(1)
+  })
+
+  it('the list it kept is the one the book\'s size and download use: the size asks for no list, the download only its 304', async () => {
+    const w = fakeWorker()
+    const { parts, orig } = await publish(w, { language: 'es-419', books: ['tit', 'rut'] })
+    const d = device(w)
+    setOnlineProjects([])
+    await askLanguage('es-419')
+    const etag = Object.values(await d.kept.all())[0]?.etag
+    expect(etag).toBeTruthy()
+    // The project is created with it, and planned like any other.
+    setOnlineProjects([project('es-419', [])])
+    expect(await bookDownloadSize('es-419', 'tit')).toBe(parts[0].bytes + parts[2].bytes + orig[0].bytes)
+    expect(requests(w, 'list')).toHaveLength(1)
+    setOnlineProjects([project('es-419', ['tit'])])
+    await downloadBook('es-419', 'tit')
+    const lists = requests(w, 'list')
+    expect(lists).toHaveLength(2)
+    expect(lists[1].headers['If-None-Match']).toBe(etag)
+    expect(bookIsHere(d, 'tit')).toBe(true)
+    expect(onlineState().blocked).toEqual({})
+  })
+
+  it('its list is not dropped before the project exists; the language asked before it is', async () => {
+    const w = fakeWorker()
+    await publish(w, { language: 'es-419', books: ['tit'] })
+    await publish(w, { language: 'pt-br', books: ['tit'] })
+    await publish(w, { language: 'fr', books: ['tit'] })
+    const d = device(w)
+    await startOnline([project('pt-br', ['tit'])])
+    await askLanguage('es-419')
+    expect(Object.keys(await d.kept.all()).sort()).toEqual(['es-419', 'pt-br'])
+    // The projects change meanwhile (another one saved): the list asked for stays.
+    setOnlineProjects([project('pt-br', ['tit', 'rut'])])
+    await new Promise((r) => setTimeout(r, 20))
+    expect(Object.keys(await d.kept.all()).sort()).toEqual(['es-419', 'pt-br'])
+    // Another language chosen instead: only the last one asked is kept for the project to come.
+    await askLanguage('fr')
+    setOnlineProjects([project('pt-br', ['tit', 'rut'])])
+    await vi.waitFor(async () => expect(Object.keys(await d.kept.all()).sort()).toEqual(['fr', 'pt-br']))
+    // Once a project reads it, the projects keep it; when none does any more, it goes as any other.
+    setOnlineProjects([project('pt-br', ['tit']), project('fr', [], 'p-fr')])
+    await new Promise((r) => setTimeout(r, 20))
+    expect(Object.keys(await d.kept.all()).sort()).toEqual(['fr', 'pt-br'])
+    setOnlineProjects([project('pt-br', ['tit'])])
+    await vi.waitFor(async () => expect(Object.keys(await d.kept.all())).toEqual(['pt-br']))
+  })
+
+  it('a language refused leaves the one asked before it kept: the language that could be had is still the one to keep', async () => {
+    const w = fakeWorker()
+    await publish(w, { language: 'es-419', books: ['tit'] })
+    await publish(w, { language: 'pt-br', books: ['tit'] })
+    const d = device(w)
+    setOnlineProjects([])
+    expect((await askLanguage('es-419')).kind).toBe('listo')
+    w.setAnswer('list', ANSWERS.red, 1)
+    expect(await askLanguage('pt-br')).toEqual({ kind: 'noDisponible' })
+    expect(await askLanguage('xx')).toEqual({ kind: 'sinIdioma' })
+    setOnlineProjects([])
+    await new Promise((r) => setTimeout(r, 20))
+    expect(Object.keys(await d.kept.all())).toEqual(['es-419'])
+  })
+
+  it('goes through the one-run lock: it waits for the run in flight, a check waits for it, and the same ask is joined', async () => {
+    const w = fakeWorker()
+    await publish(w, { language: 'es-419', books: ['tit'] })
+    await publish(w, { language: 'pt-br', books: ['tit'] })
+    await publish(w, { language: 'fr', books: ['tit'] })
+    device(w)
+    setOnlineProjects([project('pt-br', ['tit'])])
+    let open!: () => void
+    const gate = new Promise<void>((r) => (open = r))
+    w.gate(() => gate)
+    const checking = checkForUpdates({ force: true })
+    await vi.waitFor(() => expect(w.inFlight).toBe(1))
+    const one = askLanguage('es-419')
+    expect(askLanguage('es-419')).toBe(one)
+    await new Promise((r) => setTimeout(r, 20))
+    // Nothing asked beside the check.
+    expect(requests(w, 'list', 'es-419')).toHaveLength(0)
+    open()
+    await checking
+    expect(await one).toEqual({ kind: 'listo', books: ['tit'] })
+    expect(requests(w, 'list', 'es-419')).toHaveLength(1)
+
+    // A check asked while the ask runs is not swallowed by it: it asks for the projects' lists after.
+    let open2!: () => void
+    const gate2 = new Promise<void>((r) => (open2 = r))
+    w.gate(() => gate2)
+    const before = requests(w, 'list', 'pt-br').length
+    const two = askLanguage('fr')
+    await vi.waitFor(() => expect(w.inFlight).toBe(1))
+    const again = checkForUpdates({ force: true })
+    open2()
+    w.gate(null)
+    await two
+    await again
+    expect(requests(w, 'list', 'pt-br').length).toBe(before + 1)
   })
 })
