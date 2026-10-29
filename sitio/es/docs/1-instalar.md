@@ -18,7 +18,7 @@ Los archivos están en [Descargar](/#descargar). No hace falta que cada persona 
 
 Con **Xender** u otra app para compartir se puede pasar la app ya instalada de un teléfono a otro, sin bajarla otra vez. Con ella también se pasan los archivos de trabajo (**.servos**).
 
-> **Al instalar una versión nueva** encima de la anterior, el trabajo que está en el teléfono se queda. Lo que se pierde es lo que no se compartió si se **borra** la app: antes de borrarla, comparta sus libros (ver [Juntar el trabajo](/docs/juntar/)).
+> **Al instalar una versión nueva** encima de la anterior, el teléfono pregunta si quiere **Actualizar**, y el trabajo que está en él se queda. La primera vez que se abre la versión nueva, Servos prepara otra vez los textos y las ayudas que trae; en el inicio se ve cuánto va. Lo que se pierde es lo que no se compartió si se **borra** la app: antes de borrarla, comparta sus libros (ver [Juntar el trabajo](/docs/juntar/)).
 
 ## En una computadora con Windows
 
@@ -26,6 +26,8 @@ Con **Xender** u otra app para compartir se puede pasar la app ya instalada de u
 2. Windows puede decir **«Windows protegió su PC»**. Toque **Más información** y luego **Ejecutar de todas formas**: el aviso sale porque el instalador todavía no está firmado.
 3. Siga los pasos del instalador. Servos se instala solo para la persona que usa la computadora, sin pedir permiso de administrador.
 4. Servos queda en el menú Inicio. Los archivos **.servos** se abren con Servos con un doble clic.
+
+Para pasar a una versión nueva, abra su instalador encima del que ya está: el trabajo de la computadora se queda.
 
 ## En el navegador, sin instalar
 

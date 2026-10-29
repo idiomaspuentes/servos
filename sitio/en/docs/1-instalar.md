@@ -18,7 +18,7 @@ The files are in [Download](/#descargar). Not everyone needs to download them fr
 
 With **Xender** or another sharing app, you can pass the installed app from one phone to another, without downloading it again. You can also use it to pass the work files (**.servos**).
 
-> **When you install a new version** over the old one, the work on the phone stays. What you lose, if you **delete** the app, is what you did not share: before you delete it, share your books (see [Bring the work together](/docs/juntar/)).
+> **When you install a new version** over the old one, the phone asks whether you want to **Update**, and the work on it stays. The first time you open the new version, Servos gets the texts and helps it carries ready again; the home screen shows how far it has gone. What you lose, if you **delete** the app, is what you did not share: before you delete it, share your books (see [Bring the work together](/docs/juntar/)).
 
 ## On a Windows computer
 
@@ -26,6 +26,8 @@ With **Xender** or another sharing app, you can pass the installed app from one 
 2. Windows may say **«Windows protected your PC»**. Click **More info** and then **Run anyway**: the warning shows because the installer is not signed yet.
 3. Follow the installer's steps. Servos installs only for the person who uses the computer, without asking for administrator permission.
 4. Servos is then in the Start menu. **.servos** files open in Servos with a double click.
+
+To move to a new version, open its installer over the one you already have: the work on the computer stays.
 
 ## In the browser, without installing
 

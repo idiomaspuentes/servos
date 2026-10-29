@@ -34,11 +34,11 @@ const SAYS = {
     listo: /^Listo\./, volver: /Volver/, agregarProyecto: /Agregar un proyecto/, nuevaBiblia: 'Nueva Biblia',
     crearBiblia: 'Crear la Biblia', agregarLibro: /Agregar un libro/, enBlanco: 'Empezar un libro en blanco',
     jonas: 'Jonás', crearJonas: 'Crear Jonás', siguiente: 'Sección siguiente', seccion1: /sección 1 de/,
-    palabra: 'palabra', volverA: /Volver a/, traduccion: 'Traducción', pasarA: /Pasar a Traducción/,
+    palabra: 'palabra', volverA: /Volver a/, traduccion: 'Traducción',
     empezarOContinuar: /Empezar|Continuar/, ejemplo: /Ver el ejemplo/, tito: 'Tito', mas: 'Más',
     recibirTrabajo: /Recibir trabajo/, trabajoDe: (n) => `Trabajo de ${n}: Tito`, recibir: /^Recibir$/,
     juntar: /^Juntar/, tpl: 'TPL', ayudas: 'Ayudas', revision: 'Revisión', yaLoLei: /Ya lo leí/,
-    compartir: 'Compartir este libro', publicar: 'Publicar', vincular: /Vincular mi cuenta/,
+    compartir: 'Compartir este libro', publicar: 'Publicación', vincular: /Vincular mi cuenta/,
   },
 }
 const s = SAYS[LANG]
@@ -147,7 +147,6 @@ if (part('primera')) {
   await shot(page, 'estudio-palabra')
   await click(page, button(page, s.volverA), 1500)
   await click(page, text(page, s.traduccion), 1000)
-  await click(page, button(page, s.pasarA), 1500)
   await click(page, button(page, s.empezarOContinuar), 3500)
   await shot(page, 'editor-vacio')
   await page.context().close()

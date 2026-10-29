@@ -3,9 +3,9 @@ titulo: Traduzir no editor
 resumen: Escrever cada versículo na sua língua, com o texto-ponte e as ajudas ao lado.
 ---
 
-## Passar o livro para Tradução
+## O passo Tradução
 
-Quando a equipe terminar de estudar, no livro toque no passo **Tradução** e depois em **Passar para Tradução**. O livro passa para esse passo para toda a equipe, e é possível voltar atrás.
+No livro, toque no passo **Tradução**. Não é preciso terminar o estudo antes: cada pessoa pode voltar ao **Estudo** quando quiser, e o livro guarda onde parou em cada passo.
 
 No passo Tradução há duas maneiras de trabalhar: **Tradução escrita**, no editor, e **Tradução oral**, gravando cada versículo. Esta página fala do editor.
 
@@ -34,7 +34,7 @@ Numa janela larga, cada versículo é uma linha: o texto-ponte de um lado, a cai
 ## E também
 
 - **Sua nota do estudo**, se você escreveu uma, aparece com seus versículos.
-- **No livro, Mais › Glossário do projeto**: as palavras do original e como a equipe combinou traduzi-las.
+- **Glossário do projeto**, no início ou no livro (**Mais › Glossário do projeto**): as palavras do original e como a equipe combinou traduzi-las.
 - **No livro, Mais › Salvar o livro em USFM**: o rascunho no formato que o Paratext, o translationCore e o Door43 leem.
 
 > **Cada pessoa escreve com seu nome.** Se o aparelho for compartilhado, antes de escrever confira em cima quem está trabalhando; para trocar, toque no seu nome no início e escolha **Trocar de pessoa**.
