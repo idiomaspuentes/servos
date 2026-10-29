@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compareStamps, packAgainstDevice, standingOf } from './freshness'
+import { bringsAnything, compareStamps, packAgainstDevice, standingOf } from './freshness'
 
 const TN = 'es-419_gl/es-419/tn'
 const TPL = 'es-419_gl/es-419/glt'
@@ -58,6 +58,22 @@ describe('standingOf', () => {
 
     it('entre dos así, la del día más nuevo es la más nueva, como antes', () => {
       expect(standingOf(copy(BUILT), copy('2026-10-19#2026-10-19T20_30_00.000Z'))).toBe('newer')
+    })
+
+    it('una copia sin versión sigue siendo más vieja que esta, y esta más nueva', () => {
+      expect(standingOf(copy('nostamp'), copy(BUILT))).toBe('older')
+      expect(standingOf(copy(BUILT), copy('nostamp'))).toBe('newer')
+    })
+
+    it('una versión de Door43 con fecha por nombre, publicada ese día, no se toma por una de estas', () => {
+      const dated = '2025-03-01#2025-03-01T14_00_00Z'
+      expect(standingOf(copy('v1#2024-01-01T00_00_00Z'), copy(dated))).toBe('older')
+    })
+
+    it('el paquete que dice la versión la reemplaza al abrirse', () => {
+      const against = packAgainstDevice({ resources: [copy(RELEASE)] }, [copy(BUILT)])
+      expect(against.replace).toEqual([MACULA])
+      expect(bringsAnything(against)).toBe(true)
     })
   })
 })

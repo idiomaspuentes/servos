@@ -36,7 +36,7 @@ const numbersOf = (tag: string): number[] | null => tag.match(/\d+/g)?.map(Numbe
 /**
  * Whether stamp `a` is newer (> 0), the same (0) or older (< 0) than `b`; null when it cannot be told. Released ones
  * are compared by when they were published, then by the numbers of their tags; a copy without a stamp is older than
- * one with it.
+ * one with it. It knows nothing of stamps that tell only when a pack was built: `standingOf` decides those first.
  */
 export function compareStamps(a: string, b: string): number | null {
   if (a === b) return 0
@@ -62,7 +62,9 @@ export function compareStamps(a: string, b: string): number | null {
  */
 const builtOn = (stamp: string): boolean => {
   const [tag = '', published] = stamp.split('#')
-  return /^\d{4}-\d{2}-\d{2}$/.test(tag) && published !== undefined && published.startsWith(tag)
+  // `toISOString` always writes the milliseconds; Door43's `published_at` never does, so a release tagged with a
+  // date and published that day is not taken for one.
+  return /^\d{4}-\d{2}-\d{2}$/.test(tag) && published !== undefined && published.startsWith(tag) && /T\d{2}_\d{2}_\d{2}\.\d{3}Z$/.test(published)
 }
 
 /**
