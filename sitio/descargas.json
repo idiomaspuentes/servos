@@ -1,10 +1,10 @@
 {
-  "version": "0.1.0-rc.1",
-  "base": "https://github.com/idiomaspuentes/servos/releases/download/v0.1.0-rc.1/",
+  "version": "0.1.0-rc.2",
+  "base": "https://github.com/idiomaspuentes/servos/releases/download/v0.1.0-rc.2/",
   "archivos": {
-    "android": { "archivo": "Servos-0.1.0-rc.1.apk", "tamano": "38 MB" },
-    "windows": { "archivo": "Servos_0.1.0-rc.1_x64-setup.exe", "tamano": "242 MB" },
-    "originales": { "archivo": "originals.langpack.zip", "tamano": "23 MB" },
-    "es-419": { "archivo": "es-419.langpack.zip", "tamano": "10 MB" }
+    "android": { "archivo": "Servos-0.1.0-rc.2.apk", "tamano": "35 MB" },
+    "windows": { "archivo": "Servos_0.1.0-rc.2_x64-setup.exe", "tamano": "241 MB" },
+    "originales": { "archivo": "originals.langpack.zip", "tamano": "22 MB" },
+    "es-419": { "archivo": "es-419.langpack.zip", "tamano": "8 MB" }
   }
 }

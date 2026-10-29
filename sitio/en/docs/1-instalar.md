@@ -11,7 +11,7 @@ The files are in [Download](/#descargar). Not everyone needs to download them fr
 
 ## On an Android phone
 
-1. Download **Servos-0.1.0-rc.1.apk** (38 MB), or pass it to the phone, and tap it in the folder where it arrived (Downloads, Bluetooth, Xender or the memory card).
+1. Download **Servos-0.1.0-rc.2.apk** (35 MB), or pass it to the phone, and tap it in the folder where it arrived (Downloads, Bluetooth, Xender or the memory card).
 2. If the phone asks, choose **Allow from this source**. Then go back and tap **Install**.
 3. A **Play Protect** warning may appear saying that it does not know the app. Tap **More details** and then **Install anyway**: the warning shows because the app does not come from the store.
 4. Open Servos and go on with [The first time](/docs/primera-vez/).
@@ -22,7 +22,7 @@ With **Xender** or another sharing app, you can pass the installed app from one 
 
 ## On a Windows computer
 
-1. Download **Servos_0.1.0-rc.1_x64-setup.exe** (242 MB) and open it. It is big because it carries everything it needs to install without internet.
+1. Download **Servos_0.1.0-rc.2_x64-setup.exe** (241 MB) and open it. It is big because it carries everything it needs to install without internet.
 2. Windows may say **«Windows protected your PC»**. Click **More info** and then **Run anyway**: the warning shows because the installer is not signed yet.
 3. Follow the installer's steps. Servos installs only for the person who uses the computer, without asking for administrator permission.
 4. Servos is then in the Start menu. **.servos** files open in Servos with a double click.
