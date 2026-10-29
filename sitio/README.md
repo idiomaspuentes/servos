@@ -17,10 +17,20 @@ Lo que se ve en `servos.idiomaspuentes.org` alrededor de la app: la página que 
 
 ## Otro idioma
 
-El español está en la raíz; otro idioma va en `/<idioma>/` en cuanto existe su carpeta (`pt/`, `en/`) con su
-`sitio.json` y sus capítulos con los mismos nombres de archivo, y el pie ofrece cambiar de idioma. Sus capturas se
-toman con la app en ese idioma: `node scripts/capturas-guia.mjs pt`, después de poner en `SAYS` las palabras de la
-app en portugués que el recorrido busca.
+El español está en la raíz; otro idioma va en `/<idioma>/` en cuanto existe su carpeta (hoy `en/` y `pt/`) con su
+`sitio.json` y sus capítulos con los mismos nombres de archivo, y el pie ofrece cambiar de idioma. Para agregar uno:
+
+1. Copiar `es/sitio.json` a `<idioma>/sitio.json` y traducir sus valores, sin cambiar las claves ni lo que va entre
+   llaves (`{version}`). Además de las del español lleva `tambienEnSuIdioma` («This page is also in English»: se
+   ofrece en las páginas en español a quien tiene el navegador en ese idioma) y `guia.capturasDeOtroIdioma` (dice,
+   encima de las capturas, que todavía muestran la app en español).
+2. Traducir cada capítulo de `es/docs/` con el mismo nombre de archivo, que es su dirección. Los enlaces se dejan como
+   en español (`/docs/juntar/`): llevan al capítulo del mismo idioma. Los nombres de los botones van como los dice la
+   app en ese idioma (`src/app/i18n/<idioma>.json`).
+3. Las capturas: mientras ese idioma no tiene `capturas/`, se muestran las del español, y cada capítulo lo dice.
+   Tomarlas en cada idioma se deja para cuando la app cambie menos (decidido con Abel el 28 de octubre de 2026):
+   `node scripts/capturas-guia.mjs pt`, después de poner en `SAYS` las palabras de la app en ese idioma que el
+   recorrido busca. Una captura que ese idioma ya tiene se usa; la que falta sigue viniendo del español.
 
 ## Al escribir
 

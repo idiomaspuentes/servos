@@ -1,0 +1,53 @@
+{
+  "idioma": "English",
+  "idiomas": "Languages",
+  "tambienEnSuIdioma": "This page is also in English",
+  "titulo": "Servos",
+  "descripcion": "To translate in your language, as a team, with or without internet.",
+  "nav": { "guia": "Guide", "abrir": "Open Servos" },
+  "pie": "Servos is made by <a href=\"https://idiomaspuentes.org\">Idiomas Puentes</a>, with the translation resources that Taller prepares. Its code is free (MIT license) and is on <a href=\"https://github.com/idiomaspuentes/servos\">GitHub</a>. Its way of checking and aligning comes from translationCore, by <a href=\"https://www.unfoldingword.org\">unfoldingWord</a>; the texts and helps belong to those who publish them, each with its own license (most are CC BY-SA 4.0), and the app names them in «About Servos».",
+  "inicio": {
+    "titulo": "Translate the Bible in your language, as a team, with or without internet",
+    "entrada": "Servos goes with a team of translators from studying the passage to publishing it: on a phone or on a computer, in the village or at the workshop, even when there is no signal for weeks.",
+    "abrir": "Open Servos",
+    "abrirNota": "It opens in the browser and stays saved, so you can use it without internet. You can also install it on Android or on Windows.",
+    "descargar": "Download the apps",
+    "capturaAlt": "Servos on a phone: the study of Jonah 1:1, with the Hebrew word and its note.",
+    "puntos": [
+      { "titulo": "Without internet", "texto": "Everything the team needs stays on the device: the bridge texts, the notes, the key words, the originals and each person's work. You only need internet to publish." },
+      { "titulo": "On the phone and on the computer", "texto": "The same app on an Android phone, on a Windows computer or in the browser. Each person signs in with their name, and several people can use the same device." },
+      { "titulo": "Packs go from hand to hand", "texto": "The resources and the work travel in files, by memory card, USB or Bluetooth. When you receive one, Servos tells you what it brings and puts the work together verse by verse, without losing anything." }
+    ],
+    "pasosTitulo": "How a team works",
+    "pasosEntrada": "Each book goes through steps, and each step has simple tools, one thing at a time.",
+    "pasos": [
+      { "titulo": "Study.", "texto": "Read the passage in the Literal and the Simple Bridge Text, with their introductions, notes, questions and key words, and write down what you understood." },
+      { "titulo": "Translation.", "texto": "Write each verse in the people's language with the bridge text beside it, or translate it orally, recording it." },
+      { "titulo": "Checking.", "texto": "Check with the notes and the key words that the meaning came out right, read each passage with four questions, and align the translation with the original." },
+      { "titulo": "Publishing.", "texto": "When there is internet, upload the book to Door43 and mark versions." }
+    ],
+    "capturaAnchaAlt": "Servos on a computer: the bridge text, the translation and the helps in columns.",
+    "capturaAnchaPie": "On the computer, the bridge text, the translation and the helps are seen side by side (in the app's example, the translation is a bridge text).",
+    "descargasTitulo": "Download",
+    "descargasEntrada": "Version {version}, a test version: it may have errors. The apps are not signed yet, so Android and Windows show a warning before installing them: the guide tells you what to tap. What you write stays on the device; before you delete the app, share your work. You can pass these files to other devices by memory card, USB, Bluetooth or Xender.",
+    "descargas": [
+      { "titulo": "Android phone", "texto": "For Android 7 or newer, with the Spanish texts and helps inside. It does not come from the store: the phone will ask whether to let it install.", "archivos": ["android"], "guia": "instalar", "guiaTexto": "How to install it" },
+      { "titulo": "Windows computer", "texto": "For Windows 10 or 11. It carries the Spanish texts and helps inside. It installs without internet and without administrator permission.", "archivos": ["windows"], "guia": "instalar", "guiaTexto": "How to install it" },
+      { "titulo": "Texts and helps", "texto": "The apps for Android and Windows already carry them inside. These packs are for Servos in the browser, or to receive them again: first the Hebrew and Greek, then the Spanish.", "archivos": ["originales", "es-419"], "guia": "primera-vez", "guiaTexto": "How to receive them" }
+    ],
+    "archivo": { "android": "Download for Android", "windows": "Download for Windows", "originales": "Hebrew and Greek", "es-419": "Spanish" },
+    "libros": "With everything ready in Spanish: Jonah, Ruth, Titus and 3 John. Esther and Nehemiah have only the Literal Bridge Text for now."
+  },
+  "guia": {
+    "titulo": "Servos Guide",
+    "entrada": "Step by step, from installing the app to publishing the book. Each chapter takes a few minutes to read, and the guide stays saved so you can read it without internet.",
+    "capitulo": "Chapter {n} of {total}",
+    "enEsta": "On this page",
+    "capturasDeOtroIdioma": "The pictures show the app in Spanish for now; the buttons are named here as they read in English."
+  },
+  "noEsta": {
+    "titulo": "This page is not here",
+    "texto": "The address may be misspelled, or the page may have moved.",
+    "inicio": "Go to the home page"
+  }
+}
