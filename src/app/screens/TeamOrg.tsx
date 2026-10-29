@@ -3,15 +3,27 @@
  * making one, its maker in it, with who can see what it keeps; or finding the team's among those Door43 shows. Door43
  * has no way to ask to join one: someone in it adds the person, so finding it says so and gives the person's Door43
  * user name to send them. The organizations only their members see do not show up: their name is asked of whoever
- * coordinates.
+ * coordinates. Whoever owns it adds people from Servos too (`AddToOrgSheet`).
  */
 
 import { useState } from 'react'
 import { Sheet } from '../frame/Sheet'
 import { onDesktop } from '../frame/desktop'
 import { onPhone, shareTextOnPhone } from '../frame/phone'
-import { useT } from '../i18n/i18n'
-import { OrgError, createTeamOrg, findOrgs, problemOf, validName, type Door43Account } from '../projects/door43'
+import { BASE_LANGUAGES, baseText, useT } from '../i18n/i18n'
+import {
+  OrgError,
+  TEAM,
+  addToOrg,
+  createTeamOrg,
+  findOrgs,
+  lookUpPerson,
+  problemOf,
+  userFromMessage,
+  validName,
+  type Door43Account,
+  type Door43Person,
+} from '../projects/door43'
 
 export function CreateOrgSheet({
   account,
@@ -201,6 +213,150 @@ export function FindOrgSheet({
             )}
             {/* After what was found: those only their members see are never among it. */}
             <p className="quiet">{t('org.privadas')}</p>
+          </>
+        )}
+      </div>
+    </Sheet>
+  )
+}
+
+/**
+ * Adding someone to the team's organization, for whoever owns it (only owners may, on Door43): the user name the person
+ * sent, or the whole message «Compartir mi usuario» sent; who that is on Door43, said before adding them; then into the
+ * translators' team (`addToOrg`). Opened from «Trabajo del equipo».
+ */
+export function AddToOrgSheet({ account, org, onClose }: { account: Door43Account; org: string; onClose(): void }) {
+  const t = useT()
+  const [asked, setAsked] = useState('')
+  const [busy, setBusy] = useState<'buscando' | 'agregando' | null>(null)
+  const [person, setPerson] = useState<Door43Person | null>(null)
+  const [missing, setMissing] = useState<string | null>(null)
+  const [problem, setProblem] = useState<string | null>(null)
+  const [added, setAdded] = useState<Door43Person | null>(null)
+  // The message in whatever language the person's Servos speaks: the three the app brings, and this one.
+  const templates = [...BASE_LANGUAGES.map((l) => baseText(l, 'org.mensaje') ?? ''), t('org.mensaje')].filter(Boolean)
+  const nameOf = (p: Door43Person) => p.fullName ?? p.login
+  const said = (e: unknown) => {
+    const p = problemOf(e)
+    setProblem(p === 'permission' ? t('org.agregarNoDeja', { org }) : t(`door43.problema.${p}`))
+  }
+
+  const search = async () => {
+    const username = userFromMessage(asked, templates)
+    if (!username) {
+      setPerson(null)
+      setMissing(null)
+      setProblem(t('org.sinUsuario'))
+      return
+    }
+    setBusy('buscando')
+    setProblem(null)
+    setMissing(null)
+    setPerson(null)
+    try {
+      const found = await lookUpPerson(account, org, username)
+      // The field keeps only the name read from it: a message pasted whole showed cut, and not what was understood.
+      setAsked(found?.login ?? username)
+      if (found) setPerson(found)
+      else setMissing(username)
+    } catch (e) {
+      said(e)
+    } finally {
+      setBusy(null)
+    }
+  }
+  const add = async () => {
+    if (!person) return
+    setBusy('agregando')
+    setProblem(null)
+    try {
+      await addToOrg(account, org, person.login)
+      setAdded(person)
+      setPerson(null)
+      setAsked('')
+    } catch (e) {
+      said(e)
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  return (
+    <Sheet title={t('org.agregarTitulo', { org })} onClose={onClose}>
+      <div className="glossary-form">
+        {added ? (
+          <>
+            <p className="review-done" role="status">
+              ✓ {t('org.agregado', { nombre: nameOf(added), org })}
+            </p>
+            <p className="quiet">{t('org.agregadoDespues')}</p>
+            <button type="button" className="button-secondary" onClick={() => setAdded(null)}>
+              {t('org.agregarOtra')}
+            </button>
+          </>
+        ) : (
+          <>
+            <p>{t('org.agregarQue')}</p>
+            <form
+              className="org-search"
+              onSubmit={(e) => {
+                e.preventDefault()
+                // Drawn apart in the page, but React still hands its events to the screen behind it.
+                e.stopPropagation()
+                void search()
+              }}
+            >
+              <input
+                type="search"
+                className="destination-search"
+                value={asked}
+                placeholder={t('org.usuarioDe')}
+                aria-label={t('org.usuarioDe')}
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="search"
+                autoFocus
+                onChange={(e) => {
+                  setAsked(e.target.value)
+                  setPerson(null)
+                  setMissing(null)
+                }}
+              />
+              <button type="submit" className="button-secondary" disabled={busy !== null || !asked.trim()}>
+                {busy === 'buscando' ? t('org.buscando') : t('org.buscar')}
+              </button>
+            </form>
+            {missing && (
+              <p className="notice" role="alert">
+                {t('org.nadieAsi', { usuario: missing })}
+              </p>
+            )}
+            {person && (
+              <>
+                <p className="org-user">
+                  <strong>{nameOf(person)}</strong>
+                  {person.fullName && person.fullName.toLocaleLowerCase() !== person.login.toLocaleLowerCase() && <span className="quiet"> · {person.login}</span>}
+                </p>
+                {person.inOrg ? (
+                  <p className="status" role="status">
+                    {t('org.yaEstaPersona', { org })}
+                  </p>
+                ) : (
+                  <>
+                    <p className="quiet">{t('org.quedara', { equipo: TEAM, org })}</p>
+                    <button type="button" className="button-primary" disabled={busy !== null} onClick={() => void add()}>
+                      {busy === 'agregando' ? t('org.agregando') : t('org.agregarA', { nombre: nameOf(person) })}
+                    </button>
+                  </>
+                )}
+              </>
+            )}
+            {problem && (
+              <p className="notice" role="alert">
+                {problem}
+              </p>
+            )}
           </>
         )}
       </div>

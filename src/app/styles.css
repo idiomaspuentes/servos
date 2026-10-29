@@ -1328,6 +1328,8 @@ a.button-secondary { display: flex; align-items: center; justify-content: center
 .org-found { padding-inline: 0.9rem; }
 .org-found:first-child { border-block-start: 0; }
 .org-user { margin: 0; overflow-wrap: anywhere; }
+/* «Agregar a alguien a …», under the team's two buttons: a row with a line under it too, standing alone. */
+.team-more > .row-button { border-block-end: 1px solid var(--hair); }
 .team-problem { display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; }
 /* Cutting a piece of the mix: its words as small tinted pieces to touch, the first dimmed (nothing to cut before it). */
 .mix-piece.is-cutting { cursor: default; }

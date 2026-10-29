@@ -491,6 +491,12 @@ cuenta nunca oyeron de Door43:
   tiene que agregarle, muestra su usuario y lo comparte en un mensaje listo («Compartir mi usuario»; en la computadora,
   se copia). Las organizaciones privadas no aparecen, y se dice: se pide el nombre a quien coordina
   (`TeamOrg.tsx`, `findOrgs`, `createTeamOrg`).
+- **Agregar a alguien desde Servos** (acordado con Abel el 26 de octubre). Quien es dueño de la organización del
+  proyecto ve en «Trabajo del equipo», con internet, «Agregar a alguien a {org} ›» (en Door43 solo los dueños pueden).
+  Escribe el usuario que le mandaron, o pega el mensaje entero; la app dice quién es en Door43 antes de agregarlo, o
+  que no hay nadie con ese usuario, o que ya está. Se agrega al equipo «traductores» de la organización, hecho la
+  primera vez: guarda y publica en todos sus proyectos y crea los repositorios del trabajo, pero no los borra ni
+  administra la organización (`AddToOrgSheet`, `ownsOrg`, `lookUpPerson`, `addToOrg`).
 
 **La copia en Door43** (acordado con Abel el 26 de octubre; filosofía, principio 9). Cada persona guarda una copia de
 su trabajo en Door43 sin pedirla cada vez: el mismo paquete que «Dejar mi trabajo» (6.10), en el repositorio privado
