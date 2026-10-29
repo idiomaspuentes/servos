@@ -269,6 +269,9 @@ figcaption { font-size: 15px; color: var(--text-soft); margin-top: 10px; text-al
 .idiomas { display: flex; justify-content: center; gap: 4px; margin-bottom: 12px; }
 .idiomas a, .idiomas span { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; border-radius: var(--radius); }
 .idiomas span { font-weight: 700; color: var(--text); }
+/* On a Spanish page, the same page in the reader's language, offered once under the bar */
+.otro-idioma { margin: 0; padding: 10px var(--gutter); background: var(--accent-soft); text-align: center; font-weight: 700; }
+.otro-idioma a { color: var(--accent); }
 
 /* ── A wider window ── */
 

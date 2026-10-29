@@ -1,0 +1,53 @@
+{
+  "idioma": "Português",
+  "idiomas": "Idiomas",
+  "tambienEnSuIdioma": "Esta página também está em português",
+  "titulo": "Servos",
+  "descripcion": "Para traduzir na sua língua, em equipe, com ou sem internet.",
+  "nav": { "guia": "Guia", "abrir": "Abrir o Servos" },
+  "pie": "O Servos é da <a href=\"https://idiomaspuentes.org\">Idiomas Puentes</a>, com os recursos de tradução que o Taller prepara. Seu código é livre (licença MIT) e está no <a href=\"https://github.com/idiomaspuentes/servos\">GitHub</a>. Sua forma de revisar e de alinhar vem do translationCore, da <a href=\"https://www.unfoldingword.org\">unfoldingWord</a>; os textos e as ajudas são de quem os publica, cada um com sua licença (a maioria CC BY-SA 4.0), e o app os nomeia em «Sobre o Servos».",
+  "inicio": {
+    "titulo": "Traduzir a Bíblia na sua língua, em equipe, com ou sem internet",
+    "entrada": "O Servos acompanha uma equipe de tradutores desde o estudo da passagem até a publicação: no telefone ou no computador, no povoado ou na oficina, mesmo sem sinal por semanas.",
+    "abrir": "Abrir o Servos",
+    "abrirNota": "Abre no navegador e fica salvo para usar sem internet. Você também pode instalá-lo no Android ou no Windows.",
+    "descargar": "Baixar os apps",
+    "capturaAlt": "O Servos num telefone: o estudo de Jonas 1:1, com a palavra do hebraico e sua nota.",
+    "puntos": [
+      { "titulo": "Sem internet", "texto": "Tudo o que a equipe precisa fica no aparelho: os textos-ponte, as notas, as palavras-chave, os originais e o trabalho de cada um. A internet só é necessária para publicar." },
+      { "titulo": "No telefone e no computador", "texto": "O mesmo app num telefone Android, num computador com Windows ou no navegador. Cada pessoa entra com seu nome, e várias podem usar o mesmo aparelho." },
+      { "titulo": "Os pacotes passam de mão em mão", "texto": "Os recursos e o trabalho viajam em arquivos por cartão, USB ou Bluetooth. Ao receber, o Servos diz o que vem e junta o trabalho versículo por versículo, sem perder nada." }
+    ],
+    "pasosTitulo": "Como uma equipe trabalha",
+    "pasosEntrada": "Cada livro passa por passos, e em cada passo há ferramentas simples, uma coisa de cada vez.",
+    "pasos": [
+      { "titulo": "Estudo.", "texto": "Ler a passagem no Texto Ponte Literal e no Simples, com suas introduções, notas, perguntas e palavras-chave, e anotar o que se entendeu." },
+      { "titulo": "Tradução.", "texto": "Escrever cada versículo na língua do povo com o texto-ponte ao lado, ou traduzi-lo oralmente, gravando-o." },
+      { "titulo": "Revisão.", "texto": "Conferir com as notas e com as palavras-chave que o sentido ficou certo, ler cada passagem com quatro perguntas, e alinhar a tradução com o original." },
+      { "titulo": "Publicação.", "texto": "Quando houver internet, enviar o livro ao Door43 e marcar versões." }
+    ],
+    "capturaAnchaAlt": "O Servos num computador: o texto-ponte, a tradução e as ajudas em colunas.",
+    "capturaAnchaPie": "No computador, o texto-ponte, a tradução e as ajudas aparecem lado a lado (no exemplo do app, a tradução é um texto-ponte).",
+    "descargasTitulo": "Baixar",
+    "descargasEntrada": "Versão {version}, de teste: pode ter erros. Os apps ainda não estão assinados, e o Android e o Windows avisam antes de instalá-los: o guia diz o que tocar. O que se escreve fica no aparelho; antes de apagar o app, compartilhe o trabalho. Você pode passar estes arquivos para outros aparelhos por cartão, USB, Bluetooth ou Xender.",
+    "descargas": [
+      { "titulo": "Telefone Android", "texto": "Para Android 7 ou mais novo, com os textos e as ajudas em espanhol dentro. Não vem da loja: o telefone vai perguntar se deixa instalá-lo.", "archivos": ["android"], "guia": "instalar", "guiaTexto": "Como instalar" },
+      { "titulo": "Computador com Windows", "texto": "Para Windows 10 ou 11. Traz dentro os textos e as ajudas em espanhol. Instala-se sem internet e sem permissão de administrador.", "archivos": ["windows"], "guia": "instalar", "guiaTexto": "Como instalar" },
+      { "titulo": "Textos e ajudas", "texto": "Os apps para Android e Windows já os trazem dentro. Estes pacotes são para o Servos no navegador, ou para recebê-los outra vez: primeiro o hebraico e o grego, depois o espanhol.", "archivos": ["originales", "es-419"], "guia": "primera-vez", "guiaTexto": "Como recebê-los" }
+    ],
+    "archivo": { "android": "Baixar para Android", "windows": "Baixar para Windows", "originales": "Hebraico e grego", "es-419": "Espanhol" },
+    "libros": "Com tudo pronto em espanhol: Jonas, Rute, Tito e 3 João. Ester e Neemias têm por enquanto só o Texto Ponte Literal."
+  },
+  "guia": {
+    "titulo": "Guia do Servos",
+    "entrada": "Passo a passo, desde instalar o app até publicar o livro. Cada capítulo se lê em poucos minutos, e o guia fica salvo para ler sem internet.",
+    "capitulo": "Capítulo {n} de {total}",
+    "enEsta": "Nesta página",
+    "capturasDeOtroIdioma": "Por enquanto, as imagens mostram o app em espanhol; aqui os botões têm os nomes que aparecem em português."
+  },
+  "noEsta": {
+    "titulo": "Esta página não existe",
+    "texto": "Pode ser que o endereço esteja escrito errado, ou que a página tenha mudado de lugar.",
+    "inicio": "Ir para o início"
+  }
+}
