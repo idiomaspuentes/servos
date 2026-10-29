@@ -12,6 +12,7 @@ import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type Position } from './miniap
 import { miniApp } from './miniapps/registry'
 import { EXAMPLE_PROJECT_ID, PHASES, activeProjects, archivedProjects, exampleProject, loadProjects, saveProjects, titleOf, type Phase, type Project } from './projects/model'
 import { forgetProject } from './projects/forget'
+import { noteRecentBook } from './projects/recentBooks'
 import { inProject, setProject } from './projects/scope'
 import { bookState, languageOf, libraryVersion, loadBook, setProjects as setLibraryProjects, subscribeLibrary } from './projects/library'
 import { firstUndone, placeLabel, stepPercent } from './projects/progress'
@@ -174,6 +175,7 @@ export function App() {
   }
   const setResume = (r: Resume) => {
     setResumeState(r)
+    noteRecentBook(r.projectId, r.book)
     try {
       localStorage.setItem(RESUME_KEY, JSON.stringify(r))
     } catch {

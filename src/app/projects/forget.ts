@@ -32,6 +32,7 @@ export function keysOfProject(id: string, keys: string[]): string[] {
     `servos.prototipo.glosarioCompartido.${id}`,
     `servos.prototipo.door43.destino.${id}`,
     `servos.copias.huella.${id}`,
+    `servos.prototipo.recientes.${id}`,
   ]
   return keys.filter((k) => k.startsWith('servos.') && (book.test(k) || exact.includes(k) || byId.some((p) => k.startsWith(p))))
 }
