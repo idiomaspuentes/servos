@@ -55,9 +55,26 @@ export function compareStamps(a: string, b: string): number | null {
   return pa.tag === pb.tag ? 0 : null
 }
 
-/** How another copy stands against this device's (`here`, absent when the device does not have it). */
+/**
+ * A stamp that tells when a pack was built, not which release of the resource it holds: its tag is that day
+ * (`2026-10-29#2026-10-29T02_00_38.785Z`, bt-synergy's `builtNow`). MACULA came so in the packs of rc.1 and the first
+ * rc.2, while production stamps it with its Taller commit (`3b8aa380e8#2026-10-15…`).
+ */
+const builtOn = (stamp: string): boolean => {
+  const [tag = '', published] = stamp.split('#')
+  return /^\d{4}-\d{2}-\d{2}$/.test(tag) && published !== undefined && published.startsWith(tag)
+}
+
+/**
+ * How another copy stands against this device's (`here`, absent when the device does not have it). A copy that says
+ * its release replaces one that says only the day its pack was built, whatever their dates: compared by date, the
+ * same MACULA built after its release looked newer than it, was never replaced, and the app offered it again.
+ */
 export function standingOf(theirs: ResourceCopy, here: ResourceCopy | undefined): Standing {
   if (!here) return 'new'
+  const theirsBuilt = builtOn(theirs.stamp)
+  const hereBuilt = builtOn(here.stamp)
+  if (theirsBuilt !== hereBuilt && here.stamp !== NO_STAMP && theirs.stamp !== NO_STAMP) return hereBuilt ? 'newer' : 'older'
   const order = compareStamps(theirs.stamp, here.stamp)
   if (order === null) return 'other'
   return order > 0 ? 'newer' : order < 0 ? 'older' : 'same'

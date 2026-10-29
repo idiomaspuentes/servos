@@ -38,6 +38,28 @@ describe('standingOf', () => {
     expect(standingOf(copy(V87), copy(V88))).toBe('older')
     expect(standingOf(copy('borrador'), copy('final'))).toBe('other')
   })
+
+  // MACULA in the packs of rc.1 and the first rc.2 was stamped with the day the pack was built (prepare-language's
+  // `builtNow`); production stamps it with its Taller commit. Built on 29 October, the same MACULA looked newer than
+  // its release of 15 October, the pack that brought the commit was not opened, and the app offered 10.1 MB again.
+  describe('una copia sellada con el día en que se hizo el paquete', () => {
+    const MACULA = 'Biblica/hbo/macula'
+    const copy = (stamp: string) => ({ key: MACULA, stamp, books: [] })
+    const BUILT = '2026-10-29#2026-10-29T02_00_38.785Z'
+    const RELEASE = '3b8aa380e8#2026-10-15T02_19_35.000Z'
+
+    it('la reemplaza una copia que dice su versión, aunque sea de antes', () => {
+      expect(standingOf(copy(RELEASE), copy(BUILT))).toBe('newer')
+    })
+
+    it('no reemplaza una copia que dice su versión', () => {
+      expect(standingOf(copy(BUILT), copy(RELEASE))).toBe('older')
+    })
+
+    it('entre dos así, la del día más nuevo es la más nueva, como antes', () => {
+      expect(standingOf(copy(BUILT), copy('2026-10-19#2026-10-19T20_30_00.000Z'))).toBe('newer')
+    })
+  })
 })
 
 describe('packAgainstDevice', () => {
