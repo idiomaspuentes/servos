@@ -229,6 +229,42 @@ export async function soundOf(id: string): Promise<Blob | null> {
   })
 }
 
+/**
+ * The takes named by the recordings kept for the books `of` says yes to (a book as its work is kept, `jon~project`):
+ * whose sounds go with a project deleted from the device.
+ */
+export function takeIdsWhere(of: (book: string) => boolean): Set<string> {
+  const ids = new Set<string>()
+  let keys: string[] = []
+  try {
+    keys = Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i) ?? '').filter((k) => k.startsWith(`${KEY}.`))
+  } catch {
+    return ids
+  }
+  for (const k of keys) {
+    if (!of(k.slice(KEY.length + 1).split('.')[0] ?? '')) continue
+    try {
+      for (const take of (JSON.parse(localStorage.getItem(k) ?? 'null') as VerseTakes | null)?.takes ?? []) ids.add(take.id)
+    } catch {
+      /* not a take's record */
+    }
+  }
+  return ids
+}
+
+/** Forgets takes' sounds from this device. */
+export async function forgetSounds(ids: Iterable<string>): Promise<void> {
+  const list = [...ids]
+  if (!list.length) return
+  const d = await db()
+  await new Promise<void>((resolve, reject) => {
+    const tx = d.transaction(STORE, 'readwrite')
+    for (const id of list) tx.objectStore(STORE).delete(id)
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error)
+  })
+}
+
 /** A take's sound as base64, to travel in a package or to Door43; null if it is not on this phone. */
 export async function soundBase64(id: string): Promise<string | null> {
   const blob = await soundOf(id).catch(() => null)

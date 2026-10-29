@@ -3,8 +3,9 @@
  * the title, since most teams have one. The book worked on last is the one moss field, with the person's name («Ana,
  * pick up where you left off»), the mini app and the place, the book's five steps as a track with the step written
  * under it, and the one filled button, «Continue →». The project's other books are one-line rows with their step as
- * words, and adding a book is the last row of the same list. At the foot, two chips: the project's settings and
- * another project. Three shapes, no more: the field, the list and the chips.
+ * words, and adding a book is the last row of the same list. Under it, the project's glossary, a row of its own: it
+ * opens without opening a book or a mini app (asked by the teams trying the app, October 2026). At the foot, two
+ * chips: the project's settings and another project. Three shapes, no more: the field, the list and the chips.
  *
  * With two or more projects, on a phone the title opens the list of them in a sheet; from 1280 px they are a column of
  * names at the left, and the project open is in the middle (philosophy, principle 13).
@@ -26,6 +27,7 @@ import { MenuRow, Sheet } from '../frame/Sheet'
 import { useCopies } from './CopiesSheet'
 import { useLanguageLabel } from './NewProject'
 import { useI18n } from '../i18n/i18n'
+import { readGlossary } from '../projects/glossary'
 import { titleOf, type Phase, type Project } from '../projects/model'
 import { insideState, onInside } from '../projects/packsInside'
 import { doneSaid, percentOf, sizeIn } from '../projects/onlineWords'
@@ -51,6 +53,7 @@ export function Home({
   onBook,
   onAddBook,
   onSettings,
+  onGlossary,
   onPersonMenu,
   onCopies,
 }: {
@@ -71,6 +74,8 @@ export function Home({
   onBook(projectId: string, book: string): void
   onAddBook(projectId: string): void
   onSettings(projectId: string): void
+  /** Opens the project's glossary, on its own. */
+  onGlossary(projectId: string): void
   onPersonMenu(): void
   /** Opens the copy on a memory card. */
   onCopies(): void
@@ -113,6 +118,7 @@ export function Home({
   const begun = Boolean(work && (work.begun || (work.pct ?? 0) > 0))
   const sizeOf = (p: Project) => `${p.languageName} (${p.languageCode}) · ${p.books.length === 1 ? t('inicio.unLibro') : t('inicio.libros', { n: p.books.length })}`
   const others = project ? project.books.filter((b) => b !== current) : []
+  const words = project ? readGlossary(project.id).length : 0
 
   // The one place for a suggestion: a copy that failed first (something went wrong), then new texts and helps, then the
   // copy offered once.
@@ -301,6 +307,18 @@ export function Home({
                         +
                       </span>
                       {t('inicio.agregarLibro')}
+                    </button>
+                  </li>
+                </ul>
+              )}
+              {current && (
+                <ul className="home-books home-glossary">
+                  <li>
+                    <button type="button" className="home-book" onClick={() => onGlossary(project.id)}>
+                      <span className="home-book-name">{t('libro.glosario')}</span>
+                      <span className="home-book-step">
+                        {words === 0 ? t('inicio.glosarioVacio') : words === 1 ? t('inicio.glosarioUna') : t('inicio.glosarioPalabras', { n: words })}
+                      </span>
                     </button>
                   </li>
                 </ul>
