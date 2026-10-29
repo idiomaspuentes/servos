@@ -10,7 +10,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useOnline, useWaiting } from '../../frame/online'
 import { useT } from '../../i18n/i18n'
+import { RowButton } from '../../frame/Actions'
 import { Door43AccountSheet } from '../../screens/Door43Account'
+import { CreateOrgSheet, FindOrgSheet } from '../../screens/TeamOrg'
 import {
   accountOf,
   destinationOf,
@@ -19,15 +21,17 @@ import {
   nextVersion,
   organizationsOf,
   problemOf,
+  proposedOrg,
   proposedRepo,
   repoUrl,
   setDestination,
   uploadedOf,
   type Destination,
+  type Door43Account,
   type FileResult,
   type Problem,
 } from '../../projects/door43'
-import { titleOf } from '../../projects/model'
+import { privacyOf, titleOf } from '../../projects/model'
 import { ask, drop, keysOf, settle, type ErrandKind } from '../../projects/outbox'
 import { booksOf, bringFromDoor43, markVersionWithTakes, uploadProject, withWorkOf, type BookToPublish } from '../../projects/publishing'
 import { arrive } from '../../frame/arriving'
@@ -192,10 +196,10 @@ function Center({ context }: MiniAppCenterProps) {
     return (
       <div className="publish">
         <DestinationForm
-          host={account.host}
+          account={account}
           proposed={to ?? { host: account.host, owner: '', repo: proposedRepo(project) }}
-          organizations={() => organizationsOf(account)}
-          projectName={project.name}
+          newOrg={proposedOrg(project)}
+          teamOnly={privacyOf(project) === 'equipo'}
           onSave={(d) => {
             setDestination(project.id, d)
             setTo(d)
@@ -335,34 +339,36 @@ function Center({ context }: MiniAppCenterProps) {
 }
 
 /**
- * Where the project goes: one of the account's organizations, and the repository's name. One question; the
- * organizations as rows of one card (an account may belong to many); the repository's name, which few change, said
- * in a line with its chip.
+ * Where the project goes: one of the account's organizations, and the repository's name. One question, and a line on
+ * what an organization is; the organizations as rows of one card (an account may belong to many); then, for whoever is
+ * in none or not in the team's, a row to make one and a row to find the team's (`TeamOrg.tsx`); the repository's name,
+ * which few change, said in a line with its chip.
  */
 export function DestinationForm({
-  host,
+  account,
   proposed,
-  organizations,
-  projectName,
+  newOrg,
+  teamOnly,
   onSave,
   onCancel,
   saveLabel,
-  heading,
-  help,
 }: {
-  host: string
+  account: Door43Account
   proposed: Destination
-  organizations(): Promise<string[]>
-  projectName: string
+  /** The name proposed for an organization made here. */
+  newOrg: string
+  /** The project is kept to its team: an organization made here is proposed to show only to its members. */
+  teamOnly: boolean
   onSave(d: Destination): void
   onCancel?(): void
-  /** What saving it does, the question and its line, where the form is used for something else than publishing now. */
+  /** What saving it does, where the form is used for something else than publishing now. */
   saveLabel?: string
-  heading?: string
-  help?: string
 }) {
   const t = useT()
+  const host = account.host
   const [orgs, setOrgs] = useState<string[] | null>(null)
+  const [making, setMaking] = useState(false)
+  const [finding, setFinding] = useState(false)
   const [failed, setFailed] = useState<string | null>(null)
   const [owner, setOwner] = useState(proposed.owner)
   const [repo, setRepo] = useState(proposed.repo)
@@ -386,7 +392,7 @@ export function DestinationForm({
     )
   }
   useEffect(() => {
-    organizations()
+    organizationsOf(account)
       .then((list) => {
         setOrgs(list)
         if (!owner && list.length === 1) setOwner(list[0])
@@ -396,74 +402,106 @@ export function DestinationForm({
   }, [])
   const valid = owner && /^[A-Za-z0-9_.-]+$/.test(repo)
   return (
-    <form
-      className="glossary-form"
-      onSubmit={(e) => {
-        e.preventDefault()
-        if (valid) onSave({ host, owner, repo })
-      }}
-    >
-      <h2 className="publish-heading">{heading ?? t('publicar.destinoPregunta', { proyecto: projectName })}</h2>
-      <p className="quiet destination-help">{help ?? t('publicar.destinoAyuda')}</p>
-      {failed && <p className="notice">{failed}</p>}
-      {orgs === null && !failed && <p className="quiet">{t('publicar.buscandoOrganizaciones')}</p>}
-      {orgs?.length === 0 && <p className="notice">{t('publicar.sinOrganizaciones')}</p>}
-      {many && (
-        <input
-          type="search"
-          className="destination-search"
-          value={search}
-          placeholder={t('publicar.buscarOrganizacion')}
-          aria-label={t('publicar.buscarOrganizacion')}
-          autoCapitalize="none"
-          spellCheck={false}
-          enterKeyHint="done"
-          onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => {
-            // One left: Enter takes it.
-            if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
-              e.preventDefault()
-              if (shown.length === 1) setOwner(shown[0])
-            }
+    <>
+      <form
+        className="glossary-form"
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (valid) onSave({ host, owner, repo })
+        }}
+      >
+        <h2 className="publish-heading">{t('org.pregunta')}</h2>
+        <p className="quiet destination-help">{t('org.queEs')}</p>
+        {failed && <p className="notice">{failed}</p>}
+        {orgs === null && !failed && <p className="quiet">{t('publicar.buscandoOrganizaciones')}</p>}
+        {orgs?.length === 0 && <p className="quiet">{t('org.enNinguna')}</p>}
+        {many && (
+          <input
+            type="search"
+            className="destination-search"
+            value={search}
+            placeholder={t('publicar.buscarOrganizacion')}
+            aria-label={t('publicar.buscarOrganizacion')}
+            autoCapitalize="none"
+            spellCheck={false}
+            enterKeyHint="done"
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => {
+              // One left: Enter takes it.
+              if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault()
+                if (shown.length === 1) setOwner(shown[0])
+              }
+            }}
+          />
+        )}
+        {orgs && orgs.length > 0 && (
+          <div className={many ? 'destination-orgs is-scrolled' : 'destination-orgs'} role="radiogroup" aria-label={t('publicar.organizacion')}>
+            {shown.map((o) => (
+              <button key={o} type="button" role="radio" aria-checked={owner === o} className="destination-org" onClick={() => setOwner(o)}>
+                <span className="destination-dot" aria-hidden="true" />
+                <span>{marked(o)}</span>
+              </button>
+            ))}
+            {!shown.length && <p className="quiet destination-none">{t('publicar.ningunaAsi', { texto: search.trim() })}</p>}
+          </div>
+        )}
+        {orgs !== null && (
+          <div className="destination-more">
+            <RowButton label={t('org.crearUna')} onClick={() => setMaking(true)} />
+            <RowButton label={t('org.buscarLa')} onClick={() => setFinding(true)} />
+          </div>
+        )}
+        {naming ? (
+          <label className="field">
+            <span className="field-label">{t('publicar.repositorio')}</span>
+            <input value={repo} onChange={(e) => setRepo(e.target.value.trim())} autoCapitalize="none" spellCheck={false} autoFocus />
+            <span className="quiet">{t('publicar.repositorioAyuda')}</span>
+          </label>
+        ) : (
+          <div className="destination-repo">
+            <span className="destination-repo-name">
+              <span className="quiet">{t('publicar.repositorio')}:</span> {owner ? `${owner}/${repo}` : repo}
+            </span>
+            <button type="button" className="chip" onClick={() => setNaming(true)}>
+              ✎ {t('publicar.cambiar')}
+            </button>
+          </div>
+        )}
+        <button type="submit" className="button-primary" disabled={!valid}>
+          {saveLabel ?? t('publicar.guardarDestino')}
+        </button>
+        {onCancel && (
+          <button type="button" className="button-secondary" onClick={onCancel}>
+            {t('publicar.noCambiar')}
+          </button>
+        )}
+      </form>
+      {making && (
+        <CreateOrgSheet
+          account={account}
+          proposed={newOrg}
+          teamOnly={teamOnly}
+          onClose={() => setMaking(false)}
+          onMade={(name) => {
+            setOrgs((list) => [...(list ?? []).filter((o) => o !== name), name])
+            setOwner(name)
+            setMaking(false)
           }}
         />
       )}
-      {orgs && orgs.length > 0 && (
-        <div className={many ? 'destination-orgs is-scrolled' : 'destination-orgs'} role="radiogroup" aria-label={t('publicar.organizacion')}>
-          {shown.map((o) => (
-            <button key={o} type="button" role="radio" aria-checked={owner === o} className="destination-org" onClick={() => setOwner(o)}>
-              <span className="destination-dot" aria-hidden="true" />
-              <span>{marked(o)}</span>
-            </button>
-          ))}
-          {!shown.length && <p className="quiet destination-none">{t('publicar.ningunaAsi', { texto: search.trim() })}</p>}
-        </div>
+      {finding && (
+        <FindOrgSheet
+          account={account}
+          mine={orgs ?? []}
+          onClose={() => setFinding(false)}
+          onChoose={(name) => {
+            setOwner(name)
+            setFinding(false)
+          }}
+        />
       )}
-      {naming ? (
-        <label className="field">
-          <span className="field-label">{t('publicar.repositorio')}</span>
-          <input value={repo} onChange={(e) => setRepo(e.target.value.trim())} autoCapitalize="none" spellCheck={false} autoFocus />
-          <span className="quiet">{t('publicar.repositorioAyuda')}</span>
-        </label>
-      ) : (
-        <div className="destination-repo">
-          <span className="destination-repo-name">
-            <span className="quiet">{t('publicar.repositorio')}:</span> {owner ? `${owner}/${repo}` : repo}
-          </span>
-          <button type="button" className="chip" onClick={() => setNaming(true)}>
-            ✎ {t('publicar.cambiar')}
-          </button>
-        </div>
-      )}
-      <button type="submit" className="button-primary" disabled={!valid}>
-        {saveLabel ?? t('publicar.guardarDestino')}
-      </button>
-      {onCancel && (
-        <button type="button" className="button-secondary" onClick={onCancel}>
-          {t('publicar.noCambiar')}
-        </button>
-      )}
-    </form>
+    </>
   )
 }
 
@@ -490,11 +528,8 @@ export const publicar: MiniApp = {
       sinCuenta: 'Para publicar, vincule su cuenta de Door43. Se hace una vez en este teléfono.',
       'sinCuenta.computadora': 'Para publicar, vincule su cuenta de Door43. Se hace una vez en esta computadora.',
       vincularCuenta: 'Vincular mi cuenta de Door43',
-      destinoPregunta: '¿Dónde se publica «{proyecto}»?',
-      destinoAyuda: 'En una organización del equipo en Door43, un repositorio para todo el proyecto. Se elige una vez.',
       organizacion: 'Organización',
       buscandoOrganizaciones: 'Buscando sus organizaciones en Door43…',
-      sinOrganizaciones: 'Esta cuenta no está en ninguna organización de Door43. Pida a quien coordina que la agregue.',
       buscarOrganizacion: 'Buscar una organización',
       ningunaAsi: 'Ninguna organización lleva «{texto}».',
       repositorio: 'Repositorio',
@@ -546,11 +581,8 @@ export const publicar: MiniApp = {
       sinCuenta: 'Para publicar, vincule sua conta do Door43. Faz-se uma vez neste telefone.',
       'sinCuenta.computadora': 'Para publicar, vincule sua conta do Door43. Faz-se uma vez neste computador.',
       vincularCuenta: 'Vincular minha conta do Door43',
-      destinoPregunta: 'Onde se publica «{proyecto}»?',
-      destinoAyuda: 'Numa organização da equipe no Door43, um repositório para todo o projeto. Escolhe-se uma vez.',
       organizacion: 'Organização',
       buscandoOrganizaciones: 'Buscando suas organizações no Door43…',
-      sinOrganizaciones: 'Esta conta não está em nenhuma organização do Door43. Peça a quem coordena que a adicione.',
       buscarOrganizacion: 'Buscar uma organização',
       ningunaAsi: 'Nenhuma organização tem «{texto}».',
       repositorio: 'Repositório',
@@ -602,11 +634,8 @@ export const publicar: MiniApp = {
       sinCuenta: 'To publish, link your Door43 account. It is done once on this phone.',
       'sinCuenta.computadora': 'To publish, link your Door43 account. It is done once on this computer.',
       vincularCuenta: 'Link my Door43 account',
-      destinoPregunta: 'Where is «{proyecto}» published?',
-      destinoAyuda: "In one of the team's organizations on Door43, one repository for the whole project. Chosen once.",
       organizacion: 'Organization',
       buscandoOrganizaciones: 'Looking for your organizations on Door43…',
-      sinOrganizaciones: 'This account is in no Door43 organization. Ask whoever coordinates to add it.',
       buscarOrganizacion: 'Search for an organization',
       ningunaAsi: 'No organization has «{texto}».',
       repositorio: 'Repository',

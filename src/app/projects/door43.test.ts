@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { attachToRelease, fileOf, fingerprint, hostName, leaveWork, manifestOf, markVersion, problemOf, proposedRepo, publish, signIn, wantsQa, workLeft, workNameOf, workRepoOf } from './door43'
 import { DcsApiError } from '../../door43/dcs'
 import { fakeDoor43 } from './fakeDoor43'
+import { keyFrom, lock, openWith, type CopyKey } from './lockedCopy'
 
 describe('a project published to Door43', () => {
   it('names each book file as USFM numbers books, the New Testament from 41', () => {
@@ -185,6 +186,141 @@ describe('el trabajo del equipo por Door43', () => {
     expect([...files.keys()]).toEqual([])
     expect(names(assets)).toEqual(['ana-dev-a.servos.json.gz', 'bea-dev-b.servos.json.gz'])
     expect((await workLeft(account, to, 'dev-a')).map((x) => x.text)).toEqual(['{"de":"Bea"}'])
+  })
+})
+
+describe('el trabajo de un proyecto de «Solo el equipo» en Door43 no dice de quién es ni qué lo deja', () => {
+  afterEach(() => vi.unstubAllGlobals())
+  const account = { host: 'https://qa.door43.org', username: 'ana', token: 't' }
+  const to = { host: 'https://qa.door43.org', owner: 'BSOJ', repo: 'qu_reg' }
+  const names = (assets: Map<number, { name: string }>) => [...assets.values()].map((a) => a.name)
+  const QUIET = /^[0-9a-f]{8}-[0-9a-f]{8}\.dat$/
+  // Its work goes only sealed with the team's password.
+  let team: CopyKey
+  const teamKey = async () => (team ??= await keyFrom('maíz y frijol', undefined, 1000))
+  const seal = async (text: string) => lock(text, await teamKey(), 'compartido')
+  const opened = async (left: { text: string }[]) => Promise.all(left.map(async (x) => (await openWith(x.text, team.key)) ?? x.text))
+
+  it('abierto no se manda: nada llega a Door43', async () => {
+    const { repos, assets, calls } = fakeDoor43(to.host)
+    expect(await leaveWork(account, to, '{"de":"Ana"}', 'Ana', 'dev-a', 'equipo')).toMatchObject({ state: 'failed', problem: 'teamPassword' })
+    expect(await leaveWork(account, to, await lock('{"de":"Ana"}', await teamKey(), 'copia'), 'Ana', 'dev-a', 'equipo')).toMatchObject({ state: 'failed' })
+    expect([calls, repos.size, assets.size]).toEqual([[], 0, 0])
+  })
+
+  it('el nombre son dos huellas cortas: ni la persona, ni el teléfono, ni Servos', async () => {
+    const { assets } = fakeDoor43(to.host)
+    expect((await leaveWork(account, to, await seal('{"de":"María José"}'), 'María José', 'dev-a', 'equipo')).state).toBe('written')
+    const [name] = names(assets)
+    expect(name).toMatch(QUIET)
+    expect(name).not.toMatch(/maria|jose|dev-a|servos/i)
+    // Left again: replaced in place.
+    await leaveWork(account, to, await seal('{"de":"María José","mas":1}'), 'María José', 'dev-a', 'equipo')
+    expect(names(assets)).toEqual([name])
+  })
+
+  it('dos personas en un teléfono dejan dos; el mismo teléfono no se reconoce de un proyecto a otro', async () => {
+    const { assets } = fakeDoor43(to.host)
+    await leaveWork(account, to, await seal('{}'), 'Ana', 'dev-a', 'equipo')
+    await leaveWork(account, to, await seal('{}'), 'Bea', 'dev-a', 'equipo')
+    await leaveWork(account, { ...to, repo: 'qu_otro' }, await seal('{}'), 'Ana', 'dev-a', 'equipo')
+    const [ana, bea, otro] = names(assets)
+    expect(new Set([ana, bea, otro]).size).toBe(3)
+    // The phone's part is the same on one project's shelf (it tells this phone's own apart), not across projects.
+    expect(ana.slice(0, 8)).toBe(bea.slice(0, 8))
+    expect(otro.slice(0, 8)).not.toBe(ana.slice(0, 8))
+  })
+
+  it('el release no nombra a Servos, y uno hecho antes con su nombre se calla al dejar', async () => {
+    const { releases } = fakeDoor43(to.host)
+    await leaveWork(account, to, '{}', 'Ana', 'dev-a')
+    expect(releases.get('BSOJ/qu_reg-servos@trabajo')?.body).toContain('Servos')
+    await leaveWork(account, to, await seal('{}'), 'Ana', 'dev-a', 'equipo')
+    const shelf = releases.get('BSOJ/qu_reg-trabajo@trabajo')!
+    expect([shelf.name, shelf.body, shelf.prerelease]).toEqual(['trabajo', '', true])
+    // Made quiet from the start.
+    const { releases: fresh } = fakeDoor43(to.host)
+    await leaveWork(account, to, await seal('{}'), 'Ana', 'dev-a', 'equipo')
+    expect([fresh.get('BSOJ/qu_reg-trabajo@trabajo')?.name, fresh.get('BSOJ/qu_reg-trabajo@trabajo')?.body]).toEqual(['trabajo', ''])
+  })
+
+  it('el repositorio del trabajo no nombra a Servos: es {repo}-trabajo, privado', async () => {
+    const { repos } = fakeDoor43(to.host)
+    expect(workRepoOf(to, 'equipo').repo).toBe('qu_reg-trabajo')
+    expect(workRepoOf(to, 'abierto').repo).toBe('qu_reg-servos')
+    await leaveWork(account, to, await seal('{"de":"Ana"}'), 'Ana', 'dev-a', 'equipo')
+    expect([...repos]).toEqual([['BSOJ/qu_reg-trabajo', { private: true }]])
+    expect(await opened(await workLeft(account, to, 'dev-b'))).toEqual(['{"de":"Ana"}'])
+  })
+
+  it('lo dejado en {repo}-servos se muda renombrándolo: nada se pierde, y un Servos anterior lo sigue encontrando', async () => {
+    const { repos, redirects, releases } = fakeDoor43(to.host)
+    // Left before the project was kept to its team, or by an earlier Servos.
+    await leaveWork(account, to, '{"de":"Bea"}', 'Bea', 'dev-b')
+    await leaveWork(account, to, '{"de":"Carla"}', 'Carla', 'dev-c')
+    expect(await leaveWork(account, to, await seal('{"de":"Ana"}'), 'Ana', 'dev-a', 'equipo')).toMatchObject({ state: 'written' })
+    expect([...repos.keys()]).toEqual(['BSOJ/qu_reg-trabajo'])
+    expect(redirects.get('BSOJ/qu_reg-servos')).toBe('BSOJ/qu_reg-trabajo')
+    expect((await opened(await workLeft(account, to, 'dev-a'))).sort()).toEqual(['{"de":"Bea"}', '{"de":"Carla"}'])
+    // An earlier Servos still leaves and brings by the old name: Door43 takes it to the same repository.
+    const shelf = releases.get('BSOJ/qu_reg-trabajo@trabajo')!
+    const dora = new Uint8Array(await new Response(new Blob(['{"de":"Dora"}']).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer())
+    await attachToRelease(account, workRepoOf(to), shelf.id, 'dora-dev-d.servos.json.gz', dora)
+    expect((await opened(await workLeft(account, to, 'dev-a'))).sort()).toEqual(['{"de":"Bea"}', '{"de":"Carla"}', '{"de":"Dora"}'])
+    const old = await fetch(`${to.host}/api/v1/repos/BSOJ/qu_reg-servos/releases/tags/trabajo`)
+    expect((await old.json()).id).toBe(shelf.id)
+    // Another phone where the project is still open goes to the same one: nobody is left elsewhere.
+    await leaveWork(account, to, '{"de":"Bea","mas":1}', 'Bea', 'dev-b')
+    expect([...repos.keys()]).toEqual(['BSOJ/qu_reg-trabajo'])
+    expect((await opened(await workLeft(account, to, 'dev-a'))).sort()).toEqual(['{"de":"Bea","mas":1}', '{"de":"Carla"}', '{"de":"Dora"}'])
+  })
+
+  it('si Door43 no deja renombrarlo, se sigue en {repo}-servos hasta que pueda alguien con permiso; nunca hay dos', async () => {
+    const { repos, assets, noRename } = fakeDoor43(to.host)
+    await leaveWork(account, to, '{"de":"Bea"}', 'Bea', 'dev-b')
+    noRename()
+    expect(await leaveWork(account, to, await seal('{"de":"Ana"}'), 'Ana', 'dev-a', 'equipo')).toMatchObject({ state: 'written' })
+    expect([...repos.keys()]).toEqual(['BSOJ/qu_reg-servos'])
+    expect(await opened(await workLeft(account, to, 'dev-b'))).toEqual(['{"de":"Ana"}'])
+    // Someone who can comes: it is renamed, and Ana's is still hers, replaced in place.
+    noRename(false)
+    await leaveWork(account, to, await seal('{"de":"Bea","mas":1}'), 'Bea', 'dev-b', 'equipo')
+    expect([...repos.keys()]).toEqual(['BSOJ/qu_reg-trabajo'])
+    await leaveWork(account, to, await seal('{"de":"Ana","mas":1}'), 'Ana', 'dev-a', 'equipo')
+    expect(names(assets)).toHaveLength(2)
+    expect(await opened(await workLeft(account, to, 'dev-a'))).toEqual(['{"de":"Bea","mas":1}'])
+  })
+
+  it('un proyecto que vuelve a abrirse sigue en su repositorio callado', async () => {
+    const { repos } = fakeDoor43(to.host)
+    await leaveWork(account, to, await seal('{"de":"Ana"}'), 'Ana', 'dev-a', 'equipo')
+    await leaveWork(account, to, '{"de":"Bea"}', 'Bea', 'dev-b')
+    expect([...repos.keys()]).toEqual(['BSOJ/qu_reg-trabajo'])
+    expect(await opened(await workLeft(account, to, 'dev-b'))).toEqual(['{"de":"Ana"}'])
+  })
+
+  it('lo que el teléfono dejó con su nombre de antes se quita al dejar sin nombre, y el commit no nombra a nadie', async () => {
+    const { assets, files, messages } = fakeDoor43(to.host)
+    await leaveWork(account, to, '{"de":"Ana, antes"}', 'Ana', 'dev-a')
+    files.set('BSOJ/qu_reg-servos/trabajo/ana-dev-a.servos.json', { b64: Buffer.from('{}').toString('base64'), sha: 'old' })
+    await leaveWork(account, to, await seal('{"de":"Ana"}'), 'Ana', 'dev-a', 'equipo')
+    expect(names(assets)).toHaveLength(1)
+    expect(names(assets)[0]).toMatch(QUIET)
+    expect([...files.keys()]).toEqual([])
+    expect(messages.join(' ')).not.toMatch(/ana/i)
+  })
+
+  it('al traer, llega lo de los demás, con nombre o sin él, y no lo de este teléfono', async () => {
+    const { files } = fakeDoor43(to.host)
+    // Left before by an earlier Servos, with names: on the shelf and as a file of the repository.
+    await leaveWork(account, to, '{"de":"Carla"}', 'Carla', 'dev-c')
+    await leaveWork(account, to, await seal('{"de":"Bea"}'), 'Bea', 'dev-b', 'equipo')
+    await leaveWork(account, to, await seal('{"de":"Eva"}'), 'Eva', 'dev-a', 'equipo')
+    await leaveWork(account, to, await seal('{"de":"Ana"}'), 'Ana', 'dev-a', 'equipo')
+    files.set('BSOJ/qu_reg-trabajo/trabajo/dora-dev-d.servos.json', { b64: Buffer.from('{"de":"Dora"}').toString('base64'), sha: 'old' })
+    files.set('BSOJ/qu_reg-trabajo/trabajo/ana-dev-a.servos.json', { b64: Buffer.from('{"de":"Ana, antes"}').toString('base64'), sha: 'old2' })
+    expect((await opened(await workLeft(account, to, 'dev-a'))).sort()).toEqual(['{"de":"Bea"}', '{"de":"Carla"}', '{"de":"Dora"}'])
+    expect((await opened(await workLeft(account, to, 'dev-b'))).sort()).toEqual(['{"de":"Ana"}', '{"de":"Ana, antes"}', '{"de":"Carla"}', '{"de":"Dora"}', '{"de":"Eva"}'])
   })
 })
 

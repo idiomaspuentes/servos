@@ -10,7 +10,7 @@ import { MiniAppScreen } from './frame/MiniAppScreen'
 import { useT } from './i18n/i18n'
 import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type Position } from './miniapps/contract'
 import { miniApp } from './miniapps/registry'
-import { EXAMPLE_PROJECT_ID, PHASES, activeProjects, archivedProjects, exampleProject, loadProjects, saveProjects, titleOf, type Project } from './projects/model'
+import { EXAMPLE_PROJECT_ID, PHASES, activeProjects, archivedProjects, exampleProject, loadProjects, saveProjects, titleOf, type Phase, type Project } from './projects/model'
 import { forgetProject } from './projects/forget'
 import { inProject, setProject } from './projects/scope'
 import { bookState, languageOf, libraryVersion, loadBook, setProjects as setLibraryProjects, subscribeLibrary } from './projects/library'
@@ -22,6 +22,8 @@ import { BookScreen } from './screens/BookScreen'
 import { GatherScreen } from './screens/GatherScreen'
 import { TeamWorkScreen } from './screens/TeamWorkScreen'
 import { keepCopying } from './frame/copies'
+import { keepCopyingToDoor43 } from './frame/door43Copy'
+import { accountOf, forgetAccount } from './projects/door43'
 import { CopiesSheet } from './screens/CopiesSheet'
 import { closeTopSheet, onSheets } from './frame/Sheet'
 import { GlossaryScreen } from './screens/GlossaryScreen'
@@ -48,7 +50,8 @@ import { waiting } from './projects/outbox'
 type Screen =
   | { kind: 'home' }
   | { kind: 'newProject' }
-  | { kind: 'book'; projectId: string; book: string }
+  /** `step`: a step of the book open on its own screen (on a phone; a wide window shows one beside the steps). */
+  | { kind: 'book'; projectId: string; book: string; step?: Phase }
   | { kind: 'app'; projectId: string; book: string; id: string; back?: Screen }
   | { kind: 'settings'; projectId: string }
   | { kind: 'glossary'; projectId: string; back: Screen; entry?: string }
@@ -58,7 +61,7 @@ type Screen =
   | { kind: 'translate' }
   | { kind: 'elegir'; projectId: string; book: string; back: Screen }
   /** `bring`: opened to bring in the team's work at once (asked without internet, and said yes to when it came). */
-  | { kind: 'equipo'; projectId: string; book: string; back: Screen; bring?: boolean }
+  | { kind: 'equipo'; projectId: string; book: string; back: Screen; bring?: boolean; password?: boolean }
 
 /** The chapters of a book whose texts and helps the prototype has (every chapter of Titus and Jonah). */
 const chaptersFor = (book: string) => chaptersOf(book).map((c) => chapterOf(book, c)!)
@@ -99,6 +102,8 @@ export function App() {
   const working = useRef<string | null>(null)
   working.current = people ? person : null
   useEffect(() => keepCopying(() => working.current), [])
+  // A copy on Door43 too, when there is internet and the person chose it (frame/door43Copy.ts).
+  useEffect(() => keepCopyingToDoor43(() => working.current), [])
   // What waited for internet (design 6.11): shown when internet comes, or when the app opens with it, before anything
   // goes; not while something is being typed. «Not now» holds until internet comes again.
   const waits = useWaiting(person)
@@ -126,6 +131,8 @@ export function App() {
     }
   }, [person])
   const [door43, setDoor43] = useState(false)
+  // Linking again (the key kept no longer works): on the Door43 it was on.
+  const [relinkHost, setRelinkHost] = useState<string | undefined>(undefined)
   const [language, setLanguage] = useState(false)
   const [addProject, setAddProject] = useState(false)
   const [addBookFor, setAddBookFor] = useState<string | null>(null)
@@ -226,7 +233,10 @@ export function App() {
   // the screen goes back and, if still away from home, sets another.
   const goBack = useRef(home)
   goBack.current =
-    screen.kind === 'app' ? leaveApp : screen.kind === 'glossary' || screen.kind === 'receive' || screen.kind === 'recibir' || screen.kind === 'elegir' || screen.kind === 'equipo' ? () => setScreen(screen.back) : home
+    // A step open on a phone goes back to its book's steps; in a wide window the steps are beside it, so the book goes home.
+    screen.kind === 'book' && screen.step && !window.matchMedia('(min-width: 900px)').matches
+      ? () => setScreen({ kind: 'book', projectId: screen.projectId, book: screen.book })
+      : screen.kind === 'app' ? leaveApp : screen.kind === 'glossary' || screen.kind === 'receive' || screen.kind === 'recibir' || screen.kind === 'elegir' || screen.kind === 'equipo' ? () => setScreen(screen.back) : home
   const armed = useRef(false)
   // An entry kept for a sheet open on home (home keeps none of its own).
   const sheetEntry = useRef(false)
@@ -388,6 +398,16 @@ export function App() {
           onGlossary={(projectId) => setScreen({ kind: 'glossary', projectId, back: { kind: 'home' } })}
           onPersonMenu={() => setPersonMenu(true)}
           onCopies={() => setCopiesSheet(true)}
+          onDoor43={(relink) => {
+            const account = accountOf(person)
+            if (relink && account) {
+              forgetAccount(person)
+              setRelinkHost(account.host)
+            }
+            setDoor43(true)
+          }}
+          waiting={waits}
+          onSendWaiting={() => setAsking(true)}
         />
       )}
 
@@ -430,8 +450,11 @@ export function App() {
           onOpen={(app, chapter) => {
             keepLastApp(person, bookScreen.book, app.id)
             openAt(bookScreen.book, app, chapter)
-            setScreen({ kind: 'app', projectId: bookScreen.projectId, book: bookScreen.book, id: app.id })
+            // Back from it to where it was opened: the book, or the step's screen.
+            setScreen({ kind: 'app', projectId: bookScreen.projectId, book: bookScreen.book, id: app.id, back: bookScreen })
           }}
+          step={bookScreen.step}
+          onStep={(step) => setScreen({ kind: 'book', projectId: bookScreen.projectId, book: bookScreen.book, ...(step ? { step } : {}) })}
           onTogether={(on) =>
             setProjects(
               projects.map((p) =>
@@ -563,13 +586,14 @@ export function App() {
       {screen.kind === 'translate' && <TranslateUi onBack={home} />}
       {screen.kind === 'equipo' && project(screen.projectId) && (
         <TeamWorkScreen
-          key={`${screen.projectId}.${screen.book}.${screen.bring ? 'traer' : ''}`}
+          key={`${screen.projectId}.${screen.book}.${screen.bring ? 'traer' : ''}${screen.password ? 'contrasena' : ''}`}
           project={project(screen.projectId)!}
           projects={projects}
           book={screen.book}
           title={titleOf(project(screen.projectId), screen.book)}
           person={person}
           bringNow={screen.bring}
+          askPassword={screen.password}
           onBack={() => setScreen(screen.back)}
           onReceived={setProjects}
           onGather={() => setScreen({ kind: 'elegir', projectId: screen.projectId, book: screen.book, back: { kind: 'book', projectId: screen.projectId, book: screen.book } })}
@@ -695,7 +719,16 @@ export function App() {
         />
       )}
       {copiesSheet && <CopiesSheet person={person} onClose={() => setCopiesSheet(false)} />}
-      {door43 && <Door43AccountSheet person={person} onClose={() => setDoor43(false)} />}
+      {door43 && (
+        <Door43AccountSheet
+          person={person}
+          host={relinkHost}
+          onClose={() => {
+            setDoor43(false)
+            setRelinkHost(undefined)
+          }}
+        />
+      )}
       {asking && (
         <WaitingSheet
           errands={waits}
@@ -708,6 +741,10 @@ export function App() {
           onBring={(projectId, book) => {
             setAsking(false)
             setScreen({ kind: 'equipo', projectId, book, back: { kind: 'book', projectId, book }, bring: true })
+          }}
+          onTeamPassword={(projectId, book) => {
+            setAsking(false)
+            setScreen({ kind: 'equipo', projectId, book, back: { kind: 'book', projectId, book }, password: true })
           }}
         />
       )}

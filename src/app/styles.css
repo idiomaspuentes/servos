@@ -475,18 +475,19 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .book-resume-kicker { font-size: 0.8rem; font-weight: 600; color: var(--accent); }
 .book-resume-what { font-weight: 600; margin-block-end: 0.4rem; }
 .book-resume-project { margin: -0.4rem 0 0.4rem; font-size: 0.85rem; }
-/* The steps: a pill switch on a track, in one row that slides, the one shown brought into sight */
-.book-steps { display: flex; gap: 3px; padding: 3px; overflow-x: auto; scrollbar-width: none; border-radius: 999px; background: var(--track); }
-.book-steps::-webkit-scrollbar { display: none; }
-/* An end with steps out of sight fades: the row is seen to go on */
-.book-steps[data-more-end] { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent); }
-.book-steps[data-more-start] { -webkit-mask-image: linear-gradient(to right, transparent, #000 3rem); mask-image: linear-gradient(to right, transparent, #000 3rem); }
-.book-steps[data-more-start][data-more-end] { -webkit-mask-image: linear-gradient(to right, transparent, #000 3rem, #000 calc(100% - 3rem), transparent); mask-image: linear-gradient(to right, transparent, #000 3rem, #000 calc(100% - 3rem), transparent); }
-.book-step { flex: none; display: inline-flex; align-items: center; gap: 0.35rem; width: auto; min-height: var(--touch); padding: 0.25rem 0.85rem; border: 0; border-radius: 999px; background: none; color: var(--text-soft); font-size: 0.9rem; font-weight: 600; }
-.book-step[aria-selected='true'] { background: var(--pill); color: var(--text); font-weight: 700; box-shadow: var(--shadow-raised); }
-/* How far a step has gone, said quietly: blue is for going on (the filled button, the bar) */
-.book-step-state { font-size: 0.8rem; font-variant-numeric: tabular-nums; color: var(--text-soft); }
+/* The steps: a card of rows, every one in sight, each with what it is for and how far it has gone; › opens the step */
+.book-steps { list-style: none; margin: 0; padding: 0; border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-card); overflow: hidden; }
+.book-steps > li:first-child > .book-step { border-block-start: 0; }
+.row-button.book-step { gap: 0.85rem; min-height: 3.5rem; padding: 0.5rem 0.8rem 0.5rem 0.75rem; }
+/* Each step's picture beside its name, moss on a moss tint, as one family with the mark */
+.book-step-icon { flex: none; display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 10px; background: var(--accent-soft); color: var(--accent); }
+.step-icon { width: 1.5rem; height: 1.5rem; }
+/* How far a step has gone, said quietly: blue is for done */
+.book-step-state { font-size: 0.85rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .book-step-state.is-done { color: var(--done); font-weight: 700; }
+/* Where the book opens on a phone: the card says it is where the person left off */
+.tool-card-eyebrow { font-size: 0.8rem; font-weight: 700; color: var(--accent); }
+.book-step-about { margin: 0; }
 .tool-cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
 .tool-card { border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-card); }
 .tool-card-main { display: flex; flex-direction: column; align-items: stretch; gap: 0.25rem; padding: 0.75rem 0.8rem; color: var(--text); }
@@ -1201,11 +1202,36 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .option-card input { width: auto; min-height: 0; margin-block-start: 0.2rem; accent-color: var(--accent); }
 .option-card > span { display: flex; flex-direction: column; gap: 0.25rem; }
 
+/* Door43: making an account (in the browser), apart from linking one */
+.door43-new { display: flex; flex-direction: column; gap: 0.5rem; margin-block-start: 0.5rem; padding-block-start: 1rem; border-block-start: 1px solid var(--hair); }
+.door43-new p { margin: 0; }
+a.button-secondary { display: flex; align-items: center; justify-content: center; min-height: var(--touch); padding: 0.5rem 0.9rem; border: 1px solid color-mix(in srgb, var(--text-soft) 35%, transparent); border-radius: var(--radius); color: var(--text); text-decoration: none; text-align: center; box-sizing: border-box; }
+
+/* A switch: something switched on and left so (the copy on Door43), the whole row to touch */
+.switch-row { display: flex; align-items: center; gap: 0.75rem; width: 100%; min-height: var(--touch); padding: 0.5rem 0; border: 0; border-radius: 0; background: none; color: var(--text); font-weight: 600; text-align: start; }
+.switch-label { flex: 1; min-width: 0; }
+.switch { position: relative; flex: none; width: 3rem; height: 1.75rem; border-radius: 999px; background: var(--track); box-shadow: inset 0 0 0 1px var(--line); transition: background-color 0.15s; }
+.switch::after { content: ''; position: absolute; inset-block-start: 0.2rem; inset-inline-start: 0.2rem; width: 1.35rem; height: 1.35rem; border-radius: 50%; background: var(--pill); box-shadow: var(--shadow-raised); transition: transform 0.15s; }
+.switch-row[aria-checked='true'] .switch { background: var(--accent); box-shadow: none; }
+.switch-row[aria-checked='true'] .switch::after { transform: translateX(1.25rem); background: var(--accent-text); }
+:dir(rtl) .switch-row[aria-checked='true'] .switch::after { transform: translateX(-1.25rem); }
+:root[data-theme='sun'] .switch { box-shadow: inset 0 0 0 1.5px var(--text); }
+:root[data-theme='sun'] .switch-row[aria-checked='true'] .switch { box-shadow: none; }
+@media (prefers-reduced-motion: reduce) { .switch, .switch::after { transition: none; } }
+
+/* «Copia de su trabajo», in the Door43 account */
+.door43-copy { display: flex; flex-direction: column; gap: 0.5rem; margin-block: 0.5rem; padding-block-start: 0.75rem; border-block-start: 1px solid var(--hair); }
+.door43-copy p { margin: 0; }
+.door43-copy .menu-heading { margin: 0; }
+.door43-copy-project { display: flex; flex-direction: column; gap: 0.25rem; }
+.door43-copy-ask { font-weight: 600; }
+
 /* «Copia en la tarjeta» */
 .copies { display: flex; flex-direction: column; gap: 0.75rem; }
 .copies p { margin: 0; }
 .copies-confirm { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; border-radius: var(--radius); background: var(--surface-soft); }
 .copies-confirm-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.copies-confirm-actions { display: flex; flex-direction: column; gap: 0.5rem; }
 .copy-password { display: flex; flex-direction: column; gap: 0.75rem; }
 .publish-where-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .publish-where-head .chip { flex: none; white-space: nowrap; }
@@ -1295,6 +1321,13 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .destination-orgs.is-scrolled { max-height: 17.5rem; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
 .destination-org strong { color: var(--accent); }
 .destination-none { margin: 0; padding: 0.75rem 0.9rem; }
+.destination-more { display: flex; flex-direction: column; }
+.destination-more > .row-button:last-child { border-block-end: 1px solid var(--hair); }
+.org-search { display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; }
+.org-search > .button-secondary { width: auto; }
+.org-found { padding-inline: 0.9rem; }
+.org-found:first-child { border-block-start: 0; }
+.org-user { margin: 0; overflow-wrap: anywhere; }
 .team-problem { display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; }
 /* Cutting a piece of the mix: its words as small tinted pieces to touch, the first dimmed (nothing to cut before it). */
 .mix-piece.is-cutting { cursor: default; }
@@ -1365,7 +1398,7 @@ button, .file-button, summary, input, select, textarea {
   }
   :is(.chapter-cell, .verse-cell:not(.is-current)):not(:disabled):hover { background-color: color-mix(in srgb, var(--accent) 9%, var(--surface-soft)); }
   :is(.row-button, .menu-row, .home-book, .home-project:not([aria-current]), .destination-org, .tool-chapter, .chapter-row):not(:disabled):hover { background-color: color-mix(in srgb, var(--accent) 5%, transparent); }
-  :is(.panes-tab, .book-step, .helps-tab, .choice-row > .choice):not([aria-selected='true'], [aria-checked='true'], .is-on):hover { color: var(--text); }
+  :is(.panes-tab, .helps-tab, .choice-row > .choice):not([aria-selected='true'], [aria-checked='true'], .is-on):hover { color: var(--text); }
 }
 
 /* A sheet comes up from the bottom, as it is drawn: a short slide, its shade fading in behind it */
@@ -1385,7 +1418,7 @@ button, .file-button, summary, input, select, textarea {
    what names and what acts (headings 800; buttons, tabs and names 700), a step short of black so a screen reads calm.
    What the team writes is in the project's font. */
 .chapter-lines { font-family: var(--serif); }
-:is(.button-primary, .button-secondary, .header-app, .header-brand, .home-title-pick, .tool-card-name, .book-resume-what, .panes-tab, .book-step, .helps-tab) { font-weight: 700; }
+:is(.button-primary, .button-secondary, .header-app, .header-brand, .home-title-pick, .tool-card-name, .book-resume-what, .panes-tab, .helps-tab) { font-weight: 700; }
 :is(.chapter-lines, .verse) .verse-number { color: var(--accent); font-weight: 700; }
 
 /* Home's «go on where you left off» as a field of moss: the first thing touched, and home's own anchor */

@@ -28,7 +28,8 @@ import {
   type DcsClientConfig,
 } from '../../door43/dcs'
 import { deviceId } from './bookText'
-import { BOOKS, type Project } from './model'
+import { lockedKind } from './lockedCopy'
+import { BOOKS, type Privacy, type Project } from './model'
 
 const KEY = 'servos.prototipo.door43'
 const read = <T>(k: string): T | null => {
@@ -111,6 +112,9 @@ export async function signIn(person: string, host: string, username: string, pas
   return account
 }
 
+/** Door43's page for making an account, opened in the browser: the app makes none itself. */
+export const signUpUrl = (host: string) => `${host}/user/sign_up`
+
 /** Links a token made on Door43 itself (the other way to sign in, and the mock's). */
 export async function signInWithToken(person: string, host: string, token: string): Promise<Door43Account> {
   const { getAuthenticatedUser } = await import('../../door43/dcs')
@@ -124,6 +128,84 @@ export async function signInWithToken(person: string, host: string, token: strin
 export async function organizationsOf(account: Door43Account): Promise<string[]> {
   const { getUserOrgs } = await import('../../door43/dcs')
   return (await getUserOrgs(configOf(account.host), account.token)).map((o) => o.name)
+}
+
+/** The name proposed for a team's new organization: its language and «reg», as the repository is proposed. */
+export const proposedOrg = (project: Pick<Project, 'languageCode'>) => proposedRepo(project)
+
+/** A Door43 name, as Door43 takes it for an organization or a repository. */
+export const validName = (name: string) => /^[A-Za-z0-9_.-]+$/.test(name) && !/^[.-]|[.-]$/.test(name)
+
+/** Why an organization could not be made: the name taken, this account not allowed to make one, or another problem. */
+export type OrgProblem = 'taken' | 'notAllowed' | Problem
+/**
+ * Makes the team's organization on Door43, its maker in it; `private`: only its members see what it keeps. Fails with
+ * what went wrong, in the person's terms.
+ */
+export async function createTeamOrg(account: Door43Account, name: string, privately: boolean): Promise<string> {
+  const { createOrg } = await import('../../door43/dcs')
+  try {
+    const made = await createOrg(configOf(account.host), { name, visibility: privately ? 'private' : 'public', token: account.token })
+    return made?.name ?? name
+  } catch (e) {
+    throw new OrgError(orgProblemOf(e))
+  }
+}
+export class OrgError extends Error {
+  constructor(readonly problem: OrgProblem) {
+    super(problem)
+  }
+}
+function orgProblemOf(e: unknown): OrgProblem {
+  if (e instanceof DcsApiError) {
+    const said = `${e.message} ${JSON.stringify(e.body ?? '')}`
+    if (e.status === 422 && /already exists|name is reserved|been used/i.test(said)) return 'taken'
+    if (e.status === 403 && !/required scope/i.test(said)) return 'notAllowed'
+  }
+  return problemOf(e)
+}
+
+// Every organization Door43 shows, by host, brought once a visit: Door43 has no search of organizations by name.
+const everyOrg = new Map<string, Promise<string[]>>()
+const PAGE = 50
+/** Most pages brought of the organizations Door43 shows (some thousands). */
+const MOST_PAGES = 80
+
+async function orgsShown(account: Door43Account): Promise<string[]> {
+  const url = (page: number) => `${account.host}/api/v1/orgs?limit=${PAGE}&page=${page}`
+  const page = async (n: number): Promise<string[]> => {
+    const res = await fetch(url(n), { headers: { Authorization: `token ${account.token}` } })
+    if (!res.ok) throw new DcsApiError(`${res.status} /orgs`, res.status)
+    return ((await res.json()) as Array<{ name?: string; username?: string }>).map((o) => o.name || o.username || '').filter(Boolean)
+  }
+  const all: string[] = []
+  // Four pages at a time, until one comes short.
+  for (let n = 1; n <= MOST_PAGES; n += 4) {
+    const got = await Promise.all([n, n + 1, n + 2, n + 3].filter((k) => k <= MOST_PAGES).map(page))
+    for (const names of got) all.push(...names)
+    if (got.some((names) => names.length < PAGE)) break
+  }
+  return all
+}
+
+/**
+ * The organizations Door43 shows whose name holds what is asked, the one named exactly first. Those only their
+ * members see are not shown: their name is asked of whoever coordinates.
+ */
+export async function findOrgs(account: Door43Account, asked: string, most = 30): Promise<string[]> {
+  const wanted = asked.trim().toLocaleLowerCase()
+  if (!wanted) return []
+  let list = everyOrg.get(account.host)
+  if (!list) {
+    list = orgsShown(account)
+    everyOrg.set(account.host, list)
+    list.catch(() => everyOrg.delete(account.host))
+  }
+  const names = await list
+  const found = names.filter((n) => n.toLocaleLowerCase().includes(wanted))
+  const exact = found.filter((n) => n.toLocaleLowerCase() === wanted)
+  const starts = found.filter((n) => !exact.includes(n) && n.toLocaleLowerCase().startsWith(wanted))
+  return [...exact, ...starts, ...found.filter((n) => !exact.includes(n) && !starts.includes(n))].slice(0, most)
 }
 
 /** Where a project is published: chosen once, by whoever coordinates. */
@@ -263,9 +345,14 @@ export function titlesOf(yaml: string): Map<string, string> {
  */
 export type FileResult = { path: string; state: 'written' | 'same' | 'changed' | 'gather' | 'failed'; problem?: Problem; sha?: string }
 
-/** Why something could not be done, said in the person's terms. */
-export type Problem = 'offline' | 'signin' | 'scope' | 'permission' | 'conflict' | 'changed' | 'gather' | 'other'
+/**
+ * Why something could not be done, said in the person's terms. `teamPassword`: a project kept to its team, whose work
+ * goes sealed with the team's password, and this phone does not know it yet (`workToLeave.ts`).
+ */
+export type Problem = 'offline' | 'signin' | 'scope' | 'permission' | 'conflict' | 'changed' | 'gather' | 'pin' | 'teamPassword' | 'other'
 export function problemOf(e: unknown): Problem {
+  // The network presented a certificate that was not Door43's (the app for phones, `frame/door43Pins.ts`): nothing went.
+  if (e instanceof Error && e.name === 'NotDoor43') return 'pin'
   if (e instanceof DcsApiError) {
     if (e.status === 401) return 'signin'
     // The account may do it, but the key this phone keeps was made without that permission: link the account again.
@@ -424,8 +511,55 @@ export const repoUrl = (to: Destination) => `${to.host}/${to.owner}/${to.repo}`
 // is replaced in place, with no history, so a team leaving its work every day (and its takes, recorded again and
 // again) does not fill the repository with every version of it, as files in git would (Door43 has no Git LFS).
 
-/** The repository where the team leaves its work for one another: beside the one it publishes, and private. */
-export const workRepoOf = (to: Destination): Destination => ({ ...to, repo: `${to.repo}-servos` })
+/**
+ * The repository where the team leaves its work for one another: beside the one it publishes, and private. For a
+ * project kept to its team its name says nothing of Servos (philosophy, principle 9): `{repo}-trabajo`, the shelf's
+ * own word; for one open to whoever has the file, `{repo}-servos`, as it always was. Where the work already is wins,
+ * though (`workRepoAt`).
+ */
+export const workRepoOf = (to: Destination, privacy: Privacy = 'abierto'): Destination => ({
+  ...to,
+  repo: `${to.repo}-${privacy === 'equipo' ? 'trabajo' : 'servos'}`,
+})
+
+/** The repository reached by this name, by the name it has now (renamed, Door43 takes its old name to it); or none. */
+async function repoReached(account: Door43Account, at: Destination): Promise<Destination | null> {
+  try {
+    return { ...at, repo: (await getRepo(configOf(at.host), at.owner, at.repo, account.token)).name || at.repo }
+  } catch (e) {
+    if (e instanceof DcsApiError && e.status === 404) return null
+    throw e
+  }
+}
+
+/**
+ * Where the team's work is: the quiet repository, or else the one named for Servos (an earlier Servos's, or the
+ * project's while it was open). There is only ever one, so teammates on different versions never miss each other.
+ * Leaving (`making`) for a project kept to its team renames the one named for Servos quiet: the same repository, so
+ * nothing in it is lost, and Door43 takes an earlier Servos that still uses the old name to it. Only its admins may
+ * rename it (whoever made it, the organization's owners): for anyone else it stays as it is until one of them leaves
+ * their work. With none yet, leaving makes it, private, named for the project's privacy; bringing finds nothing.
+ */
+async function workRepoAt(account: Door43Account, to: Destination, privacy: Privacy, making: boolean): Promise<Destination | null> {
+  const quiet = workRepoOf(to, 'equipo')
+  const named = workRepoOf(to, 'abierto')
+  const found = (await repoReached(account, quiet)) ?? (await repoReached(account, named))
+  if (!found) {
+    if (!making) return null
+    const at = workRepoOf(to, privacy)
+    await createOrgRepo(configOf(at.host), at.owner, { name: at.repo, description: '', private: true, auto_init: true, default_branch: 'master', token: account.token })
+    return at
+  }
+  if (!making || privacy !== 'equipo' || found.repo !== named.repo) return found
+  try {
+    await call<unknown>(account, named, '', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: quiet.repo }) })
+    return quiet
+  } catch (e) {
+    if (!(e instanceof DcsApiError)) throw e
+    // Not this account's to rename, or another phone just did: where it is now.
+    return (await repoReached(account, quiet)) ?? named
+  }
+}
 
 /** The release whose attachments are the shelf: not a version, said so on Door43. */
 const SHELF = 'trabajo'
@@ -465,8 +599,44 @@ const slug = (s: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '') || 'persona'
 
-/** A person's work on the shelf: theirs from this phone, replaced each time they leave it. */
+/** A person's work on the shelf, for a project open to whoever has the file: theirs from this phone, replaced each time. */
 export const workNameOf = (person: string, device: string) => `${slug(person)}-${device}${PACKAGE}`
+
+// For a project kept to its team (philosophy, principle 9), the name says nothing, as the memory-card copies'
+// (`frame/copies.ts`): `3fa9c1d2-7b20e4aa.dat`. The first part tells this phone apart on this shelf (to leave its own
+// out when bringing), the second this person on it; both are hashed with a secret that never leaves the phone, so
+// nobody can try names and phones until one fits, nor tell the same phone on two projects' shelves.
+const QUIET = /^[0-9a-f]{8}-[0-9a-f]{8}\.dat$/
+const SECRET = 'servos.dispositivo.secreto'
+function phoneSecret(): string {
+  try {
+    let secret = localStorage.getItem(SECRET)
+    if (!secret) {
+      secret = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, '0')).join('')
+      localStorage.setItem(SECRET, secret)
+    }
+    return secret
+  } catch {
+    // Nowhere to keep it (the tests): the device alone, which still tells phones apart.
+    return ''
+  }
+}
+const hash8 = async (text: string) =>
+  [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)))]
+    .slice(0, 4)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+// Both by the project's place, not its shelf's repository, whose name changes when it is made quiet (`workRepoAt`).
+const phonePart = (to: Destination, device: string) => hash8(`${phoneSecret()}\n${device}\n${to.owner}/${to.repo}`)
+
+/** A person's work on the shelf of a project kept to its team (`to`, the project's place): a name that says nothing. */
+export async function quietWorkNameOf(to: Destination, person: string, device: string): Promise<string> {
+  return `${await phonePart(to, device)}-${await hash8(`${phoneSecret()}\n${device}\n${to.owner}/${to.repo}\n${person}`)}.dat`
+}
+
+// The shelf's release says what it is for a project open to whoever has the file; nothing, for one kept to its team.
+const SHELF_SAYS = { name: 'Trabajo del equipo', body: 'Lo deja Servos para el equipo: no es una versión.' }
+const SHELF_QUIET = { name: SHELF, body: '' }
 
 type Asset = { id: number; name: string; size: number; browser_download_url: string }
 
@@ -491,20 +661,12 @@ export async function attachToRelease(account: Door43Account, to: Destination, r
   return call<Asset>(account, to, `/releases/${releaseId}/assets?name=${encodeURIComponent(name)}`, { method: 'POST', body: form })
 }
 
-async function ensureRepo(account: Door43Account, to: Destination, privately: boolean) {
-  const config = configOf(to.host)
-  try {
-    await getRepo(config, to.owner, to.repo, account.token)
-  } catch (e) {
-    if (!(e instanceof DcsApiError && e.status === 404)) throw e
-    await createOrgRepo(config, to.owner, { name: to.repo, description: '', private: privately, auto_init: true, default_branch: 'master', token: account.token })
-  }
-}
+type Shelf = { id: number; name?: string; body?: string }
 
 /** The shelf's release, or none yet. */
-async function shelfOf(account: Door43Account, to: Destination): Promise<{ id: number } | null> {
+async function shelfOf(account: Door43Account, to: Destination): Promise<Shelf | null> {
   try {
-    return await call<{ id: number }>(account, to, `/releases/tags/${SHELF}`)
+    return await call<Shelf>(account, to, `/releases/tags/${SHELF}`)
   } catch (e) {
     if (e instanceof DcsApiError && e.status === 404) return null
     throw e
@@ -514,21 +676,41 @@ async function shelfOf(account: Door43Account, to: Destination): Promise<{ id: n
 /**
  * Leaves a person's work (a package's text, its sound in it) on the shelf, gzipped, making the private repository and
  * the shelf the first time. The new one goes up before the one it replaces goes away: there is never a moment without.
- * What an earlier Servos left for this person and phone as a file of the repository is taken away.
+ * What an earlier Servos left for this person and phone as a file of the repository is taken away. For a project kept
+ * to its team, the name and the shelf say nothing (`quietWorkNameOf`), and what this phone left before with its name
+ * goes away with it; its work goes only sealed with the team's password (`workToLeave.ts`): open, nothing is sent.
  */
-export async function leaveWork(account: Door43Account, to: Destination, text: string, person: string, device: string): Promise<FileResult> {
-  const at = workRepoOf(to)
-  const name = workNameOf(person, device)
+export async function leaveWork(
+  account: Door43Account,
+  to: Destination,
+  text: string,
+  person: string,
+  device: string,
+  privacy: Privacy = 'abierto'
+): Promise<FileResult> {
+  const quiet = privacy === 'equipo'
+  if (quiet && lockedKind(text) !== 'compartido') return { path: SHELF, state: 'failed', problem: 'teamPassword' }
+  const named = workNameOf(person, device)
+  const unnamed = await quietWorkNameOf(to, person, device)
+  const name = quiet ? unnamed : named
+  // What this person and phone left before under either name (an earlier Servos, or the project's privacy changed).
+  const theirs = new Set([named, `${named.slice(0, -PACKAGE.length)}${OLD_PACKAGE}`, unnamed])
+  const says = quiet ? SHELF_QUIET : SHELF_SAYS
+  let at = workRepoOf(to, privacy)
   try {
-    await ensureRepo(account, at, true)
-    const shelf =
-      (await shelfOf(account, at)) ??
-      (await call<{ id: number }>(account, at, '/releases', {
+    at = (await workRepoAt(account, to, privacy, true))!
+    let shelf = await shelfOf(account, at)
+    if (!shelf) {
+      shelf = await call<Shelf>(account, at, '/releases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tag_name: SHELF, target_commitish: 'master', name: 'Trabajo del equipo', body: 'Lo deja Servos para el equipo: no es una versión.', prerelease: true }),
-      }))
-    const before = (await call<Asset[]>(account, at, `/releases/${shelf.id}/assets`)).filter((a) => a.name === name)
+        body: JSON.stringify({ tag_name: SHELF, target_commitish: 'master', ...says, prerelease: true }),
+      })
+    } else if (quiet && (shelf.name !== says.name || (shelf.body ?? '') !== says.body)) {
+      // Made by an open project's Servos, or before: it stops saying it.
+      await call<Shelf>(account, at, `/releases/${shelf.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(says) })
+    }
+    const before = (await call<Asset[]>(account, at, `/releases/${shelf.id}/assets`)).filter((a) => theirs.has(a.name))
     const form = new FormData()
     form.append('attachment', new Blob([new Uint8Array(await gzipped(text))], { type: 'application/gzip' }), name)
     await call<Asset>(account, at, `/releases/${shelf.id}/assets?name=${encodeURIComponent(name)}`, { method: 'POST', body: form })
@@ -536,10 +718,11 @@ export async function leaveWork(account: Door43Account, to: Destination, text: s
   } catch (e) {
     return { path: name, state: 'failed', problem: problemOf(e) }
   }
-  for (const old of [`${OLD_FOLDER}/${name}`, `${OLD_FOLDER}/${name.slice(0, -PACKAGE.length)}${OLD_PACKAGE}`]) {
+  for (const old of [`${OLD_FOLDER}/${named}`, `${OLD_FOLDER}/${named.slice(0, -PACKAGE.length)}${OLD_PACKAGE}`]) {
     try {
       const there = await getContents(configOf(at.host), at.owner, at.repo, old, { token: account.token })
-      if (!Array.isArray(there)) await deleteContents(configOf(at.host), at.owner, at.repo, old, { sha: there.sha, message: `Trabajo de ${person}`, token: account.token })
+      const message = quiet ? SHELF : `Trabajo de ${person}`
+      if (!Array.isArray(there)) await deleteContents(configOf(at.host), at.owner, at.repo, old, { sha: there.sha, message, token: account.token })
     } catch {
       /* none there, or it stays: bringing it in twice brings nothing new */
     }
@@ -547,20 +730,27 @@ export async function leaveWork(account: Door43Account, to: Destination, text: s
   return { path: name, state: 'written' }
 }
 
-/** The work the others left (this phone's own left out), each one's text; none yet, when nobody left any. */
+/**
+ * The work the others left (this phone's own left out), each one's text; none yet, when nobody left any. Named or
+ * not, gzipped or not (an earlier Servos's), all of it is read.
+ */
 export async function workLeft(account: Door43Account, to: Destination, device: string): Promise<Array<{ path: string; text: string }>> {
-  const at = workRepoOf(to)
-  const isPackage = (name: string) => name.endsWith(PACKAGE) || name.endsWith(OLD_PACKAGE)
-  const mine = (name: string) => name.endsWith(`-${device}${PACKAGE}`) || name.endsWith(`-${device}${OLD_PACKAGE}`)
+  const at = await workRepoAt(account, to, 'abierto', false)
+  if (!at) return []
+  const isPackage = (name: string) => name.endsWith(PACKAGE) || name.endsWith(OLD_PACKAGE) || QUIET.test(name)
+  const phone = `${await phonePart(to, device)}-`
+  const mine = (name: string) =>
+    name.endsWith(`-${device}${PACKAGE}`) || name.endsWith(`-${device}${OLD_PACKAGE}`) || (QUIET.test(name) && name.startsWith(phone))
   const out: Array<{ path: string; text: string }> = []
-  const read = async (name: string, bytes: Uint8Array) => (name.endsWith(PACKAGE) ? gunzipped(bytes) : new TextDecoder().decode(bytes))
+  const gzip = (bytes: Uint8Array) => bytes[0] === 0x1f && bytes[1] === 0x8b
+  const read = async (bytes: Uint8Array) => (gzip(bytes) ? gunzipped(bytes) : new TextDecoder().decode(bytes))
   // On the shelf.
   const shelf = await shelfOf(account, at)
   if (shelf) {
     for (const a of (await call<Asset[]>(account, at, `/releases/${shelf.id}/assets`)).filter((x) => isPackage(x.name) && !mine(x.name))) {
       const res = await fetch(a.browser_download_url, { headers: { Authorization: `token ${account.token}` } })
       if (!res.ok) throw new DcsApiError(`Could not bring ${a.name}`, res.status)
-      out.push({ path: a.name, text: await read(a.name, new Uint8Array(await res.arrayBuffer())) })
+      out.push({ path: a.name, text: await read(new Uint8Array(await res.arrayBuffer())) })
     }
   }
   // Left by an earlier Servos as files of the repository.
@@ -575,7 +765,7 @@ export async function workLeft(account: Door43Account, to: Destination, device: 
     const got = await getContents(config, at.owner, at.repo, x.path, { token: account.token })
     if (Array.isArray(got)) continue
     const bytes = got.content ? fromBase64(got.content.replace(/\s/g, '')) : await rawBytes(account, at, x.path)
-    out.push({ path: x.path, text: await read(x.name, bytes) })
+    out.push({ path: x.path, text: await read(bytes) })
   }
   return out
 }

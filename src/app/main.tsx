@@ -5,6 +5,7 @@ import { keepAppOffline } from './frame/appUpdate'
 import { KeepGoing, LastResort } from './frame/Crashed'
 import { keepBrowserMenuToText, receiveOpenedFiles } from './frame/desktop'
 import { followTheme, keepBackButton, receiveArrivingFiles } from './frame/phone'
+import { guardDoor43 } from './frame/door43Pins'
 import { applyTheme, themeOf } from './frame/theme'
 import { moveAlignmentsIn, moveBooksToProjects, openBooks } from './projects/bookText'
 import { openLibrary } from './projects/library'
@@ -33,6 +34,8 @@ keepBrowserMenuToText()
 // In the app for phones: a file opened with Servos or shared to it goes to be received, and the back button goes back.
 receiveArrivingFiles()
 keepBackButton()
+// On the phone, Door43 is reached only with one of its own certificates (philosophy, principle 9).
+guardDoor43()
 // …and the phone's bars write in the colour the app's ground wants, whatever theme the person chose.
 followTheme()
 

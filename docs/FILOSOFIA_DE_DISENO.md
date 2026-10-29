@@ -61,7 +61,7 @@ Lo normal no se anuncia. Un aviso aparece cuando hay algo que hacer o algo sali�
 
 ### 8. Honestidad, también sin internet
 
-- **Lo que está en el aparato no es lo que está en Door43.** «Guardado en este teléfono» y «Subido a Door43» son dos estados distintos, y la app dice cuál es.
+- **Lo que está en el aparato no es lo que está en Door43.** «Guardado en este teléfono» y «Subido a Door43» son dos estados distintos, y la app dice cuál es. Lo que la persona pidió subir y espera internet se dice en Inicio, en una línea tranquila bajo «Siga donde quedó» (Abel, 26 de octubre): pedido y fuera de la vista, era fácil creer que ya se había subido.
 - **No está aquí no es lo mismo que no existe.** Un recurso que no vino en el paquete se muestra como «no está en este aparato», con cómo conseguirlo, y no como si no hubiera.
 - **Quién hizo cada cambio.** En un aparato compartido, siempre se ve quién está trabajando, y cada cambio lleva su nombre (diseño, sección 5).
 - **Un número que baja dice por qué.**
@@ -84,6 +84,21 @@ Lo normal no se anuncia. Un aviso aparece cuando hay algo que hacer o algo sali�
 - **Cada proyecto elige quién puede ver su trabajo**, al crearlo: «Solo el equipo» (elegido de entrada) o «Cualquiera
   que tenga el archivo». La mayoría de los equipos no necesita lo primero, y no se le impone. La elección viaja con
   el proyecto y, al juntar, queda la más reservada; cerrarlo es un toque, abrirlo pide confirmar.
+- **Una copia en Door43, con internet y sin pedirla cada vez** (Abel, 26 de octubre). Un teléfono perdido se llevaba
+  lo que nadie había dejado en Door43 a mano. Ahora el trabajo de cada persona va solo a Door43 cuando hay internet
+  (solo con wifi, si la persona no dice «También con datos»), unos minutos después de un cambio y nunca mientras
+  escribe; Inicio no dice nada mientras funciona, y solo después de días de fallar dice qué hacer. Como va sin
+  preguntar, **se consiente una vez, sabiendo lo que implica, al prenderla**: en «Copia de su trabajo» (la cuenta de
+  Door43) cada proyecto tiene su interruptor, prendido de entrada en los abiertos a quien tenga el archivo y apagado
+  en los de «Solo el equipo». Junto a este, antes de tocarlo, la app dice cómo va: «Va sellada con la contraseña del
+  equipo: solo el equipo puede abrirla. Quien vea su red puede saber que este teléfono se conecta a Door43, pero no lo
+  que manda». Sin esa contraseña en el teléfono, espera y la pide ahí: nunca se manda abierta.
+- **La app no promete una red segura.** Pensamos en comprobar si la red es segura antes de mandar algo, y no se puede:
+  ninguna app sabe quién mira una red. Lo que sí hace es proteger lo que manda: va sellado con la contraseña del
+  equipo, y en el teléfono Door43 se reconoce por su certificado (los que la app lleva, con respaldos, renovados con
+  cada versión); si una red pone otro en el medio, no se manda nada y se dice: «Hoy no se mandó nada: en esta red no
+  se pudo comprobar que era Door43. Su trabajo sigue en este teléfono». Y dice con claridad lo que no puede ocultar:
+  que el teléfono se conecta a Door43.
 - **Se habla solo de quién puede ver el trabajo.** Nunca «riesgo», «peligro» ni «prohibido»: asustaría a quienes no
   están en esa situación, y diría en la pantalla de los demás lo que conviene no decir (una prueba lo vigila).
 
@@ -101,6 +116,13 @@ Lo que se aprende en una mini app sirve en la siguiente, y una mini app nueva no
 
 - **Toques de 44 px** como mínimo. Lo que se arrastra (las palabras al alinear) se prueba aparte, en un teléfono.
 - **Ningún icono sin palabra.** En el teléfono no hay texto al pasar el ratón, y una palabra se puede traducir; un icono suelto no dice qué hace.
+- **Una lista que no se ve entera no es una fila que se desliza** (Abel, 26 de octubre). Los cinco pasos del libro
+  iban en una fila de píldoras que, a 375 px, cortaba «Comunidad» y dejaba «Publicar» fuera de la vista. Ahora el
+  libro abre con la mini app donde la persona quedó («Siga donde quedó», su botón lleno) y debajo los cinco pasos,
+  una fila cada uno con su dibujo, su nombre y su avance; cada paso se abre en su pantalla, que dice para qué sirve.
+  Los dibujos (`StepIcon`) son de la familia de la marca, en musgo sobre un cuadro teñido y siempre junto a su
+  nombre: una lupa, un lápiz que escribe, una lista con un visto, un grupo de personas, una flecha que sube. El libro
+  abierto no se usa: es la marca.
 - **Tocar, no pasar el ratón.** Lo que en tC4 se marca al pasar por encima, aquí se marca al tocar.
 - **Tocar antes que escribir.** Si el texto ya existe, se ofrece en trozos para tocar; el teclado es el último recurso.
 - **Nada escondido sin que se note.** Una pestaña dice cuánto hay dentro («Notas 3»).
@@ -117,13 +139,13 @@ acción toma la forma de su papel:
 | Lo principal | Botón lleno, uno por pantalla | «Continuar», «Sí, se entiende bien» |
 | Una alternativa que hace algo | Botón con borde, del ancho del lleno, debajo de él | «Dejar este para después», «Elegir otro archivo» |
 | Salir o cancelar, sin hacer nada | El «‹» del encabezado o «Cerrar» de la hoja; sin botón propio | Terminar de recibir, dejar una hoja |
-| Abrir algo más | Fila de ancho completo con su flecha: › abre una hoja u otro lugar, ▾ despliega aquí y gira al abrir | «Por capítulo», «Leer el artículo», los pliegues |
+| Abrir algo más | Fila de ancho completo con su flecha: › abre una hoja u otro lugar, ▾ despliega aquí y gira al abrir | «Por capítulo», «Leer el artículo», los pasos del libro, los pliegues |
 | Actuar sobre una cosa | Chip pegado a la cosa: borde, verbo y su signo (✎, +) | «✎ Cambiar», «+ Agregar al glosario», «↶ Deshacer» |
 | Lo que la app sugiere una vez | Tarjeta neutra, debajo de lo que sigue, con su acción y «Ahora no» | «¿Cómo se dice «Jonás» en kichwa?» |
 | Pasar el libro de paso | Botón con borde al pie del paso, con una línea que dice qué cambia | «Terminar Traducción y pasar a Revisión» |
 | Moverse en una lista | Dos cuadrados teñidos de 44 px, de esquinas redondeadas (como las flechas de tC4), sin borde, con la posición en medio. Lo que comparte su barra (el filtro, «Listo») toma las mismas esquinas, sin borde | «‹ 2 de 5 ›» |
 | Ver una cosa u otra de un panel | Pestañas con una línea bajo la abierta (como las ayudas de tC4) | Su traducción · TPL · TPS · Hebreo · Ayudas |
-| Elegir entre pocas, una a la vez | Píldoras sobre un riel hundido; la elegida, levantada (como el interruptor de modo de tC4) | Glosario · Notas · Preguntas; los pasos del libro |
+| Elegir entre pocas, una a la vez | Píldoras sobre un riel hundido; la elegida, levantada (como el interruptor de modo de tC4) | Glosario · Notas · Preguntas |
 | Algo que no se deshace | Botón con borde rojo | «Desvincular de este teléfono» |
 
 - **Chip no es etiqueta.** El chip hace algo: tiene borde, un verbo y su signo. La etiqueta dice un estado: va teñida,
@@ -204,7 +226,8 @@ medida es tC4: una ventana ancha, ratón y teclado, columnas a los lados y el te
   de posición abajo. Desde 900 px, dos columnas: lo que se lee y lo que se escribe. Desde 1280 px, también la columna de
   las ayudas, como en tC4. Una ventana angosta en la computadora se ve como el teléfono, y está bien.
 - **Lo que en el teléfono es una hoja, en la ventana ancha es una columna o un cuadro.** La lista de un revisor va en una
-  columna a la izquierda desde 1280 px (antes, en un cuadro); las ayudas, a la derecha. Lo que sigue siendo una hoja (compartir, un artículo, elegir un
+  columna a la izquierda desde 1280 px (antes, en un cuadro); las ayudas, a la derecha. Los pasos del libro van en una
+  columna a la izquierda desde 900 px, con el paso elegido a su lado (al entrar, el de la última mini app usada). Lo que sigue siendo una hoja (compartir, un artículo, elegir un
   libro) se abre como un cuadro en medio de la ventana, nunca pegado al pie. «Más» y el menú de la persona se abren bajo
   su botón.
 - **Anchos de lectura, no de ventana.** Un renglón de texto no pasa de unos 70 caracteres; un formulario, de unos 40rem.

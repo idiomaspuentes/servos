@@ -30,8 +30,28 @@ export function whenCopied(at: string, lang: string): string {
   return today ? hour : `${d.toLocaleDateString(lang, { day: 'numeric', month: 'short' })} ${hour}`
 }
 
-/** The team's password of a project kept to its team, chosen or typed here once, so its copies can be sealed. */
-function TeamPassword({ id, name, person }: { id: string; name: string; person: string }) {
+/**
+ * The team's password of a project kept to its team, chosen or typed here once, so its copies can be sealed (on the
+ * memory card, or on Door43: `then`), and so can the work left for the team (`said`, `working`: what it is asked for;
+ * `onNotNow`: it can be left for later, beside the button that uses it).
+ */
+export function TeamPassword({
+  id,
+  name,
+  person,
+  said,
+  working: workingLabel,
+  onNotNow,
+  then = () => copyNow(person),
+}: {
+  id: string
+  name: string
+  person: string
+  said?: string
+  working?: string
+  onNotNow?(): void
+  then?(): Promise<void>
+}) {
   const t = useT()
   const [password, setPassword] = useState('')
   const [again, setAgain] = useState('')
@@ -48,11 +68,11 @@ function TeamPassword({ id, name, person }: { id: string; name: string; person: 
         await chooseTeamPassword(id, password)
         setPassword('')
         setAgain('')
-        await copyNow(person)
+        await then()
         setWorking(false)
       }}
     >
-      <p>{t('copias.faltaContrasena', { proyecto: name })}</p>
+      <p>{said ?? t('copias.faltaContrasena', { proyecto: name })}</p>
       <label className="field">
         <span className="field-label">{t('compartir.contrasenaEquipo')}</span>
         <input type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
@@ -64,9 +84,16 @@ function TeamPassword({ id, name, person }: { id: string; name: string; person: 
         {differ && <span className="field-problem">{t('copias.noIguales')}</span>}
       </label>
       <p className="quiet">{t('compartir.contrasenaAyuda')}</p>
-      <button type="submit" className="button-secondary" disabled={password.length < SHORTEST || again !== password || working}>
-        {working ? t('copias.copiando') : t('copias.guardarContrasena')}
-      </button>
+      <div className="copies-confirm-actions">
+        <button type="submit" className="button-secondary" disabled={password.length < SHORTEST || again !== password || working}>
+          {working ? (workingLabel ?? t('copias.copiando')) : t('copias.guardarContrasena')}
+        </button>
+        {onNotNow && (
+          <button type="button" className="button-quiet" disabled={working} onClick={onNotNow}>
+            {t('marco.ahoraNo')}
+          </button>
+        )}
+      </div>
     </form>
   )
 }
