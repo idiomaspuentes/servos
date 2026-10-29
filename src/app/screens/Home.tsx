@@ -16,9 +16,16 @@
  * Servos online (spec §2): new texts and helps for a project's language are offered in the same one place for a
  * suggestion, with their size, «Bajar» and «Ahora no»; while they come, a status line says how far; once applied, a
  * line that goes by itself says how many translated verses they changed (none, nothing said).
+ *
+ * What the person asked to send to Door43 and still waits for internet is said under the moss field, in one quiet line,
+ * every time home opens: asked and then out of sight, it was easy to believe it had gone (philosophy, principle 8). With
+ * internet, its chip opens the sheet that shows what goes and asks before it does.
  */
 
 import { useEffect, useState } from 'react'
+import { useOnline } from '../frame/online'
+import type { Errand } from '../projects/outbox'
+import { namesTogether } from '../projects/mix'
 import { Suggestion } from '../frame/Actions'
 import { BrandMark } from '../frame/BrandMark'
 import { answerSuggestion, cardInPhone, copiesHere, suggestionAnswered } from '../frame/copies'
@@ -28,6 +35,8 @@ import { useCopies } from './CopiesSheet'
 import { useLanguageLabel } from './NewProject'
 import { useI18n } from '../i18n/i18n'
 import { readGlossary } from '../projects/glossary'
+import { useDoor43Copy } from './Door43CopySection'
+import { failingLong } from '../frame/door43Copy'
 import { titleOf, type Phase, type Project } from '../projects/model'
 import { insideState, onInside } from '../projects/packsInside'
 import { doneSaid, percentOf, sizeIn } from '../projects/onlineWords'
@@ -56,6 +65,9 @@ export function Home({
   onGlossary,
   onPersonMenu,
   onCopies,
+  onDoor43,
+  waiting = [],
+  onSendWaiting,
 }: {
   projects: Project[]
   person: string
@@ -79,6 +91,12 @@ export function Home({
   onPersonMenu(): void
   /** Opens the copy on a memory card. */
   onCopies(): void
+  /** Opens the person's Door43 account (`relink`: forgets the key that no longer works, to link it again). */
+  onDoor43?(relink: boolean): void
+  /** What the person asked to send to Door43 that still waits for internet. */
+  waiting?: Errand[]
+  /** Opens the sheet that shows what waits and sends it when the person says so. */
+  onSendWaiting?(): void
 }) {
   const { t, language: lang } = useI18n()
   const languageLabel = useLanguageLabel()
@@ -96,6 +114,7 @@ export function Home({
     const gone = window.setTimeout(clearDone, DONE_SHOWN_MS)
     return () => window.clearTimeout(gone)
   }, [doneShown, net.done])
+  const door43Copy = useDoor43Copy(person)
   // A card in the phone and no copy yet: offered once, on home (philosophy, principles 9 and 12).
   const [card, setCard] = useState(false)
   const [answered, setAnswered] = useState(suggestionAnswered)
@@ -119,11 +138,44 @@ export function Home({
   const sizeOf = (p: Project) => `${p.languageName} (${p.languageCode}) · ${p.books.length === 1 ? t('inicio.unLibro') : t('inicio.libros', { n: p.books.length })}`
   const others = project ? project.books.filter((b) => b !== current) : []
   const words = project ? readGlossary(project.id).length : 0
+  const online = useOnline()
+  const waits = project ? waiting.filter((e) => e.projectId === project.id) : []
+  const waitLine = waits.length > 0 && (
+    <div className="status waiting-here" role="status">
+      <span>
+        {(online ? (que: string) => t('espera.pendiente', { que }) : (que: string) => t('espera.esperaInternet', { que }))(
+          namesTogether(
+            [...new Set(waits.map((e) => e.kind))].map((k) => t(`espera.que.${k}`)),
+            t('juntar.y')
+          )
+        )}
+      </span>
+      {online && onSendWaiting && (
+        <button type="button" className="chip" onClick={onSendWaiting}>
+          {t('inicio.esperaVer')}
+        </button>
+      )}
+    </div>
+  )
+
+  // The copy on Door43 failing for days (never sooner: principle 6), and what to do about it.
+  const relink = door43Copy.problem === 'signin' || door43Copy.problem === 'scope'
+  const door43Notice = onDoor43 && failingLong(door43Copy) && (
+    <section className="suggestion" role="status">
+      <p>{t('copiaDoor43.avisoInicio', { porque: door43Copy.problem === 'pin' ? t('copiaDoor43.avisoPin') : relink ? t('copiaDoor43.avisoVincular') : t(`door43.problema.${door43Copy.problem ?? 'other'}`) })}</p>
+      <div className="chip-row">
+        <button type="button" className="chip chip-action" onClick={() => onDoor43(relink)}>
+          {relink ? t('equipo.vincularOtraVez') : t('copiaDoor43.ver')}
+        </button>
+      </div>
+    </section>
+  )
 
   // The one place for a suggestion: a copy that failed first (something went wrong), then new texts and helps, then the
   // copy offered once.
   const suggestion =
-    copies.place && copies.failed ? (
+    door43Notice ||
+    (copies.place && copies.failed ? (
       // Said only when it fails (principle 6), once, under what continues the work.
       <section className="suggestion" role="status">
         <p>{t('copias.avisoInicio')}</p>
@@ -156,7 +208,7 @@ export function Home({
           }}
         />
       )
-    )
+    ))
 
   return (
     <div className="screen">
@@ -284,6 +336,7 @@ export function Home({
                   </button>
                 </section>
               )}
+              {waitLine}
               {suggestion}
               {current && (
                 <ul className="home-books">

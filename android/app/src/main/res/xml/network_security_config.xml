@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Door43 over a network that may be watched (philosophy, principle 9; design, section 8). Every request the app makes
+  to Door43 goes through Android (Door43Plugin.java, src/app/frame/door43Pins.ts), which accepts a certificate for
+  door43.org and its sub-domains only when its chain holds one of these keys: the authorities Door43's certificates
+  come from, and backups in case Door43 moves to another. A certificate a network puts in the middle (a proxy, a
+  certificate installed on the phone) holds none of them: nothing is sent, and the app says so.
+
+  Each pin is the SHA-256 of a certificate's public key (its SubjectPublicKeyInfo), in base 64:
+    openssl s_client -connect git.door43.org:443 -showcerts | openssl x509 -pubkey -noout \
+      | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | openssl enc -base64
+  (for each certificate of the chain; and from the authority's own published root for the backups).
+
+  To change them: add the new authority's key here and ship a new version of the app before Door43 moves, then take
+  the old one out a version later. The pins stop being enforced on the expiration date, so a phone that never gets a
+  new version is not cut off from Door43 for ever; the team's work it sends is sealed with the team's password all the
+  same. Checked on 26 October 2026 (git.door43.org and qa.door43.org: SSL.com; door43.org: Amazon).
+-->
+<network-security-config>
+    <domain-config>
+        <domain includeSubdomains="true">door43.org</domain>
+        <pin-set expiration="2030-12-31">
+            <!-- git.door43.org, qa.door43.org: SSL.com TLS Issuing RSA CA R1, and its root, SSL.com TLS RSA Root CA 2022 -->
+            <pin digest="SHA-256">0FKBVxnyd4Jq8v8ST+3sjO+WoB7PLBEpSdixbHE1L4g=</pin>
+            <pin digest="SHA-256">K89VOmb1cJAN3TK6bf4ezAbJGC1mLcG2Dh97dnwr3VQ=</pin>
+            <!-- door43.org: Amazon RSA 2048 M04, and its root, Amazon Root CA 1 -->
+            <pin digest="SHA-256">G9LNNAql897egYsabashkzUCTEJkWBzgoEtk8X/678c=</pin>
+            <pin digest="SHA-256">++MBgDH5WGvL9Bcn5Be30cRcL0f5O+NyoXuWtQdX1aI=</pin>
+            <!-- Backups: SSL.com's other roots (TLS ECC Root CA 2022, Root Certification Authority RSA and ECC) -->
+            <pin digest="SHA-256">G/ANXI8TwJTdF+AFBM8IiIUPEv0Gf6H5LA/b9guG4yE=</pin>
+            <pin digest="SHA-256">0cRTd+vc1hjNFlHcLgLCHXUeWqn80bNDH/bs9qMTSPo=</pin>
+            <pin digest="SHA-256">oyD01TTXvpfBro3QSZc1vIlcMjrdLTiL/M9mLCPX+Zo=</pin>
+            <!-- Backups: Amazon's other roots (Root CA 2, 3 and 4) -->
+            <pin digest="SHA-256">f0KW/FtqTjs108NpYj42SrGvOB2PpxIVM8nWxjPqJGE=</pin>
+            <pin digest="SHA-256">NqvDJlas/GRcYbcWE8S/IceH9cq77kg0jVhZeAPXq8k=</pin>
+            <pin digest="SHA-256">9+ze1cZgR9KO1kZrVDxA4HQ6voHRCSVNz4RdTCx4U8U=</pin>
+            <!-- Backups: Let's Encrypt (ISRG Root X1 and X2), should Door43 move there -->
+            <pin digest="SHA-256">C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M=</pin>
+            <pin digest="SHA-256">diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI=</pin>
+        </pin-set>
+    </domain-config>
+</network-security-config>

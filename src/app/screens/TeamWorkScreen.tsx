@@ -11,14 +11,20 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useOnline, useWaiting } from '../frame/online'
 import { DestinationForm } from '../miniapps/publicar/publicar'
 import { useT } from '../i18n/i18n'
-import { accountOf, destinationOf, forgetAccount, leaveWork, organizationsOf, problemOf, proposedRepo, setDestination, workLeft, workRepoOf, type Problem } from '../projects/door43'
+import { accountOf, destinationOf, forgetAccount, leaveWork, ownsOrg, problemOf, proposedOrg, proposedRepo, setDestination, workLeft, workRepoOf, type Problem } from '../projects/door43'
 import { namesTogether } from '../projects/mix'
 import { ask, drop, settle } from '../projects/outbox'
-import { bookName, type Project } from '../projects/model'
+import { bookName, privacyOf, type Project } from '../projects/model'
 import { inProject } from '../projects/scope'
-import { previewBook, readShared, receiveShared, shareProject, withSounds, type BookPreview, type SharedFile } from '../projects/share'
+import { previewBook, readShared, receiveShared, type BookPreview, type SharedFile } from '../projects/share'
 import { deviceId } from '../projects/work'
+import { waitsForTeamPassword, workToLeave } from '../projects/workToLeave'
+import { lockedKind } from '../projects/lockedCopy'
+import { openWithTeamKeys } from '../projects/teamKeys'
+import { TeamPassword } from './CopiesSheet'
 import { Door43AccountSheet } from './Door43Account'
+import { AddToOrgSheet } from './TeamOrg'
+import { RowButton } from '../frame/Actions'
 
 type Found = { file: SharedFile; previews: BookPreview[] }
 
@@ -29,6 +35,7 @@ export function TeamWorkScreen({
   title,
   person,
   bringNow = false,
+  askPassword = false,
   onBack,
   onReceived,
   onGather,
@@ -42,6 +49,8 @@ export function TeamWorkScreen({
   person: string
   /** Opened to bring in at once (the person said yes to it when internet came back). */
   bringNow?: boolean
+  /** Opened to type the team's password, which the work left for the team waits for. */
+  askPassword?: boolean
   onBack(): void
   onReceived(projects: Project[]): void
   /** Goes to bring together what came written another way. */
@@ -56,12 +65,27 @@ export function TeamWorkScreen({
   const [busy, setBusy] = useState<'trayendo' | 'dejando' | null>(null)
   const [found, setFound] = useState<Found[] | null>(null)
   const [left, setLeft] = useState(false)
+  // Work the others left sealed with a team password this phone does not know.
+  const [sealed, setSealed] = useState(0)
   const [problem, setProblem] = useState<Problem | null>(null)
+  // Leaving was asked for a project kept to its team whose password this phone does not know: it is asked for here.
+  const [password, setPassword] = useState(askPassword)
   const [done, setDone] = useState<{ names: string[]; choices: number; takes: number } | null>(null)
   // Tried with the phone saying it was online, and Door43 could not be reached: it waits all the same.
   const [unreached, setUnreached] = useState(false)
   const online = useOnline()
   const waits = useWaiting(person).filter((e) => e.projectId === project.id && (e.kind === 'dejar' || e.kind === 'traer'))
+  // Whoever owns the team's organization adds people to it from here; known only with internet, else not offered.
+  const [owner, setOwner] = useState(false)
+  const [adding, setAdding] = useState(false)
+  useEffect(() => {
+    if (!account || !to || !online) return
+    let live = true
+    void ownsOrg(account, to.owner).then((yes) => live && setOwner(yes))
+    return () => {
+      live = false
+    }
+  }, [account, to, online])
   // Once, though the screen be drawn twice as it opens.
   const brought = useRef(false)
   useEffect(() => {
@@ -123,13 +147,11 @@ export function TeamWorkScreen({
     return screen(
       <>
         <DestinationForm
-          host={account.host}
+          account={account}
           proposed={{ host: account.host, owner: '', repo: proposedRepo(project) }}
-          organizations={() => organizationsOf(account)}
-          projectName={project.name}
+          newOrg={proposedOrg(project)}
+          teamOnly={privacyOf(project) === 'equipo'}
           saveLabel={t('equipo.guardarAhi')}
-          heading={t('equipo.dondePregunta')}
-          help={t('equipo.dondeAyuda')}
           onSave={(d) => {
             setDestination(project.id, d)
             setTo(d)
@@ -139,7 +161,7 @@ export function TeamWorkScreen({
     )
   }
 
-  const work = workRepoOf(to)
+  const work = workRepoOf(to, privacyOf(project))
   // Kept to go when there is internet.
   const later = (kind: 'dejar' | 'traer', tried: boolean) => {
     ask({ kind, projectId: project.id, person, book })
@@ -159,7 +181,11 @@ export function TeamWorkScreen({
     setProblem(null)
     setUnreached(false)
     try {
-      const files = (await workLeft(account, to, deviceId())).map((x) => readShared(x.text)).filter((f): f is SharedFile => Boolean(f))
+      // What the others left sealed with the team's password (a project kept to its team) opens with the key kept here.
+      const left = await workLeft(account, to, deviceId())
+      const texts = await Promise.all(left.map(async (x) => (lockedKind(x.text) === 'compartido' ? openWithTeamKeys(x.text) : x.text)))
+      setSealed(texts.filter((x) => x === null).length)
+      const files = texts.map((x) => (x === null ? null : readShared(x))).filter((f): f is SharedFile => Boolean(f))
       settle('traer', project.id, person)
       setFound(
         inProject(project.id, () =>
@@ -175,14 +201,21 @@ export function TeamWorkScreen({
     }
   }
   const leave = async () => {
+    // A project kept to its team goes sealed with the team's password, or not at all: without it, it is asked for
+    // first, with internet or without (an errand kept without it would only wait for it).
+    if (await waitsForTeamPassword(project)) return setPassword(true)
     if (!online) return later('dejar', false)
     setBusy('dejando')
     setProblem(null)
     setUnreached(false)
     try {
       // With the sound of every take: the shelf replaces it in place, so recording again does not pile up versions.
-      const file = await withSounds(shareProject(project, project.books.map((b) => b.code), person))
-      const result = await leaveWork(account, to, JSON.stringify(file), person, deviceId())
+      const work = await workToLeave(project, person)
+      if (!work) {
+        setPassword(true)
+        return setBusy(null)
+      }
+      const result = await leaveWork(account, to, work.text, person, deviceId(), privacyOf(project))
       if (result.state === 'failed' && result.problem === 'offline') return later('dejar', true)
       if (result.state === 'failed') setProblem(result.problem ?? 'other')
       else {
@@ -245,7 +278,8 @@ export function TeamWorkScreen({
     <>
       <p className="quiet">{t('equipo.que', { repo: `${work.owner}/${work.repo}` })}</p>
       {inPage && <p className="status">{t('equipo.enLaPagina')}</p>}
-      {found && found.length === 0 && <p>{t('equipo.nadie')}</p>}
+      {found && found.length === 0 && !sealed && <p>{t('equipo.nadie')}</p>}
+      {sealed > 0 && <p className="status">{t('equipo.sellado', { n: sealed })}</p>}
       {found && found.length > 0 && (
         <ul className="receive-books">
           {found.map(({ file, previews }) => (
@@ -281,6 +315,21 @@ export function TeamWorkScreen({
           )}
         </div>
       )}
+      {password && (
+        // The one thing on the screen while it is asked: bringing and leaving come back once it is used, or not now.
+        <TeamPassword
+          id={project.id}
+          name={project.name}
+          person={person}
+          said={t('equipo.faltaContrasena', { proyecto: project.name })}
+          working={t('equipo.dejando')}
+          onNotNow={() => setPassword(false)}
+          then={async () => {
+            setPassword(false)
+            await leave()
+          }}
+        />
+      )}
       {left && (
         <p className="status" role="status">
           ✓ {t('equipo.dejado')}
@@ -303,7 +352,7 @@ export function TeamWorkScreen({
         </div>
       )}
       {!online && !waits.length && <p className="status">{t('equipo.sinInternet')}</p>}
-      {found && anyNew ? (
+      {password ? null : found && anyNew ? (
         <button type="button" className="button-primary" onClick={receiveAll}>
           {t('equipo.recibirTodo')}
         </button>
@@ -314,12 +363,18 @@ export function TeamWorkScreen({
           </button>
         )
       )}
-      {(online || !waitsFor('dejar')) && (
+      {!password && (online || !waitsFor('dejar')) && (
         <button type="button" className="button-secondary" disabled={busy !== null} onClick={leave}>
           {busy === 'dejando' ? t('equipo.dejando') : online ? t('equipo.dejar') : t('equipo.dejarLuego')}
         </button>
       )}
+      {owner && online && (
+        <div className="team-more">
+          <RowButton label={t('org.agregarFila', { org: to.owner })} onClick={() => setAdding(true)} />
+        </div>
+      )}
       <p className="quiet">{t('equipo.cuenta', { usuario: account.username })}</p>
+      {adding && <AddToOrgSheet account={account} org={to.owner} onClose={() => setAdding(false)} />}
     </>
   )
 }

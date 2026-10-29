@@ -32,6 +32,19 @@ export function RowButton({
 }
 
 /**
+ * Something switched on or off and left so (a copy made by itself): the words, and at their end the switch, the whole
+ * row to touch. Not a choice between two (those are pills), and not an action (that is a button).
+ */
+export function Switch({ label, on, onChange }: { label: ReactNode; on: boolean; onChange(on: boolean): void }) {
+  return (
+    <button type="button" role="switch" aria-checked={on} className="switch-row" onClick={() => onChange(!on)}>
+      <span className="switch-label">{label}</span>
+      <span className="switch" aria-hidden="true" />
+    </button>
+  )
+}
+
+/**
  * Something the app suggests doing once (naming the book): a neutral card under what continues the work, with its
  * action and «Not now». One a screen; what it offers stays reachable in «More».
  */

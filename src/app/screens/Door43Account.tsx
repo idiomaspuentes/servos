@@ -8,7 +8,9 @@
 import { useState } from 'react'
 import { Sheet } from '../frame/Sheet'
 import { useT } from '../i18n/i18n'
-import { HOSTS, accountOf, defaultHost, forgetAccount, hostName, problemOf, signIn, signInWithToken, type Door43Account } from '../projects/door43'
+import { Door43CopySection } from './Door43CopySection'
+import { forgetDoor43Prints } from '../frame/door43Copy'
+import { HOSTS, accountOf, defaultHost, forgetAccount, hostName, problemOf, signIn, signInWithToken, signUpUrl, type Door43Account } from '../projects/door43'
 
 export function Door43AccountSheet({
   person,
@@ -38,6 +40,8 @@ export function Door43AccountSheet({
     try {
       const linked = withToken ? await signInWithToken(person, host, token) : await signIn(person, host, username, password)
       setPassword('')
+      // Linked again: the copy on Door43 starts over, and what kept it failing is forgotten.
+      forgetDoor43Prints(person)
       setAccount(linked)
       onLinked?.(linked)
     } catch (e) {
@@ -52,6 +56,7 @@ export function Door43AccountSheet({
       {account ? (
         <div className="glossary-form">
           <p className="status">{t('door43.vinculada', { usuario: account.username, donde: t(`door43.host.${hostName(account.host)}`) })}</p>
+          <Door43CopySection person={person} />
           <button
             type="button"
             className="button-secondary button-danger"
@@ -71,6 +76,8 @@ export function Door43AccountSheet({
             void link()
           }}
         >
+          {/* Many who link have never heard of Door43: what it is, said once, before anything is asked. */}
+          <p>{t('door43.queEs')}</p>
           {/* Only one Door43 for most people: nothing to choose, nothing said. */}
           {HOSTS.length > 1 && (
             <fieldset className="field">
@@ -114,6 +121,14 @@ export function Door43AccountSheet({
           <button type="button" className="button-secondary" onClick={() => setWithToken((w) => !w)}>
             {t(withToken ? 'door43.conContrasena' : 'door43.conLlave')}
           </button>
+          {/* No account yet: it is made on Door43 itself, in the browser (nothing of it inside the app), and linked here after. */}
+          <div className="door43-new">
+            <p className="field-label">{t('door43.sinCuenta')}</p>
+            <a className="button-secondary" href={signUpUrl(host)} target="_blank" rel="noreferrer">
+              {t('door43.crearCuenta')} ›
+            </a>
+            <p className="quiet">{t('door43.crearCuentaAyuda')}</p>
+          </div>
         </form>
       )}
     </Sheet>

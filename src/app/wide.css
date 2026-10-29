@@ -45,6 +45,10 @@
   .review-next { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
   .review-next .review-hint { flex-basis: 100%; text-align: start; }
   .review-other-answers { flex-direction: row; flex-wrap: wrap; }
+  /* The way on and «Not now» side by side, as wide as what they say */
+  :is(.waiting-actions, .copies-confirm-actions) { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  :is(.waiting-actions, .copies-confirm-actions) > .button-quiet { width: auto; padding-inline: 1rem; }
+  .waiting-actions > p { flex-basis: 100%; }
   /* From the third step of a check, what was read stays in a column beside what is done */
   .review:has(.review-beside) .review-scroll { --column: 72rem; }
   /* The way on under the column where it is decided, not under what was read */
@@ -237,7 +241,29 @@
 @media (min-width: 900px) {
   .screen.welcome { display: flex; flex-direction: column; justify-content: center; }
   .welcome .main { padding-block: 2rem; }
-  .book-steps { width: fit-content; max-width: 100%; }
+  /* The book: its steps a column at the left, as home's projects, the one shown tinted; the step beside it */
+  .book-layout { display: grid; grid-template-columns: 20rem minmax(0, 36rem); align-items: start; gap: 1rem 2.5rem; }
+  .book-layout > .book-steps {
+    position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--touch) + 2rem + 1px);
+    display: flex; flex-direction: column; gap: 0.2rem; overflow: visible; background: none; box-shadow: none; border-radius: 0;
+  }
+  /* Each step's name on one line, in every language; how far it has gone under it, so a long name is not cut by it */
+  .book-layout .book-step {
+    display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: 'icon name' 'icon meta'; align-items: center;
+    column-gap: 0.65rem; min-height: var(--touch); padding: 0.4rem 0.6rem; border: 0; border-radius: var(--radius);
+  }
+  .book-layout .book-step-icon { grid-area: icon; }
+  .book-layout .book-step-name { grid-area: name; }
+  .book-layout .book-step-state { grid-area: meta; font-size: 0.8rem; }
+  .book-layout .book-step-state:empty { display: none; }
+  .book-layout .book-step::after { content: none; }
+  .book-layout .book-step-icon { width: 2rem; height: 2rem; border-radius: 8px; }
+  .book-layout .step-icon { width: 1.25rem; height: 1.25rem; }
+  .book-layout .book-step[aria-current] .book-step-icon { background: var(--surface); }
+  .book-layout .book-step[aria-current] { background: var(--accent-soft); }
+  .book-layout .book-step[aria-current] .book-step-name { font-weight: 700; }
+  .book-step-body { display: flex; flex-direction: column; gap: 0.75rem; min-width: 0; }
+  .book-step-title { margin: 0; font-size: 1.45rem; line-height: 1.15; font-weight: 800; }
   .step-note { text-align: start; }
 }
 @media (min-width: 1280px) {
@@ -259,9 +285,8 @@
   .home-current > * { grid-column: 1; }
   .home-current > .button-primary { grid-column: 2; grid-row: 1 / span 6; align-self: center; min-width: 0; margin: 0; }
 
-  .screen:has(.book-steps) { max-width: 64rem; }
+  .screen:has(.book-layout) { max-width: 64rem; }
   .main > :is(.tool-cards, .suggestion, .book-choose, .download-progress) { max-width: 34rem; }
-  .tool-columns { display: grid; grid-template-columns: minmax(0, 34rem) minmax(0, 1fr); align-items: start; gap: 1rem 1.5rem; }
 }
 
 /* With a mouse, what acts shows it: everything that can be done takes a tone under the pointer (styles.css gives it to
@@ -270,7 +295,7 @@
 @media (hover: hover) and (pointer: fine) {
   .button-quiet:not(:disabled):hover, .position-label:hover { background-color: color-mix(in srgb, var(--text) 7%, transparent); }
   .pager-arrow:not(:disabled):hover { background-color: color-mix(in srgb, var(--accent) 22%, var(--accent-soft)); }
-  :is(.helps-tab:not([aria-selected='true']), .book-step:not([aria-selected='true']), .choice-row > .choice:not(.is-on),
+  :is(.helps-tab:not([aria-selected='true']), .choice-row > .choice:not(.is-on),
     .unit-switch-option:not([aria-checked='true']), .review-quote-switch button:not([aria-checked='true'])):hover {
     color: var(--text); background-color: color-mix(in srgb, var(--pill) 55%, transparent);
   }
