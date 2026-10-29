@@ -45,6 +45,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(FilesPlugin.class);
         registerPlugin(CopiesPlugin.class);
         registerPlugin(WindowPlugin.class);
+        registerPlugin(Door43Plugin.class);
         super.onCreate(savedInstanceState);
         // The recent apps show an empty card for Servos, not the verse being translated (philosophy, principle 9).
         // Screenshots still work; Android 12 and older have no such switch.

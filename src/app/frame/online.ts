@@ -32,29 +32,52 @@ export function useWaiting(person: string): Errand[] {
   return list
 }
 
-/** Runs something once nothing is being typed: a sheet that comes up must not take the keyboard from a sentence. */
-export function whenNotTyping(run: () => void): () => void {
-  const typing = () => {
-    const el = document.activeElement as HTMLElement | null
-    return Boolean(el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)))
-  }
-  if (!typing()) {
+/** What `whenNotTyping` looks at: the page's document unless given (tests). */
+type TypingDoc = Pick<Document, 'addEventListener' | 'removeEventListener' | 'activeElement' | 'visibilityState'>
+
+/** The page's document; none outside a browser (then nothing is ever being typed). */
+const page = (): TypingDoc | null => (typeof document === 'undefined' ? null : document)
+
+/** Whether something is being typed: a field or an editable text has the focus. */
+export function isTyping(doc: Pick<Document, 'activeElement'> | null = page()): boolean {
+  const el = doc?.activeElement as HTMLElement | null | undefined
+  return Boolean(el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)))
+}
+
+/** How often it looks again by itself: a field taken out of the page sends no `focusout`. */
+const LOOK_AGAIN_MS = 2000
+
+/**
+ * Runs something once nothing is being typed: a sheet that comes up must not take the keyboard from a sentence. It
+ * looks again when the focus leaves a field, when the app comes back into view, and every two seconds meanwhile: a
+ * focused field the page removes sends no `focusout`, and would otherwise hold it for ever.
+ */
+export function whenNotTyping(run: () => void, doc: TypingDoc | null = page()): () => void {
+  if (!doc || !isTyping(doc)) {
     run()
     return () => {}
   }
   let timer: ReturnType<typeof setTimeout> | undefined
+  let finished = false
+  const stop = () => {
+    finished = true
+    clearTimeout(timer)
+    clearInterval(every)
+    doc.removeEventListener('focusout', left)
+    doc.removeEventListener('visibilitychange', look)
+  }
+  const look = () => {
+    if (finished || isTyping(doc)) return
+    stop()
+    run()
+  }
   const left = () => {
     clearTimeout(timer)
     // Focus may only be moving to the next field.
-    timer = setTimeout(() => {
-      if (typing()) return
-      document.removeEventListener('focusout', left)
-      run()
-    }, 300)
+    timer = setTimeout(look, 300)
   }
-  document.addEventListener('focusout', left)
-  return () => {
-    clearTimeout(timer)
-    document.removeEventListener('focusout', left)
-  }
+  const every = setInterval(look, LOOK_AGAIN_MS)
+  doc.addEventListener('focusout', left)
+  doc.addEventListener('visibilitychange', look)
+  return stop
 }

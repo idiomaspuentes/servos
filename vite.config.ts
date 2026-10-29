@@ -8,13 +8,16 @@ import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
 import { viteSingleFile } from 'vite-plugin-singlefile'
 import { configDefaults } from 'vitest/config'
+import { btSynergyRoot } from './scripts/btSynergy.ts'
 
 /**
- * bt-synergy lives next to this repository (`../bt-synergy`, branch `feat/language-pack` or later), as usfm-ast lives
- * next to Taller. Its packages are used from their sources, the way tc-study uses them, so Servos and tc-study read and
- * write resources with the very same code. Their types are declared in `src/resources/btSynergy.d.ts`.
+ * bt-synergy lives next to this repository (`../bt-synergy`) unless `SERVOS_BT_SYNERGY` names another checkout, as
+ * usfm-ast lives next to Taller. Its packages are used from their sources, the way tc-study uses them, so Servos and
+ * tc-study read and write resources with the very same code. `bt-synergy.ref` pins the commit Servos was tested with;
+ * `scripts/btSynergy.test.ts` fails when the checkout in use does not contain it. Their types are declared in
+ * `src/resources/btSynergy.d.ts`.
  */
-const BT = resolve(dirname(fileURLToPath(import.meta.url)), '../bt-synergy/packages')
+const BT = join(btSynergyRoot(dirname(fileURLToPath(import.meta.url))), 'packages')
 
 /**
  * usfm-ast lives next to it too (`../usfm-ast`, as for Taller): the alignment is Taller's, its box model and the way

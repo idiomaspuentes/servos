@@ -7,10 +7,10 @@
  */
 
 import { accountOf, destinationOf, leaveWork, nextVersion, problemOf, type Destination, type Problem } from './door43'
-import type { Project } from './model'
+import { privacyOf, type Project } from './model'
 import { booksOf, markVersionWithTakes, uploadProject, withWorkOf, type BookToPublish } from './publishing'
-import { shareProject, withSounds } from './share'
 import { deviceId } from './work'
+import { workToLeave } from './workToLeave'
 
 const KEY = 'servos.prototipo.door43.espera'
 
@@ -80,6 +80,9 @@ export function ask(errand: Pick<Errand, 'kind' | 'projectId' | 'person' | 'book
 /** Takes an errand back: it does not go. */
 export const drop = (id: string) => write(read().filter((e) => e.id !== id))
 
+/** A project deleted from this device: nothing of it waits to go any more. */
+export const dropProject = (projectId: string) => write(read().filter((e) => e.projectId !== projectId))
+
 /** Done with internet from its screen: what waited to do the same goes away (a version done does an upload's work too). */
 export function settle(kind: ErrandKind, projectId: string, person: string) {
   const covered = (e: Errand) => same(e, { projectId, person }) && (e.kind === kind || (kind === 'version' && e.kind === 'subir'))
@@ -127,8 +130,10 @@ export async function runErrand(
   if (!to) return { problem: 'other' }
   try {
     if (e.kind === 'dejar') {
-      const file = await withSounds(shareProject(project, project.books.map((b) => b.code), e.person))
-      const result = await leaveWork(account, to, JSON.stringify(file), e.person, deviceId())
+      // Sealed with the team's password for a project kept to its team; while it is not known here, it waits.
+      const work = await workToLeave(project, e.person)
+      if (!work) return { problem: 'teamPassword' }
+      const result = await leaveWork(account, to, work.text, e.person, deviceId(), privacyOf(project))
       return result.state === 'failed' ? { problem: result.problem ?? 'other' } : { sent: { kind: 'dejar' } }
     }
     const { results, books } = await uploadProject(account, to, project, e.person, texts.message)

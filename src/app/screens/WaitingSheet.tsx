@@ -10,7 +10,7 @@ import { useT } from '../i18n/i18n'
 import { accountOf, destinationOf, problemOf, workRepoOf, type Problem } from '../projects/door43'
 import { arrive } from '../frame/arriving'
 import { bringFromDoor43 } from '../projects/publishing'
-import type { Project } from '../projects/model'
+import { privacyOf, type Project } from '../projects/model'
 import { drop, errandNow, runErrand, sendWaiting, versionToMark, type Errand, type Sent } from '../projects/outbox'
 
 type Result = { sent: Sent } | { problem: Problem }
@@ -21,6 +21,7 @@ export function WaitingSheet({
   person,
   onClose,
   onBring,
+  onTeamPassword,
 }: {
   errands: Errand[]
   projects: Project[]
@@ -28,6 +29,8 @@ export function WaitingSheet({
   onClose(): void
   /** Opens the team's work of a book, bringing it in at once. */
   onBring(projectId: string, book: string): void
+  /** Opens the team's work of a book to type the team's password, which leaving the work there waits for. */
+  onTeamPassword(projectId: string, book: string): void
 }) {
   const t = useT()
   const [versions, setVersions] = useState<Record<string, number | null>>({})
@@ -86,6 +89,11 @@ export function WaitingSheet({
       setBringing(false)
     }
   }
+  // Work left for a team-only project waits for the team's password, typed where the team's work is.
+  const locked = list.find((e) => {
+    const r = results?.get(e.id)
+    return r !== undefined && 'problem' in r && r.problem === 'teamPassword'
+  })
   const failed = results !== null && list.some((e) => !results.has(e.id) || 'problem' in results.get(e.id)!)
 
   // The books as they are now, read once for each errand (a whole book is written out to be read).
@@ -111,7 +119,7 @@ export function WaitingSheet({
             ? t('espera.dejar')
             : t('espera.traer')
     // The team's work goes beside the project, to its own repository.
-    const work = now.to ? workRepoOf(now.to) : null
+    const work = now.to ? workRepoOf(now.to, privacyOf(project)) : null
     const details = [
       (e.kind === 'dejar' || e.kind === 'traer') && work ? `${work.owner}/${work.repo}` : where,
       e.kind === 'dejar' ? titles : '',
@@ -187,6 +195,15 @@ export function WaitingSheet({
             <button type="button" className="button-primary" onClick={() => onBring(brought.projectId, brought.book ?? projectOf(brought.projectId)!.books[0].code)}>
               {t('espera.verLoQueTrajo')} →
             </button>
+          ) : locked ? (
+            <>
+              <button type="button" className="button-primary" onClick={() => onTeamPassword(locked.projectId, locked.book ?? projectOf(locked.projectId)!.books[0].code)}>
+                {t('espera.escribirContrasena')} →
+              </button>
+              <button type="button" className="button-quiet" onClick={onClose}>
+                {t('espera.ahoraNo')}
+              </button>
+            </>
           ) : (
             <button type="button" className="button-primary" onClick={onClose}>
               {t('espera.listo')}

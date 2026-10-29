@@ -1,24 +1,31 @@
 /**
  * A book, as translationCore 4 lays out where to go on (its home's «Continue →» and its screen for choosing a review
- * tool), with one thing to do in sight: the book's steps, from studying to publishing, in one row that slides, each with
- * how far it has gone; under the step chosen, the mini app to go on with as the one card, with where the person left it,
- * its progress in the whole book, the one filled button and, folded, its progress chapter by chapter (and, for the
- * translation, who wrote each chapter, since a team may split a book and gather it on one computer); the step's other
- * mini apps, one row each. What is used now and then (sharing the book, receiving work from another computer, the
+ * tool), with one thing to do in sight. On a phone the book opens on the mini app last worked in, as the one card with
+ * the one filled button, and under it the book's five steps, from studying to publishing, a row each with what it is for
+ * and how far it has gone: all in sight, where a row of tabs that slid hid the last ones. A step opens on its own screen:
+ * its mini app to go on with as the card, with where the person left it, its progress in the whole book, the filled
+ * button and, folded, its progress chapter by chapter (and, for the translation, who wrote each chapter, since a team may
+ * split a book and gather it on one computer); the step's other mini apps, one row each. From 900 px the steps are a
+ * column at the left and the step chosen is beside it, opened at the step last worked in (principle 13), so the window
+ * costs no extra click. What is used now and then (sharing the book, receiving work from another computer, the
  * project's glossary, naming the book) is in «More».
  * The steps are kinds of work, not stages the book has to be moved through: any is opened at any time, a team studies
  * one chapter while it translates another, and nobody has to decide for everyone that the book «is» in one (philosophy,
  * principle 5). A step is marked ✓ when its work is done. A book whose texts and helps are not on the phone says so,
- * and how to get them (principle 8).
+ * and how to get them (principle 8): with internet, downloading them is the filled button, with its size once known,
+ * and receiving a pack the outlined one; while they come, how far they went, and the book opens once they are applied.
+ * When they cannot come now, the notice says why, with no button to try again: the app tries by itself (spec §2).
  */
 
 import type { BookState } from '../projects/library'
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import type { PrototypeData } from '../../prototype/data'
 import { RowButton, Suggestion } from '../frame/Actions'
-import { useWider } from '../frame/Panes'
+import { useOnline } from '../frame/online'
+import { useWide } from '../frame/Panes'
+import { StepIcon } from '../frame/StepIcon'
 import { MenuRow, Sheet } from '../frame/Sheet'
-import { useT } from '../i18n/i18n'
+import { useI18n, useT } from '../i18n/i18n'
 import type { MiniApp } from '../miniapps/contract'
 import { miniApp } from '../miniapps/registry'
 import { PHASES, bookName, titleOf, type BookEntry, type Phase, type Project } from '../projects/model'
@@ -28,6 +35,9 @@ import { sectionsToGather, versesToChoose, versionsFrom } from '../projects/vers
 import { BOOK_NOTE_CHAPTER, introNoteOn, workOf } from '../projects/work'
 import { saveFile } from '../frame/saveFile'
 import { bookUsfm } from '../projects/usfmExport'
+import { askForBook, useBookAsked, useDownloadSize } from '../projects/onlineBooks'
+import { blockedKey, downloadSaid, percentOf, sizeIn } from '../projects/onlineWords'
+import { useOnlineResources } from '../../resources/online/onlineResources'
 import { ShareSheet } from './ShareSheet'
 
 type Place = { chapter: number; verse: number }
@@ -49,6 +59,8 @@ export function BookScreen({
   person,
   lastApp,
   placeFor,
+  step: openStep,
+  onStep,
 }: {
   project: Project
   book: BookEntry
@@ -77,8 +89,12 @@ export function BookScreen({
   lastApp?: string | null
   /** Where the person left a mini app in this book, if they opened it. */
   placeFor(app: string): Place | null
+  /** The step open on its own screen; none, the book with its steps. */
+  step?: Phase
+  /** Opens a step, or goes back to the book's steps (`null`). */
+  onStep(step: Phase | null): void
 }) {
-  const t = useT()
+  const { t, language: lang } = useI18n()
   // The book as the team named it in its language; the bridge text's name, until then and beside it.
   const name = titleOf(project, book.code)
   const source = bookName(book.code)
@@ -96,8 +112,12 @@ export function BookScreen({
   const allApps = PHASES.flatMap((p) => appsOf(p)).filter((a) => !a.comingSoon)
   // Where «Continue» goes: the mini app last worked in, if the project still uses it, or else the first one.
   const current = allApps.find((a) => a.id === lastApp) ?? allApps[0]
-  // The step shown: the one of the mini app last worked in, so its card is in sight.
-  const [shown, setShown] = useState<Phase>(current?.phase ?? PHASES[0])
+  // Whether «Continue» goes back to where the person left off, or starts the first mini app.
+  const resumed = Boolean(lastApp) && current?.id === lastApp
+  // From 900 px a step is always beside the steps: the one opened, or else the one of the mini app last worked in, so its
+  // card is in sight. On a phone, none until one is opened.
+  const wide = useWide()
+  const shown: Phase | null = openStep ?? (wide ? (current?.phase ?? PHASES[0]) : null)
   const [byChapter, setByChapter] = useState<string | null>(null)
   const [more, setMore] = useState(false)
   const [bookNoteOpen, setBookNoteOpen] = useState(false)
@@ -121,48 +141,38 @@ export function BookScreen({
   }
   const stepPct = (phase: Phase) => stepPercent(project, book.code, phase, chapters)
 
+  // Not on this device: brought from the Worker when there is internet and nothing stops its language.
+  const missing = !chapters.length && (!state || state.state === 'missing' || state.state === 'error')
+  const helps = project.helpsLanguage
+  const online = useOnline()
+  const net = useOnlineResources()
+  const asked = useBookAsked(helps, book.code)
+  const busy = net.busy && net.busy.language === helps && net.busy.books.includes(book.code) ? net.busy : null
+  // Asked for and not yet coming (its list, or another download first): it is said as coming, at 0 %.
+  const coming = missing && (busy !== null || asked)
+  const blocked = missing && !coming ? net.blocked[helps] : undefined
+  const size = useDownloadSize(helps, book.code, missing && online && !coming && !blocked)
+  // The Worker's list names nothing of this book (a size of null): as without internet, its pack is received. A size
+  // not known yet, or that cannot be told now, still offers «Bajar», without the size. A book the device could not read
+  // is not offered a download: what is wrong is on the device.
+  const canDownload = missing && state?.state !== 'error' && online && !coming && !blocked && size !== null
+  const downloadLabel = (() => {
+    // Nothing left to bring (0 bytes) has no size worth saying.
+    const said = downloadSaid('bajar', typeof size === 'number' && size > 0 ? sizeIn(t, size, lang) : null)
+    return t(said.key, said.values)
+  })()
+  const comingPct = busy ? percentOf(busy.progress) : 0
+
   const toChoose = versesToChoose(book.code, chapters.map((c) => ({ chapter: c.chapter, verses: versesOf(c) }))).length
   // Everyone translated the same: what waits is said by section, with whose versions came.
   const toGather = book.together && toChoose ? sectionsToGather(book.code, chapters.map((c) => ({ chapter: c.chapter, verses: versesOf(c), sections: c.sections }))) : []
-  const shownApps = appsOf(shown)
+  const shownApps = shown ? appsOf(shown) : []
   // The one card of the step shown: the mini app last worked in, or else the step's first that can be opened.
   const lead = shownApps.find((a) => a === current) ?? shownApps.find((a) => !a.comingSoon)
-  // From 1280 px the step's first mini app and its others side by side (principle 13); narrower, one under the other.
-  const wider = useWider()
 
-  // The steps slide in one row: the one shown is brought into sight, the row moving only as much as that needs.
-  const stepsRef = useRef<HTMLDivElement>(null)
-  // Which ends of the row have steps out of sight: those ends fade, so it is seen that the row goes on.
-  const [hidden, setHidden] = useState<{ start: boolean; end: boolean }>({ start: false, end: false })
-  const measureSteps = () => {
-    const row = stepsRef.current
-    if (!row) return
-    const start = row.scrollLeft > 2
-    const end = row.scrollLeft + row.clientWidth < row.scrollWidth - 2
-    setHidden((h) => (h.start === start && h.end === end ? h : { start, end }))
-  }
-  useEffect(() => {
-    const row = stepsRef.current
-    const on = row?.querySelector<HTMLElement>('[aria-selected="true"]')
-    if (row && on) {
-      const box = row.getBoundingClientRect()
-      const span = (e: HTMLElement) => {
-        const r = e.getBoundingClientRect()
-        return [r.left - box.left + row.scrollLeft, r.right - box.left + row.scrollLeft]
-      }
-      const pad = 24
-      const [from, to] = span(on)
-      if (from - pad < row.scrollLeft) row.scrollLeft = Math.max(0, from - pad)
-      else if (to + pad > row.scrollLeft + row.clientWidth) row.scrollLeft = to + pad - row.clientWidth
-    }
-    measureSteps()
-  }, [shown])
-  useEffect(() => {
-    window.addEventListener('resize', measureSteps)
-    return () => window.removeEventListener('resize', measureSteps)
-  }, [])
-
-  const leadCard = (app: MiniApp) => {
+  /** `resume`: the card where the phone's book opens, without the fold. The mini app last worked in says, wherever its
+   *  card is, that it is where the person left off. */
+  const leadCard = (app: MiniApp, resume = false) => {
     const done = app.done ? doneOf(app) : null
     const next = app.done ? nextOf(app) : null
     const used = placeFor(app.id)
@@ -174,6 +184,7 @@ export function BookScreen({
     return (
       <li key={app.id} className="tool-card">
         <div className="tool-card-main">
+          {app === current && (resumed || resume) && <span className="tool-card-eyebrow">{t(resumed ? 'libro.sigaDonde' : 'libro.paraEmpezar')}</span>}
           <span className="tool-card-name">{t(`${app.id}.nombre`)}</span>
           {/* One place, the one «Continue» goes to: where the person left it; never opened, what it is for. */}
           <span className="quiet">{allDone ? t('libro.todoHecho') : place ? t('libro.sigaEn', { lugar: placeName(place) }) : t(`${app.id}.descripcion`)}</span>
@@ -190,7 +201,7 @@ export function BookScreen({
             </button>
           )}
         </div>
-        {done !== null && chapters.length > 0 && (
+        {!resume && done !== null && chapters.length > 0 && (
           <RowButton kind="fold" label={t('libro.porCapitulo')} expanded={open} onClick={() => setByChapter(open ? null : app.id)} />
         )}
         {open && (
@@ -219,14 +230,118 @@ export function BookScreen({
     )
   }
 
+  /** A step's row: its picture, its name and how far it has gone (✓ when done); what it is for is said on its screen. */
+  const stepRow = (phase: Phase) => {
+    const p = stepPct(phase)
+    return (
+      <li key={phase}>
+        <button
+          type="button"
+          className="row-button book-step"
+          aria-current={wide && phase === shown ? 'step' : undefined}
+          onClick={() => {
+            onStep(phase)
+            setByChapter(null)
+          }}
+        >
+          <span className="book-step-icon">
+            <StepIcon phase={phase} />
+          </span>
+          <span className="row-button-label book-step-name">{t(`pasos.${phase}`)}</span>
+          <span className={p === 100 ? 'row-button-meta book-step-state is-done' : 'row-button-meta book-step-state'}>
+            {p === 100 ? `✓ ${t('pasos.hecho')}` : p !== null && p > 0 ? `${p} %` : ''}
+          </span>
+        </button>
+      </li>
+    )
+  }
+  const steps = (
+    <ul className="book-steps" aria-label={t('libro.pasos')}>
+      {PHASES.map(stepRow)}
+    </ul>
+  )
+
+  /** The step shown: its mini app to go on with as the card, its others a row each. */
+  const stepBody = shown && (
+    <>
+      {wide && <h2 className="book-step-title">{t(`pasos.${shown}`)}</h2>}
+      <p className="quiet book-step-about">{t(`pasos.${shown}Ayuda`)}</p>
+      {shownApps.length === 0 && <p className="quiet">{t('libro.ningunaApp')}</p>}
+      <ul className="tool-cards">
+        {lead && leadCard(lead)}
+        {shownApps
+          .filter((app) => app !== lead)
+          .map((app) =>
+            app.comingSoon ? (
+              <li key={app.id} className="tool-soon">
+                <span>{t(`${app.id}.nombre`)}</span>
+                <span className="badge">{t('catalogo.pronto')}</span>
+              </li>
+            ) : (
+              <li key={app.id}>
+                <RowButton
+                  label={t(`${app.id}.nombre`)}
+                  meta={app.done && totalVerses > 0 ? `${pct(doneOf(app), totalVerses)} %` : undefined}
+                  onClick={() => chapters.length && onOpen(app)}
+                />
+              </li>
+            )
+          )}
+      </ul>
+    </>
+  )
+
+  // What the team understood of the whole book, written on its introduction: folded, under the work.
+  const bookNote = introNoteOn(book.code, BOOK_NOTE_CHAPTER)
+  const bookExtras = (
+    <>
+      {bookNote && (
+        <section className="book-note">
+          <RowButton kind="fold" label={t('libro.loQueEntendimos', { libro: name })} expanded={bookNoteOpen} onClick={() => setBookNoteOpen((o) => !o)} />
+          {bookNoteOpen && (
+            <>
+              <p className="study-other-text">{bookNote.text}</p>
+              <p className="quiet">{t('libro.notaDe', { nombre: bookNote.by })}</p>
+            </>
+          )}
+        </section>
+      )}
+      {!book.name && !declined && chapters.length > 0 && (
+        // Once, after the work, until the team names the book or says not now (principle 12).
+        <Suggestion
+          text={t('libro.nombrarPregunta', { libro: source, idioma: project.languageName })}
+          action={t('libro.nombrarAccion')}
+          onAction={() => setNaming(true)}
+          onDismiss={() => {
+            setDeclined(true)
+            try {
+              localStorage.setItem(declinedKey, '1')
+            } catch {
+              /* for this visit */
+            }
+          }}
+        />
+      )}
+    </>
+  )
+
+  // A step open on a phone: its own screen, whose arrow goes back to the book's steps.
+  const onStepScreen = !wide && shown !== null
+
   return (
     <div className="screen">
       <header className="header">
-        <button type="button" className="button-quiet header-back" onClick={onBack}>
-          ‹ {t('marco.inicio')}
-        </button>
+        {onStepScreen ? (
+          <button type="button" className="button-quiet header-back" onClick={() => onStep(null)}>
+            ‹ {name}
+          </button>
+        ) : (
+          <button type="button" className="button-quiet header-back" onClick={onBack}>
+            ‹ {t('marco.inicio')}
+          </button>
+        )}
         <div className="header-title">
-          <span className="header-app">{name}</span>
+          <span className="header-app">{onStepScreen ? t(`pasos.${shown}`) : name}</span>
           <span className="header-person">{book.name ? `${project.name} · ${source}` : project.name}</span>
         </div>
         <button type="button" className="button-quiet header-more" onClick={() => setMore(true)}>
@@ -245,9 +360,28 @@ export function BookScreen({
             {t('libro.noSeLeyo', { libro: name, error: state.message })}
           </p>
         )}
-        {!chapters.length && (!state || state.state === 'missing' || state.state === 'error') && (
+        {missing && coming && (
+          // Coming from the Worker: how far, and that nothing waits for it. Nothing to press meanwhile.
+          <section className="download-progress" role="status">
+            <span>{t('enLinea.bajando', { pct: comingPct })}</span>
+            {bar(comingPct, 100)}
+            <span className="quiet">{t('enLinea.seguirUsando')}</span>
+          </section>
+        )}
+        {missing && canDownload && (
           <>
-            <p className="notice">
+            <p className="notice">{t('enLinea.faltan', { libro: name })}</p>
+            <button type="button" className="button-primary" onClick={() => void askForBook(helps, book.code)}>
+              {downloadLabel}
+            </button>
+            <button type="button" className="button-secondary" onClick={onReceive}>
+              {t('libro.recibirPaquete')}
+            </button>
+          </>
+        )}
+        {missing && !coming && !canDownload && (
+          <>
+            <p className="notice" role={blocked ? 'alert' : undefined}>
               {t(
                 state?.state === 'missing' && state.availability?.interrupted
                   ? 'libro.paqueteInterrumpido'
@@ -256,6 +390,13 @@ export function BookScreen({
                     : 'libro.faltaPaquete',
                 { libro: name }
               )}
+              {/* Why they cannot come now; the app tries again by itself, so there is no button for it. */}
+              {blocked && (
+                <>
+                  <br />
+                  {t(blockedKey(blocked))}
+                </>
+              )}
             </p>
             <button type="button" className="button-primary" onClick={onReceive}>
               {t('libro.recibirPaquete')}
@@ -263,7 +404,7 @@ export function BookScreen({
           </>
         )}
 
-        {toChoose > 0 && (
+        {!onStepScreen && toChoose > 0 && (
           // Work received that came written another way: said where the book opens, with the way to choose.
           <section className="book-choose">
             <strong>{book.together ? t('libro.porJuntarTodos', { n: toGather.length }) : t('libro.porJuntar', { n: toChoose })}</strong>
@@ -276,99 +417,24 @@ export function BookScreen({
           </section>
         )}
 
-        {/* The steps in one row that slides, each with how far it has gone, ✓ when done. */}
-        <div className="book-steps" role="tablist" aria-label={t('libro.pasos')}
-          ref={stepsRef}
-          onScroll={measureSteps}
-          data-more-start={hidden.start || undefined}
-          data-more-end={hidden.end || undefined}
-        >
-          {PHASES.map((phase) => {
-            const p = stepPct(phase)
-            return (
-              <button
-                key={phase}
-                type="button"
-                role="tab"
-                aria-selected={phase === shown}
-                className="book-step"
-                onClick={() => {
-                  setShown(phase)
-                  setByChapter(null)
-                }}
-              >
-                <span>{t(`pasos.${phase}Corto`)}</span>
-                <span className={p === 100 ? 'book-step-state is-done' : 'book-step-state'}>{p === 100 ? '✓' : p !== null && p > 0 ? `${p} %` : ''}</span>
-              </button>
-            )
-          })}
-        </div>
-
-        {shownApps.length === 0 && <p className="quiet">{t('libro.ningunaApp')}</p>}
-        {(() => {
-          const others = shownApps.filter((app) => app !== lead)
-          // The step's other mini apps: a row each, with how far it has gone; opened, the row becomes the card.
-          const rows = others.map((app) =>
-            app.comingSoon ? (
-              <li key={app.id} className="tool-soon">
-                <span>{t(`${app.id}.nombre`)}</span>
-                <span className="badge">{t('catalogo.pronto')}</span>
-              </li>
-            ) : (
-              <li key={app.id}>
-                <RowButton
-                  label={t(`${app.id}.nombre`)}
-                  meta={app.done && totalVerses > 0 ? `${pct(doneOf(app), totalVerses)} %` : undefined}
-                  onClick={() => chapters.length && onOpen(app)}
-                />
-              </li>
-            )
-          )
-          return wider && lead && others.length ? (
-            <div className="tool-columns">
-              <ul className="tool-cards">{leadCard(lead)}</ul>
-              <ul className="tool-cards">{rows}</ul>
+        {wide ? (
+          // The steps a column at the left, the step chosen beside it, with what is the book's under its work.
+          <div className="book-layout">
+            {steps}
+            <div className="book-step-body">
+              {stepBody}
+              {bookExtras}
             </div>
-          ) : (
-            <ul className="tool-cards">
-              {lead && leadCard(lead)}
-              {rows}
-            </ul>
-          )
-        })()}
-
-        {(() => {
-          // What the team understood of the whole book, written on its introduction: folded, under the work.
-          const bookNote = introNoteOn(book.code, BOOK_NOTE_CHAPTER)
-          if (!bookNote) return null
-          return (
-            <section className="book-note">
-              <RowButton kind="fold" label={t('libro.loQueEntendimos', { libro: name })} expanded={bookNoteOpen} onClick={() => setBookNoteOpen((o) => !o)} />
-              {bookNoteOpen && (
-                <>
-                  <p className="study-other-text">{bookNote.text}</p>
-                  <p className="quiet">{t('libro.notaDe', { nombre: bookNote.by })}</p>
-                </>
-              )}
-            </section>
-          )
-        })()}
-
-        {!book.name && !declined && chapters.length > 0 && (
-          // Once, after the work, until the team names the book or says not now (principle 12).
-          <Suggestion
-            text={t('libro.nombrarPregunta', { libro: source, idioma: project.languageName })}
-            action={t('libro.nombrarAccion')}
-            onAction={() => setNaming(true)}
-            onDismiss={() => {
-              setDeclined(true)
-              try {
-                localStorage.setItem(declinedKey, '1')
-              } catch {
-                /* for this visit */
-              }
-            }}
-          />
+          </div>
+        ) : onStepScreen ? (
+          stepBody
+        ) : (
+          <>
+            {/* Where the person left off, as the one card with the one filled button; then every step, in sight. */}
+            {current && chapters.length > 0 && <ul className="tool-cards">{leadCard(current, true)}</ul>}
+            {steps}
+            {bookExtras}
+          </>
         )}
       </main>
 

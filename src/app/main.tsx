@@ -5,13 +5,16 @@ import { keepAppOffline } from './frame/appUpdate'
 import { KeepGoing, LastResort } from './frame/Crashed'
 import { keepBrowserMenuToText, receiveOpenedFiles } from './frame/desktop'
 import { followTheme, keepBackButton, receiveArrivingFiles } from './frame/phone'
+import { guardDoor43 } from './frame/door43Pins'
 import { applyTheme, themeOf } from './frame/theme'
 import { moveAlignmentsIn, moveBooksToProjects, openBooks } from './projects/bookText'
 import { openLibrary } from './projects/library'
 import { openPacksInside } from './projects/packsInside'
-import { loadProjects } from './projects/model'
+import { activeProjects, loadProjects } from './projects/model'
 import { moveWorkToProjects } from './projects/scope'
 import { I18nProvider } from './i18n/i18n'
+import { setOnlineProjects, startOnline } from '../resources/online/onlineResources'
+import { watchOnline } from '../resources/online/watchOnline'
 import './miniapps/registry'
 // The app's letters, inside it so they are there without internet: Onest for the interface, Charis SIL for the scripture.
 import './fonts.css'
@@ -31,6 +34,8 @@ keepBrowserMenuToText()
 // In the app for phones: a file opened with Servos or shared to it goes to be received, and the back button goes back.
 receiveArrivingFiles()
 keepBackButton()
+// On the phone, Door43 is reached only with one of its own certificates (philosophy, principle 9).
+guardDoor43()
 // …and the phone's bars write in the colour the app's ground wants, whatever theme the person chose.
 followTheme()
 
@@ -45,9 +50,21 @@ void openBooks()
     moveAlignmentsIn()
     // What the language packs left on this device; the projects' books are then read from it in the background.
     // …and, in the apps for phones and computers, the texts and helps they bring are opened the first time.
-    return openLibrary(projects).then(() => void openPacksInside())
+    // Then Servos online (spec §4), after those packs, so it plans from what they left: B's heal and a check, and a
+    // check again whenever the app comes back into view or the connection comes back. The projects are read again
+    // then: the person may have changed them while the packs opened.
+    return openLibrary(projects).then(() => {
+      const online = () => {
+        void startOnline(loadProjects())
+        watchOnline()
+      }
+      void openPacksInside().then(online, online)
+    })
   })
-  .finally(() =>
+  .finally(() => {
+    // Servos online knows the projects before any screen asks it for a size (AddBook, a missing book): without them
+    // it cannot choose the originals, and the size would wait for startOnline.
+    setOnlineProjects(activeProjects(loadProjects()))
     createRoot(document.getElementById('root')!).render(
       <StrictMode>
         <LastResort>
@@ -59,4 +76,4 @@ void openBooks()
         </LastResort>
       </StrictMode>
     )
-  )
+  })

@@ -2,11 +2,13 @@ import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextVersion, setDestination, uploadedOf } from './door43'
 import { fakeDoor43, TOKEN } from './fakeDoor43'
+import { lockedKind } from './lockedCopy'
 import type { Project } from './model'
 import { ask, drop, errandNow, keysOf, runErrand, sendWaiting, settle, waiting, type Errand } from './outbox'
 import { booksOf } from './publishing'
 import { addTake, keepSound } from './recordings'
 import { setProject } from './scope'
+import { chooseTeamPassword, forgetTeamKeys } from './teamKeys'
 import { forgetBooks, writeDraft } from './work'
 
 /**
@@ -127,6 +129,28 @@ describe('cuando vuelve internet y la persona dice que sí', () => {
     expect([...door.assets.values()].map((a) => [a.release, a.name])).toEqual([[release.id, 'audio-JON.zip']])
     expect(uploadedOf('kichwa', 'jon')?.by).toBe('Ana')
     expect(waiting()).toEqual([])
+  })
+
+  it('el trabajo de un proyecto de «Solo el equipo» se deja sellado; sin la contraseña del equipo espera: nunca va abierto', async () => {
+    const door = fakeDoor43(host)
+    const team: Project = { ...project, privacy: 'equipo' }
+    await forgetTeamKeys('kichwa')
+    writeDraft('jon', 1, 1, 'Shuk.', 'Ana')
+    const e = ask(asked('dejar'))
+    await sendWaiting(waiting(), (x) => runErrand(x, team, texts))
+    expect(door.calls).toEqual([])
+    expect(waiting().map((x) => [x.id, x.problem])).toEqual([[e.id, 'teamPassword']])
+
+    await chooseTeamPassword('kichwa', 'maíz y frijol', 1000)
+    const done = await sendWaiting(waiting(), (x) => runErrand(x, team, texts))
+    expect(done.get(e.id)).toEqual({ sent: { kind: 'dejar' } })
+    const assets = [...door.assets.values()]
+    expect(assets).toHaveLength(1)
+    const sent = new TextDecoder().decode(await new Response(new Blob([new Uint8Array(assets[0].bytes)]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer())
+    expect(lockedKind(sent)).toBe('compartido')
+    expect(sent).not.toMatch(/Shuk|Biblia|kichwa|Ana/)
+    expect(waiting()).toEqual([])
+    await forgetTeamKeys('kichwa')
   })
 
   it('sin la cuenta de quien lo pidió no se envía: espera, y se le dice que la vincule', async () => {

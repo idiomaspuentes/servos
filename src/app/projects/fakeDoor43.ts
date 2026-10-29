@@ -1,7 +1,9 @@
 /**
  * A Door43 in memory, for the tests: repositories made by an organization, files kept as base64 (created, updated with
  * the sha they have, deleted), and releases whose attachments are uploaded as a form, listed, deleted, and downloaded
- * from `/attachments/…` only with the key. `offline()` makes it unreachable, as a phone without internet.
+ * from `/attachments/…` only with the key. `offline()` makes it unreachable, as a phone without internet. A repository
+ * renamed is reached by its old name too, as Door43 redirects it (the fetch follows); `noRename()` makes renaming
+ * refused, as for an account that is not the repository's admin.
  */
 
 import { vi } from 'vitest'
@@ -11,15 +13,22 @@ export const TOKEN = 't'
 export function fakeDoor43(host = 'https://qa.door43.org') {
   const repos = new Map<string, { private: boolean }>()
   const files = new Map<string, { b64: string; sha: string }>()
-  const releases = new Map<string, { id: number; tag_name: string; prerelease: boolean }>()
+  const releases = new Map<string, { id: number; tag_name: string; prerelease: boolean; name?: string; body?: string }>()
   const assets = new Map<number, { id: number; release: number; name: string; bytes: Uint8Array; uuid: string }>()
   const calls: string[] = []
+  /** The messages of the commits made (files written or deleted). */
+  const messages: string[] = []
+  /** Old names of repositories renamed, to the name they have now. */
+  const redirects = new Map<string, string>()
   let n = 0
   let reachable = true
+  let renaming = true
   vi.stubGlobal('fetch', async (url: string, init: RequestInit = {}) => {
     if (!reachable) throw new TypeError('Failed to fetch')
     const u = new URL(url)
-    const path = decodeURIComponent(u.pathname.replace('/api/v1', ''))
+    let path = decodeURIComponent(u.pathname.replace('/api/v1', ''))
+    const old = /^\/repos\/([^/]+\/[^/]+)(\/.*)?$/.exec(path)
+    if (old && !repos.has(old[1]) && redirects.has(old[1])) path = `/repos/${redirects.get(old[1])}${old[2] ?? ''}`
     const method = init.method ?? 'GET'
     calls.push(`${method} ${path}`)
     const keyed = (init.headers as Record<string, string> | undefined)?.Authorization === `token ${TOKEN}`
@@ -30,6 +39,20 @@ export function fakeDoor43(host = 'https://qa.door43.org') {
       return a && keyed ? new Response(new Uint8Array(a.bytes)) : new Response('Not Found', { status: 404 })
     }
     m = /^\/repos\/([^/]+)\/([^/]+)$/.exec(path)
+    if (m && method === 'PATCH') {
+      const from = `${m[1]}/${m[2]}`
+      const name = JSON.parse(String(init.body)).name as string
+      const to = `${m[1]}/${name}`
+      if (!repos.has(from)) return ok({ message: 'not found' }, 404)
+      if (!renaming) return ok({ message: 'Forbidden' }, 403)
+      if (repos.has(to)) return ok({ message: 'repository already exists' }, 422)
+      repos.set(to, repos.get(from)!)
+      repos.delete(from)
+      redirects.set(from, to)
+      for (const [k, v] of [...releases]) if (k.startsWith(`${from}@`)) (releases.delete(k), releases.set(`${to}@${k.slice(from.length + 1)}`, v))
+      for (const [k, v] of [...files]) if (k.startsWith(`${from}/`)) (files.delete(k), files.set(`${to}/${k.slice(from.length + 1)}`, v))
+      return ok({ name })
+    }
     if (m) return repos.has(`${m[1]}/${m[2]}`) ? ok({ name: m[2] }) : ok({ message: 'not found' }, 404)
     m = /^\/orgs?\/([^/]+)\/repos$/.exec(path)
     if (m && method === 'POST') {
@@ -50,9 +73,16 @@ export function fakeDoor43(host = 'https://qa.door43.org') {
     if (rest === 'releases' && method === 'POST') {
       const body = JSON.parse(String(init.body))
       if (releases.has(`${repo}@${body.tag_name}`)) return ok({ message: 'Release is has no Tag' }, 409)
-      const rel = { id: ++n, tag_name: body.tag_name, prerelease: Boolean(body.prerelease) }
+      const rel = { id: ++n, tag_name: body.tag_name, prerelease: Boolean(body.prerelease), name: String(body.name ?? ''), body: String(body.body ?? '') }
       releases.set(`${repo}@${body.tag_name}`, rel)
       return ok(rel, 201)
+    }
+    r = /^releases\/(\d+)$/.exec(rest)
+    if (r && method === 'PATCH') {
+      const rel = [...releases.values()].find((x) => x.id === Number(r![1]))
+      if (!rel) return ok({ message: 'not found' }, 404)
+      Object.assign(rel, JSON.parse(String(init.body)))
+      return ok(rel)
     }
     r = /^releases\/(\d+)\/assets(?:\/(\d+))?$/.exec(rest)
     if (r) {
@@ -82,12 +112,14 @@ export function fakeDoor43(host = 'https://qa.door43.org') {
         return inside.length ? ok(inside.map((p) => ({ name: p.split('/').pop(), path: p, sha: 'x', size: 1, type: 'file' }))) : ok({ message: 'not found' }, 404)
       }
       if (method === 'DELETE') {
+        messages.push(JSON.parse(String(init.body ?? '{}')).message ?? '')
         files.delete(key)
         return ok({ commit: { sha: 'c' } })
       }
       const body = JSON.parse(String(init.body))
       if (method === 'POST' && f) return ok({ message: 'already exists' }, 422)
       if (method === 'PUT' && f?.sha !== body.sha) return ok({ message: 'sha does not match' }, 409)
+      messages.push(body.message ?? '')
       files.set(key, { b64: body.content, sha: `s${++n}` })
       return ok({ content: { path: r[1], sha: files.get(key)!.sha }, commit: { sha: `c${n}` } }, method === 'POST' ? 201 : 200)
     }
@@ -99,7 +131,10 @@ export function fakeDoor43(host = 'https://qa.door43.org') {
     releases,
     assets,
     calls,
+    messages,
+    redirects,
     offline: () => void (reachable = false),
+    noRename: (no = true) => void (renaming = !no),
     online: () => void (reachable = true),
     /** A file's text, as kept. */
     text: (key: string) => (files.has(key) ? Buffer.from(files.get(key)!.b64, 'base64').toString('utf8') : null),

@@ -3,26 +3,47 @@
  * the title, since most teams have one. The book worked on last is the one moss field, with the person's name («Ana,
  * pick up where you left off»), the mini app and the place, the book's five steps as a track with the step written
  * under it, and the one filled button, «Continue →». The project's other books are one-line rows with their step as
- * words, and adding a book is the last row of the same list. At the foot, two chips: the project's settings and
- * another project. Three shapes, no more: the field, the list and the chips.
+ * words, and adding a book is the last row of the same list. Under it, the project's glossary, a row of its own: it
+ * opens without opening a book or a mini app (asked by the teams trying the app, October 2026). At the foot, two
+ * chips: the project's settings and another project. Three shapes, no more: the field, the list and the chips.
  *
  * With two or more projects, on a phone the title opens the list of them in a sheet; from 1280 px they are a column of
  * names at the left, and the project open is in the middle (philosophy, principle 13).
  *
  * On a phone with a memory card and no copy of the work on it yet, the copy is offered once (`frame/copies.ts`); and
  * when a copy could not be made, it is said there.
+ *
+ * Servos online (spec §2): new texts and helps for a project's language are offered in the same one place for a
+ * suggestion, with their size, «Bajar» and «Ahora no»; while they come, a status line says how far; once applied, a
+ * line that goes by itself says how many translated verses they changed (none, nothing said).
+ *
+ * What the person asked to send to Door43 and still waits for internet is said under the moss field, in one quiet line,
+ * every time home opens: asked and then out of sight, it was easy to believe it had gone (philosophy, principle 8). With
+ * internet, its chip opens the sheet that shows what goes and asks before it does.
  */
 
 import { useEffect, useState } from 'react'
+import { useOnline } from '../frame/online'
+import type { Errand } from '../projects/outbox'
+import { namesTogether } from '../projects/mix'
 import { Suggestion } from '../frame/Actions'
 import { BrandMark } from '../frame/BrandMark'
 import { answerSuggestion, cardInPhone, copiesHere, suggestionAnswered } from '../frame/copies'
 import { useWider } from '../frame/Panes'
 import { MenuRow, Sheet } from '../frame/Sheet'
 import { useCopies } from './CopiesSheet'
-import { useT } from '../i18n/i18n'
+import { useLanguageLabel } from './NewProject'
+import { useI18n } from '../i18n/i18n'
+import { readGlossary } from '../projects/glossary'
+import { useDoor43Copy } from './Door43CopySection'
+import { failingLong } from '../frame/door43Copy'
 import { titleOf, type Phase, type Project } from '../projects/model'
 import { insideState, onInside } from '../projects/packsInside'
+import { doneSaid, percentOf, sizeIn } from '../projects/onlineWords'
+import { clearDone, declineOffer, downloadOffer, useOnlineResources } from '../../resources/online/onlineResources'
+
+/** How long the line that says what an update changed stays on home. */
+const DONE_SHOWN_MS = 6000
 
 export interface Resume {
   projectId: string
@@ -41,8 +62,12 @@ export function Home({
   onBook,
   onAddBook,
   onSettings,
+  onGlossary,
   onPersonMenu,
   onCopies,
+  onDoor43,
+  waiting = [],
+  onSendWaiting,
 }: {
   projects: Project[]
   person: string
@@ -61,15 +86,35 @@ export function Home({
   onBook(projectId: string, book: string): void
   onAddBook(projectId: string): void
   onSettings(projectId: string): void
+  /** Opens the project's glossary, on its own. */
+  onGlossary(projectId: string): void
   onPersonMenu(): void
   /** Opens the copy on a memory card. */
   onCopies(): void
+  /** Opens the person's Door43 account (`relink`: forgets the key that no longer works, to link it again). */
+  onDoor43?(relink: boolean): void
+  /** What the person asked to send to Door43 that still waits for internet. */
+  waiting?: Errand[]
+  /** Opens the sheet that shows what waits and sends it when the person says so. */
+  onSendWaiting?(): void
 }) {
-  const t = useT()
+  const { t, language: lang } = useI18n()
+  const languageLabel = useLanguageLabel()
   const wide = useWider()
   const [inside, setInside] = useState(insideState)
   useEffect(() => onInside(setInside), [])
   const copies = useCopies()
+  const net = useOnlineResources()
+  const done = net.done ? doneSaid(net.done.changedVerses) : null
+  // The line of what changed goes by itself, once home has shown it a while: counted only while it is in sight (the
+  // line of a download running takes its place).
+  const doneShown = Boolean(net.done) && !net.busy
+  useEffect(() => {
+    if (!doneShown) return
+    const gone = window.setTimeout(clearDone, DONE_SHOWN_MS)
+    return () => window.clearTimeout(gone)
+  }, [doneShown, net.done])
+  const door43Copy = useDoor43Copy(person)
   // A card in the phone and no copy yet: offered once, on home (philosophy, principles 9 and 12).
   const [card, setCard] = useState(false)
   const [answered, setAnswered] = useState(suggestionAnswered)
@@ -92,9 +137,45 @@ export function Home({
   const begun = Boolean(work && (work.begun || (work.pct ?? 0) > 0))
   const sizeOf = (p: Project) => `${p.languageName} (${p.languageCode}) · ${p.books.length === 1 ? t('inicio.unLibro') : t('inicio.libros', { n: p.books.length })}`
   const others = project ? project.books.filter((b) => b !== current) : []
+  const words = project ? readGlossary(project.id).length : 0
+  const online = useOnline()
+  const waits = project ? waiting.filter((e) => e.projectId === project.id) : []
+  const waitLine = waits.length > 0 && (
+    <div className="status waiting-here" role="status">
+      <span>
+        {(online ? (que: string) => t('espera.pendiente', { que }) : (que: string) => t('espera.esperaInternet', { que }))(
+          namesTogether(
+            [...new Set(waits.map((e) => e.kind))].map((k) => t(`espera.que.${k}`)),
+            t('juntar.y')
+          )
+        )}
+      </span>
+      {online && onSendWaiting && (
+        <button type="button" className="chip" onClick={onSendWaiting}>
+          {t('inicio.esperaVer')}
+        </button>
+      )}
+    </div>
+  )
 
+  // The copy on Door43 failing for days (never sooner: principle 6), and what to do about it.
+  const relink = door43Copy.problem === 'signin' || door43Copy.problem === 'scope'
+  const door43Notice = onDoor43 && failingLong(door43Copy) && (
+    <section className="suggestion" role="status">
+      <p>{t('copiaDoor43.avisoInicio', { porque: door43Copy.problem === 'pin' ? t('copiaDoor43.avisoPin') : relink ? t('copiaDoor43.avisoVincular') : t(`door43.problema.${door43Copy.problem ?? 'other'}`) })}</p>
+      <div className="chip-row">
+        <button type="button" className="chip chip-action" onClick={() => onDoor43(relink)}>
+          {relink ? t('equipo.vincularOtraVez') : t('copiaDoor43.ver')}
+        </button>
+      </div>
+    </section>
+  )
+
+  // The one place for a suggestion: a copy that failed first (something went wrong), then new texts and helps, then the
+  // copy offered once.
   const suggestion =
-    copies.place && copies.failed ? (
+    door43Notice ||
+    (copies.place && copies.failed ? (
       // Said only when it fails (principle 6), once, under what continues the work.
       <section className="suggestion" role="status">
         <p>{t('copias.avisoInicio')}</p>
@@ -104,6 +185,14 @@ export function Home({
           </button>
         </div>
       </section>
+    ) : net.offer && !net.busy ? (
+      <Suggestion
+        text={t('enLinea.hayNuevos', { idioma: languageLabel(net.offer.language), tamano: sizeIn(t, net.offer.bytes, lang) })}
+        action={t('enLinea.bajarNuevos')}
+        mark="↓"
+        onAction={() => void downloadOffer()}
+        onDismiss={declineOffer}
+      />
     ) : (
       !copies.place &&
       card &&
@@ -119,7 +208,7 @@ export function Home({
           }}
         />
       )
-    )
+    ))
 
   return (
     <div className="screen">
@@ -138,6 +227,18 @@ export function Home({
           <p className="status" role="status">
             {t('inicio.dentroAbriendo', { pct: Math.floor(100 * inside.part) })}
           </p>
+        )}
+        {/* Texts and helps coming from the Worker, until they are applied; then, for a while, what they changed. */}
+        {net.busy ? (
+          <p className="status" role="status">
+            {t('enLinea.bajando', { pct: percentOf(net.busy.progress) })}
+          </p>
+        ) : (
+          done && (
+            <p className="status" role="status">
+              {t(done.key, done.values)}
+            </p>
+          )
         )}
         {!project ? (
           // The first time, the one thing to do: the team's project. With no project there is nothing to copy yet.
@@ -235,6 +336,7 @@ export function Home({
                   </button>
                 </section>
               )}
+              {waitLine}
               {suggestion}
               {current && (
                 <ul className="home-books">
@@ -258,6 +360,18 @@ export function Home({
                         +
                       </span>
                       {t('inicio.agregarLibro')}
+                    </button>
+                  </li>
+                </ul>
+              )}
+              {current && (
+                <ul className="home-books home-glossary">
+                  <li>
+                    <button type="button" className="home-book" onClick={() => onGlossary(project.id)}>
+                      <span className="home-book-name">{t('libro.glosario')}</span>
+                      <span className="home-book-step">
+                        {words === 0 ? t('inicio.glosarioVacio') : words === 1 ? t('inicio.glosarioUna') : t('inicio.glosarioPalabras', { n: words })}
+                      </span>
                     </button>
                   </li>
                 </ul>

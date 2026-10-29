@@ -1,13 +1,19 @@
 /**
  * «Add a book», as translationCore 4's (`src/views/modals/AddBook.jsx`): a blank book or one from a USFM file; for a
  * blank one, the books by testament, those already in the project marked and not choosable. The books whose texts and
- * helps are on this device come first, and are marked among the others: they can be started at once.
+ * helps are on this device come first, and are marked among the others: they can be started at once. With internet, a
+ * book that is not here says that creating it brings its texts and helps, and how much they weigh (spec §2); creating
+ * it starts that download. The size is said when it comes: «Crear» never waits for it.
  */
 
 import { useRef, useState } from 'react'
+import { useOnline } from '../frame/online'
 import { MenuRow, Sheet } from '../frame/Sheet'
-import { useT } from '../i18n/i18n'
+import { useI18n, useT } from '../i18n/i18n'
 import { bookIsHere } from '../projects/library'
+import { askForBook, useDownloadSize } from '../projects/onlineBooks'
+import { downloadSaid, sizeIn } from '../projects/onlineWords'
+import { useOnlineResources } from '../../resources/online/onlineResources'
 import { BOOKS, bookName, type Phase, type Project } from '../projects/model'
 import { previewBook, receiveBook } from '../projects/share'
 import { inProject } from '../projects/scope'
@@ -29,7 +35,7 @@ export function AddBookSheet({
   /** A book someone else shared (a `.servos` file), received into this project. */
   onReceive(): void
 }) {
-  const t = useT()
+  const { t, language: lang } = useI18n()
   const [step, setStep] = useState<'method' | 'pick'>('method')
   // A USFM file read, before it is gathered: what it brings and what it changes here.
   const [found, setFound] = useState<UsfmBook | null>(null)
@@ -38,6 +44,20 @@ export function AddBookSheet({
   const has = new Set(project.books.map((b) => b.code))
   const here = new Set(BOOKS.map(([code]) => code).filter((code) => bookIsHere(code, project.helpsLanguage)))
   const ready = BOOKS.filter(([code]) => here.has(code) && !has.has(code))
+  // A book not here, with internet and nothing that stops its language: creating it downloads it, unless the Worker's
+  // list names nothing of that book (a size of null). A size not known yet, or that cannot be told now, waits for
+  // nothing: the line says it without the size. Without internet, as before: its pack is received when it is opened.
+  const helps = project.helpsLanguage
+  const online = useOnline()
+  const blocked = useOnlineResources().blocked[helps]
+  const mayDownload = Boolean(picked && !here.has(picked) && online && !blocked)
+  const size = useDownloadSize(helps, picked, mayDownload)
+  const downloads = mayDownload && size !== null
+  const createLine = (() => {
+    // Nothing left to bring (0 bytes) has no size worth saying.
+    const said = downloadSaid('alCrear', typeof size === 'number' && size > 0 ? sizeIn(t, size, lang) : null)
+    return t(said.key, said.values)
+  })()
 
   const grid = (codes: Array<[string, string]>, title: string) => (
     <>
@@ -109,8 +129,15 @@ export function AddBookSheet({
           <div className="sheet-foot">
             {picked ? (
               <>
-                {!here.has(picked) && <p className="quiet">{t('libroNuevo.sinTextos', { libro: bookName(picked) })}</p>}
-                <button type="button" className="button-primary" onClick={() => onCreate(picked)}>
+                {!here.has(picked) && <p className="quiet">{downloads ? createLine : t('libroNuevo.sinTextos', { libro: bookName(picked) })}</p>}
+                <button
+                  type="button"
+                  className="button-primary"
+                  onClick={() => {
+                    onCreate(picked)
+                    if (downloads) void askForBook(helps, picked)
+                  }}
+                >
                   {t('libroNuevo.crear', { libro: bookName(picked) })}
                 </button>
               </>

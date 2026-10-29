@@ -271,8 +271,8 @@ Todos lo mismo), que viaja con el libro; con «Todos lo mismo», al recibir se d
 tarjeta del libro cuenta secciones para juntar y de quiénes llegaron versiones. En los dos modos, un versículo con
 versiones esperando no cuenta como traducido hasta que se junta. Y Door43 como vía: en «Más» del libro, «El trabajo
 del equipo en Door43» deja el paquete de cada uno, con el sonido de sus tomas, en un repositorio privado junto al
-del proyecto (`{repo}-servos`), como adjunto de su *release* «trabajo» (uno por persona y teléfono, que se reemplaza
-sin dejar historia: git guardaría cada toma regrabada para siempre), y trae el de los demás para recibirlo como uno
+del proyecto (`{repo}-servos`, o `{repo}-trabajo` en los de «Solo el equipo»), como adjunto de su *release*
+«trabajo» (uno por persona y teléfono, que se reemplaza sin dejar historia: git guardaría cada toma regrabada para siempre), y trae el de los demás para recibirlo como uno
 que llegó por tarjeta: se ve antes qué trae cada uno, y traer lo mismo otra vez no trae nada nuevo. Probado contra
 el mock y en QA. Las tomas se graban a 32 kbps.
 
@@ -300,6 +300,8 @@ espera en el teléfono: subir el proyecto, marcar una versión, dejar el trabajo
   de recibirlo.
 
 Hecho en el prototipo (`outbox.ts`, `WaitingSheet`), probado con un Door43 de mentira en la página y en las pruebas.
+
+La copia en Door43 (sección 8) no espera aquí ni pregunta: el sí se dio una vez, al prenderla.
 
 **Subir no pisa lo que subió otro** (acordado con Abel el 19 de octubre). Cada teléfono recuerda, de cada libro, la
 última versión que vio en Door43 (la que subió o la que trajo), con su texto. Al subir, un libro se escribe solo si
@@ -330,7 +332,7 @@ de elegir. Se dice, con «Ir a juntar» (`publishing.ts`, `door43Copy`, `knowsAl
   preguntar. «Recibir textos y ayudas» sigue para otro idioma o un paquete más nuevo. La app web no los trae.
 - **El Paquete de Recursos de Traducción es el «paquete de idioma» de tc-study** (decidido el 14 de octubre). Su
   formato está en `bt-synergy/apps/tc-study/docs/cache-data-structure.md`, sección 6, y lo hace y lo abre el paquete
-  `@bt-synergy/language-pack` (rama `feat/language-pack` de `bt-synergy`). Lleva las filas del catálogo, los recibos,
+  `@bt-synergy/language-pack` (en `master` de `bt-synergy`, en el commit que fija `bt-synergy.ref`). Lleva las filas del catálogo, los recibos,
   el texto fuente del idioma y el original griego o hebreo, y además lo ya construido: las vistas preparadas, las
   citas de cada nota resueltas en el original y en cada texto destino, y los títulos de los artículos. Así se abre
   sin internet y ya listo para leer. Servos guarda esas filas con las mismas claves de caché que tc-study.
@@ -412,9 +414,21 @@ de elegir. Se dice, con «Ir a juntar» (`publishing.ts`, `door43Copy`, `knowsAl
     citas de sus notas; se dice qué paquete hace falta. Antes, un paquete más nuevo se saltaba sin decir nada.
   - **Compartir** llevará las versiones de las ayudas que usó quien manda el `.servos`, y Recibir dirá si un
     compañero tiene algo más nuevo y a quién pedírselo.
-  - **Con internet**, de vez en cuando y nunca mientras se escribe, se comparará con lo marcado `tc-ready` en Door43
-    para el idioma de ayudas de cada proyecto, y una tarjeta en Inicio lo sugerirá una vez por versión, con «Bajar y
-    preparar» y «Ahora no».
+  - **Con internet** (hecho; plan 3, parte C1, en `src/resources/online/`): los textos y las ayudas bajan por partes
+    del Worker de translation-helps, ya preparados, como en un paquete; ya no se mira Door43.
+    - Un libro que no está en el aparato se baja al crearlo, o al abrirlo con el botón «Bajar sus textos y ayudas ·
+      3,4 MB», con su tamaño a la vista. Mientras baja, se sigue usando la app.
+    - Al abrir la app, al volver a ella y al volver la conexión, se busca si hay algo nuevo: a lo sumo cada tres
+      horas, y nunca mientras se escribe. Lo nuevo de los libros que ya están se ofrece en Inicio con su tamaño,
+      con «Bajar» y «Ahora no» (que vale hasta la versión siguiente). Lo bajado se aplica sin interrumpir, en una
+      pausa de lo que se escribe, y después se dice qué cambió en lo ya traducido, como al recibir un paquete.
+    - Los paquetes de archivo siguen igual (los que trae la app, «Recibir textos y ayudas», SD o USB). Lo que un
+      paquete trae se olvida de las partes, y con internet se vuelve a ofrecer en Inicio para bajarlo por partes: cuesta
+      bytes, pero el aparato nunca cree tener lo que ya no tiene.
+    - El servidor es el de producción. Con `?packs=staging` en la dirección se usa el de prueba, para probar; queda
+      elegido, y se cambia en «Acerca de Servos». Mientras producción no sirva partes, la app dice «No se pueden bajar
+      ahora».
+    - Más adelante (C2): bajar todo el idioma de una vez, bajar solo con wifi y saber cómo es la conexión.
   - **Qué cambió en lo ya traducido** (hecho): antes de abrir un paquete que reemplaza algo, para cada proyecto cuyo
     idioma de ayudas es el del paquete y cada libro suyo que el paquete trae, se leen sus versículos ya escritos (los
     de un tramo unido, cada uno): las notas de cada uno (id, texto y cita) y su TPL y TPS. Hay que leerlo antes,
@@ -464,6 +478,58 @@ Como en `usfm-editor`:
   desde la última subida. Subir y marcar una versión se piden igual, y esperan a que haya internet y a que la persona
   diga que sí (6.11). Falta todavía subir el diario («su historia») junto con los libros.
 - El cliente de Door43 es el de Taller (`packages/dcs-client`), copiado en `src/door43/dcs`.
+
+**Empezar en Door43** (acordado con Abel el 26 de octubre, hecho en el prototipo). Muchos de quienes vinculan una
+cuenta nunca oyeron de Door43:
+
+- **La hoja de la cuenta dice qué es Door43** antes de pedir nada («un sitio en internet donde los equipos de
+  traducción guardan y publican su trabajo. Es gratis…») y ofrece «Crear una cuenta en Door43 ›», que abre la página
+  de registro de Door43 (`/user/sign_up`) en el navegador. La app no crea cuentas; dice que se vuelva y se vincule.
+- **La organización del equipo.** Donde quien coordina elige el lugar del proyecto, la pregunta es «¿En qué
+  organización de Door43 guarda el equipo su trabajo?», con una línea sobre qué es una organización. Debajo de las
+  suyas, «Crear una para el equipo ›» (se propone el idioma y «reg»; «Quién puede ver lo que guarda»: «Solo sus
+  miembros», propuesto si el proyecto es «Solo el equipo», o «Cualquiera»; Gitea `POST /orgs`) y «Buscar la de mi
+  equipo ›». Door43 no busca organizaciones por nombre: la lista de las que se ven se trae una vez por visita, página
+  por página, y se busca aquí. Tampoco hay cómo pedir entrar: una organización encontrada dice que alguien de ella
+  tiene que agregarle, muestra su usuario y lo comparte en un mensaje listo («Compartir mi usuario»; en la computadora,
+  se copia). Las organizaciones privadas no aparecen, y se dice: se pide el nombre a quien coordina
+  (`TeamOrg.tsx`, `findOrgs`, `createTeamOrg`).
+- **Agregar a alguien desde Servos** (acordado con Abel el 26 de octubre). Quien es dueño de la organización del
+  proyecto ve en «Trabajo del equipo», con internet, «Agregar a alguien a {org} ›» (en Door43 solo los dueños pueden).
+  Escribe el usuario que le mandaron, o pega el mensaje entero; la app dice quién es en Door43 antes de agregarlo, o
+  que no hay nadie con ese usuario, o que ya está. Se agrega al equipo «traductores» de la organización, hecho la
+  primera vez: guarda y publica en todos sus proyectos y crea los repositorios del trabajo, pero no los borra ni
+  administra la organización (`AddToOrgSheet`, `ownsOrg`, `lookUpPerson`, `addToOrg`).
+
+**La copia en Door43** (acordado con Abel el 26 de octubre; filosofía, principio 9). Cada persona guarda una copia de
+su trabajo en Door43 sin pedirla cada vez: el mismo paquete que «Dejar mi trabajo» (6.10), en el repositorio privado
+`{repo}-servos` (`{repo}-trabajo` en los de «Solo el equipo»), uno por persona y aparato, reemplazado cada vez. Va
+unos minutos después de un cambio, nunca mientras se escribe, al volver internet y al pasar la app atrás; solo con wifi, salvo «También con datos». No pasa por «Ya hay
+internet» (6.11): el sí se dio una vez, al prender el interruptor de cada proyecto en «Copia de su trabajo», prendido
+de entrada en los abiertos y apagado en los de «Solo el equipo», cuya copia va sellada con la contraseña del equipo
+(como la de la tarjeta) y espera mientras el teléfono no la sepa. «Dejar mi trabajo» se sella igual, y «Trabajo del
+equipo» abre lo sellado con las llaves que guarda el teléfono. En esos proyectos el nombre tampoco dice nada: no
+`ana-<teléfono>.servos.json.gz` sino dos huellas cortas, `3fa9c1d2-7b20e4aa.dat` (la del teléfono en ese proyecto y la
+de la persona en él, hechas con un secreto que no sale del teléfono), y el *release* no nombra a Servos; lo que el
+teléfono dejó antes con nombre se quita al dejarlo así, y lo de los demás con nombre se sigue trayendo (`leaveWork`,
+`quietWorkNameOf`, 26 de octubre). Tampoco el repositorio: en esos proyectos se llama `{repo}-trabajo`, no
+`{repo}-servos` (Abel, 26 de octubre). Lo ya dejado en `{repo}-servos` no se copia: el primero que deja su trabajo con
+la versión nueva le pide a Door43 que renombre el repositorio, así que todo sigue ahí, y Door43 lleva el nombre viejo
+al nuevo, así que quien sigue con una versión anterior deja y trae en el mismo lugar. Solo pueden renombrarlo quien lo
+hizo y los dueños de la organización: con otra cuenta se sigue usando `{repo}-servos` hasta que deje su trabajo uno de
+ellos. Nunca hay dos repositorios; traer busca primero `{repo}-trabajo` (`workRepoAt`).
+Hace falta que el proyecto tenga su lugar en Door43. Inicio calla mientras funciona; después de tres días de fallar con internet dice por qué y qué hacer («Vincular otra
+vez») (`frame/door43Copy.ts`, `Door43CopySection.tsx`).
+
+**El certificado de Door43, en el teléfono.** La app no puede saber si una red es segura, y no lo promete. En la app
+para teléfonos, todo lo que va a door43.org (y sus subdominios) lo manda Android (`Door43Plugin.java`), que acepta el
+certificado solo si su cadena lleva una de las llaves que la app trae (`res/xml/network_security_config.xml`: la
+autoridad de SSL.com que usan git. y qa.door43.org, la de Amazon de door43.org, y de respaldo otras raíces de las dos y
+las de Let's Encrypt). Si una red presenta otro, no se manda nada (tampoco la llave de la cuenta) y la hoja dice «Hoy no
+se mandó nada: en esta red no se pudo comprobar que era Door43. Su trabajo sigue en este teléfono». Las llaves se
+cambian con una versión nueva de la app (el archivo dice cómo); dejan de exigirse a fines de 2030, para que un teléfono
+que nunca se actualice no quede sin Door43, y lo que manda sigue sellado. En el navegador y en la computadora, Door43 se
+alcanza como siempre. Probado en el emulador el 26 de octubre.
 
 **USFM, de ida y vuelta** (prototipo): un libro empezado en otra app se trae desde su archivo USFM («Agregar un
 libro › Desde un archivo USFM»). Se lee el texto de cada versículo (sin alineación ni notas al pie), un puente como

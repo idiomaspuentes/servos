@@ -42,7 +42,19 @@ export interface Project {
   miniApps: Record<Phase, string[]>
   /** Who may see the team's work in what the app leaves outside itself (`Privacy`). Chosen when the project is made. */
   privacy?: Privacy
+  /**
+   * When it was archived: out of home and of what the app offers, its work kept whole on the device (and still copied
+   * to the memory card), until it is taken out of the archive or deleted for good from there (`forget.ts`).
+   */
+  archived?: string
 }
+
+/** The projects worked on: those not archived. */
+export const activeProjects = <P extends Pick<Project, 'archived'>>(projects: P[]): P[] => projects.filter((p) => !p.archived)
+
+/** The projects in the archive, the last archived first. */
+export const archivedProjects = <P extends Pick<Project, 'archived'>>(projects: P[]): P[] =>
+  projects.filter((p) => p.archived).sort((a, b) => (b.archived ?? '').localeCompare(a.archived ?? ''))
 
 /**
  * Who may see a team's work outside the app (philosophy, principle 9), chosen by whoever coordinates when the project
