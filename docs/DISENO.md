@@ -336,6 +336,9 @@ de elegir. Se dice, con «Ir a juntar» (`publishing.ts`, `door43Copy`, `knowsAl
   el texto fuente del idioma y el original griego o hebreo, y además lo ya construido: las vistas preparadas, las
   citas de cada nota resueltas en el original y en cada texto destino, y los títulos de los artículos. Así se abre
   sin internet y ya listo para leer. Servos guarda esas filas con las mismas claves de caché que tc-study.
+  El formato, cómo se hace y viaja, cómo lo usan Servos, tc-study y translation-helps-mcp, y qué le falta para ser
+  un formato compartido: [`PAQUETES_DE_IDIOMA.md`](PAQUETES_DE_IDIOMA.md). La siguiente versión, con enlaces entre
+  libros (una palabra o un artículo en toda la Biblia): [`PAQUETES_ENLAZADOS.md`](PAQUETES_ENLAZADOS.md).
 - **Decidido el 14 de octubre:**
   - Los paquetes se preparan con el mismo código en tres lugares: dentro de la app cuando hay internet, con un
     comando, y en un servidor que guarda la última versión de cada paquete, con la mayor compresión, para bajarla
