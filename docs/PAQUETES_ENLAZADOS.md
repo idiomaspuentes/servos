@@ -172,9 +172,8 @@ encuentren; después el id y el libro al final, para que una consulta lea todos 
 - `versions.index.helpsIndex` (decisión 2), con `HELPS_INDEX_VERSION = 1` (definida en `resource-pipeline/src/language/bookIndex.ts`, tarea 3) y en
   `partsCodeVersions`. **No entra en el compat.** La capa `index` es opcional: no está en `REQUIRED_LAYERS`.
 - Regla del lector: si la versión del índice no es la suya, o no conoce la capa o la clase, **salta el índice** y sigue
-  con lo demás. Esto pide un cambio pequeño en `planParts`/`applyParts` (etapa 1, tarea 1) que debe estar en la
-  versión de bt-synergy que Servos fije con su PR #10 o justo después, antes de publicar la primera parte `index`
-  (decisión 3).
+  con lo demás. Hecho en `planParts`/`applyParts` (etapa 1, tarea 1; tc-study PR #53), y Servos ya está en esa versión
+  de bt-synergy (`dc6b3f3`, idiomaspuentes/servos#13), antes de que se publique ninguna parte `index` (decisión 3).
 - Servos no pone `index` en la comprobación que rechaza paquetes enteros: si difiere, se salta la capa.
 
 ## 6. Qué se recalcula y cuándo
@@ -269,7 +268,7 @@ originales, una por libro, rehechas solo si cambió el libro; `findOccurrences` 
 |---|---|---|
 | 1 | El índice en partes `index` aparte, o como filas dentro de las partes que ya existen | **Aparte**: una versión nueva rehace solo el índice, y un lector viejo lo salta sin perder los textos |
 | 2 | Un solo nombre de versión (`index.helpsIndex`) o uno por índice | **Uno** |
-| 3 | Cuándo enseñar a los lectores de partes a saltar lo que no conocen | **Antes de que Servos fije su versión de bt-synergy con el PR #10, o en el PR siguiente**, y en todo caso antes de publicar una parte `index` |
+| 3 | Cuándo enseñar a los lectores de partes a saltar lo que no conocen | **Hecho**: tc-study PR #53, en el bt-synergy de Servos desde idiomaspuentes/servos#13, antes de publicar ninguna parte `index` |
 | 4 | Las palabras muy comunes: listas enteras o solo cuentas | **Enteras**; la tarjeta las muestra por libro |
 | 5 | Si el original cambia: saltar los textos alineados a la edición vieja, o hacer una tabla de equivalencias | **Saltarlos** hasta que pase; la tabla solo si un cambio del UHB o del UGNT deja idiomas sin índice mucho tiempo |
 | 6 | La etapa 1 solo con lugares, o también cómo se tradujo, calculado al vuelo | **Solo lugares**; la traducción llega en la etapa 2, ya hecha |
@@ -284,9 +283,9 @@ originales, una por libro, rehechas solo si cambió el libro; `findOccurrences` 
 | Alineación con Strong, forma y ocurrencia | Hecho, viaja | `alignmentMap` en `sot` (no en `prepared`) |
 | Citas de notas y TWL halladas en el original | Hecho, viaja | Capa `quote` |
 | Sellos por libro; huellas de partes por blob | Hecho | `bookContentStamp`; `parts/fingerprint.ts` |
-| Partes 2.0 y su importador | Hecho; ninguna app lo usa aún | `language-pack/src/parts/`; Servos PR #10 |
-| Lectores de partes que saltan lo desconocido | Propuesto, etapa 1 | `parts/plan.ts`, `parts/apply.ts` |
-| Palabras numeradas por libro y listas de Strong | Propuesto, etapa 1 | Secciones 4 y 5 |
+| Partes 2.0 y su importador | Hecho; Servos lo usa para bajar de internet | `language-pack/src/parts/`; Servos PR #10 (`src/resources/online/`) |
+| Lectores de partes que saltan lo desconocido | Hecho, etapa 1, tarea 1 | `parts/plan.ts`, `parts/apply.ts`; tc-study PR #53 |
+| Palabras numeradas por libro y listas de Strong | En curso, etapa 1: claves y listas (tc-study PR #55) y el índice de un libro del original (PR #59) fusionados en `master` de bt-synergy, después de `dc6b3f3`; faltan las demás tareas | Secciones 4 y 5 |
 | Columnas de traducción, palabras de notas y TWL, resumen | Propuesto, etapas 2 y 3 | Sección 9 |
 | `findOccurrences` y la biblioteca de listas | Propuesto, etapa 1 | `language-pack/src/index/` |
 | `find_occurrences` en el MCP | Propuesto, etapa 4 | Sección 9 |

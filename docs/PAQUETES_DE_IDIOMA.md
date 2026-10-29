@@ -4,10 +4,10 @@ Qué es el paquete de idioma con que Servos recibe sus textos y ayudas, cómo se
 tc-study y translation-helps-mcp; qué podrían hacer otras apps con él, y qué le falta para ser un formato compartido.
 La siguiente versión, con los enlaces entre libros, está en [`PAQUETES_ENLAZADOS.md`](PAQUETES_ENLAZADOS.md).
 
-Escrito el 26 de octubre de 2026. Cada afirmación dice de dónde sale. **Hecho** quiere decir que está en el código
+Escrito el 26 de octubre de 2026 y puesto al día el 28. Cada afirmación dice de dónde sale. **Hecho** quiere decir que está en el código
 (con el repositorio y el archivo); **propuesto**, que es una idea de este documento o de un plan que todavía no se
-construye. Las rutas de bt-synergy son de `github.com/unfoldingWord/tc-study`: las que solo están en `origin/master`
-(no en la copia que Servos usa al lado, que va 55 commits atrás) se marcan **[origin/master]**. Las de
+construye. Las rutas de bt-synergy son de `github.com/unfoldingWord/tc-study`, en el commit con que Servos se probó
+(`bt-synergy.ref`, hoy `dc6b3f3`); lo fusionado después en su `master` se dice con su PR. Las de
 translation-helps-mcp son de la rama `v2` de `github.com/unfoldingWord/translation-helps-mcp`.
 
 ## 1. En una frase
@@ -135,8 +135,8 @@ Hay tres versiones distintas, y conviene no confundirlas:
 
 Al abrir (`importLanguagePack`, `pack.ts:293-386`), si la versión de `sot` o `receipt` no es la del lector, se rechaza
 el paquete entero; si es la de una capa derivada, se salta esa capa (`skippedLayers`), que el lector puede
-reconstruir. La versión del código cambia a menudo: entre el paquete de arriba (20 de octubre) y `origin/master` (24 de octubre)
-pasaron `helpsQuote` de 7 a 9, `helpsAlign` de 10 a 12 y `scripturePrepare` de 5000230 a 6000230. Cada cambio vuelve viejos
+reconstruir. La versión del código cambia a menudo: entre el paquete de arriba (20 de octubre) y el bt-synergy de
+Servos (`dc6b3f3`, 28 de octubre) pasaron `helpsQuote` de 7 a 9, `helpsAlign` de 10 a 12 y `scripturePrepare` de 5000230 a 6000230. Cada cambio vuelve viejos
 los paquetes ya repartidos (sección 9).
 
 Con estas versiones se arma la **clave de compatibilidad** (`compatKeyOf`, `bt-synergy/packages/language-pack/src/catalog.ts:40-58`),
@@ -144,7 +144,7 @@ por ejemplo `f1.1-u2.3.0-p6000230-q8-a11-t1`: una app pide solo paquetes de su c
 
 ### 2.6 El formato 2.0: partes
 
-**Hecho, solo en staging [origin/master].** El paquete entero no escala: el inglés no cupo en memoria (7,7 GB a un
+**Hecho.** El paquete entero no escala: el inglés no cupo en memoria (7,7 GB a un
 tercio) y en el servidor de GitHub tardó 47 minutos para un paquete de 155 MB
 (`translation-helps-mcp/docs/superpowers/specs/2026-10-21-language-packs-parts-design.md`). Además, un cambio en un
 libro obligaba a bajar el idioma otra vez.
@@ -159,8 +159,14 @@ idioma en **partes** de unos 250 KB, cada una la unidad que se construye, se gua
 Cada parte es un `parts/<sha256>.part.gz` (gzip determinista con filas `{layer, key, value}`, sin recibos ni marcas
 de tiempo; `parts/partFile.ts`) y la **lista de partes** (`PartsList`, `schema: 2`; `parts/partsList.ts`) nombra
 todas, con la **huella** de lo que entró en cada una (los blobs de git de Door43 y la versión del código;
-`parts/fingerprint.ts`). Una parte cuya huella no cambió no se vuelve a hacer ni a bajar. Servos todavía no abre
-partes; el plan es la entrega 4 de la especificación.
+`parts/fingerprint.ts`). Una parte cuya huella no cambió no se vuelve a hacer ni a bajar.
+
+El **importador de partes** (tc-study PR #51 y #52, `parts/plan.ts`, `staging.ts`, `apply.ts`, `register.ts`,
+`receipts.ts`) planea qué partes faltan, las guarda comprobadas en un área de espera (`staging`) y las aplica por
+unidad en una sola transacción, con un registro de qué parte ocupa cada lugar. Un lector **salta** las partes de una
+clase, una capa o una versión del índice que no conoce (PR #53), para que la capa opcional `index` de
+[`PAQUETES_ENLAZADOS.md`](PAQUETES_ENLAZADOS.md) pueda publicarse sin romper las apps de antes. Servos lo usa desde
+su PR #10 (sección 5).
 
 ## 3. Cómo se hace
 
@@ -184,7 +190,8 @@ Se corre de dos maneras:
   sube a Cloudflare R2 (`publishLanguage.ts`). En R2 queda, por clave de compatibilidad, el paquete con su sha256 en el
   nombre y una **entrada del catálogo** por idioma (`catalog/<compat>/<idioma>.json`, `PackCatalogEntry`,
   `catalog.ts:12-32`), escrita al final. No se vuelve a construir si el número de compilación (los sellos de Door43,
-  MACULA y los léxicos) no cambió. El 24 y el 26 de octubre publicó es-419 e inglés, en partes, en staging.
+  MACULA y los léxicos) no cambió. Publica también en partes (`publishLanguageParts.ts`): en staging desde el 24 de
+  octubre, y en producción cuando lo permite `PACKS_PARTS_PRODUCTION` (tc-study PR #57).
 
 **Propuesto** (diseño del 14 de octubre, `DISENO.md` sección 7): hacer paquetes también **dentro de la app** cuando
 hay internet. tc-study no tiene todavía ese constructor: su exportación de colecciones no es un paquete de idioma
@@ -196,7 +203,7 @@ hay internet. tc-study no tiene todavía ese constructor: su exportación de col
 |---|---|
 | **Dentro del instalador.** Las apps de Windows y Android traen los paquetes del español y de los originales, y los abren solas la primera vez | **Hecho** en Servos: `vite.config.ts` (`packsInside`) los mete en `paquetes/` con un índice, y `src/app/projects/packsInside.ts` los abre una vez cada uno, los originales primero |
 | **Un archivo de mano en mano**: tarjeta SD, USB, Bluetooth, compartir cercano, un mensaje | **Hecho**: «Recibir textos y ayudas» elige un `.zip` (`src/app/screens/ReceivePack.tsx`). Lo que llega por Bluetooth o por mensaje queda en Descargas y se elige igual. Un libro (100-500 KB) cabe en cualquier mensaje; el idioma entero (10 MB) y los originales (23 MB), en una tarjeta |
-| **Bajarlo de internet** desde R2, con reanudación y comprobando el sha256 | **Propuesto, diseñado**: rutas `/v2/packs` del MCP (`src/api/routes/packs.ts`), contrato en `translation-helps-mcp/docs/LANGUAGE_PACKS_INFRA.md:177-196`. Las rutas están escritas pero no publicadas; solo existen los buckets |
+| **Bajarlo de internet**, por partes, del Worker de translation-helps | **Hecho** en Servos (PR #10): `src/resources/online/` pide la lista del idioma, baja solo las partes que faltan o cambiaron, comprueba el sha256, retoma lo cortado y aplica cuando nadie escribe (sección 5). El Worker sirve las partes desde el PR #79 de translation-helps-mcp; contrato en `translation-helps-mcp/docs/LANGUAGE_PACKS_INFRA.md` («Client contract: parts») |
 | **De un aparato a otro**: armar un paquete con lo que este aparato tiene, para pasarlo | **Propuesto**. El código existe (`buildLanguagePack` con `packSourceFrom`, `bt-synergy/packages/language-pack/src/stores.ts`; Servos lo usa en `src/resources/reading.test.ts`), pero ninguna pantalla lo ofrece |
 
 ## 5. Cómo lo usa Servos sin internet
@@ -217,6 +224,13 @@ hay internet. tc-study no tiene todavía ese constructor: su exportación de col
   escriben al final) no están, y abrir el mismo paquete otra vez completa lo que falta.
 - **Qué cambió en lo ya traducido** (`src/app/projects/helpsChanges.ts`, `helpsWatch.ts`): antes de reemplazar, se
   leen las notas y textos de los versículos ya escritos; después, se comparan y se marcan en el editor.
+- **Con internet, por partes** (`src/resources/online/`, PR #10): `packsClient.ts` habla con el Worker
+  (`packsServer.ts`: producción, o staging con `?packs=staging`); `planLanguage.ts` decide qué unidades necesitan los
+  proyectos (lo compartido y sus libros); `downloads.ts` baja las partes a la espera, pocas a la vez y los originales
+  primero; `onlineResources.ts` mira si hay algo nuevo (al empezar, al volver la conexión, a lo más cada tres horas,
+  nunca mientras se escribe), ofrece lo nuevo con su tamaño en Inicio (`Home.tsx`) y lo aplica después con el mismo
+  `watchHelps` → `keepHelpsChanges` de un paquete recibido. `onlineLock.ts` impide que abrir un paquete y aplicar
+  partes se crucen. Las listas se guardan en IndexedDB (`keptLists.ts`), así que se planea también sin internet.
 - **Qué lee** (`src/resources/reading.ts`): capítulos, palabras con su alineación, notas con su cita en el texto
   puente, preguntas, artículos; léxicos y MACULA (`companions.ts`); y los créditos de cada recurso desde su fila del
   catálogo (`credits.ts`).
@@ -240,8 +254,8 @@ siempre (`tc-study-cache`, `tc-study-catalog`). Al ser las mismas filas, lo abie
 Door43 no se distinguen. Lo que Servos aprendió (comparar sellos, no volver atrás, abrir de nuevo lo cortado) está en
 `src/resources/freshness.ts` y `packs.ts` y se puede llevar.
 
-Nota del 26 de octubre: el sitio publicado de tc-study **no tiene nada de esto**. Ningún despliegue de `master` a
-Cloudflare Pages ha salido bien desde febrero: a `unfoldingWord/tc-study` le falta el secreto `CLOUDFLARE_API_TOKEN` (flujo
+Nota del 28 de octubre: el sitio publicado de tc-study **no tiene nada de esto**. Ningún despliegue de `master` a
+Cloudflare Pages ha salido bien desde febrero (el último, el del PR #56, tampoco): a `unfoldingWord/tc-study` le falta el secreto `CLOUDFLARE_API_TOKEN` (flujo
 `deploy-tc-study.yml`, paso «Publish to Cloudflare Pages»).
 
 ## 7. Cómo lo usa translation-helps-mcp
@@ -262,9 +276,10 @@ Ya usa paquetes de dos maneras:
   `notes.ts:56-78`, `wordLinks.ts:56`), con la cita ya hallada en el texto literal y en el simple, cosa que Door43 no
   da. Para es-419, la mediana baja de 13 ms a 2 ms (`docs/pack-views-comparison-es-419.md`). Las preguntas, los
   textos, TW, TA y OBS siguen saliendo de Door43.
-- **Reparte paquetes** (**hecho, sin publicar**; PR #70 y #72): `/v2/packs/{compat}/{idioma}` da la entrada del
-  catálogo, y `/{compat}/{idioma}/{sha256}` el paquete, con descarga por partes; si falta, pide a GitHub construirlo
-  (`src/packs/dispatch.ts`) con límites. No depende de bt-synergy como paquete: comparte con él un tipo copiado
+- **Reparte paquetes y partes** (**hecho**; PR #70 y #72 para el paquete entero, PR #79 para las partes):
+  `/v2/packs/{compat}/{idioma}` da la lista del idioma, `/v2/packs/parts/{sha256}` cada parte; si falta, pide a GitHub
+  construirla (`src/packs/dispatch.ts`) con límites. Que el Worker de producción pida construcciones en partes es el
+  PR #87, todavía abierto. Servos baja de aquí (sección 5). No depende de bt-synergy como paquete: comparte con él un tipo copiado
   (`PackCatalogEntry`, `src/packs/freshness.ts:20-37`) y la clave de compatibilidad.
 
 La v2 **no tiene modo local**: no hay servidor por stdio, y sin Door43 no responde. La v1 sí lo tenía (servidor stdio
@@ -342,15 +357,15 @@ compartir ese código, le falta:
 | Paquetes `originals`, `language`, `base`, `book` | Hecho | `pack.ts:101-205` |
 | Léxicos y MACULA en los paquetes | Hecho | `resource-pipeline/cli/companions.ts` |
 | Hacerlos con un comando | Hecho | `resource-pipeline/cli/prepare-language.ts` |
-| Hacerlos en GitHub y subirlos a R2 | Hecho, en staging | `.github/workflows/language-packs.yml`, `publishLanguage.ts` |
-| Formato 2.0 en partes | Hecho, en staging [origin/master] | `language-pack/src/parts/` |
+| Hacerlos en GitHub y subirlos a R2 | Hecho; partes en producción con `PACKS_PARTS_PRODUCTION` | `.github/workflows/language-packs.yml`, `publishLanguage.ts` |
+| Formato 2.0 en partes, su importador y saltar lo desconocido | Hecho | `language-pack/src/parts/`; tc-study PR #51, #52, #53 |
 | Servos: recibir, comparar versiones, abrir, retomar | Hecho | `src/resources/{packs,freshness,store}.ts`, `src/app/screens/ReceivePack.tsx` |
 | Servos: paquetes dentro del instalador | Hecho | `vite.config.ts`, `src/app/projects/packsInside.ts` |
 | Servos: qué cambió en lo traducido | Hecho | `src/app/projects/helpsChanges.ts` |
-| Servos: abrir partes, bajar de internet | Propuesto, diseñado | especificación de partes, sección 5 |
+| Servos: bajar partes de internet y aplicarlas | Hecho | `src/resources/online/` (PR #10) |
 | Servos: pasar recursos a otro aparato | Propuesto | `buildLanguagePack` existe |
 | tc-study: abrir paquetes | Propuesto | README de `language-pack` |
 | MCP: notas y enlaces desde vistas | Hecho | `translation-helps-mcp/src/api/routes/packViews.ts` |
-| MCP: repartir paquetes por `/v2/packs` | Hecho, sin publicar | `src/api/routes/packs.ts` |
+| MCP: repartir paquetes y partes por `/v2/packs` | Hecho; construcciones en partes desde producción: PR #87 abierto | `src/api/routes/packs.ts` |
 | MCP: servir sin internet desde un paquete | Propuesto | sección 7.2 |
 | Contrato estable, esquema, firma, documento público | Propuesto | sección 9 |
