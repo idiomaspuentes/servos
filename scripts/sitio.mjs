@@ -59,10 +59,16 @@ const sheet = readFileSync(join(SITE, 'estilo.css'), 'utf8')
 const sheetName = `sitio/estilo-${hash(sheet)}.css`
 write(sheetName, sheet)
 
-// The mark, drawn in the page so it takes the colour of the theme.
-const MARK = readFileSync(join(PUBLIC, 'icon.svg'), 'utf8')
-  .replace(/<style>.*<\/style>/, '')
-  .replace('<svg ', '<svg class="marca" aria-hidden="true" ')
+// The mark, drawn in the page so it takes the colour of the theme: the book that speaks as the app draws it beside its
+// name (`BrandMark.tsx`, its one source), not the tab's icon, which is the same book redrawn for 16 pixels.
+const BOOK = [...readFileSync(join(HERE, 'src', 'app', 'frame', 'BrandMark.tsx'), 'utf8')
+  .split('const BOOK_THAT_SPEAKS =')[1]
+  .split('\n\n')[0]
+  .matchAll(/'([^']+)'/g)]
+  .map((m) => m[1])
+  .join('')
+if (!BOOK.startsWith('M')) throw new Error('No se encontró el dibujo de la marca en src/app/frame/BrandMark.tsx')
+const MARK = `<svg class="marca" viewBox="3 8 42 32" aria-hidden="true"><path fill-rule="evenodd" d="${BOOK}"/></svg>`
 
 // ── The languages ──
 
