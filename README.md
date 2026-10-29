@@ -40,11 +40,12 @@ y el *service worker* nuevo de la raíz reemplaza al viejo (ver `sitio/sw.templa
 Las apps para Windows y para Android llevan dentro los paquetes de textos y ayudas que haya en `paquetes-dentro/`
 (o en la carpeta que diga `SERVOS_PAQUETES_DENTRO`), y los abren solas la primera vez que se usan: la persona elige
 su idioma, escribe su nombre y empieza un libro sin pasar ningún archivo. Esa carpeta no está en el repositorio; los
-paquetes se hacen con `bun scripts/paquetes-dentro.ts --taller <Taller>/public`, que usa el mismo pipeline de
-bt-synergy y sella MACULA con su commit, como producción. Con `prepare-language` a secas, MACULA queda sellado con la
-fecha del build, y las apps ofrecen bajarlo otra vez apenas hay internet. Sin paquetes, las apps se compilan igual y lo
-avisan. Un paquete se abre
-una sola vez (se reconoce por lo que contiene); el que trae una versión nueva de la app se abre si es más nuevo.
+paquetes se hacen con `bun packages/resource-pipeline/cli/prepare-language.ts --lang es-419 --no-obs --macula
+<Taller>/public` en bt-synergy. Desde tc-study#62 (`bt-synergy.ref`), MACULA queda sellado con su commit de Taller,
+como en producción: el comando lo dice en la línea `MACULA: <commit> (<fecha>)`. Con un bt-synergy anterior quedaba
+sellado con la fecha del build, y las apps ofrecían bajarlo otra vez apenas había internet (rc.2). Sin paquetes, las
+apps se compilan igual y lo avisan. Un paquete se abre una sola vez (se reconoce por lo que contiene); el que trae una
+versión nueva de la app se abre si es más nuevo.
 
 ### La app para Windows (Tauri)
 
