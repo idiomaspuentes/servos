@@ -11,7 +11,7 @@ Os arquivos estão em [Baixar](/#descargar). Não é preciso que cada pessoa os 
 
 ## Num telefone Android
 
-1. Baixe **Servos-0.1.0-rc.2.apk** (35 MB), ou passe-o para o telefone, e toque nele na pasta onde chegou (Downloads, Bluetooth, Xender ou o cartão).
+1. Baixe **Servos-0.1.0-rc.3.apk** (35 MB), ou passe-o para o telefone, e toque nele na pasta onde chegou (Downloads, Bluetooth, Xender ou o cartão).
 2. Se o telefone perguntar, permita **instalar apps desta fonte**. Depois volte e toque em **Instalar**.
 3. Pode aparecer um aviso do **Play Protect** dizendo que não conhece o app. Toque em **Mais detalhes** e depois em **Instalar mesmo assim**: o aviso aparece porque o app não vem da loja.
 4. Abra o Servos e continue com [A primeira vez](/docs/primera-vez/).
@@ -22,7 +22,7 @@ Com o **Xender** ou outro app de compartilhar, dá para passar o app já instala
 
 ## Num computador com Windows
 
-1. Baixe **Servos_0.1.0-rc.2_x64-setup.exe** (241 MB) e abra-o. É grande porque traz tudo o que precisa para se instalar sem internet.
+1. Baixe **Servos_0.1.0-rc.3_x64-setup.exe** (241 MB) e abra-o. É grande porque traz tudo o que precisa para se instalar sem internet.
 2. O Windows pode dizer **«O Windows protegeu o computador»**. Clique em **Mais informações** e depois em **Executar assim mesmo**: o aviso aparece porque o instalador ainda não está assinado.
 3. Siga os passos do instalador. O Servos se instala só para a pessoa que usa o computador, sem pedir permissão de administrador.
 4. O Servos fica no menu Iniciar. Os arquivos **.servos** se abrem com o Servos com um clique duplo.
