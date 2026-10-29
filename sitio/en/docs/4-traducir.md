@@ -3,9 +3,9 @@ titulo: Translate in the editor
 resumen: Write each verse in your language, with the bridge text and the helps beside it.
 ---
 
-## Move the book on to Translation
+## The Translation step
 
-When the team has finished studying, in the book tap the **Translation** step and then **Move on to Translation**. The book moves to that step for the whole team, and you can go back.
+In the book, tap the **Translation** step. You do not need to finish the study first: each person can go back to **Study** whenever they want, and the book keeps where they left off in each step.
 
 In the Translation step there are two ways to work: **Written translation**, in the editor, and **Oral translation**, recording each verse. This page is about the editor.
 
@@ -34,7 +34,7 @@ In a wide window, each verse is a row: the bridge text on one side, its box on t
 ## And also
 
 - **Your study note**, if you wrote one, appears with its verses.
-- **In the book, More › Project glossary**: the words of the original and how the team agreed to translate them.
+- **Project glossary**, on the home screen or in the book (**More › Project glossary**): the words of the original and how the team agreed to translate them.
 - **In the book, More › Save the book as USFM**: the draft in the format that Paratext, translationCore and Door43 read.
 
 > **Each person writes with their own name.** If the device is shared, before writing check at the top who is working; to change, tap your name on the home screen and choose **Change person**.

@@ -1,6 +1,6 @@
 {
   "name": "servos",
-  "version": "0.1.0-rc.1",
+  "version": "0.1.0-rc.3",
   "private": true,
   "type": "module",
   "description": "App sin internet para traducir la Biblia con los recursos de Taller",

@@ -3,7 +3,9 @@
  * the title, since most teams have one. The book worked on last is the one moss field, with the person's name («Ana,
  * pick up where you left off»), the mini app and the place, the book's five steps as a track with the step written
  * under it, and the one filled button, «Continue →». The project's other books are one-line rows with their step as
- * words, and adding a book is the last row of the same list. Under it, the project's glossary, a row of its own: it
+ * words, and adding a book is the last row of the same list. With many books, only the three opened last are rows, and
+ * a row «See the N books» opens them all in a sheet (`recentBooks.ts`): a New Testament would push everything under the
+ * list out of sight. Under it, the project's glossary, a row of its own: it
  * opens without opening a book or a mini app (asked by the teams trying the app, October 2026). At the foot, two
  * chips: the project's settings and another project. Three shapes, no more: the field, the list and the chips.
  *
@@ -35,6 +37,7 @@ import { useCopies } from './CopiesSheet'
 import { useLanguageLabel } from './NewProject'
 import { useI18n } from '../i18n/i18n'
 import { readGlossary } from '../projects/glossary'
+import { homeBooks, recentBooksOf } from '../projects/recentBooks'
 import { useDoor43Copy } from './Door43CopySection'
 import { failingLong } from '../frame/door43Copy'
 import { titleOf, type Phase, type Project } from '../projects/model'
@@ -137,6 +140,13 @@ export function Home({
   const begun = Boolean(work && (work.begun || (work.pct ?? 0) > 0))
   const sizeOf = (p: Project) => `${p.languageName} (${p.languageCode}) · ${p.books.length === 1 ? t('inicio.unLibro') : t('inicio.libros', { n: p.books.length })}`
   const others = project ? project.books.filter((b) => b !== current) : []
+  // Many books: the ones opened last, and a row to all of them, so the glossary and the settings stay close.
+  const [allBooks, setAllBooks] = useState(false)
+  const listed = project ? homeBooks(others.map((b) => b.code), recentBooksOf(project.id)) : { listed: [], all: true }
+  const bookStep = (code: string) => {
+    const w = workOn(project!, code)
+    return `${t(`pasos.${w.step}Corto`)}${w.pct !== null ? ` · ${w.pct} %` : ''}`
+  }
   const words = project ? readGlossary(project.id).length : 0
   const online = useOnline()
   const waits = project ? waiting.filter((e) => e.projectId === project.id) : []
@@ -340,20 +350,21 @@ export function Home({
               {suggestion}
               {current && (
                 <ul className="home-books">
-                  {others.map((b) => {
-                    const w = workOn(project, b.code)
-                    return (
-                      <li key={b.code}>
-                        <button type="button" className="home-book" onClick={() => onBook(project.id, b.code)}>
-                          <span className="home-book-name">{titleOf(project, b.code)}</span>
-                          <span className="home-book-step">
-                            {t(`pasos.${w.step}Corto`)}
-                            {w.pct !== null && ` · ${w.pct} %`}
-                          </span>
-                        </button>
-                      </li>
-                    )
-                  })}
+                  {listed.listed.map((code) => (
+                    <li key={code}>
+                      <button type="button" className="home-book" onClick={() => onBook(project.id, code)}>
+                        <span className="home-book-name">{titleOf(project, code)}</span>
+                        <span className="home-book-step">{bookStep(code)}</span>
+                      </button>
+                    </li>
+                  ))}
+                  {!listed.all && (
+                    <li>
+                      <button type="button" className="home-book" onClick={() => setAllBooks(true)}>
+                        <span className="home-book-name">{t('inicio.verLibros', { n: project.books.length })}</span>
+                      </button>
+                    </li>
+                  )}
                   <li>
                     <button type="button" className="home-book is-add" onClick={() => onAddBook(project.id)}>
                       <span className="home-plus" aria-hidden="true">
@@ -393,6 +404,21 @@ export function Home({
           </>
         )}
       </main>
+      {allBooks && project && (
+        <Sheet title={t('inicio.librosDe', { proyecto: project.name })} onClose={() => setAllBooks(false)}>
+          {project.books.map((b) => (
+            <MenuRow
+              key={b.code}
+              label={titleOf(project, b.code)}
+              description={bookStep(b.code)}
+              onClick={() => {
+                setAllBooks(false)
+                onBook(project.id, b.code)
+              }}
+            />
+          ))}
+        </Sheet>
+      )}
       {picking && (
         <Sheet title={t('inicio.proyectos')} onClose={() => setPicking(false)}>
           {projects.map((p) => (

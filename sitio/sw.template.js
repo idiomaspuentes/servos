@@ -44,6 +44,20 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin || url.pathname.startsWith('/app/') || url.pathname === '/app') return
   const page = request.mode === 'navigate'
   const key = page && !url.pathname.endsWith('/') && !/\.[a-z0-9]+$/i.test(url.pathname) ? url.pathname + '/' : url.pathname
+  // A page asks the network first, and the kept copy only without internet: kept first, a site deployed with a new
+  // version, its downloads and its guide showed the old pages until a second visit (October 2026). Pictures, letters
+  // and styles stay kept first: each new worker keeps them anew in its own cache when it installs.
+  if (page) {
+    event.respondWith(
+      fetch(request).catch(() =>
+        caches
+          .match(key, { cacheName: CACHE, ignoreSearch: true })
+          .then((kept) => kept || caches.match('/', { cacheName: CACHE }))
+          .then((kept) => kept || Response.error())
+      )
+    )
+    return
+  }
   event.respondWith(
     caches.match(key, { cacheName: CACHE, ignoreSearch: true }).then(
       (kept) =>

@@ -1,6 +1,6 @@
 [package]
 name = "servos"
-version = "0.1.0-rc.1"
+version = "0.1.0-rc.3"
 description = "Servos en la computadora: para traducir en su idioma, en equipo, con o sin internet"
 authors = ["Idiomas Puentes"]
 license = "MIT"

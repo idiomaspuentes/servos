@@ -3,7 +3,7 @@ titulo: Study the passage
 resumen: Read before you translate, with the bridge texts, the notes, the questions and the key words.
 ---
 
-The first step of each book is **Study**: understand the passage before writing it in another language. In the book, with the **Study** step chosen, tap **Start** (or **Continue**, where you left off).
+The first step of each book is **Study**: understand the passage before writing it in another language. In the book, tap the **Study** step and then **Start** (or **Continue**, where you left off).
 
 ## The introductions
 
@@ -29,4 +29,4 @@ At the end of each section are the **Comprehension notes**: questions to check t
 
 Tap **Write my note** to write down what you understood or what the team should talk about. **What you write will be seen later when translating** those verses.
 
-> The percentage of the Study step counts the verses already studied. You do not need to reach one hundred percent to start translating: the team decides when to go on to the next step.
+> The percentage of the Study step counts the verses already studied. You do not need to reach one hundred percent to start translating: the team decides when to go on with the next step, and it can come back to this one whenever it wants.

@@ -3,7 +3,7 @@ titulo: Estudar a passagem
 resumen: Ler antes de traduzir, com os textos-ponte, as notas, as perguntas e as palavras-chave.
 ---
 
-O primeiro passo de cada livro é o **Estudo**: entender a passagem antes de escrevê-la em outro idioma. No livro, com o passo **Estudo** escolhido, toque em **Começar** (ou em **Continuar**, de onde parou).
+O primeiro passo de cada livro é o **Estudo**: entender a passagem antes de escrevê-la em outro idioma. No livro, toque no passo **Estudo** e depois em **Começar** (ou em **Continuar**, de onde parou).
 
 ## As introduções
 
@@ -29,4 +29,4 @@ No fim de cada seção estão as **notas de compreensão**: perguntas para confe
 
 Toque em **Escrever minha nota** para anotar o que entendeu ou o que a equipe precisa conversar. **O que você escrever vai aparecer depois, ao traduzir** esses versículos.
 
-> A porcentagem do passo Estudo conta os versículos já estudados. Não é preciso chegar a cem por cento para começar a traduzir: a equipe decide quando passar para o passo seguinte.
+> A porcentagem do passo Estudo conta os versículos já estudados. Não é preciso chegar a cem por cento para começar a traduzir: a equipe decide quando seguir para o passo seguinte, e pode voltar a este quando quiser.

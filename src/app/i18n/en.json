@@ -112,6 +112,8 @@
   "inicio.libros": "{n} books",
   "inicio.unLibro": "1 book",
   "inicio.agregarLibro": "Add a book",
+  "inicio.verLibros": "See all {n} books",
+  "inicio.librosDe": "The books of {proyecto}",
   "inicio.ajustes": "Settings",
   "inicio.ajustes.computadora": "Project settings",
   "inicio.otroProyecto": "Another project",

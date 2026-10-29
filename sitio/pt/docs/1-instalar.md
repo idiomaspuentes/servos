@@ -11,21 +11,23 @@ Os arquivos estão em [Baixar](/#descargar). Não é preciso que cada pessoa os 
 
 ## Num telefone Android
 
-1. Baixe **Servos-0.1.0-rc.1.apk** (38 MB), ou passe-o para o telefone, e toque nele na pasta onde chegou (Downloads, Bluetooth, Xender ou o cartão).
+1. Baixe **Servos-0.1.0-rc.3.apk** (35 MB), ou passe-o para o telefone, e toque nele na pasta onde chegou (Downloads, Bluetooth, Xender ou o cartão).
 2. Se o telefone perguntar, permita **instalar apps desta fonte**. Depois volte e toque em **Instalar**.
 3. Pode aparecer um aviso do **Play Protect** dizendo que não conhece o app. Toque em **Mais detalhes** e depois em **Instalar mesmo assim**: o aviso aparece porque o app não vem da loja.
 4. Abra o Servos e continue com [A primeira vez](/docs/primera-vez/).
 
 Com o **Xender** ou outro app de compartilhar, dá para passar o app já instalado de um telefone para outro, sem baixá-lo de novo. Com ele também se passam os arquivos de trabalho (**.servos**).
 
-> **Ao instalar uma versão nova** por cima da anterior, o trabalho que está no telefone fica. O que se perde é o que não foi compartilhado, se o app for **apagado**: antes de apagá-lo, compartilhe seus livros (veja [Juntar o trabalho](/docs/juntar/)).
+> **Ao instalar uma versão nova** por cima da anterior, o telefone pergunta se você quer **Atualizar**, e o trabalho que está nele fica. Na primeira vez que a versão nova é aberta, o Servos prepara de novo os textos e as ajudas que traz; no início aparece quanto já foi feito. O que se perde é o que não foi compartilhado, se o app for **apagado**: antes de apagá-lo, compartilhe seus livros (veja [Juntar o trabalho](/docs/juntar/)).
 
 ## Num computador com Windows
 
-1. Baixe **Servos_0.1.0-rc.1_x64-setup.exe** (242 MB) e abra-o. É grande porque traz tudo o que precisa para se instalar sem internet.
+1. Baixe **Servos_0.1.0-rc.3_x64-setup.exe** (241 MB) e abra-o. É grande porque traz tudo o que precisa para se instalar sem internet.
 2. O Windows pode dizer **«O Windows protegeu o computador»**. Clique em **Mais informações** e depois em **Executar assim mesmo**: o aviso aparece porque o instalador ainda não está assinado.
 3. Siga os passos do instalador. O Servos se instala só para a pessoa que usa o computador, sem pedir permissão de administrador.
 4. O Servos fica no menu Iniciar. Os arquivos **.servos** se abrem com o Servos com um clique duplo.
+
+Para passar para uma versão nova, abra o instalador dela por cima do que já está: o trabalho do computador fica.
 
 ## No navegador, sem instalar
 
