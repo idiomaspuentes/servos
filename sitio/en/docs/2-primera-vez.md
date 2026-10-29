@@ -68,9 +68,9 @@ A project is the translation into one language. The person who coordinates creat
 3. Tap **Create Jonah** (or the book you chose).
 
 ![Choose the book](elegir-libro.webp "At the top, the books that have texts and helps")
-![The book and its five steps](libro.webp "At the top, the last thing you did; below, the steps")
+![The book and its five steps](libro.webp "At the top, what to do next; below, the five steps")
 
-The book opens at **Pick up where you left off**, with the button to go back to the last thing you did in it. Below are its five steps, each with how much is done: **Study**, **Translation**, **Checking**, **Reading with the community** and **Publishing**. Tap a step to see its tools; with **back** you return to the book. The steps do not close: the team can go back to any of them whenever it wants.
+At the top, the book says what to do next: a new book starts at **To begin**, with the Study; after that it says **Pick up where you left off**, with the button to go back to the last thing you did in it. Below are its five steps, each with how much is done: **Study**, **Translation**, **Checking**, **Reading with the community** and **Publishing**. Tap a step to see its tools; with **back** you return to the book. The steps do not close: the team can go back to any of them whenever it wants.
 
 Servos also asks **how to say the book's name** in the people's language: that is how it appears in the app and when you publish. You can write it now or later, in **More › Book name**.
 

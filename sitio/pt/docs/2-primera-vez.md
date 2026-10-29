@@ -68,9 +68,9 @@ Um projeto é a tradução para um idioma. Quem coordena o cria uma vez e o comp
 3. Toque em **Criar Jonás** (ou o livro que escolheu).
 
 ![Escolher o livro](elegir-libro.webp "Em cima, os livros que têm textos e ajudas")
-![O livro e seus cinco passos](libro.webp "Em cima, o que você fez por último; embaixo, os passos")
+![O livro e seus cinco passos](libro.webp "Em cima, o que fazer agora; embaixo, os cinco passos")
 
-O livro se abre em **Continue de onde parou**, com o botão para voltar ao que você fez por último nele. Embaixo estão seus cinco passos, cada um com o que já foi feito: **Estudo**, **Tradução**, **Revisão**, **Leitura com a comunidade** e **Publicação**. Toque num passo para ver suas ferramentas; com **Voltar**, você retorna ao livro. Os passos não se fecham: a equipe pode voltar a qualquer um quando quiser.
+Em cima, o livro diz o que fazer agora: um livro novo começa em **Para começar**, com o Estudo; depois diz **Continue de onde parou**, com o botão para voltar ao que você fez por último nele. Embaixo estão seus cinco passos, cada um com o que já foi feito: **Estudo**, **Tradução**, **Revisão**, **Leitura com a comunidade** e **Publicação**. Toque num passo para ver suas ferramentas; com **Voltar**, você retorna ao livro. Os passos não se fecham: a equipe pode voltar a qualquer um quando quiser.
 
 O Servos também pergunta **como se diz o nome do livro** no idioma do povo: é assim que ele aparece no app e ao publicar. Você pode escrevê-lo agora ou depois, em **Mais › Nome do livro**.
 

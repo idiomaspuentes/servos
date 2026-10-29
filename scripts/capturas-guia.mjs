@@ -130,7 +130,7 @@ if (part('primera')) {
   await click(page, button(page, s.agregarProyecto), 600)
   await shot(page, 'agregar-proyecto')
   await click(page, page.getByText(s.nuevaBiblia))
-  await page.locator('input[type=search]').fill('ayacucho')
+  await page.locator('input[type=search]').first().fill('ayacucho')
   await page.waitForTimeout(800)
   await click(page, page.getByText('Ayacucho Quechua'))
   await shot(page, 'nueva-biblia')
@@ -168,6 +168,8 @@ if (part('ejemplo')) {
   await click(page, button(page, s.juntar), 2000)
   await shot(page, 'juntar')
   await openBook(page, s.tito)
+  // The book's «Continue» goes back to the work done last; the editor is in the Translation step.
+  await click(page, text(page, s.traduccion), 1000)
   await click(page, button(page, s.empezarOContinuar), 3500)
   await shot(page, 'editor-con-texto')
   await click(page, text(page, s.tpl), 1200)
