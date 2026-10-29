@@ -642,6 +642,14 @@ export function moveBooksToProjects(projects: Array<{ id: string; books: Array<{
   }
 }
 
+/** A project deleted from this device (`forget.ts`): each of its books goes, with any copy the page left on leaving. */
+export function forgetBooksOf(projectId: string) {
+  const mine = (key: string) => key.endsWith(`~${projectId}`)
+  for (const key of shelf.codes()) if (mine(key)) shelf.remove(key)
+  for (const key of localShelf.codes()) if (mine(key)) localShelf.remove(key)
+  for (const k of keysUnder(LEAVING)) if (mine(k)) write(k, null)
+}
+
 /** Only for the tests: forgets what was read, as another device would not have it. */
 export function forgetBooks() {
   localMemo.clear()

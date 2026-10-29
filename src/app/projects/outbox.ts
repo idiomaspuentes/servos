@@ -80,6 +80,9 @@ export function ask(errand: Pick<Errand, 'kind' | 'projectId' | 'person' | 'book
 /** Takes an errand back: it does not go. */
 export const drop = (id: string) => write(read().filter((e) => e.id !== id))
 
+/** A project deleted from this device: nothing of it waits to go any more. */
+export const dropProject = (projectId: string) => write(read().filter((e) => e.projectId !== projectId))
+
 /** Done with internet from its screen: what waited to do the same goes away (a version done does an upload's work too). */
 export function settle(kind: ErrandKind, projectId: string, person: string) {
   const covered = (e: Errand) => same(e, { projectId, person }) && (e.kind === kind || (kind === 'version' && e.kind === 'subir'))

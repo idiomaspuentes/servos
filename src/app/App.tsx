@@ -10,7 +10,8 @@ import { MiniAppScreen } from './frame/MiniAppScreen'
 import { useT } from './i18n/i18n'
 import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type Position } from './miniapps/contract'
 import { miniApp } from './miniapps/registry'
-import { EXAMPLE_PROJECT_ID, PHASES, exampleProject, loadProjects, saveProjects, titleOf, type Project } from './projects/model'
+import { EXAMPLE_PROJECT_ID, PHASES, activeProjects, archivedProjects, exampleProject, loadProjects, saveProjects, titleOf, type Project } from './projects/model'
+import { forgetProject } from './projects/forget'
 import { inProject, setProject } from './projects/scope'
 import { bookState, languageOf, libraryVersion, loadBook, setProjects as setLibraryProjects, subscribeLibrary } from './projects/library'
 import { firstUndone, placeLabel, stepPercent } from './projects/progress'
@@ -29,6 +30,7 @@ import { Language, TestModeBar } from './screens/Language'
 import { AddProjectSheet, NewProject } from './screens/NewProject'
 import { PersonMenu } from './screens/PersonMenu'
 import { AboutSheet } from './screens/AboutSheet'
+import { ArchivedSheet } from './screens/ArchivedSheet'
 import { Door43AccountSheet } from './screens/Door43Account'
 import { Welcome } from './screens/Welcome'
 import { EXAMPLE_PEOPLE, addPerson, loadPeople, savePeople, type People } from './projects/people'
@@ -92,6 +94,7 @@ export function App() {
   const [personMenu, setPersonMenu] = useState(false)
   const [about, setAbout] = useState(false)
   const [copiesSheet, setCopiesSheet] = useState(false)
+  const [archiveSheet, setArchiveSheet] = useState(false)
   // A copy on the memory card, while someone works (frame/copies.ts): who is working is read when it is made.
   const working = useRef<string | null>(null)
   working.current = people ? person : null
@@ -159,8 +162,8 @@ export function App() {
     setProjectsState(next)
     saveProjects(next)
     setLibraryProjects(next)
-    // What Servos online plans and offers: the books of these projects, in their helps languages.
-    setOnlineProjects(next)
+    // What Servos online plans and offers: the books of these projects, in their helps languages; not of those archived.
+    setOnlineProjects(activeProjects(next))
   }
   const setResume = (r: Resume) => {
     setResumeState(r)
@@ -347,7 +350,7 @@ export function App() {
       <TestModeBar />
       {screen.kind === 'home' && (
         <Home
-          projects={projects}
+          projects={activeProjects(projects)}
           person={person}
           resume={resume}
           resumeAt={
@@ -382,6 +385,7 @@ export function App() {
           onBook={openBook}
           onAddBook={setAddBookFor}
           onSettings={(projectId) => setScreen({ kind: 'settings', projectId })}
+          onGlossary={(projectId) => setScreen({ kind: 'glossary', projectId, back: { kind: 'home' } })}
           onPersonMenu={() => setPersonMenu(true)}
           onCopies={() => setCopiesSheet(true)}
         />
@@ -465,7 +469,9 @@ export function App() {
           project={project(screen.projectId)!}
           books={project(screen.projectId)!.books.map((b) => ({ code: b.code, name: titleOf(project(screen.projectId), b.code), chapters: chaptersFor(b.code) }))}
           person={person}
-          backLabel={screen.back.kind === 'book' ? titleOf(project(screen.projectId), screen.back.book) : t('marco.volver')}
+          backLabel={
+            screen.back.kind === 'book' ? titleOf(project(screen.projectId), screen.back.book) : screen.back.kind === 'home' ? t('marco.inicio') : t('marco.volver')
+          }
           openEntry={screen.entry}
           onBack={() => setScreen(screen.back)}
           onOpenVerse={(use, entry) => {
@@ -512,6 +518,11 @@ export function App() {
           onBack={home}
           onSave={(p) => {
             setProjects(projects.map((x) => (x.id === p.id ? p : x)))
+            home()
+          }}
+          onArchive={() => {
+            const id = screen.projectId
+            setProjects(projects.map((x) => (x.id === id ? { ...x, archived: new Date().toISOString() } : x)))
             home()
           }}
         />
@@ -643,6 +654,11 @@ export function App() {
             setPersonMenu(false)
             setCopiesSheet(true)
           }}
+          archived={archivedProjects(projects).length}
+          onArchived={() => {
+            setPersonMenu(false)
+            setArchiveSheet(true)
+          }}
           onAbout={() => {
             setPersonMenu(false)
             setAbout(true)
@@ -650,6 +666,34 @@ export function App() {
         />
       )}
       {about && <AboutSheet onClose={() => setAbout(false)} />}
+      {archiveSheet && (
+        <ArchivedSheet
+          projects={projects}
+          onClose={() => setArchiveSheet(false)}
+          onRestore={(id) => {
+            setProjects(
+              projects.map((x) => {
+                if (x.id !== id) return x
+                const { archived: _was, ...back } = x
+                return back
+              })
+            )
+            setArchiveSheet(false)
+          }}
+          onDelete={async (id) => {
+            await forgetProject(id)
+            setProjects(loadProjects().filter((p) => p.id !== id))
+            if (resume?.projectId === id) {
+              setResumeState(null)
+              try {
+                localStorage.removeItem(RESUME_KEY)
+              } catch {
+                /* nothing kept */
+              }
+            }
+          }}
+        />
+      )}
       {copiesSheet && <CopiesSheet person={person} onClose={() => setCopiesSheet(false)} />}
       {door43 && <Door43AccountSheet person={person} onClose={() => setDoor43(false)} />}
       {asking && (

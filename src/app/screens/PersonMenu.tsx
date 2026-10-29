@@ -20,6 +20,8 @@ export function PersonMenu({
   onTranslate,
   onDoor43,
   onCopies,
+  archived = 0,
+  onArchived,
   onAbout,
 }: {
   person: string
@@ -36,6 +38,10 @@ export function PersonMenu({
   onDoor43(): void
   /** The copy on a memory card (only in the app for phones). */
   onCopies(): void
+  /** How many projects are in the archive: its row shows only when there is one. */
+  archived?: number
+  /** Opens the archived projects. */
+  onArchived?(): void
   /** Who makes Servos and who the texts on this device are by. */
   onAbout(): void
 }) {
@@ -98,6 +104,9 @@ export function PersonMenu({
           }
           onClick={onCopies}
         />
+      )}
+      {archived > 0 && onArchived && (
+        <MenuRow label={t('archivo.titulo')} description={archived === 1 ? t('archivo.menuUno') : t('archivo.menuVarios', { n: archived })} onClick={onArchived} />
       )}
       <h3 className="menu-heading">{t('persona.cambiar')}</h3>
       <p className="quiet">{t('persona.cambiarAyuda')}</p>

@@ -417,6 +417,11 @@ textarea { resize: vertical; font-size: 1.1rem; line-height: 1.5; }
 .home-book-step { color: var(--text-soft); font-size: 0.9rem; text-align: end; font-variant-numeric: tabular-nums; }
 .home-book.is-add { gap: 0.4rem; color: var(--accent); font-weight: 600; }
 .home-book.is-add::after { content: none; }
+/* The archived projects (ArchivedSheet): each with its name, what it is and since when, and its two chips */
+.archived-list { list-style: none; margin: 0; padding: 0; }
+.archived-item { display: flex; flex-direction: column; gap: 0.4rem; padding-block: 0.85rem; }
+.archived-item + .archived-item { border-block-start: 1px solid var(--hair); }
+.archived-name { font-weight: 800; overflow-wrap: anywhere; }
 .home-plus { color: var(--accent); font-weight: 800; }
 .home-chip { display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 600; }
 /* Sharing and receiving */

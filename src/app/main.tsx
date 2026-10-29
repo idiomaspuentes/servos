@@ -9,7 +9,7 @@ import { applyTheme, themeOf } from './frame/theme'
 import { moveAlignmentsIn, moveBooksToProjects, openBooks } from './projects/bookText'
 import { openLibrary } from './projects/library'
 import { openPacksInside } from './projects/packsInside'
-import { loadProjects } from './projects/model'
+import { activeProjects, loadProjects } from './projects/model'
 import { moveWorkToProjects } from './projects/scope'
 import { I18nProvider } from './i18n/i18n'
 import { setOnlineProjects, startOnline } from '../resources/online/onlineResources'
@@ -61,7 +61,7 @@ void openBooks()
   .finally(() => {
     // Servos online knows the projects before any screen asks it for a size (AddBook, a missing book): without them
     // it cannot choose the originals, and the size would wait for startOnline.
-    setOnlineProjects(loadProjects())
+    setOnlineProjects(activeProjects(loadProjects()))
     createRoot(document.getElementById('root')!).render(
       <StrictMode>
         <LastResort>

@@ -4,9 +4,12 @@
  * step uses. Whoever coordinates chooses; every phone in the project then sees the same, so the person translating
  * never has to choose. So is who can see the team's work outside the app (`PrivacyChoice`); and, for a project kept to
  * its team, this device can forget the team's password (`projects/teamKeys.ts`), to be asked for it again.
+ *
+ * At the end, the project can be archived, once the person says yes: it leaves home with all its work kept, and from
+ * the archive (the person's menu) it comes back or, said yes to again, is deleted for good (`ArchivedSheet`).
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MenuRow } from '../frame/Sheet'
 import { LanguageSearch } from '../frame/LanguageSearch'
 import { useT } from '../i18n/i18n'
@@ -18,7 +21,20 @@ import { FONTS, HelpsChoice, VERSIFICATIONS } from './NewProject'
 import { ShareSheet } from './ShareSheet'
 import { forgetTeamKeys, teamKey } from '../projects/teamKeys'
 
-export function ProjectSettings({ project, person, onBack, onSave }: { project: Project; person: string; onBack(): void; onSave(p: Project): void }) {
+export function ProjectSettings({
+  project,
+  person,
+  onBack,
+  onSave,
+  onArchive,
+}: {
+  project: Project
+  person: string
+  onBack(): void
+  onSave(p: Project): void
+  /** Archives the project (asked first here). */
+  onArchive(): void
+}) {
   const t = useT()
   const [name, setName] = useState(project.name)
   const [language, setLanguage] = useState({ code: project.languageCode, name: project.languageName })
@@ -33,6 +49,12 @@ export function ProjectSettings({ project, person, onBack, onSave }: { project: 
   // Whether this device keeps the team's password of the project, and whether it was just forgotten.
   const [keyHere, setKeyHere] = useState(false)
   const [forgotten, setForgotten] = useState(false)
+  const [archiving, setArchiving] = useState(false)
+  // The question comes into sight, above the save button kept at the foot.
+  const question = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (archiving) question.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }, [archiving])
   useEffect(() => {
     void teamKey(project.id).then((k) => setKeyHere(k !== null))
   }, [project.id, sharing])
@@ -135,6 +157,23 @@ export function ProjectSettings({ project, person, onBack, onSave }: { project: 
               {t('ajustes.compartirBoton')}
             </button>
           </section>
+        )}
+
+        {/* Archiving takes a yes (philosophy, principle 9): nothing is lost, but the project leaves home. */}
+        <MenuRow label={t('ajustes.archivar')} description={t('ajustes.archivarAyuda')} onClick={() => setArchiving(true)} />
+        {archiving && (
+          <div ref={question} className="copies-confirm" role="alertdialog" aria-label={t('ajustes.archivarPregunta', { nombre: project.name })}>
+            <p>{t('ajustes.archivarPregunta', { nombre: project.name })}</p>
+            <p className="quiet">{t('ajustes.archivarQue')}</p>
+            <div className="copies-confirm-buttons">
+              <button type="button" className="button-secondary" onClick={onArchive}>
+                {t('ajustes.archivarSi')}
+              </button>
+              <button type="button" className="button-secondary" onClick={() => setArchiving(false)}>
+                {t('ajustes.archivarNo')}
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Chosen once by whoever coordinates, and long: folded, saying how many are in use (philosophy, principle 3). */}
