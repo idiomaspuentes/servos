@@ -8,6 +8,9 @@ muestras pequeñas para ver formatos y medir tamaños. Todas las fuentes se cons
 
 ## Recomendación
 
+Abel aprobó estas recomendaciones el 2 de noviembre, con un cambio: los mapas de Biblica en inglés no se llevan. Las
+decisiones están al final, en «Lo que decidió Abel».
+
 **Imágenes: empezar por los manuales de fauna y flora de las Sociedades Bíblicas Unidas (UBS) y por las imágenes de
 Open Bible Stories.**
 
@@ -370,15 +373,20 @@ del formato, como un espacio `fauna:` alineado con ACAI, puede esperar a ver si 
 - **El estado del libro *Fauna and Flora of the Bible* de 1972 y 1980.**
 - **Los tamaños de la sección 3** marcados como estimados. Solo una construcción de prueba los fijaría.
 
-## Qué tiene que decidir Abel
+## Lo que decidió Abel (2 de noviembre de 2026)
 
-1. **Si se hace ahora y qué va primero.** La propuesta es este orden: animales y plantas de UBS, luego las imágenes de
-   OBS, y el mapa base después.
-2. **Qué fotos quedan fuera:**
-   - las hechas con IA (163 en UBS);
+Abel aprobó las cinco recomendaciones que se le presentaron sobre este informe («Sí, apruébalas»). Ya no queda nada
+por decidir de lo que el informe preguntaba.
+
+1. **Orden.** Primero los animales y plantas de UBS, luego las imágenes de OBS y al final el mapa base. Todo va
+   después de la parte B de la fase 2 del formato 3.
+2. **Lo que queda fuera:**
+   - las 163 imágenes de UBS hechas con IA;
    - las de Pixabay que no se puedan comprobar;
    - FIA Images, mientras Word Collective no confirme de dónde salen sus fotos.
-3. **Mapas.** Si conviene llevar ya los mapas de Biblica con nombres en inglés, o esperar al mapa base propio con
-   nombres en cada lengua.
-4. **Tamaño.** Si las imágenes van a 360 px (≈10 MB los animales y plantas) o a 600 px (≈32 MB), o en dos juegos.
-5. **Formato.** Si se agregan las clases `images` y `basemap` a los complementos del formato 3, en bt-synergy.
+3. **Mapas.** Se va directo al mapa base propio, con los nombres en cada lengua. Los mapas de Biblica en inglés no se
+   llevan, así que el primer paso de «Qué conviene» (sección 1) queda descartado.
+4. **Tamaño.** Un juego de 360 px por defecto (≈10 MB los animales y plantas) y otro de 600 px como opción para
+   computadoras.
+5. **Formato.** Se agregan las clases `images` y `basemap` a los complementos del formato 3, en bt-synergy. Lo lleva
+   la sesión del formato 3.
