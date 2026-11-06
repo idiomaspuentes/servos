@@ -10,10 +10,18 @@
  * into places among the chapter's words of the original.
  */
 
-import type { Event, OrigModel, Piece } from '@bt-synergy/language-pack-v3'
+import type { BookModel, Event, OrigModel, Piece } from '@bt-synergy/language-pack-v3'
+import type { PackReader } from '@bt-synergy/language-pack-client'
 import type { FullBlock, FullInline, LightBlock, LightInline } from '@bt-synergy/resource-pipeline/scripture/scripturePreparer'
-import type { PrototypeText } from '../../prototype/data'
+import type { LexiconFile } from '../../lexicon/lexicon'
+import type { PrototypeData, PrototypeText } from '../../prototype/data'
+import type { ReferentFile } from '../../original/referents'
+import type { TreeFile } from '../../original/syntaxTree'
 import { piecesOfLight, versesInLines, wordsInLines, type ChapterPiece, type VerseLine, type WordLine } from '../reading'
+import { sectionsOf, type BookSources, type PlacesFrame, type SectionStarts } from '../screenData'
+import { originalOf } from '../sources'
+import { articlesV3, lexiconV3, maculaV3 } from './companionsV3'
+import { chapterHelps } from './helpsV3'
 
 // The texts as tc-study's layout reads them
 
@@ -272,3 +280,142 @@ export function originalWordsIn(tree: Node, orig: OrigModel, count: number): { w
   walk(tree, false)
   return words.length === count ? { words, inNotes } : null
 }
+
+// The book
+
+/** The book's name as its text gives it: `\toc2`, else `\h` (`bookNameInText`). */
+function bookName(text: { pieces: Piece[]; events: Event[] }, book: string): string {
+  const of = (marker: string) => {
+    const at = text.events.findIndex(([, kind, arg]) => kind === 'open' && arg === `para:${marker}`)
+    return at < 0 ? '' : text.pieces.slice(text.events[at][0], text.events[at + 1]?.[0] ?? text.pieces.length).map((p) => p[0]).join('').trim()
+  }
+  return of('toc2') || of('h') || book.toUpperCase()
+}
+
+const resourceId = (key: string) => key.split('/').pop() ?? ''
+
+/** The resources of a book model, as `chapterData` names them (literal and simple texts by their ids, `…lt` and `…st`). */
+function sourcesOf(model: BookModel, language: string, orig: OrigModel | undefined): BookSources | null {
+  const literal = model.texts.find((t) => /lt$/.test(resourceId(t.res)))
+  if (!literal) return null
+  const simple = model.texts.find((t) => /st$/.test(resourceId(t.res)))
+  return {
+    language,
+    owner: literal.res.split('/').slice(0, -1).join('/'),
+    literal: literal.res,
+    ...(simple ? { simple: simple.res } : {}),
+    ...(model.notes ? { notes: model.notes.res } : {}),
+    ...(model.questions ? { questions: model.questions.res } : {}),
+    ...(model.links ? { wordLinks: model.links.res } : {}),
+    original: { ...originalOf(model.book), ...(orig ? { key: orig.key } : {}) },
+  }
+}
+
+/** The resource keys a language's book is read from in format 3 (its texts and helps); null when the book is not installed. */
+export async function sourcesV3(reader: PackReader, language: string, book: string): Promise<BookSources | null> {
+  const model = reader.installed(`book:${book}`) ? await reader.book(book) : undefined
+  return model ? sourcesOf(model, language, reader.installed(`orig:${book}`) ? await reader.orig(book) : undefined) : null
+}
+
+export interface ReadBookOptions {
+  sections?: (chapter: number) => SectionStarts | undefined
+  /** A resource's title (the catalog's); the reader does not give titles, so without it a text is titled by its key. */
+  titles?: (key: string) => string | undefined
+  /** The day the chapters say they were read (`YYYY-MM-DD`), for tests. */
+  today?: string
+}
+
+/**
+ * A book of a language read from format 3: its chapters as the screens read them, the lexicon entries of its original's
+ * words and what MACULA says of it. Null when `book:<book>` is not installed.
+ */
+export async function readBookV3(
+  reader: PackReader,
+  language: string,
+  book: string,
+  o: ReadBookOptions = {}
+): Promise<{ chapters: PrototypeData[]; lexicon: Record<string, LexiconFile>; macula: { trees: TreeFile | null; referents: ReferentFile | null } } | null> {
+  const model = reader.installed(`book:${book}`) ? await reader.book(book) : undefined
+  if (!model) return null
+  const orig = reader.installed(`orig:${book}`) ? await reader.orig(book) : undefined
+  const sources = sourcesOf(model, language, orig)
+  if (!sources) throw new Error(`${language} no tiene texto literal de ${book} en este aparato`)
+  if (!orig) throw new Error(`Faltan las palabras del original de ${book} en este aparato`)
+  // Positions mean something only with the original book they were counted in (ids.md): with another, no alignment.
+  const sameOriginal = model.orig[0] === orig.key && model.orig[1] === orig.stamp
+  const textOf = (key: string | undefined) => {
+    const t = model.texts.find((x) => x.res === key)
+    return t ? textChapters(sameOriginal ? t : { ...t, align: undefined }) : null
+  }
+  const literal = textOf(sources.literal)!
+  const simple = textOf(sources.simple)
+  const original = textChapters(orig)
+  const abbr = sources.original.abbreviation
+  const title = (key: string) => o.titles?.(key) ?? key
+  const today = o.today ?? new Date().toISOString().slice(0, 10)
+  const name = bookName(model.texts.find((t) => t.res === sources.literal)!, book)
+  const quotes = sameOriginal ? model : { ...model, notes: model.notes && { ...model.notes, rows: model.notes.rows.map((r) => ({ ...r, quote: [] })) }, links: model.links && { ...model.links, rows: model.links.rows.map((r) => ({ ...r, quote: [] })) } }
+
+  const chapters: PrototypeData[] = []
+  const wanted = { tw: new Set<string>(), ta: new Set<string>() }
+  const perChapter: Array<{ tw: string[]; ta: string[] }> = []
+  for (const chapter of literal.numbers) {
+    const glt = literal.read(chapter)!
+    const own = original.read(chapter)
+    if (!own) throw new Error(`Faltan las palabras de ${book} ${chapter} en este aparato`)
+    const gst = simple?.read(chapter) ?? null
+    const verses = glt.pieces.flatMap((p) => (p.kind === 'paragraph' ? p.verses.map((v) => v.verse) : []))
+    // A position of the original → its place among the chapter's words; a qere's → its ketiv's.
+    const place = new Map(own.words.map((w, i) => [w.word, i]))
+    for (const [qere, ketiv] of qereOf(own.tree)) if (place.has(ketiv)) place.set(qere, place.get(ketiv)!)
+    const toOriginal = (t: ChapterText) => t.words.map((w) => w.originals.map((p) => place.get(p)).filter((p): p is number => p !== undefined))
+    const read = originalWordsIn(own.tree, orig, own.words.length)
+    const frame: PlacesFrame = {
+      original: abbr,
+      toOriginal: { TPL: toOriginal(glt), ...(gst ? { TPS: toOriginal(gst) } : {}) },
+      strongs: (read?.words ?? []).map((w) => w.strong),
+      originalsOfVerse: (verse) => (own.lines[verse] ?? []).flatMap((l) => l.pieces.map((p) => p.word).filter((w): w is number => w !== undefined)),
+    }
+    const helps = chapterHelps(quotes, { book, chapter, verses, frame, texts: { TPL: glt.words, ...(gst ? { TPS: gst.words } : {}) } })
+    helps.articles.tw.forEach((p) => wanted.tw.add(p))
+    helps.articles.ta.forEach((p) => wanted.ta.add(p))
+    perChapter.push(helps.articles)
+    const texts: PrototypeText[] = [{ key: sources.literal, abbreviation: 'TPL', title: title(sources.literal), pieces: glt.pieces, lines: glt.lines, toOriginal: frame.toOriginal.TPL }]
+    if (gst && sources.simple) texts.push({ key: sources.simple, abbreviation: 'TPS', title: title(sources.simple), pieces: gst.pieces, lines: gst.lines, toOriginal: frame.toOriginal.TPS })
+    texts.push({
+      key: orig.key,
+      abbreviation: abbr,
+      title: title(orig.key),
+      pieces: own.pieces,
+      lines: own.lines,
+      words: read?.words.length ? read.words : undefined,
+      ...(read && Object.keys(read.inNotes).length ? { inNotes: read.inNotes } : {}),
+      ...(own.notes ? { wordNotes: own.notes } : {}),
+      original: true,
+      dir: sources.original.dir,
+      lang: sources.original.lang,
+    })
+    chapters.push({
+      ...(helps.intros.chapter ? { intro: helps.intros.chapter } : {}),
+      ...(helps.intros.book ? { bookIntro: helps.intros.book } : {}),
+      source: `Recursos de ${sources.owner} y originales de unfoldingWord en Door43 (CC BY-SA 4.0), sacados de los paquetes de idioma el ${today}.`,
+      language,
+      book: { id: book, name, chapters: literal.numbers.length },
+      chapter,
+      texts,
+      sections: sectionsOf(verses, o.sections?.(chapter), glt.pieces),
+      verses: helps.verses,
+      words: {},
+      academy: {},
+    })
+  }
+  // Each article once for the book, then given to the chapters that name it.
+  const articles = await articlesV3(reader, [...wanted.tw], [...wanted.ta])
+  chapters.forEach((c, i) => {
+    for (const p of perChapter[i].tw) c.words[p] = articles.tw[p]
+    for (const p of perChapter[i].ta) c.academy[p] = articles.ta[p]
+  })
+  const strongs = chapters.flatMap((c) => c.texts.find((t) => t.original)?.words?.map((w) => w.strong) ?? [])
+  return { chapters, lexicon: await lexiconV3(reader, strongs), macula: maculaV3(orig) }
+}
+

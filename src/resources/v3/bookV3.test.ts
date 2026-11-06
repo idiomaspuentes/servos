@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Event, Piece, TextModel } from '@bt-synergy/language-pack-v3'
-import { textChapters } from './bookV3'
+import type { PackReader } from '@bt-synergy/language-pack-client'
+import { readBookV3, textChapters } from './bookV3'
 
 /** A text from USFM-like steps: `['open', 'para:p']`, `['verse', '1']`, `['word', 'Pablo', [0]]`, `' '`, `['close']`. */
 function text(steps: Array<string | [kind: 'open' | 'close' | 'chapter' | 'verse', arg?: string] | [kind: 'word', text: string, align: number[]]>): TextModel {
@@ -58,5 +59,10 @@ describe('a format 3 text read as the prepared chapters are', () => {
     ).read(1)!
     expect(chapter.pieces).toEqual([{ kind: 'paragraph', verses: [{ verse: 1, text: 'Pablo.' }] }])
     expect(chapter.notes).toEqual({ 0: 'O Saulo' })
+  })
+
+  it('reads no book that is not installed', async () => {
+    const reader = { installed: () => false } as unknown as PackReader
+    expect(await readBookV3(reader, 'es-419', 'tit')).toBeNull()
   })
 })
