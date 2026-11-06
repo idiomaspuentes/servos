@@ -52,3 +52,17 @@ export function packsServerChoice(search = currentSearch()): PacksServerId | nul
 export function packsServer(search = currentSearch()): string {
   return PACKS_SERVERS[packsServerChoice(search) ?? 'produccion']
 }
+
+/**
+ * Where format 3 packs (`/v3/packs/...`, read with `@bt-synergy/language-pack-client`) are served from. Production's
+ * origin is listed for completeness only: `packsFormat()` is never 3 there, so no request is sent to it.
+ */
+export const V3_ORIGINS: Record<PacksServerId, string> = {
+  produccion: 'https://tc-helps.mcp.servant.bible',
+  staging: 'https://translation-helps-mcp-v2-preview.unfoldingword.workers.dev',
+}
+
+/** The packs format this device downloads: 3 exactly when the packs server is staging, else today's 2. */
+export function packsFormat(search = currentSearch()): 2 | 3 {
+  return packsServer(search) === PACKS_SERVERS.staging ? 3 : 2
+}

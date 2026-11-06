@@ -417,3 +417,175 @@ declare module '@bt-synergy/resource-pipeline/helps/helpsQuoteCache' {
 declare module '@bt-synergy/resource-pipeline/helps/helpsCacheKeys' {
   export const HELPS_TEXT_VERSION: number
 }
+
+/**
+ * Language packs format 3: the surface of `packages/language-pack-client` (its `src/index.ts`) that Servos calls, kept
+ * to the library's signatures. Data types Servos does not read yet are left loose (`unknown`).
+ */
+declare module '@bt-synergy/language-pack-client' {
+  export const CLIENT_ERROR_CODES: readonly [
+    'E_DOWNGRADE',
+    'E_COMMON',
+    'E_NO_BASE',
+    'E_NO_PACK',
+    'E_NETWORK',
+    'E_STORE',
+    'E_NOT_INSTALLED',
+    'E_ARG',
+  ]
+  export type ClientErrorCode = (typeof CLIENT_ERROR_CODES)[number]
+  export class ClientError extends Error {
+    code: ClientErrorCode
+    status?: number
+    /** Seconds, for a 429. */
+    retryAfter?: number
+  }
+
+  /** Keeps segments by id (64 lowercase hex) and one installed-state record. */
+  export interface BlobStore {
+    has(id: string): Promise<boolean>
+    get(id: string): Promise<Uint8Array | undefined>
+    put(id: string, bytes: Uint8Array): Promise<void>
+    delete(id: string): Promise<void>
+    ids(): Promise<string[]>
+    getState(): Promise<unknown>
+    setState(state: never): Promise<void>
+  }
+  export function memoryStore(): BlobStore
+  export function indexedDbStore(o?: { name?: string; indexedDB?: IDBFactory }): Promise<BlobStore>
+
+  export interface PackSource {
+    catalog(
+      name: string,
+      o?: { etag?: string; signal?: AbortSignal },
+    ): Promise<{ bytes: Uint8Array; etag?: string } | 'not-modified'>
+    segment(id: string, signal?: AbortSignal): Promise<Uint8Array>
+  }
+  export function httpSource(o: { base: string; fetch?: typeof fetch }): PackSource
+
+  /** Ed25519 public keys (32 raw bytes) by key id. Given, even empty, it demands signatures. */
+  export type TrustPolicy = { trustedKeys?: Record<string, Uint8Array> }
+
+  export type InstalledCatalog = {
+    name: string
+    publisher: string
+    revision: number
+    id: string
+    origin: 'published' | 'local'
+    etag?: string
+  }
+  export type Want = { books?: string[]; units?: string[]; aligned?: true | string[]; defaults?: boolean }
+  export type Progress = { done: number; total: number; bytes: number; key: string }
+  export type InstallReport = {
+    activated: string[]
+    waiting: { key: string; missing: string[] }[]
+    fetched: string[]
+    bytes: number
+    unknown: string[]
+  }
+  export type RefreshReport = {
+    catalogs: InstalledCatalog[]
+    updates: unknown[]
+    unchanged: boolean
+    missingCommon?: { name: string; revision: number; id: string }
+  }
+  export type Status = {
+    lang: string
+    published?: InstalledCatalog
+    active?: InstalledCatalog
+    units: { key: string; revision: number; installed: boolean; optional: boolean; bytes: number }[]
+    updates: unknown[]
+    missingCommon?: RefreshReport['missingCommon']
+  }
+  export type ImportReport = {
+    catalogs: InstalledCatalog[]
+    stored: string[]
+    rejected: { id: string; code: string }[]
+    skipped?: true
+    missing: string[]
+    activated: string[]
+    waiting: { key: string; missing: string[] }[]
+  }
+
+  export interface LanguagePackClient {
+    open(lang: string): Promise<PackReader>
+    refresh(lang: string, o?: { confirmDowngrade?: boolean; signal?: AbortSignal }): Promise<RefreshReport>
+    install(
+      lang: string,
+      want?: Want,
+      o?: { signal?: AbortSignal; onProgress?: (p: Progress) => void },
+    ): Promise<InstallReport>
+    status(lang: string): Promise<Status>
+    prune(): Promise<{ removed: string[] }>
+    verify(): Promise<{ bad: string[] }>
+    importTransfer(bytes: Uint8Array, o?: { confirmDowngrade?: boolean }): Promise<ImportReport>
+    exportTransfer(o: {
+      lang: string
+      mode: 'full' | 'update'
+      books?: string[]
+      units?: string[]
+      base?: Uint8Array[]
+    }): Promise<Uint8Array>
+    indexProblems(): { segment?: string; message: string }[]
+  }
+  export function createClient(o: {
+    store: BlobStore
+    source?: PackSource
+    trust: TrustPolicy
+    index?: unknown
+  }): LanguagePackClient
+
+  export type QueryName =
+    | 'passage'
+    | 'concept'
+    | 'article'
+    | 'renderings'
+    | 'search'
+    | 'topics'
+    | 'books'
+    | 'context'
+  export type Cite = { res: string; release: string; id?: string; ref?: string; section?: string }
+  export type NotInstalled = { book?: string; unit: string; bytes: number; what?: string }
+  /** `none` means the source does not cover the book; it is not zero. */
+  export type CellState = 'count' | 'zero' | 'none' | 'partial'
+  export type Answer<T> = {
+    query: QueryName
+    /** null when the unit that answers is not installed. */
+    data: T | null
+    cites: Cite[]
+    revision: { lang?: number; common?: number; units: Record<string, number> }
+    coverage?: Record<string, CellState>
+    notInstalled: NotInstalled[]
+  }
+  export type PassageData = {
+    book: string
+    ref: string
+    texts: { res: string; text: string }[]
+    notes: unknown[]
+    questions: unknown[]
+    links: unknown[]
+  }
+
+  export interface PackReader {
+    lang: string
+    /** Segments that were stored but do not read as the segment their id says. */
+    problems: { id: string; code: string }[]
+    revisions(): { lang?: number; common?: number }
+    installed(unit: string): boolean
+    listed(unit: string): boolean
+    size(unit: string): number
+    unitOf(cls: 'book' | 'art' | 'orig', key: string): string | undefined
+    unitRevision(unit: string): number | undefined
+    book(book: string): Promise<unknown | undefined>
+    orig(book: string): Promise<unknown | undefined>
+    articles(group: string): Promise<unknown[] | undefined>
+    passage(ref: string): Promise<Answer<PassageData>>
+    article(id: string, section?: string): Promise<Answer<unknown>>
+    context(ref: string): Promise<Answer<unknown>>
+    concept(id: string): Promise<Answer<unknown>>
+    topics(q?: { category?: string; book?: string }): Promise<Answer<unknown>>
+    books(q: { article: string } | { concept: string }): Promise<Answer<unknown>>
+    renderings(q: { strong: string } | { book: string; word: number }): Promise<Answer<unknown>>
+    search(text: string, filters?: { books?: string[]; kinds?: string[]; limit?: number }): Promise<Answer<unknown[]>>
+  }
+}
