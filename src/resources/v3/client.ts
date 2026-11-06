@@ -2,9 +2,13 @@ import {
   createClient,
   httpSource,
   indexedDbStore,
+  verifyCatalogFile,
   type BlobStore,
+  type CatalogResource,
+  type InstalledState,
   type LanguagePackClient,
   type PackReader,
+  type TrustPolicy,
 } from '@bt-synergy/language-pack-client'
 import { V3_ORIGINS } from '../online/packsServer'
 import { trustedKeys } from './keys'
@@ -24,9 +28,15 @@ export type ClientDeps = {
 export async function createPacksV3(deps: ClientDeps = {}): Promise<LanguagePackClient> {
   const store = deps.store ?? (await indexedDbStore({ name: STORE_NAME_V3 }))
   const source = httpSource({ base: deps.base ?? V3_ORIGINS.staging, ...(deps.fetch ? { fetch: deps.fetch } : {}) })
+  const trust = { trustedKeys: deps.trustedKeys ?? trustedKeys() }
   // `index` (the search index) arrives with the search task; until then the reader builds one in memory.
-  return createClient({ store, source, trust: { trustedKeys: deps.trustedKeys ?? trustedKeys() } })
+  const made = createClient({ store, source, trust })
+  parts.set(made, { store, trust })
+  return made
 }
+
+/** Each client's store and trust: the catalogs' resources (titles, licenses) are read from the stored catalog files. */
+const parts = new WeakMap<LanguagePackClient, { store: BlobStore; trust: TrustPolicy }>()
 
 let client: Promise<LanguagePackClient> | null = null
 const readers = new Map<string, Promise<PackReader | null>>()
@@ -59,6 +69,36 @@ export function readerV3(lang: string): Promise<PackReader | null> {
     readers.set(lang, reader)
   }
   return reader
+}
+
+/** The languages with units active in format 3 on this device (not `common`, the originals' catalog). */
+export async function languagesV3(): Promise<string[]> {
+  const own = parts.get(await packsV3())
+  const state = (await own?.store.getState()) as InstalledState | undefined
+  return Object.keys(state?.active ?? {}).filter((name) => name !== 'common')
+}
+
+/**
+ * The resources the active catalog of a language lists, and those of the catalogs it requires (the originals'), with
+ * their titles and licenses. The reader does not give them. Empty when nothing of the language is active.
+ */
+export async function catalogResourcesV3(lang: string): Promise<CatalogResource[]> {
+  const c = await packsV3()
+  const own = parts.get(c)
+  const active = (await c.status(lang)).active
+  if (!own || !active) return []
+  const read = async (id: string) => {
+    const bytes = await own.store.get(id)
+    return bytes ? verifyCatalogFile(bytes, own.trust, { from: 'store', expectedId: id }) : undefined
+  }
+  const first = await read(active.id)
+  if (!first) return []
+  const out = [...first.catalog.resources]
+  for (const [, , id] of first.catalog.requires ?? []) {
+    const hex = Array.from(id, (b) => b.toString(16).padStart(2, '0')).join('')
+    out.push(...((await read(hex))?.catalog.resources ?? []))
+  }
+  return out
 }
 
 /** Drops the cached readers; call it after any install or import. */

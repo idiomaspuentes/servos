@@ -589,6 +589,38 @@ declare module '@bt-synergy/language-pack-client' {
     origin: 'published' | 'local'
     etag?: string
   }
+  /** A resource a catalog lists (`catalog.cddl`, `resource`); `books` is the book set. */
+  export type CatalogResource = {
+    key: string
+    title: string
+    subject: string
+    release: string
+    license: string
+    rights?: string
+    attribution?: string
+    books: Uint8Array
+  }
+  /** A catalog file read and checked; only the tables Servos reads are typed. */
+  export type VerifiedCatalog = {
+    id: string
+    name: string
+    publisher: string
+    revision: number
+    origin: 'published' | 'local'
+    catalog: { resources: CatalogResource[]; requires?: [catalog: string, revision: number, id: Uint8Array][] }
+  }
+  export function verifyCatalogFile(
+    bytes: Uint8Array,
+    policy: TrustPolicy,
+    o: { from: 'network' | 'transfer' | 'store' | 'bridge'; expectedId?: string },
+  ): Promise<VerifiedCatalog>
+  export type InstalledState = {
+    v: 1
+    published: Record<string, InstalledCatalog>
+    active: Record<string, InstalledCatalog>
+    units: Record<string, unknown>
+    aliases?: Record<string, string>
+  }
   export type Want = { books?: string[]; units?: string[]; aligned?: true | string[]; defaults?: boolean }
   export type Progress = { done: number; total: number; bytes: number; key: string }
   export type InstallReport = {
