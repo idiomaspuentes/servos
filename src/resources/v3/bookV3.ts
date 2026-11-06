@@ -21,7 +21,7 @@ import { piecesOfLight, versesInLines, wordsInLines, type ChapterPiece, type Ver
 import { sectionsOf, type BookSources, type PlacesFrame, type SectionStarts } from '../screenData'
 import { originalOf } from '../sources'
 import { articlesV3, lexiconV3, maculaV3 } from './companionsV3'
-import { chapterHelps } from './helpsV3'
+import { chapterHelps, helpsByChapter } from './helpsV3'
 
 // The texts as tc-study's layout reads them
 
@@ -323,6 +323,8 @@ export interface ReadBookOptions {
   titles?: (key: string) => string | undefined
   /** The day the chapters say they were read (`YYYY-MM-DD`), for tests. */
   today?: string
+  /** Told after each chapter is read (chapters read, of how many), as `loadBook` tells the screens today. */
+  onChapter?: (done: number, total: number) => void
 }
 
 /**
@@ -359,7 +361,8 @@ export async function readBookV3(
   const chapters: PrototypeData[] = []
   const wanted = { tw: new Set<string>(), ta: new Set<string>() }
   const perChapter: Array<{ tw: string[]; ta: string[] }> = []
-  for (const chapter of literal.numbers) {
+  const rowsOf = helpsByChapter(quotes)
+  for (const [i, chapter] of literal.numbers.entries()) {
     const glt = literal.read(chapter)!
     const own = original.read(chapter)
     if (!own) throw new Error(`Faltan las palabras de ${book} ${chapter} en este aparato`)
@@ -376,7 +379,7 @@ export async function readBookV3(
       strongs: (read?.words ?? []).map((w) => w.strong),
       originalsOfVerse: (verse) => (own.lines[verse] ?? []).flatMap((l) => l.pieces.map((p) => p.word).filter((w): w is number => w !== undefined)),
     }
-    const helps = chapterHelps(quotes, { book, chapter, verses, frame, texts: { TPL: glt.words, ...(gst ? { TPS: gst.words } : {}) } })
+    const helps = chapterHelps(rowsOf(chapter), { book, chapter, verses, frame, texts: { TPL: glt.words, ...(gst ? { TPS: gst.words } : {}) } })
     helps.articles.tw.forEach((p) => wanted.tw.add(p))
     helps.articles.ta.forEach((p) => wanted.ta.add(p))
     perChapter.push(helps.articles)
@@ -408,6 +411,9 @@ export async function readBookV3(
       words: {},
       academy: {},
     })
+    o.onChapter?.(i + 1, literal.numbers.length)
+    // A chapter at a time, so the screen stays answering while a long book is read (as `loadBook` does).
+    await new Promise((resolve) => setTimeout(resolve, 0))
   }
   // Each article once for the book, then given to the chapters that name it.
   const articles = await articlesV3(reader, [...wanted.tw], [...wanted.ta])

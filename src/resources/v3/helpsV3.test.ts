@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { BookModel, HelpRow } from '@bt-synergy/language-pack-v3'
 import type { PlacesFrame } from '../screenData'
-import { chapterHelps, rcLinks, type ChapterHelpsInput } from './helpsV3'
+import { chapterHelps, helpsByChapter, rcLinks, type ChapterHelpsInput } from './helpsV3'
 
 const TIT_1_1 = 56001001
 
@@ -21,25 +21,27 @@ const input: ChapterHelpsInput = {
 
 const row = (id: string, cols: HelpRow['cols'], extra: Partial<HelpRow> = {}): HelpRow => ({ id, ref: '1:1', from: TIT_1_1, to: TIT_1_1, cols, ...extra })
 const book = (parts: Partial<BookModel>): BookModel => ({ lang: 'es-419', book: 'tit', orig: ['unfoldingWord/el-x-koine/ugnt', 'v0.34'], res: [], texts: [], ...parts })
+/** Chapter 1's rows of a book. */
+const ch1 = (parts: Partial<BookModel>) => helpsByChapter(book(parts))(1)
 const link = (id: string, quote: number[]) => row(id, { origWords: 'Θεοῦ', articlePath: 'bible/kt/god', tags: 'keyterm' }, { concept: 'tw:kt/god', quote })
 
 describe('the helps of a chapter from format 3', () => {
   it('a link repeated in a verse takes the k-th place', () => {
     // Two links of the same article that name both words (a quote that does not tell its occurrence): one each, in order.
-    const both = chapterHelps(book({ links: { res: 'twl', rows: [link('a', [0, 1]), link('b', [0, 1])] } }), input)
+    const both = chapterHelps(ch1({ links: { res: 'twl', rows: [link('a', [0, 1]), link('b', [0, 1])] } }), input)
     expect(both.verses[0].words.map((w) => w.places)).toEqual([
       { TPL: [0], Griego: [0] },
       { TPL: [1], Griego: [1] },
     ])
     // With their own quotes, each stands on its own word.
-    const own = chapterHelps(book({ links: { res: 'twl', rows: [link('a', [1]), link('b', [0])] } }), input)
+    const own = chapterHelps(ch1({ links: { res: 'twl', rows: [link('a', [1]), link('b', [0])] } }), input)
     expect(own.verses[0].words.map((w) => w.places.TPL)).toEqual([[1], [0]])
     expect(own.articles.tw).toEqual(['bible/kt/god'])
   })
 
   it('a note with no quote has no places', () => {
     const helps = chapterHelps(
-      book({ notes: { res: 'tn', rows: [row('n1', { quote: '', occurrence: '0', note: 'Ver [[ta:translate/figs-metaphor]].', isIntro: false }, { concept: 'ta:translate/figs-metaphor', quote: [] })] } }),
+      ch1({ notes: { res: 'tn', rows: [row('n1', { quote: '', occurrence: '0', note: 'Ver [[ta:translate/figs-metaphor]].', isIntro: false }, { concept: 'ta:translate/figs-metaphor', quote: [] })] } }),
       input
     )
     expect(helps.verses[0].notes).toEqual([
@@ -54,16 +56,28 @@ describe('the helps of a chapter from format 3', () => {
       frame: { ...input.frame, toOriginal: { TPL: [[0], [5], [1]] } },
       texts: { TPL: [{ word: 0, verse: 1, text: 'de', originals: [0] }, { word: 1, verse: 1, text: 'la', originals: [5] }, { word: 2, verse: 1, text: 'fe', originals: [1] }] },
     }
-    const helps = chapterHelps(book({ notes: { res: 'tn', rows: [row('n2', { quote: 'κατὰ πίστιν', occurrence: '1', note: '' }, { quote: [0, 1] })] } }), three)
+    const helps = chapterHelps(ch1({ notes: { res: 'tn', rows: [row('n2', { quote: 'κατὰ πίστιν', occurrence: '1', note: '' }, { quote: [0, 1] })] } }), three)
     expect(helps.verses[0].notes[0]).toMatchObject({ glt: 'de … fe', places: { TPL: [0, 2], Griego: [0, 1] } })
   })
 
   it('takes the introductions from the notes marked so: in chapter 1 the book’s, then the chapter’s', () => {
     const intro = (id: string, note: string) => row(id, { note, isIntro: true, quote: '', occurrence: '0' }, { quote: [] })
-    const helps = chapterHelps(book({ notes: { res: 'tn', rows: [intro('i1', '# Introducción a Tito\n(Ver: [[tw:kt/grace]])'), intro('i2', '# Tito 1')] } }), input)
+    const helps = chapterHelps(ch1({ notes: { res: 'tn', rows: [intro('i1', '# Introducción a Tito\n(Ver: [[tw:kt/grace]])'), intro('i2', '# Tito 1')] } }), input)
     expect(helps.intros).toEqual({ book: '# Introducción a Tito\n(Ver: [[rc://*/tw/dict/bible/kt/grace]])', chapter: '# Tito 1' })
     expect(helps.verses[0].notes).toEqual([])
     expect(helps.articles.tw).toEqual(['bible/kt/grace'])
+  })
+
+  it('takes a book introduction at chapter 0 (`front:intro`) into chapter 1, before the chapter’s own', () => {
+    const front = row('f1', { note: '# Introducción a Tito', quote: '', occurrence: '0' }, { ref: 'front:intro', from: 56000000, to: 56000000, quote: [] })
+    const chapter = row('c1', { note: '# Tito 1: Notas generales', quote: '', occurrence: '0' }, { ref: '1:intro', from: 56001000, to: 56001000, quote: [] })
+    const rows = helpsByChapter(book({ notes: { res: 'tn', rows: [chapter, front] } }))
+    expect(rows(1).notes.map((n) => n.id)).toEqual(['f1', 'c1'])
+    const helps = chapterHelps(rows(1), input)
+    expect(helps.intros).toEqual({ book: '# Introducción a Tito', chapter: '# Tito 1: Notas generales' })
+    expect(helps.verses[0].notes).toEqual([])
+    // Alone, a front introduction is the book's.
+    expect(chapterHelps(helpsByChapter(book({ notes: { res: 'tn', rows: [front] } }))(1), input).intros).toEqual({ book: '# Introducción a Tito', chapter: null })
   })
 
   it('writes the ids of articles back as rc links, and leaves other links as they are', () => {

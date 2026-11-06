@@ -53,13 +53,36 @@ export interface ChapterHelpsInput {
   texts: { TPL: ChapterText['words']; TPS?: ChapterText['words'] }
 }
 
+/** The notes, questions and word links of one chapter, in the order of their tables. */
+export type ChapterRows = { notes: HelpRow[]; questions: HelpRow[]; links: HelpRow[] }
+
+/**
+ * A book's helps by chapter, bucketed once. What stands before chapter 1 (`front:intro`, and a row whose reference names
+ * no verse, which format 3 places at the book's introduction, chapter 0) goes with chapter 1, first: it is the book's
+ * introduction, which the screens keep with the first chapter.
+ */
+export function helpsByChapter(model: BookModel): (chapter: number) => ChapterRows {
+  const by = new Map<number, ChapterRows>()
+  for (const kind of ['notes', 'questions', 'links'] as const)
+    for (const row of model[kind]?.rows ?? []) {
+      const chapter = Math.max(1, chapterOfId(row.from))
+      let rows = by.get(chapter)
+      if (!rows) by.set(chapter, (rows = { notes: [], questions: [], links: [] }))
+      rows[kind].push(row)
+    }
+  // Chapter 0's rows were pushed in table order with chapter 1's; the book's introduction comes before chapter 1's own.
+  const first = by.get(1)
+  if (first) first.notes.sort((a, b) => Number(chapterOfId(a.from) !== 0) - Number(chapterOfId(b.from) !== 0))
+  return (chapter) => by.get(chapter) ?? { notes: [], questions: [], links: [] }
+}
+
+/** An introduction: marked so (format 2.0 rewrote its reference to the first verse), or at a verse 0 (`front:intro`, `1:intro`). */
+const isIntro = (row: HelpRow) => row.cols.isIntro === true || row.from % 1_000 === 0
+
 /** The helps of a chapter: each verse's, its introductions, and the articles they point to (word paths, academy paths). */
-export function chapterHelps(model: BookModel, input: ChapterHelpsInput): { verses: PrototypeData['verses']; intros: ChapterIntros; articles: { tw: string[]; ta: string[] } } {
+export function chapterHelps(rows: ChapterRows, input: ChapterHelpsInput): { verses: PrototypeData['verses']; intros: ChapterIntros; articles: { tw: string[]; ta: string[] } } {
   const { chapter, frame, texts } = input
-  const ofChapter = (rows: HelpRow[] | undefined) => (rows ?? []).filter((r) => chapterOfId(r.from) === chapter)
-  const notes = ofChapter(model.notes?.rows)
-  const questions = ofChapter(model.questions?.rows)
-  const links = ofChapter(model.links?.rows)
+  const { notes, questions, links } = rows
   const placesOf = (row: HelpRow) => {
     const tpl = wordsOn(texts.TPL, row.quote)
     const tps = texts.TPS ? wordsOn(texts.TPS, row.quote) : []
@@ -78,7 +101,7 @@ export function chapterHelps(model: BookModel, input: ChapterHelpsInput): { vers
     return {
       verse,
       notes: notes
-        .filter((n) => n.cols.isIntro !== true && covers(n))
+        .filter((n) => !isIntro(n) && covers(n))
         .map((n) => {
           const { tpl, tps, places } = placesOf(n)
           const academy = n.concept?.startsWith('ta:') ? n.concept.slice(3) : null
@@ -98,7 +121,7 @@ export function chapterHelps(model: BookModel, input: ChapterHelpsInput): { vers
     }
   })
 
-  const intros = introsOfNotes(notes.map((n) => ({ isIntro: n.cols.isIntro === true, note: rcLinks(text(n, 'note')) })), chapter)
+  const intros = introsOfNotes(notes.map((n) => ({ isIntro: isIntro(n), note: rcLinks(text(n, 'note')) })), chapter)
   // The articles the introductions point to («(Ver: [[rc://…/tw/dict/bible/kt/grace]], …)»).
   for (const rc of rcLinksIn(`${intros.book ?? ''}\n${intros.chapter ?? ''}`)) {
     const ref = articleOf(rc)
@@ -127,7 +150,7 @@ export async function verseHelpsV3(
     chapter,
     verse,
     notes: (model?.notes?.rows ?? [])
-      .filter((n) => chapterOfId(n.from) === chapter && n.cols.isIntro !== true && referenceCovers(n.ref, chapter, verse))
+      .filter((n) => chapterOfId(n.from) === chapter && !isIntro(n) && referenceCovers(n.ref, chapter, verse))
       .map((n) => ({ id: n.id, quote: quoteOf(n), note: rcLinks(text(n, 'note')) })),
     literal: lineOf(0, chapter, verse),
     simple: lineOf(1, chapter, verse),
