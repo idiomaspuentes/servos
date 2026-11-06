@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { BUILDER, buildCommon, buildLanguage, keyId, publicKeyOf, signCatalog } from '@bt-synergy/language-pack-v3'
 import { partsSource } from '@bt-synergy/language-pack-v3/node/partsSource'
-import { btSynergyRoot } from '../../../scripts/btSynergy'
+import { btSynergyRoot } from '../../../../scripts/btSynergy'
 
 export type Sample = {
   segments: Map<string, Uint8Array>
@@ -16,7 +16,7 @@ export type Sample = {
   publicKey: Uint8Array
 }
 
-const ROOT = btSynergyRoot(join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..'))
+const ROOT = btSynergyRoot(join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..'))
 const DATA = join(ROOT, 'packages', 'language-pack-v3', 'spec', 'tests', 'data')
 const about = { format: '3.0', publisher: 'unfoldingWord', origin: 'published', revision: 1, built: '2026-11-01T10:00:00Z', builder: BUILDER }
 

@@ -5,7 +5,7 @@ import { memoryStore } from '@bt-synergy/language-pack-client'
 import { packsFormat, PACKS_SERVERS, V3_ORIGINS } from '../online/packsServer'
 import { createPacksV3, forgetReadersV3, packsV3, readerV3, resetPacksV3 } from './client'
 import { trustedKeys } from './keys'
-import { buildSample, fakeFetch, readKeyFile } from './testSample'
+import { buildSample, fakeFetch, readKeyFile } from './testing/sample'
 
 afterEach(() => resetPacksV3())
 
