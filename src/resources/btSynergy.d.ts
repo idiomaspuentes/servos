@@ -112,6 +112,8 @@ declare module '@bt-synergy/language-pack' {
     skippedLayers: PackLayer[]
     skippedResources: Array<{ key: string; why: string }>
     originals: Array<PackRequirement & { status: 'present' | 'in-pack' | 'missing' | 'other-release' }>
+    /** Quote and align rows left out, by resource and layer: made against another release (or blob) of an original than the device's. */
+    droppedRows: Record<string, Partial<Record<PackLayer, number>>>
   }
   export type CacheRow = { key: string; entry: unknown }
   export type PackSource = {
@@ -419,6 +421,119 @@ declare module '@bt-synergy/resource-pipeline/helps/helpsCacheKeys' {
 }
 
 /**
+ * Language packs format 3: the model types of `packages/language-pack-v3` (its `src/model.ts`) that Servos reads, and the
+ * few functions it calls, kept to the library's signatures.
+ */
+declare module '@bt-synergy/language-pack-v3' {
+  /** At `position` (pieces before it) a chapter or verse starts (`arg`: its number as published, `"1-2"`), a node opens (`"type:marker"`) or the last one closes (`""`). */
+  export type Event = [position: number, kind: 'chapter' | 'verse' | 'open' | 'close', arg: string]
+  /** A piece of a text: a word (`isWord`) or what lies between words. */
+  export type Piece = [text: string, isWord: boolean]
+  export type OrigWord = { form: string; lemma: string; strong: string; morph: string; other?: Record<string, string> }
+  /** One book of the original: a word's position is its index in `words`, footnotes included. */
+  export type OrigModel = {
+    book: string
+    key: string
+    stamp: string
+    words: OrigWord[]
+    pieces: Piece[]
+    events: Event[]
+    attrs?: Record<number, Record<string, string>>
+    macula?: { release: string; trees?: unknown; referents?: unknown }
+  }
+  /** A bridge text of a book; `align` has one list per word piece: the original positions it translates. */
+  export type TextModel = {
+    res: string
+    pieces: Piece[]
+    events: Event[]
+    attrs?: Record<number, Record<string, string>>
+    align?: number[][]
+    alignMissing?: [word: number, verse: number, original: string, occurrence: number][]
+  }
+  /** A note, question or word link. `from`/`to` are verse ids; `quote` the original positions of its quote (`-1`: none). */
+  export type HelpRow = {
+    id: string
+    ref: string
+    from: number
+    to: number
+    concept?: string
+    cols: Record<string, string | boolean>
+    quote?: number[]
+    quoteKinds?: [piece: number, kind: string][]
+    quoteMissing?: [piece: number, verse: number, word: string, occurrence: number][]
+  }
+  export type HelpTable = { res: string; rows: HelpRow[] }
+  export type BookModel = {
+    lang: string
+    book: string
+    orig: [string, string]
+    res: [string, string][]
+    texts: TextModel[]
+    notes?: HelpTable
+    questions?: HelpTable
+    links?: HelpTable
+  }
+  export type Role =
+    | 'intro'
+    | 'definition'
+    | 'facts'
+    | 'translation-suggestions'
+    | 'examples'
+    | 'strategies'
+    | 'description'
+    | 'reason'
+    | 'bible-references'
+    | 'word-data'
+    | 'unknown'
+  export type SectionModel = { sid: string; level: number; role: Role; title?: string; lang: string; md: string; aliases?: string[] }
+  export type ArticleModel = {
+    id: string
+    res: string
+    title: string
+    subtitle?: string
+    related?: string[]
+    aliases?: string[]
+    sections: SectionModel[]
+  }
+  /** `refs` are verse-id ranges `[from, to]` in our numbering. */
+  export type LexSense = {
+    code?: string
+    definition?: string
+    glosses?: string[]
+    domain?: string
+    domainCode?: string
+    comments?: string
+    etymology?: string
+    lang?: string
+    definitionLang?: string
+    refs?: [number, number][]
+  }
+  export type LexEntry = {
+    res: string
+    strong: string
+    lemma: string
+    brief?: string
+    long?: string
+    pos?: string[]
+    senses: LexSense[]
+    notes?: string[]
+    aramaic?: boolean
+    source?: string
+    review?: string
+  }
+  /** A checked segment: its header and its tables (read with a view). */
+  export type Segment = { h: { class: string; [field: string]: unknown }; t: Record<string, unknown>; ulen?: number }
+  export function lexView(seg: Segment): { group: string; entries: LexEntry[] }
+  /** The 66 books; a book's number is its index plus 1. */
+  export const BOOKS: readonly string[]
+  /** `LLCCCVVV`: `verseId('tit', 2, 11)` is 56002011. */
+  export function verseId(book: string, chapter: number, verse: number): number
+  /** A source of format 2.0 rows (a pack read as rows). */
+  export type RowSource = { resources(lang: string): Promise<unknown[]> }
+  export function zipSource(zip: Uint8Array, originals?: RowSource): Promise<RowSource & { language: string }>
+}
+
+/**
  * Language packs format 3: the surface of `packages/language-pack-client` (its `src/index.ts`) that Servos calls, kept
  * to the library's signatures. Data types Servos does not read yet are left loose (`unknown`).
  */
@@ -509,6 +624,11 @@ declare module '@bt-synergy/language-pack-client' {
 
   export interface LanguagePackClient {
     open(lang: string): Promise<PackReader>
+    /** A format 1.1 pack bridged on the device into format 3 (a local catalog); `originals` are the rows of the originals. */
+    importOldPack(
+      zip: Uint8Array,
+      o?: { originals?: import('@bt-synergy/language-pack-v3').RowSource; device?: string; now?: string; confirmDowngrade?: boolean },
+    ): Promise<ImportReport>
     refresh(lang: string, o?: { confirmDowngrade?: boolean; signal?: AbortSignal }): Promise<RefreshReport>
     install(
       lang: string,
@@ -566,6 +686,13 @@ declare module '@bt-synergy/language-pack-client' {
     links: unknown[]
   }
 
+  export type ArticleData = {
+    id: string
+    title: string
+    sections: (import('@bt-synergy/language-pack-v3').SectionModel & { otherLang: boolean })[]
+    more: { sid: string; title?: string; role: import('@bt-synergy/language-pack-v3').Role }[]
+  }
+
   export interface PackReader {
     lang: string
     /** Segments that were stored but do not read as the segment their id says. */
@@ -576,11 +703,13 @@ declare module '@bt-synergy/language-pack-client' {
     size(unit: string): number
     unitOf(cls: 'book' | 'art' | 'orig', key: string): string | undefined
     unitRevision(unit: string): number | undefined
-    book(book: string): Promise<unknown | undefined>
-    orig(book: string): Promise<unknown | undefined>
-    articles(group: string): Promise<unknown[] | undefined>
+    book(book: string): Promise<import('@bt-synergy/language-pack-v3').BookModel | undefined>
+    orig(book: string): Promise<import('@bt-synergy/language-pack-v3').OrigModel | undefined>
+    articles(group: string): Promise<import('@bt-synergy/language-pack-v3').ArticleModel[] | undefined>
+    /** The checked segments of an installed unit (`lex:G5`), or `undefined` when it is not installed. */
+    segments(unit: string): Promise<import('@bt-synergy/language-pack-v3').Segment[] | undefined>
     passage(ref: string): Promise<Answer<PassageData>>
-    article(id: string, section?: string): Promise<Answer<unknown>>
+    article(id: string, section?: string | 'all'): Promise<Answer<ArticleData>>
     context(ref: string): Promise<Answer<unknown>>
     concept(id: string): Promise<Answer<unknown>>
     topics(q?: { category?: string; book?: string }): Promise<Answer<unknown>>

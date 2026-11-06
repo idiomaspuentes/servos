@@ -170,9 +170,13 @@ export async function readChapter(
 ): Promise<ChapterPiece[] | null> {
   const entry = await stores.cache.get(preparedUnitKey('scripture', textKey, book, chapter, 'light'))
   const light = unwrapVersioned<ScriptureLightChapter>(entry, SCRIPTURE_PREPARE_VERSION)
-  if (!light) return null
+  return light ? piecesOfLight(light.blocks) : null
+}
+
+/** The light tier's blocks as headings and paragraphs of verses (format 3 builds the same blocks, `v3/bookV3.ts`). */
+export function piecesOfLight(blocks: ScriptureLightChapter['blocks']): ChapterPiece[] {
   const pieces: ChapterPiece[] = []
-  for (const block of light.blocks) {
+  for (const block of blocks) {
     let paragraph: Extract<ChapterPiece, { kind: 'paragraph' }> | null = null
     for (const item of block.inline) {
       if (item.kind === 'heading') {
@@ -483,7 +487,12 @@ export interface ChapterIntros {
 export async function introsOf(stores: ResourceStores, notesKey: string, book: string, chapter: number): Promise<ChapterIntros> {
   const entry = await stores.cache.get(preparedUnitKey('notes', notesKey, book, chapter, 'light'))
   const light = unwrapVersioned<NotesLightChapter>(entry, NOTES_PREPARE_VERSION)
-  const intros = (light?.notes ?? []).filter((n) => n.isIntro && n.note.trim()).map((n) => n.note)
+  return introsOfNotes(light?.notes ?? [], chapter)
+}
+
+/** The introductions among a chapter's notes, in their order (`introsOf`; format 3 gives the same rows, `v3/helpsV3.ts`). */
+export function introsOfNotes(notes: ReadonlyArray<{ isIntro?: boolean; note: string }>, chapter: number): ChapterIntros {
+  const intros = notes.filter((n) => n.isIntro && n.note.trim()).map((n) => n.note)
   if (chapter !== 1) return { book: null, chapter: intros[0] ?? null }
   if (intros.length >= 2) return { book: intros[0], chapter: intros[1] }
   const only = intros[0] ?? null
