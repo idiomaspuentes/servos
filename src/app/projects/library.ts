@@ -15,10 +15,11 @@ import { strongParts, type LexiconFile } from '../../lexicon/lexicon'
 import { EXAMPLE_LANGUAGE, forgetBooks, isBundled, keepBook, keepLexicon, setLanguageResolver, type PrototypeData } from '../../prototype/data'
 import { keepMacula } from '../../prototype/original'
 import { readLexiconEntry, readMacula } from '../../resources/companions'
-import { booksOfText, inBibleOrder } from '../../resources/reading'
+import { booksOfText, inBibleOrder, kindOf } from '../../resources/reading'
 import { chapterData, type BookSources } from '../../resources/screenData'
 import { sectionStartsOf } from '../../resources/sections'
-import { availability, deviceIndex, languagesOnDevice, sourcesFor, withFormat3, type Availability, type DeviceIndex, type ResourceHere } from '../../resources/sources'
+import { availability, deviceIndex, languagesOnDevice, sourcesFor, withFormat3, type Availability, type DeviceIndex, type ResourceHere, type SourcePart } from '../../resources/sources'
+import { BOOKS } from '@bt-synergy/language-pack-v3'
 import { packsFormat } from '../../resources/online/packsServer'
 import { catalogResourcesV3, forgetReadersV3, languagesV3, packsV3, readerV3 } from '../../resources/v3/client'
 import { readBookV3, sourcesV3 } from '../../resources/v3/bookV3'
@@ -50,8 +51,10 @@ const loads = new Map<string, Promise<void>>()
 
 /** What a language has installed in format 3. */
 interface HereV3 {
-  /** The books that can be read there (their book and their original installed), with their sources. */
-  books: Map<string, BookSources>
+  /** The books that can be read there (their book and their original installed), with their parts (from the catalog). */
+  books: Map<string, Record<SourcePart, boolean>>
+  /** Each book's sources, once it was read (reading them needs the book decoded). */
+  sources: Map<string, BookSources>
   /** Resource titles, by key, from the catalogs (the reader gives none). */
   titles: Map<string, string>
   articles: { tw: boolean; ta: boolean }
@@ -121,33 +124,58 @@ export async function refreshLibrary(): Promise<void> {
 async function readV3(): Promise<Map<string, HereV3>> {
   const out = new Map<string, HereV3>()
   if (packsFormat() !== 3) return out
+  let languages: Set<string>
   try {
-    const client = await packsV3()
-    const languages = new Set([...projects.map((p) => p.helpsLanguage).filter(Boolean), ...(index ? languagesOnDevice(index) : []), ...(await languagesV3())])
-    for (const lang of languages) {
-      const status = await client.status(lang)
-      if (!status.active) continue
-      const reader = await readerV3(lang)
-      if (!reader) continue
-      const installed = status.units.filter((u) => u.installed).map((u) => u.key.slice(u.key.indexOf('/') + 1))
-      const books = new Map<string, BookSources>()
-      for (const unit of installed) {
-        const book = /^book:(\w+)$/.exec(unit)?.[1]
-        if (!book || !reader.installed(unit) || !reader.installed(`orig:${book}`)) continue
-        const sources = await sourcesV3(reader, lang, book)
-        if (sources) books.set(book, sources)
-      }
-      out.set(lang, {
-        books,
-        titles: new Map((await catalogResourcesV3(lang)).map((r) => [r.key, r.title])),
-        articles: { tw: installed.some((u) => u.startsWith('art:tw:')), ta: installed.some((u) => u.startsWith('art:ta:')) },
-        lexicon: installed.some((u) => u.startsWith('lex:')),
-      })
-    }
+    languages = new Set([...projects.map((p) => p.helpsLanguage).filter(Boolean), ...(index ? languagesOnDevice(index) : []), ...(await languagesV3())])
   } catch {
-    // The format 3 store could not be read: the rows are read as before.
+    return out // the format 3 store could not be opened: the rows are read as before
+  }
+  for (const lang of languages) {
+    try {
+      const here = await hereV3(lang)
+      if (here) out.set(lang, here)
+    } catch {
+      // This language's format 3 could not be read: its books are read from the rows as before.
+    }
   }
   return out
+}
+
+/** Whether a catalog's book set has a book (bit `n - 1` for book number `n`, least significant bit first). */
+const inSet = (set: Uint8Array, book: string) => {
+  const bit = BOOKS.indexOf(book)
+  return bit >= 0 && Boolean(set[bit >> 3] & (1 << (bit & 7)))
+}
+
+/**
+ * What a language has installed in format 3, from its status and its catalogs alone: no book is decoded here (that
+ * waits for `loadBook`), so opening the app costs the same with one book or sixty-six.
+ */
+async function hereV3(lang: string): Promise<HereV3 | null> {
+  const status = await (await packsV3()).status(lang)
+  if (!status.active) return null
+  const reader = await readerV3(lang)
+  if (!reader) return null
+  const installed = status.units.filter((u) => u.installed).map((u) => u.key.slice(u.key.indexOf('/') + 1))
+  const resources = await catalogResourcesV3(lang)
+  const books = new Map<string, Record<SourcePart, boolean>>()
+  for (const unit of installed) {
+    const book = /^book:(\w+)$/.exec(unit)?.[1]
+    if (!book || !reader.installed(unit) || !reader.installed(`orig:${book}`)) continue
+    // A book unit carries every text and help of the book its catalog lists: the parts are those resources.
+    const of = resources.filter((r) => inSet(r.books, book))
+    const id = (key: string) => key.split('/').pop() ?? ''
+    const text = (suffix: RegExp) => of.some((r) => kindOf(r.subject) === 'scripture' && suffix.test(id(r.key)))
+    const kind = (k: string) => of.some((r) => kindOf(r.subject) === k)
+    books.set(book, { literal: text(/lt$/), simple: text(/st$/), notes: kind('notes'), questions: kind('questions'), wordLinks: kind('word-links') })
+  }
+  return {
+    books,
+    sources: new Map(),
+    titles: new Map(resources.map((r) => [r.key, r.title])),
+    articles: { tw: installed.some((u) => u.startsWith('art:tw:')), ta: installed.some((u) => u.startsWith('art:ta:')) },
+    lexicon: installed.some((u) => u.startsWith('lex:')),
+  }
 }
 
 async function readAll() {
@@ -200,8 +228,9 @@ export const onDevice = (key: string): boolean => Boolean(index?.resources.some(
 export function availabilityOf(book: string, language: string): Availability | null {
   const rows = index ? availability(index, language, book) : null
   const inV3 = v3.get(language)
-  const sources = inV3?.books.get(book.toLowerCase())
-  return inV3 && sources ? withFormat3(rows, sources, { lexicon: inV3.lexicon }) : rows
+  const code = book.toLowerCase()
+  const has = inV3?.books.get(code)
+  return inV3 && has ? withFormat3(rows, has, inV3.sources.get(code) ?? null, { lexicon: inV3.lexicon }) : rows
 }
 
 /** Whether this device has a language's word articles or Translation Academy: then any article of them can be read. */
@@ -297,19 +326,36 @@ async function readFromV3(book: string, language: string, key: string): Promise<
   const inV3 = v3.get(language)
   const code = book.toLowerCase()
   if (!inV3?.books.has(code)) return false
-  const reader = await readerV3(language)
-  if (!reader) return false
-  states.set(key, { state: 'loading', done: 0, total: 0 })
-  changed()
-  const read = await readBookV3(reader, language, code, {
-    sections: (chapter) => sectionStartsOf(book, chapter),
-    titles: (k) => inV3.titles.get(k),
-    onChapter: (done, total) => {
-      states.set(key, { state: 'loading', done, total })
-      changed()
-    },
-  })
-  if (!read) return false
+  const rowsHere = () => Boolean(stores && index && availability(index, language, book).here)
+  let read: Awaited<ReturnType<typeof readBookV3>>
+  try {
+    const reader = await readerV3(language)
+    if (!reader) return false
+    states.set(key, { state: 'loading', done: 0, total: 0 })
+    changed()
+    read = await readBookV3(reader, language, code, {
+      sections: (chapter) => sectionStartsOf(book, chapter),
+      titles: (k) => inV3.titles.get(k),
+      onChapter: (done, total) => {
+        states.set(key, { state: 'loading', done, total })
+        changed()
+      },
+    })
+    const sources = read && (await sourcesV3(reader, language, code))
+    if (sources) inV3.sources.set(code, sources)
+  } catch (error) {
+    // Format 3 could not give the book (a segment gone bad since the library looked): the rows, when they have it.
+    states.delete(key)
+    if (rowsHere()) return false
+    throw error
+  }
+  if (!read) {
+    states.delete(key)
+    if (rowsHere()) return false
+    states.set(key, { state: 'missing', availability: index ? availability(index, language, book) : null })
+    changed()
+    return true
+  }
   // What format 3 does not have here (a lexicon group not installed, an original bridged without MACULA), the rows
   // give when they have it, so nothing the device showed before is lost by switching.
   const rows = stores && index ? availability(index, language, book).sources : null

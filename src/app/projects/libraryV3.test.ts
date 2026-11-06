@@ -15,7 +15,7 @@ import type { Project } from './model'
 /** How many chapters each path read. */
 const calls = vi.hoisted(() => ({ rows: 0, v3: 0 }))
 /** What the last format 3 read gave beside the chapters. */
-const lastV3 = vi.hoisted(() => ({ lexicon: 0 }))
+const lastV3 = vi.hoisted(() => ({ lexicon: 0, fail: false }))
 
 vi.mock('../../resources/screenData', async (importOriginal) => {
   const real = await importOriginal<typeof import('../../resources/screenData')>()
@@ -32,6 +32,7 @@ vi.mock('../../resources/v3/bookV3', async (importOriginal) => {
   return {
     ...real,
     readBookV3: async (...args: Parameters<typeof real.readBookV3>) => {
+      if (lastV3.fail) throw new Error('a segment went bad')
       const read = await real.readBookV3(...args)
       calls.v3 += read?.chapters.length ?? 0
       lastV3.lexicon = Object.keys(read?.lexicon ?? {}).length
@@ -91,6 +92,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
   calls.rows = 0
   calls.v3 = 0
+  lastV3.fail = false
 })
 
 describe('the library reads format 3 first', () => {
@@ -153,12 +155,30 @@ describe('the library reads format 3 first', () => {
     await packs.install('es-419', { books: ['tit'], units: ['lex:G0'] })
     const resources = await client.catalogResourcesV3('es-419')
 
-    // The app opens on a device that has Titus in format 3 (and in rows): it reads format 3.
+    // The app opens on a device that has Titus in format 3 (and in rows). Opening decodes no book: what it has is
+    // known from the status and the catalogs; the book is decoded when it is read.
+    const reader = (await client.readerV3('es-419'))!
+    const book = vi.spyOn(reader, 'book')
+    const orig = vi.spyOn(reader, 'orig')
+    // The first change the screens are told of is the device's books (the books are read after, in the background).
+    let decodedAtOpen: number | null = null
+    const stop = library.subscribeLibrary(() => void (decodedAtOpen ??= book.mock.calls.length + orig.mock.calls.length))
     await library.openLibrary([project])
+    stop()
+    expect(decodedAtOpen).toBe(0)
+    const before = library.availabilityOf('tit', 'es-419')
+    expect(before).toMatchObject({ here: true, needsOriginal: false, sources: null })
     await library.loadBook('tit', 'es-419')
+    expect(book).toHaveBeenCalled()
     expect(calls).toEqual({ rows: 0, v3: 3 })
     const found = library.availabilityOf('tit', 'es-419')
     expect(found).toMatchObject({ here: true, needsOriginal: false, has: { literal: true } })
+    // The parts read from the catalog are those of the book's sources, once read.
+    const { sourcesV3 } = await import('../../resources/v3/bookV3')
+    const sources = (await sourcesV3(reader, 'es-419', 'tit'))!
+    expect(found!.sources).toEqual(sources)
+    expect(found!.has).toEqual(before!.has)
+    expect(found!.has).toEqual({ literal: true, simple: Boolean(sources.simple), notes: Boolean(sources.notes), questions: Boolean(sources.questions), wordLinks: Boolean(sources.wordLinks) })
     expect(library.helpsLanguagesHere().find((l) => l.code === 'es-419')?.books).toContain('tit')
 
     // Every text titled as its catalog titles it, the original's too: never by its key.
@@ -173,6 +193,21 @@ describe('the library reads format 3 first', () => {
     expect(lastV3.lexicon).toBeGreaterThan(0)
     const strong = chapter.texts.find((t) => t.original)!.words!.find((w) => w.strong)!.strong
     expect(data.lexiconOf(strong)).not.toBeNull()
+    client.resetPacksV3()
+  }, 60_000)
+
+  it('a format 3 book that cannot be read is read from the rows when they have it', async () => {
+    useStaging()
+    const { library, client, sample } = await freshApp()
+    const built = await sample.buildSample()
+    const packs = await client.packsV3({ fetch: sample.fakeFetch(built), trustedKeys: { [built.keyId]: built.publicKey } })
+    await packs.install('es-419', { books: ['tit'] })
+    lastV3.fail = true
+    await library.openLibrary([project])
+    expect(library.v3Books().get('es-419')).toEqual(new Set(['tit']))
+    await library.loadBook('tit', 'es-419')
+    expect(library.bookState('tit', 'es-419').state).toBe('ready')
+    expect(calls.rows).toBe(3)
     client.resetPacksV3()
   }, 60_000)
 

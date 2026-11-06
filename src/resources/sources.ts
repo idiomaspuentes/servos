@@ -212,13 +212,13 @@ export function availability(index: DeviceIndex, language: string, book: string)
 }
 
 /**
- * A book installed in format 3 (`sources` read from its book there), merged with what the rows say of it: it can be
- * opened, and its parts are those its format 3 book has. A part it lacks is «not on this device» when the rows say its
- * language published it, else «not yet in the language». `rows` is null when the rows could not be read.
+ * A book installed in format 3, merged with what the rows say of it: it can be opened, and its parts are those its
+ * format 3 book has (`has`, from the catalog). A part it lacks is «not on this device» when the rows say its language
+ * published it, else «not yet in the language». `sources` are known once the book was read (null before);
+ * `rows` is null when the rows could not be read.
  */
-export function withFormat3(rows: Availability | null, sources: BookSources, extras: { lexicon: boolean }): Availability {
+export function withFormat3(rows: Availability | null, has: Record<SourcePart, boolean>, sources: BookSources | null, extras: { lexicon: boolean }): Availability {
   const parts: SourcePart[] = ['literal', 'simple', 'notes', 'questions', 'wordLinks']
-  const has = Object.fromEntries(parts.map((p) => [p, Boolean(sources[p])])) as Record<SourcePart, boolean>
   const notOnDevice = (rows?.notOnDevice ?? []).filter((p) => !has[p])
   return {
     here: true,
