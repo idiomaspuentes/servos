@@ -76,6 +76,76 @@ export function sectionsOf(verses: number[], starts: SectionStarts | undefined, 
   return sections.length ? sections : [verses]
 }
 
+/**
+ * What the places of a chapter's notes and word links are worked out from: each bridge word's places in the original
+ * (`PrototypeText.toOriginal`; `TPS` only when the chapter has the simple text), and the original's words.
+ */
+export interface PlacesFrame {
+  /** The original's abbreviation, the key of its places (`Griego`, `Hebreo`). */
+  original: string
+  toOriginal: { TPL: number[][]; TPS?: number[][] }
+  /** The Strong number of each word of the original, by its place. */
+  strongs: string[]
+  /** The places of the original's words in a verse, in order. */
+  originalsOfVerse: (verse: number) => number[]
+}
+
+/** A help's places from its words in TPL and TPS: in the original, the words those places translate. */
+export function placesThrough(frame: PlacesFrame, tpl: number[], tps: number[]): Places {
+  const originals = new Set<number>()
+  for (const [list, places] of [[frame.toOriginal.TPL, tpl], [frame.toOriginal.TPS, tps]] as const) {
+    for (const at of places) for (const place of list?.[at] ?? []) originals.add(place)
+  }
+  return { TPL: tpl, ...(frame.toOriginal.TPS ? { TPS: tps } : {}), [frame.original]: [...originals].sort((a, b) => a - b) }
+}
+
+/**
+ * The places of one of several links of the same words in a verse. The cached alignment of a word link does not know
+ * which occurrence it is, so links of the same words (יְהוָה twice in Jonah 1:3, three times in 1:14) come with the
+ * places of all of them; the k-th link takes the k-th of them in reading order. Where a text's places do not part
+ * evenly, its share is found through the original words the TPL's share translates.
+ */
+export function nthPlaces(frame: PlacesFrame, places: Places, nth: number, of: number, verse: number): Places {
+  const share = (list: number[] | undefined) => {
+    const sorted = [...(list ?? [])].sort((x, y) => x - y)
+    if (!sorted.length || sorted.length % of !== 0) return null
+    const size = sorted.length / of
+    return sorted.slice(nth * size, (nth + 1) * size)
+  }
+  const tpl = share(places.TPL)
+  if (!tpl) return places
+  const originals = new Set<number>()
+  for (const at of tpl) for (const place of frame.toOriginal.TPL[at] ?? []) originals.add(place)
+  const own = share(places[frame.original])
+  // The original's share, when the TPL's leads to one word that all of them lead to (the alignment knows one): the
+  // k-th word of the verse with its Strong number, if there are as many as links.
+  if (originals.size === 1) {
+    const strong = frame.strongs[[...originals][0]]
+    const same = frame.originalsOfVerse(verse).filter((p) => strong && frame.strongs[p] === strong)
+    if (same.length === of) {
+      originals.clear()
+      originals.add(same[nth])
+    }
+  }
+  const originalShare = originals.size ? [...originals].sort((x, y) => x - y) : (own ?? places[frame.original] ?? [])
+  const tpsWords = frame.toOriginal.TPS
+  if (!tpsWords) return { TPL: tpl, [frame.original]: originalShare }
+  const tpsThrough = (places.TPS ?? []).filter((at) => (tpsWords[at] ?? []).some((place) => originals.has(place)))
+  const tps = share(places.TPS) ?? (tpsThrough.length ? tpsThrough : (places.TPS ?? []))
+  return { TPL: tpl, TPS: tps, [frame.original]: originalShare }
+}
+
+/**
+ * The places of a verse's word links, in their order. Links to the same article given the same places are one link per
+ * occurrence, in order (see `nthPlaces`); not by their words, which differ in their accents (יְהוָ֔ה, יְהוָ֑ה).
+ */
+export function linkPlaces(frame: PlacesFrame, links: ReadonlyArray<{ article: string; places: Places }>, verse: number): Places[] {
+  return links.map((l) => {
+    const twins = links.filter((o) => o.article === l.article && JSON.stringify(o.places) === JSON.stringify(l.places))
+    return twins.length > 1 ? nthPlaces(frame, l.places, twins.indexOf(l), twins.length, verse) : l.places
+  })
+}
+
 export async function chapterData(
   stores: ResourceStores,
   sources: BookSources,
@@ -121,55 +191,13 @@ export async function chapterData(
     (originalOwn.lines[verse] ?? []).flatMap((l) => l.pieces.map((p) => p.word).filter((w): w is number => w !== undefined))
   const toOriginal = (abbr: 'TPL' | 'TPS') =>
     words3[abbr].words.map((w) => w.originals.map((key) => originalPlace.get(key)).filter((p): p is number => p !== undefined))
-  const placesOf = (helps: 'tn' | 'twl', id: string): Places => {
-    const tpl = aligned[helps].TPL[id] ?? []
-    const tps = aligned[helps].TPS[id] ?? []
-    const originals = new Set<number>()
-    for (const [abbr, places] of [['TPL', tpl], ['TPS', tps]] as const) {
-      for (const at of places) for (const key of words3[abbr]?.words[at]?.originals ?? []) {
-        const place = originalPlace.get(key)
-        if (place !== undefined) originals.add(place)
-      }
-    }
-    return { TPL: tpl, ...(simpleWords ? { TPS: tps } : {}), [original.abbreviation]: [...originals].sort((a, b) => a - b) }
+  const frame: PlacesFrame = {
+    original: original.abbreviation,
+    toOriginal: { TPL: toOriginal('TPL'), ...(simpleWords ? { TPS: toOriginal('TPS') } : {}) },
+    strongs: originalWords.map((w) => w.strong),
+    originalsOfVerse,
   }
-  /**
-   * The places of one of several links of the same words in a verse. The cached alignment of a word link does not know
-   * which occurrence it is, so links of the same words (יְהוָה twice in Jonah 1:3, three times in 1:14) come with the
-   * places of all of them; the k-th link takes the k-th of them in reading order. Where a text's places do not part
-   * evenly, its share is found through the original words the TPL's share translates.
-   */
-  const nthPlaces = (places: Places, nth: number, of: number, verse: number): Places => {
-    const share = (list: number[] | undefined) => {
-      const sorted = [...(list ?? [])].sort((x, y) => x - y)
-      if (!sorted.length || sorted.length % of !== 0) return null
-      const size = sorted.length / of
-      return sorted.slice(nth * size, (nth + 1) * size)
-    }
-    const tpl = share(places.TPL)
-    if (!tpl) return places
-    const originals = new Set<number>()
-    for (const at of tpl) for (const key of words3.TPL.words[at]?.originals ?? []) {
-      const place = originalPlace.get(key)
-      if (place !== undefined) originals.add(place)
-    }
-    const own = share(places[original.abbreviation])
-    // The original's share, when the TPL's leads to one word that all of them lead to (the alignment knows one): the
-    // k-th word of the verse with its Strong number, if there are as many as links.
-    if (originals.size === 1) {
-      const strong = originalWords[[...originals][0]]?.strong
-      const same = originalsOfVerse(verse).filter((p) => strong && originalWords[p]?.strong === strong)
-      if (same.length === of) {
-        originals.clear()
-        originals.add(same[nth])
-      }
-    }
-    const originalShare = originals.size ? [...originals].sort((x, y) => x - y) : (own ?? places[original.abbreviation] ?? [])
-    if (!simpleWords) return { TPL: tpl, [original.abbreviation]: originalShare }
-    const tpsThrough = (places.TPS ?? []).filter((at) => (simpleWords.words[at]?.originals ?? []).some((key) => originals.has(originalPlace.get(key) ?? -1)))
-    const tps = share(places.TPS) ?? (tpsThrough.length ? tpsThrough : (places.TPS ?? []))
-    return { TPL: tpl, TPS: tps, [original.abbreviation]: originalShare }
-  }
+  const placesOf = (helps: 'tn' | 'twl', id: string): Places => placesThrough(frame, aligned[helps].TPL[id] ?? [], aligned[helps].TPS[id] ?? [])
 
   const words: PrototypeData['words'] = {}
   const twStamp = sources.words ? resourceContentStamp(await stores.catalog.get(sources.words)) : null
@@ -212,21 +240,11 @@ export async function chapterData(
         places: placesOf('tn', n.id),
       })),
       questions: questions.filter((q) => referenceCovers(q.reference, chapter, verse)).map((q) => ({ id: q.id, question: q.question, response: q.response })),
-      words: links
-        .filter((l) => referenceCovers(l.reference, chapter, verse))
-        .map((l, _, here) => {
-          const places = placesOf('twl', l.id)
-          // Links to the same article given the same places are one link per occurrence, in order (see `nthPlaces`); not
-          // by their words, which differ in their accents (יְהוָ֔ה, יְהוָ֑ה).
-          const twins = here.filter((o) => o.articlePath === l.articlePath && JSON.stringify(placesOf('twl', o.id)) === JSON.stringify(places))
-          return {
-            id: l.id,
-            original: l.origWords,
-            article: l.articlePath,
-            keyTerm: l.tags.includes('keyterm'),
-            places: twins.length > 1 ? nthPlaces(places, twins.indexOf(l), twins.length, verse) : places,
-          }
-        }),
+      words: (() => {
+        const here = links.filter((l) => referenceCovers(l.reference, chapter, verse))
+        const places = linkPlaces(frame, here.map((l) => ({ article: l.articlePath, places: placesOf('twl', l.id) })), verse)
+        return here.map((l, i) => ({ id: l.id, original: l.origWords, article: l.articlePath, keyTerm: l.tags.includes('keyterm'), places: places[i] }))
+      })(),
     })
   }
 
