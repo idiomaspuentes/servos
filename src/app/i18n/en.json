@@ -1099,6 +1099,7 @@
   "enLinea.noDisponible": "They cannot be downloaded now; the app will try later",
   "enLinea.sinEspacio": "There is no room on the phone to download them",
   "enLinea.sinEspacio.computadora": "There is no room on the computer to download them",
+  "paquetes3.noConfiable": "Servos could not confirm that these texts come from Idiomas Puentes. Nothing was installed.",
   "enLinea.hayNuevos": "There are new texts and helps for {idioma} ({tamano})",
   "enLinea.bajarNuevos": "Download",
   "enLinea.alDia": "Texts and helps up to date · {n} translated verses changed",

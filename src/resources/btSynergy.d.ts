@@ -607,7 +607,11 @@ declare module '@bt-synergy/language-pack-client' {
     publisher: string
     revision: number
     origin: 'published' | 'local'
-    catalog: { resources: CatalogResource[]; requires?: [catalog: string, revision: number, id: Uint8Array][] }
+    catalog: {
+      resources: CatalogResource[]
+      requires?: [catalog: string, revision: number, id: Uint8Array][]
+      units: { id: string; needs?: string[]; segments: number[]; optional?: boolean }[]
+    }
   }
   export function verifyCatalogFile(
     bytes: Uint8Array,
@@ -622,7 +626,15 @@ declare module '@bt-synergy/language-pack-client' {
     aliases?: Record<string, string>
   }
   export type Want = { books?: string[]; units?: string[]; aligned?: true | string[]; defaults?: boolean }
+  /** `bytes`: what this install has stored so far (a running total). */
   export type Progress = { done: number; total: number; bytes: number; key: string }
+  /** The units a want names, with what they need, in order; `bytes` of the segments not in `have`. */
+  export function planInstall(
+    catalogs: VerifiedCatalog[],
+    state: InstalledState,
+    want: Want,
+    have: ReadonlySet<string>,
+  ): { steps: { key: string; complete: boolean }[]; bytes: number; unknown: string[] }
   export type InstallReport = {
     activated: string[]
     waiting: { key: string; missing: string[] }[]
@@ -630,9 +642,11 @@ declare module '@bt-synergy/language-pack-client' {
     bytes: number
     unknown: string[]
   }
+  /** An installed unit whose segments changed in a newer catalog: `bytes` of the segments it does not have yet. */
+  export type Update = { key: string; from: number; to: number; bytes: number }
   export type RefreshReport = {
     catalogs: InstalledCatalog[]
-    updates: unknown[]
+    updates: Update[]
     unchanged: boolean
     missingCommon?: { name: string; revision: number; id: string }
   }
@@ -641,7 +655,7 @@ declare module '@bt-synergy/language-pack-client' {
     published?: InstalledCatalog
     active?: InstalledCatalog
     units: { key: string; revision: number; installed: boolean; optional: boolean; bytes: number }[]
-    updates: unknown[]
+    updates: Update[]
     missingCommon?: RefreshReport['missingCommon']
   }
   export type ImportReport = {
@@ -665,7 +679,7 @@ declare module '@bt-synergy/language-pack-client' {
     install(
       lang: string,
       want?: Want,
-      o?: { signal?: AbortSignal; onProgress?: (p: Progress) => void },
+      o?: { signal?: AbortSignal; onProgress?: (p: Progress) => void; concurrency?: number },
     ): Promise<InstallReport>
     status(lang: string): Promise<Status>
     prune(): Promise<{ removed: string[] }>

@@ -2,6 +2,7 @@ import {
   createClient,
   httpSource,
   indexedDbStore,
+  planInstall,
   verifyCatalogFile,
   type BlobStore,
   type CatalogResource,
@@ -9,6 +10,8 @@ import {
   type LanguagePackClient,
   type PackReader,
   type TrustPolicy,
+  type VerifiedCatalog,
+  type Want,
 } from '@bt-synergy/language-pack-client'
 import { V3_ORIGINS } from '../online/packsServer'
 import { trustedKeys } from './keys'
@@ -78,6 +81,22 @@ export async function languagesV3(): Promise<string[]> {
   return Object.keys(state?.active ?? {}).filter((name) => name !== 'common')
 }
 
+/** A catalog file of the store, checked again, and the catalogs it requires (by id); empty when it is not there. */
+async function catalogsFrom(own: { store: BlobStore; trust: TrustPolicy }, id: string): Promise<VerifiedCatalog[]> {
+  const read = async (at: string) => {
+    const bytes = await own.store.get(at)
+    return bytes ? verifyCatalogFile(bytes, own.trust, { from: 'store', expectedId: at }) : undefined
+  }
+  const first = await read(id)
+  if (!first) return []
+  const out = [first]
+  for (const [, , rid] of first.catalog.requires ?? []) {
+    const found = await read(Array.from(rid, (b) => b.toString(16).padStart(2, '0')).join(''))
+    if (found) out.push(found)
+  }
+  return out
+}
+
 /**
  * The resources the active catalog of a language lists, and those of the catalogs it requires (the originals'), with
  * their titles and licenses. The reader does not give them. Empty when nothing of the language is active.
@@ -87,18 +106,28 @@ export async function catalogResourcesV3(lang: string): Promise<CatalogResource[
   const own = parts.get(c)
   const active = (await c.status(lang)).active
   if (!own || !active) return []
-  const read = async (id: string) => {
-    const bytes = await own.store.get(id)
-    return bytes ? verifyCatalogFile(bytes, own.trust, { from: 'store', expectedId: id }) : undefined
-  }
-  const first = await read(active.id)
-  if (!first) return []
-  const out = [...first.catalog.resources]
-  for (const [, , id] of first.catalog.requires ?? []) {
-    const hex = Array.from(id, (b) => b.toString(16).padStart(2, '0')).join('')
-    out.push(...((await read(hex))?.catalog.resources ?? []))
-  }
-  return out
+  return (await catalogsFrom(own, active.id)).flatMap((cat) => cat.catalog.resources)
+}
+
+/**
+ * What installing `want` from the newest catalog of a language (the one `refresh` kept) would fetch: the bytes of the
+ * segments not in the store, with what the units need (`planInstall`, as `install` plans it). `want` may be made from
+ * the keys of every unit the catalogs list (also returned as `units`). Null when no catalog of the language is kept.
+ */
+export async function planV3(
+  client: LanguagePackClient,
+  lang: string,
+  want: Want | ((units: string[]) => Want),
+): Promise<{ bytes: number; unknown: string[]; units: string[] } | null> {
+  const own = parts.get(client)
+  const state = (await own?.store.getState()) as InstalledState | undefined
+  const entry = state?.published[state.aliases?.[lang] ?? lang]
+  if (!own || !state || !entry) return null
+  const catalogs = await catalogsFrom(own, entry.id)
+  if (!catalogs.length) return null
+  const units = catalogs.flatMap((cat) => cat.catalog.units.map((u) => `${cat.name}/${u.id}`))
+  const plan = planInstall(catalogs, state, typeof want === 'function' ? want(units) : want, new Set(await own.store.ids()))
+  return { bytes: plan.bytes, unknown: plan.unknown, units }
 }
 
 /** Drops the cached readers; call it after any install or import. */

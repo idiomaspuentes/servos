@@ -18,14 +18,17 @@ export type Sample = {
 
 const ROOT = btSynergyRoot(join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..'))
 const DATA = join(ROOT, 'packages', 'language-pack-v3', 'spec', 'tests', 'data')
-const about = { format: '3.0', publisher: 'unfoldingWord', origin: 'published', revision: 1, built: '2026-11-01T10:00:00Z', builder: BUILDER }
+const aboutOf = (revision: number) => ({ format: '3.0', publisher: 'unfoldingWord', origin: 'published', revision, built: '2026-11-01T10:00:00Z', builder: BUILDER })
 
-let memo: Promise<Sample> | undefined
-export function buildSample(): Promise<Sample> {
-  return (memo ??= make())
+const memo = new Map<number, Promise<Sample>>()
+/** The sample as its catalogs' `revision` says (the same content, signed with a key made for each revision). */
+export function buildSample(revision = 1): Promise<Sample> {
+  let made = memo.get(revision)
+  if (!made) memo.set(revision, (made = make(aboutOf(revision))))
+  return made
 }
 
-async function make(): Promise<Sample> {
+async function make(about: ReturnType<typeof aboutOf>): Promise<Sample> {
   const parts = join(DATA, 'parts')
   const originals = join(DATA, 'originals', 'list.json')
   const source = (lang: string) => partsSource({ list: join(DATA, lang, 'list.json'), partsDir: parts, originals })
