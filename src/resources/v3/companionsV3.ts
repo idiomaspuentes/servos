@@ -98,6 +98,16 @@ function fileOf(entries: LexEntry[]): LexiconFile | null {
   })
 }
 
+/** The lexicon unit of a Strong number: a thousand numbers each (`lex:G5`). */
+const lexGroup = (letter: 'G' | 'H', number: number) => `lex:${letter}${Math.floor(number / 1000)}`
+
+/** The lexicon units these Strong numbers (as the original writes them, `G54850`) are found in, as `lexiconV3` reads them. */
+export function lexGroupsOf(strongs: Iterable<string>): Set<string> {
+  const out = new Set<string>()
+  for (const strong of strongs) for (const part of strongParts(strong)) out.add(lexGroup(part.kind === 'greek' ? 'G' : 'H', part.number))
+  return out
+}
+
 /** The lexicon entries of these Strong numbers (as the original writes them), keyed as `keepLexicon` keeps them (`greek:5228`). */
 export async function lexiconV3(reader: PackReader, strongs: string[]): Promise<Record<string, LexiconFile>> {
   const wanted = new Map<string, { letter: 'G' | 'H'; number: number }>()
@@ -106,7 +116,7 @@ export async function lexiconV3(reader: PackReader, strongs: string[]): Promise<
   const groups = new Map<string, LexEntry[] | null>()
   const out: Record<string, LexiconFile> = {}
   for (const [key, { letter, number }] of wanted) {
-    const group = `lex:${letter}${Math.floor(number / 1000)}`
+    const group = lexGroup(letter, number)
     if (!groups.has(group)) {
       const segment = reader.installed(group) ? (await reader.segments(group))?.[0] : undefined
       groups.set(group, segment ? lexView(segment).entries : null)

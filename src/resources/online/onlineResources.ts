@@ -62,7 +62,7 @@ import { MAX_RETRY, RETRY, fetchList, fetchOriginals, fetchPart, type ClientOpti
 import { packsFormat, packsServer, setPacksServer, type PacksServerId } from './packsServer'
 import type { LanguagePackClient } from '@bt-synergy/language-pack-client'
 import { forgetReadersV3, packsV3 as realPacksV3 } from '../v3/client'
-import { bookOfUnit, booksV3, installV3, offerV3, planBooksV3, refreshV3, type OutcomeV3 } from '../v3/onlineV3'
+import { bookOfUnit, booksV3, installV3, lexWantV3, offerV3, planBooksV3, refreshV3, type OutcomeV3 } from '../v3/onlineV3'
 import {
   NO_STAMP,
   SHARED,
@@ -1308,8 +1308,9 @@ async function downloadV3(language: string, ctx: Ctx) {
 
 /**
  * Installs what the person asked for in a language (`wanted`: books as `book tit`, offered updates by their format 3
- * key), with the screen kept on. What the translated verses read is watched before, and compared after the library is
- * read again. A stop keeps what was complete (the client activates it), so the library reads that too.
+ * key), with the screen kept on: the books and what they need first, then the lexicon groups their originals use
+ * (`lexWantV3`). What the translated verses read is watched before, and compared after the library is read again. A
+ * stop keeps what was complete (the client activates it), so the library reads that too.
  */
 async function installWantedV3(language: string, ctx: Ctx) {
   const units = [...(wanted.get(language) ?? [])]
@@ -1338,10 +1339,22 @@ async function installWantedV3(language: string, ctx: Ctx) {
   try {
     const watched = touched.length ? await d().watchHelpsV3(language, touched).catch((): Watched[] => []) : []
     const done = await installV3(client, language, planned.want, { signal: ctx.signal, planned: planned.bytes, onProgress: show })
-    const { outcome } = done
+    let { outcome } = done
+    // Then the lexicon groups the books' originals use, now that they can be read; the bar goes on from the first step.
+    const lex = outcome.kind === 'listo' && !ctx.signal.aborted ? await lexWantV3(client, language, books).catch(() => null) : null
+    if (lex) {
+      const after = done.bytes
+      const more = await installV3(client, language, lex.want, {
+        signal: ctx.signal,
+        planned: lex.bytes,
+        onProgress: (p) => show({ ...p, bytesDone: after + p.bytesDone, bytesTotal: after + p.bytesTotal }),
+      })
+      outcome = more.outcome
+    }
     if (outcome.kind === 'parado' || ctx.signal.aborted) return
-    // Nothing new is active after these: the library has nothing to read again.
-    const nothingNew = outcome.kind === 'noConfiable' || outcome.kind === 'sinEspacio' || outcome.kind === 'sinIdioma'
+    // Nothing new is active when the first step ended so: the library has nothing to read again.
+    const first = done.outcome.kind
+    const nothingNew = first === 'noConfiable' || first === 'sinEspacio' || first === 'sinIdioma'
     if (!nothingNew) await afterInstallV3(language, watched, ctx)
     if (outcome.kind !== 'listo') return refusedV3(language, outcome, ctx)
     // A unit left waiting (a segment the server did not have): tried again at the next check, up to three times.
@@ -1598,6 +1611,11 @@ export async function choosePacksServer(id: PacksServerId): Promise<void> {
   offers.clear()
   set({ blocked: {}, offer: null })
   moved()
+  // The server chooses the packs format (`packsFormat`): the library reads this device again in the new one, so it
+  // does not go on reading books of the other format until the app restarts.
+  await d()
+    .refreshLibrary()
+    .catch(() => {})
   for (;;) {
     const run = current
     if (!run) return startRun('check', (ctx) => check(true, ctx))

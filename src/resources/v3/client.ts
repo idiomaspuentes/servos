@@ -111,13 +111,13 @@ export async function catalogResourcesV3(lang: string): Promise<CatalogResource[
 
 /**
  * What installing `want` from the newest catalog of a language (the one `refresh` kept) would fetch: the bytes of the
- * segments not in the store, with what the units need (`planInstall`, as `install` plans it). `want` may be made from
- * the keys of every unit the catalogs list (also returned as `units`). Null when no catalog of the language is kept.
+ * segments not in the store, with what the units need (`planInstall`, as `install` plans it). `units` are the keys of
+ * every unit the catalogs list. Null when no catalog of the language is kept.
  */
 export async function planV3(
   client: LanguagePackClient,
   lang: string,
-  want: Want | ((units: string[]) => Want),
+  want: Want,
 ): Promise<{ bytes: number; unknown: string[]; units: string[] } | null> {
   const own = parts.get(client)
   const state = (await own?.store.getState()) as InstalledState | undefined
@@ -126,7 +126,7 @@ export async function planV3(
   const catalogs = await catalogsFrom(own, entry.id)
   if (!catalogs.length) return null
   const units = catalogs.flatMap((cat) => cat.catalog.units.map((u) => `${cat.name}/${u.id}`))
-  const plan = planInstall(catalogs, state, typeof want === 'function' ? want(units) : want, new Set(await own.store.ids()))
+  const plan = planInstall(catalogs, state, want, new Set(await own.store.ids()))
   return { bytes: plan.bytes, unknown: plan.unknown, units }
 }
 

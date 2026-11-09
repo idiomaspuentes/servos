@@ -5,17 +5,20 @@
  * BookScreen read format 3 as they read format 2.0.
  *
  * - A book is its unit (`book:tit`, with what it needs: its original, the maps, its article groups) and the lexicon
- *   groups of its testament (`lex:G*` for the New, `lex:H*` for the Old). Which groups its Strong numbers fall in is
- *   only known once its original is read, so the testament's are taken (the lexicon is not needed to read a book).
+ *   groups its original's Strong numbers fall in (`lex:G5`, a thousand numbers each, as `lexiconV3` reads them). Those
+ *   are known once the original is read, so a download installs the book first, then its groups (`lexWantV3`).
  * - A size is what `install` would fetch now: the segments of those units not in the store (`planV3`). A download cut
- *   halfway left its complete segments stored, so the size of the rest is smaller.
+ *   halfway left its complete segments stored, so the size of the rest is smaller. Before the book's original is on the
+ *   device its groups are not known: the size then counts every group of its testament, so «Bajar · 3,9 MB» never says
+ *   less than what comes (an upper bound by the lexicon's part).
  * - An update is an installed unit whose segments changed in the catalog `refresh` kept (`status().updates`).
  */
 
-import type { LanguagePackClient, Progress as ProgressV3, Want } from '@bt-synergy/language-pack-client'
+import type { LanguagePackClient, PackReader, Progress as ProgressV3, Want } from '@bt-synergy/language-pack-client'
 import type { Progress } from '../online/downloads'
 import { BIBLE_ORDER } from '../reading'
 import { planV3 } from './client'
+import { lexGroupsOf } from './companionsV3'
 
 /** What a format 3 call came to, in the words format 2.0 already says (`Blocked`), and `noConfiable`. */
 export type OutcomeV3 =
@@ -70,20 +73,36 @@ export async function refreshV3(client: LanguagePackClient, lang: string, signal
   }
 }
 
-/** The lexicon groups of a book's testament, of the units the catalogs list (`es-419/lex:G0`...). */
-export function lexUnitsOf(book: string, units: readonly string[]): string[] {
+/** Every lexicon group of a book's testament, of the units the catalogs list (`es-419/lex:G0`...): an upper bound. */
+export function testamentLexOf(book: string, units: readonly string[]): string[] {
   const greek = BIBLE_ORDER.indexOf(book.toLowerCase()) >= BIBLE_ORDER.indexOf('mat')
   const group = greek ? /\/lex:G\d+$/ : /\/lex:H\d+$/
   return units.filter((u) => group.test(u))
 }
 
+/** The lexicon units (of those the catalogs list, `es-419/lex:G5`) these Strong numbers are found in. */
+export function lexUnitsFor(strongs: Iterable<string>, units: readonly string[]): string[] {
+  const groups = lexGroupsOf(strongs)
+  return units.filter((u) => groups.has(u.slice(u.indexOf('/') + 1)))
+}
+
+/** The lexicon units a book's original uses; null when its original is not readable here. */
+async function bookLexOf(reader: PackReader | null, book: string, units: readonly string[]): Promise<string[] | null> {
+  const orig = await reader?.orig(book.toLowerCase()).catch(() => undefined)
+  return orig ? lexUnitsFor(orig.words.map((w) => w.strong), units) : null
+}
+
+/** A fresh reader of the language (not the library's cached one), or null when nothing can be read. */
+const readerOf = (client: LanguagePackClient, lang: string): Promise<PackReader | null> => client.open(lang).catch(() => null)
+
 /** The book a unit key names (`es-419/book:tit` → `tit`), or null. */
 export const bookOfUnit = (key: string): string | null => /\/book:([^/]+)$/.exec(key)?.[1] ?? null
 
 /**
- * What to install for some books (with their testaments' lexicon) and some units by key (an offered update), and its
- * bytes now. Undefined when no catalog of the language is kept (refresh first); null when a book asked for is not in
- * the catalogs.
+ * What to install first for some books and some units by key (an offered update): `want`, without the lexicon, which
+ * `lexWantV3` adds once the originals are here. `bytes` counts the lexicon too: the groups of each book's original when
+ * it is here already, else every group of its testament (an upper bound). Undefined when no catalog of the language is
+ * kept (refresh first); null when a book asked for is not in the catalogs.
  */
 export async function planBooksV3(
   client: LanguagePackClient,
@@ -91,15 +110,32 @@ export async function planBooksV3(
   books: readonly string[],
   units: readonly string[] = [],
 ): Promise<{ want: Want; bytes: number } | null | undefined> {
-  let want: Want = {}
-  const plan = await planV3(client, lang, (listed) => {
-    const lex = [...new Set(books.flatMap((b) => lexUnitsOf(b, listed)))]
-    want = { books: books.map((b) => b.toLowerCase()), units: [...units, ...lex] }
-    return want
-  })
+  const want: Want = { books: books.map((b) => b.toLowerCase()), units: [...units] }
+  const plan = await planV3(client, lang, want)
   if (!plan) return undefined
   if (books.some((b) => plan.unknown.includes(`book:${b.toLowerCase()}`))) return null
-  return { want, bytes: plan.bytes }
+  if (!books.length) return { want, bytes: plan.bytes }
+  const reader = await readerOf(client, lang)
+  const lex = new Set<string>()
+  for (const b of books) for (const u of (await bookLexOf(reader, b, plan.units)) ?? testamentLexOf(b, plan.units)) lex.add(u)
+  const whole = lex.size ? await planV3(client, lang, { ...want, units: [...units, ...lex] }) : plan
+  return { want, bytes: whole?.bytes ?? plan.bytes }
+}
+
+/**
+ * The second step of a book's download: the lexicon groups its original uses, read from the original installed in the
+ * first step. Null when there is nothing to add (no original readable, or no group listed).
+ */
+export async function lexWantV3(client: LanguagePackClient, lang: string, books: readonly string[]): Promise<{ want: Want; bytes: number } | null> {
+  if (!books.length) return null
+  const listed = await planV3(client, lang, { defaults: false })
+  if (!listed) return null
+  const reader = await readerOf(client, lang)
+  const lex = new Set<string>()
+  for (const b of books) for (const u of (await bookLexOf(reader, b, listed.units)) ?? []) lex.add(u)
+  if (!lex.size) return null
+  const want: Want = { units: [...lex], defaults: false }
+  return { want, bytes: (await planV3(client, lang, want))?.bytes ?? 0 }
 }
 
 /** The books the language's catalog lists, in its order. */
@@ -133,8 +169,11 @@ export const progressOf = (p: ProgressV3, planned: number): Progress => ({
   bytesTotal: Math.max(planned, p.bytes),
 })
 
-/** What an install came to: its outcome, and which wanted units are not active after it (a segment the server lacks). */
-export type InstalledV3 = { outcome: OutcomeV3; waiting: string[] }
+/**
+ * What an install came to: its outcome, which wanted units are not active after it (a segment the server lacks), and
+ * the bytes it fetched.
+ */
+export type InstalledV3 = { outcome: OutcomeV3; waiting: string[]; bytes: number }
 
 /** Installs `want`, saying its progress. Never rejects: an error is its outcome. */
 export async function installV3(
@@ -148,8 +187,8 @@ export async function installV3(
       signal: o.signal,
       onProgress: (p) => o.onProgress(progressOf(p, o.planned)),
     })
-    return { outcome: { kind: 'listo' }, waiting: report.waiting.map((w) => w.key) }
+    return { outcome: { kind: 'listo' }, waiting: report.waiting.map((w) => w.key), bytes: report.bytes }
   } catch (e) {
-    return { outcome: outcomeOf(e, o.signal), waiting: [] }
+    return { outcome: outcomeOf(e, o.signal), waiting: [], bytes: 0 }
   }
 }

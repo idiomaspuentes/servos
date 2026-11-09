@@ -12,6 +12,7 @@ import type { Progress } from '../online/downloads'
 import {
   bookDownloadSize,
   checkForUpdates,
+  choosePacksServer,
   declineOffer,
   downloadBook,
   downloadOffer,
@@ -22,8 +23,10 @@ import {
   setOnlineProjects,
   type OnlineDeps,
 } from '../online/onlineResources'
-import { V3_ORIGINS } from '../online/packsServer'
+import { V3_ORIGINS, packsFormat, setPacksServer } from '../online/packsServer'
 import { createPacksV3, packsV3, resetPacksV3 } from './client'
+import { lexUnitsFor, testamentLexOf } from './onlineV3'
+import { lexGroupsOf } from './companionsV3'
 import { trustedKeys } from './keys'
 import { buildSample, fakeFetch, type Sample } from './testing/sample'
 
@@ -139,22 +142,61 @@ describe('format 3 online', () => {
     expect(onlineState().blocked).toEqual({})
     expect(onlineState().busy).toBeNull()
     expect(w.asked.every((u) => u.startsWith(`${V3_ORIGINS.staging}/v3/packs/`))).toBe(true)
-    // The progress went from nothing to the size said before, by bytes.
+    // The progress went from nothing to all of it, by bytes; the size said before is never less than what came.
     expect(dev.progress[0]).toMatchObject({ bytesDone: 0, bytesTotal: size })
-    expect(dev.progress.at(-1)).toMatchObject({ bytesDone: size, bytesTotal: size })
-    // The book, what it needs, and its testament's lexicon.
+    const last = dev.progress.at(-1)!
+    expect(last.bytesDone).toBe(last.bytesTotal)
+    expect(last.bytesDone).toBeLessThanOrEqual(size!)
+    // The book, what it needs, and only the lexicon groups its original's Strong numbers fall in.
     expect(await installed(client, 'es-419/book:tit')).toBe(true)
     const units = (await client.status('es-419')).units
-    const lex = units.filter((u) => /\/lex:G\d+$/.test(u.key))
-    expect(lex.length).toBeGreaterThan(0)
-    expect(lex.every((u) => u.installed)).toBe(true)
-    expect(units.filter((u) => /\/lex:H\d+$/.test(u.key)).every((u) => !u.installed)).toBe(true)
+    const orig = await (await client.open('es-419')).orig('tit')
+    const used = lexGroupsOf(orig!.words.map((w) => w.strong))
+    const lexHere = units.filter((u) => /\/lex:/.test(u.key) && u.installed).map((u) => u.key.slice(u.key.indexOf('/') + 1))
+    expect(lexHere.length).toBeGreaterThan(0)
+    expect(new Set(lexHere)).toEqual(new Set([...used].filter((g) => units.some((u) => u.key.endsWith(`/${g}`)))))
+    console.log(`[sample] lex listed ${units.filter((u) => /\/lex:/.test(u.key)).map((u) => u.key).join(' ')}; installed ${lexHere.join(' ')}; size ${size}, fetched ${last.bytesDone}`)
     // Watched before, the library read again after: it reads Titus from format 3.
     expect(dev.watched).toEqual([['tit']])
     expect(dev.refreshed).toBe(1)
     expect(library.v3Books().get('es-419')?.has('tit')).toBe(true)
     expect(library.bookIsHere('tit', 'es-419')).toBe(true)
     expect(await bookDownloadSize('es-419', 'tit')).toBe(0)
+  })
+
+  it('Titus installs only the lex groups its Strong numbers fall in', async () => {
+    // The sample's catalog lists only `lex:G0`: the choice is checked against every group a catalog could list.
+    const { client } = await setup()
+    await downloadBook('es-419', 'tit')
+    const orig = await (await client.open('es-419')).orig('tit')
+    const strongs = orig!.words.map((w) => w.strong)
+    const listed = ['G', 'H'].flatMap((l) => Array.from({ length: 10 }, (_, i) => `es-419/lex:${l}${i}`))
+    const chosen = lexUnitsFor(strongs, listed)
+    const numbers = strongs.flatMap((s) => (/^G(\d+)\d$/.exec(s) ? [Number(/^G(\d+)\d$/.exec(s)![1])] : []))
+    expect(chosen).toEqual([...new Set(numbers.map((n) => `es-419/lex:G${Math.floor(n / 1000)}`))].sort((a, b) => listed.indexOf(a) - listed.indexOf(b)))
+    expect(chosen.length).toBeLessThan(testamentLexOf('tit', listed).length)
+    expect(chosen.every((u) => /lex:G/.test(u))).toBe(true)
+  })
+
+  it('choosing the server reads the library again in its format', async () => {
+    vi.stubGlobal('localStorage', memoryStorage())
+    setPacksServer('staging')
+    const sample = await buildSample()
+    const client = await packsV3({ fetch: worker(sample).fetch, store: memoryStore(), trustedKeys: { [sample.keyId]: sample.publicKey } })
+    const library = await import('../../app/projects/library')
+    device(client, { format: () => packsFormat(), refreshLibrary: () => library.refreshLibrary() })
+    await downloadBook('es-419', 'tit')
+    expect(library.v3Books().get('es-419')?.has('tit')).toBe(true)
+
+    // Production is format 2: the library stops reading format 3 at once.
+    await choosePacksServer('produccion')
+    expect(packsFormat()).toBe(2)
+    expect(library.v3Books().size).toBe(0)
+
+    // And back.
+    await choosePacksServer('staging')
+    expect(packsFormat()).toBe(3)
+    expect(library.v3Books().get('es-419')?.has('tit')).toBe(true)
   })
 
   it('a second download fetches only what is missing', async () => {
@@ -313,8 +355,12 @@ describe.runIf(process.env.SERVOS_WORKER === 'staging')('format 3 from the stagi
     await downloadBook('es-419', 'tit')
     const seconds = (Date.now() - started) / 1000
     const lex = (await client.status('es-419')).units.filter((u) => /\/lex:G\d+$/.test(u.key))
-    const lexBytes = lex.reduce((b, u) => b + u.bytes, 0)
-    console.log(`[staging] es-419 Titus: ${size} bytes planned (${lex.length} lex:G units, ${lexBytes} bytes), installed in ${seconds.toFixed(1)} s`)
+    const here = lex.filter((u) => u.installed)
+    const sum = (us: typeof lex) => us.reduce((b, u) => b + u.bytes, 0)
+    console.log(
+      `[staging] es-419 Titus: said ${size} bytes before, fetched ${dev.progress.at(-1)?.bytesDone} in ${seconds.toFixed(1)} s; ` +
+        `lexicon ${here.map((u) => u.key).join(' ')} (${sum(here)} bytes) of ${lex.length} G groups (${sum(lex)} bytes)`,
+    )
     expect(onlineState().blocked).toEqual({})
     expect(await installed(client, 'es-419/book:tit')).toBe(true)
     expect(dev.refreshed).toBe(1)
