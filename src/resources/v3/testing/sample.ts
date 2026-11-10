@@ -76,3 +76,6 @@ export function fakeFetch(sample: Sample): typeof fetch & { urls: string[] } {
 }
 
 export const readKeyFile = (id: string) => readFileSync(join(ROOT, 'packages', 'language-pack-v3', 'keys', `${id}.pub`), 'utf8')
+
+/** A file of the spec's test data (`es-419-tit.langpack.zip`, `originals-tit.langpack.zip`...). */
+export const specData = (name: string): Uint8Array => new Uint8Array(readFileSync(join(DATA, name)))

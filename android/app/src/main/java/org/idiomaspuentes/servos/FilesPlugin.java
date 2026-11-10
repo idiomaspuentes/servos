@@ -8,6 +8,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.OpenableColumns;
+import android.util.Base64;
 import android.webkit.MimeTypeMap;
 import androidx.activity.result.ActivityResult;
 import androidx.core.content.FileProvider;
@@ -91,7 +92,6 @@ public class FilesPlugin extends Plugin {
     @PluginMethod
     public void share(PluginCall call) {
         String name = call.getString("name", "");
-        String text = call.getString("text", "");
         String type = call.getString("type", "application/octet-stream");
         String keepHere = call.getString("keepHere", "");
         if (name.isEmpty() || name.contains("/")) {
@@ -104,7 +104,7 @@ public class FilesPlugin extends Plugin {
             clearShared(folder);
             File file = new File(folder, name);
             try (FileOutputStream out = new FileOutputStream(file)) {
-                out.write(text.getBytes(StandardCharsets.UTF_8));
+                out.write(bodyOf(call));
             }
             Uri uri = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", file);
             Intent send = new Intent(Intent.ACTION_SEND);
@@ -165,12 +165,19 @@ public class FilesPlugin extends Plugin {
         }
         try (OutputStream out = getContext().getContentResolver().openOutputStream(place, "wt")) {
             if (out == null) throw new Exception("No place");
-            out.write(call.getString("text", "").getBytes(StandardCharsets.UTF_8));
+            out.write(bodyOf(call));
             answer.put("saved", nameOf(place));
             call.resolve(answer);
         } catch (Exception e) {
             call.reject("Not saved", e);
         }
+    }
+
+    /** What a file holds: bytes given as base64 (a transfer file), or else its text. */
+    private static byte[] bodyOf(PluginCall call) {
+        String base64 = call.getString("base64", null);
+        if (base64 != null) return Base64.decode(base64, Base64.DEFAULT);
+        return call.getString("text", "").getBytes(StandardCharsets.UTF_8);
     }
 
     /** Where a file waits for the app it is shared to, inside Servos's own cache. */

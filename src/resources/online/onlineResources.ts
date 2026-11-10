@@ -1337,25 +1337,32 @@ async function installWantedV3(language: string, ctx: Ctx) {
     .wakeLock()
     .catch(() => null)
   try {
-    const watched = touched.length ? await d().watchHelpsV3(language, touched).catch((): Watched[] => []) : []
-    const done = await installV3(client, language, planned.want, { signal: ctx.signal, planned: planned.bytes, onProgress: show })
-    let { outcome } = done
-    // Then the lexicon groups the books' originals use, now that they can be read; the bar goes on from the first step.
-    const lex = outcome.kind === 'listo' && !ctx.signal.aborted ? await lexWantV3(client, language, books).catch(() => null) : null
-    if (lex) {
-      const after = done.bytes
-      const more = await installV3(client, language, lex.want, {
-        signal: ctx.signal,
-        planned: lex.bytes,
-        onProgress: (p) => show({ ...p, bytesDone: after + p.bytesDone, bytesTotal: after + p.bytesTotal }),
-      })
-      outcome = more.outcome
-    }
-    if (outcome.kind === 'parado' || ctx.signal.aborted) return
-    // Nothing new is active when the first step ended so: the library has nothing to read again.
-    const first = done.outcome.kind
-    const nothingNew = first === 'noConfiable' || first === 'sinEspacio' || first === 'sinIdioma'
-    if (!nothingNew) await afterInstallV3(language, watched, ctx)
+    // An apply as format 2.0's (`onlineLock.ts`): a file received meanwhile (`receiveFileV3`) waits for it to end, and
+    // it waits for a file being received, so neither counts the other's books as its own change.
+    const ran = await asOnlineApply(async () => {
+      const watched = touched.length ? await d().watchHelpsV3(language, touched).catch((): Watched[] => []) : []
+      const done = await installV3(client, language, planned.want, { signal: ctx.signal, planned: planned.bytes, onProgress: show })
+      let { outcome } = done
+      // Then the lexicon groups the books' originals use, now that they can be read; the bar goes on from the first step.
+      const lex = outcome.kind === 'listo' && !ctx.signal.aborted ? await lexWantV3(client, language, books).catch(() => null) : null
+      if (lex) {
+        const after = done.bytes
+        const more = await installV3(client, language, lex.want, {
+          signal: ctx.signal,
+          planned: lex.bytes,
+          onProgress: (p) => show({ ...p, bytesDone: after + p.bytesDone, bytesTotal: after + p.bytesTotal }),
+        })
+        outcome = more.outcome
+      }
+      if (outcome.kind === 'parado' || ctx.signal.aborted) return null
+      // Nothing new is active when the first step ended so: the library has nothing to read again.
+      const first = done.outcome.kind
+      const nothingNew = first === 'noConfiable' || first === 'sinEspacio' || first === 'sinIdioma'
+      if (!nothingNew) await afterInstallV3(language, watched, ctx)
+      return { outcome, done }
+    })
+    if (!ran) return
+    const { outcome, done } = ran
     if (outcome.kind !== 'listo') return refusedV3(language, outcome, ctx)
     // A unit left waiting (a segment the server did not have): tried again at the next check, up to three times.
     const cut = units.filter((u) => done.waiting.some((k) => k === u || (u.startsWith('book ') && bookOfUnit(k) === u.slice('book '.length))))

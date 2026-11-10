@@ -23,6 +23,12 @@ describe('saving a file in the app for computers', () => {
     expect(await saveFile('JON.usfm', '\\id JON', 'text/plain')).toEqual({ state: 'declined', name: 'JON.usfm' })
   })
 
+  it('hands bytes over as they are', async () => {
+    invoke.mockResolvedValue('es-419-tit.tcpack')
+    expect(await saveFile('es-419-tit.tcpack', new Uint8Array([0, 255, 7]), 'application/octet-stream')).toEqual({ state: 'saved', name: 'es-419-tit.tcpack' })
+    expect(invoke).toHaveBeenCalledWith('save_file', { name: 'es-419-tit.tcpack', text: '', bytes: [0, 255, 7] })
+  })
+
   it('says it could not when the file could not be written', async () => {
     invoke.mockRejectedValue('Acceso denegado')
     expect(await saveFile('Jonás.servos', '{}')).toEqual({ state: 'failed', name: 'Jonás.servos' })
@@ -46,6 +52,12 @@ describe('saving a file in the app for phones', () => {
     expect(share).toHaveBeenCalledWith({ name: 'Jonás.servos', text: '{}', type: 'application/json', keepHere: 'Guardar en el teléfono' })
     await saveFile('JON.usfm', '\\id JON', 'text/plain')
     expect(share).toHaveBeenLastCalledWith({ name: 'JON.usfm', text: '\\id JON', type: 'text/plain', keepHere: '' })
+  })
+
+  it('hands bytes over as base64', async () => {
+    share.mockResolvedValue({})
+    await saveFile('es-419-tit.tcpack', new Uint8Array([0, 255, 7]), 'application/octet-stream', 'Guardar en el teléfono')
+    expect(share).toHaveBeenCalledWith({ name: 'es-419-tit.tcpack', text: '', base64: 'AP8H', type: 'application/octet-stream', keepHere: 'Guardar en el teléfono' })
   })
 
   it('says the name it was kept under when it was kept on the phone', async () => {

@@ -23,7 +23,7 @@ const OPENED = 'archivos-abiertos'
 /** Files between Servos and the rest of the phone (`android/…/FilesPlugin.java`). */
 interface Files {
   opened(): Promise<{ files: Arrived[] }>
-  share(file: { name: string; text: string; type: string; keepHere: string }): Promise<{ saved?: string }>
+  share(file: { name: string; text: string; base64?: string; type: string; keepHere: string }): Promise<{ saved?: string }>
   shareText(options: { text: string }): Promise<void>
   addListener(event: string, listener: () => void): Promise<unknown>
 }
@@ -119,7 +119,16 @@ export async function shareTextOnPhone(text: string): Promise<void> {
  * on the sheet, named `keepHere`. Gives back the name it was kept under on the phone; elsewhere, nothing: Android does
  * not say where it went, nor whether the sheet was left without choosing.
  */
-export async function shareOnPhone(name: string, text: string, type: string, keepHere: string): Promise<string | null> {
-  const { saved } = await (await files()).plugin.share({ name, text, type, keepHere })
+export async function shareOnPhone(name: string, text: string | Uint8Array, type: string, keepHere: string): Promise<string | null> {
+  const { plugin } = await files()
+  // Bytes cross to Android as base64 (`base64`), which the plugin writes as they are.
+  const { saved } = typeof text === 'string' ? await plugin.share({ name, text, type, keepHere }) : await plugin.share({ name, text: '', base64: base64Of(text), type, keepHere })
   return saved ?? null
+}
+
+/** Bytes as base64, a piece at a time (a whole megabyte spread into one call would overflow the stack). */
+export function base64Of(bytes: Uint8Array): string {
+  let out = ''
+  for (let i = 0; i < bytes.length; i += 0x8000) out += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+  return btoa(out)
 }

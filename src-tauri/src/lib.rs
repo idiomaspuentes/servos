@@ -48,9 +48,10 @@ fn opened_files(waiting: State<'_, Waiting>) -> Vec<Opened> {
 }
 
 /// Saves a file the app made where the person chooses, in the system's save dialog, under the name the app gave it.
-/// Gives back the name it got, or nothing when the person closed the dialog.
+/// Gives back the name it got, or nothing when the person closed the dialog. A file of bytes (a transfer file of texts
+/// and helps) comes as `bytes`, written as they are; any other, as its text.
 #[tauri::command]
-async fn save_file(app: AppHandle, name: String, text: String) -> Result<Option<String>, String> {
+async fn save_file(app: AppHandle, name: String, text: String, bytes: Option<Vec<u8>>) -> Result<Option<String>, String> {
     let mut dialog = app.dialog().file().set_file_name(&name);
     if let Some(ext) = Path::new(&name).extension().and_then(|e| e.to_str()) {
         // The kind of file, as the dialog's list shows it: «Servos (*.servos)», «USFM (*.usfm)», «JSON (*.json)».
@@ -64,7 +65,11 @@ async fn save_file(app: AppHandle, name: String, text: String) -> Result<Option<
         return Ok(None);
     };
     let path: PathBuf = chosen.into_path().map_err(|e| e.to_string())?;
-    std::fs::write(&path, text).map_err(|e| e.to_string())?;
+    match bytes {
+        Some(bytes) => std::fs::write(&path, bytes),
+        None => std::fs::write(&path, text),
+    }
+    .map_err(|e| e.to_string())?;
     Ok(path.file_name().map(|n| n.to_string_lossy().into_owned()))
 }
 
