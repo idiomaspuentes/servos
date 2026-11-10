@@ -2,12 +2,16 @@
  * Timings of format 3 on the device, as the library's desktop bench (`language-pack-client/bench/timings.ts`) takes
  * them, with differences that matter on a phone: every run opens fresh readers over the real store, so what the store
  * (IndexedDB) costs to read is counted (the bench reads from memory); the first run is reported apart (cold); and a run
- * during which the app went to the background is marked, since the browser slows its timers then.
+ * during which the app went to the background is marked, since the browser slows a background page then (its timers
+ * above all; the book's turns between chapters are `giveTurn`'s, as in the app, and only the pauses between runs are
+ * timers).
  *
- * «A verse with its helps» is what a person waits for after tapping a verse in a book already open: the reader the app
- * keeps (`readerV3`) has read the book and answered a verse before, so it is timed on a reader that did both, as the
- * bench does. The first verse a fresh reader answers is timed apart (`firstVerse`): it also reads the maps (`maps()`,
- * which `passage` needs for its coverage), once per reader.
+ * A verse tapped inside an open book is read from the chapters already in memory (`PrototypeData`), not asked of the
+ * reader. `passage` and `context` run for a verse of another place (`VerseSheet`, the lookups across books), on the
+ * reader the app keeps (`readerV3`). Its first query reads the maps too (`maps()`, which `passage` needs for its
+ * coverage), once per reader: that is `firstVerse`, the first lookup after opening Servos or installing. The next ones
+ * (`passage`, `context`) are timed on a reader that already answered the same query once, as the bench does. All three
+ * are judged against the verse target.
  *
  * No module-level cache sits between runs: `readBookV3`, `articlesV3`, `lexiconV3` and `helpsV3` keep none, and each
  * reader (the library's own caches) is made anew by `client.open`. Never `readerV3`, which keeps its reader.
@@ -16,7 +20,7 @@
  * 50 ms.
  */
 import type { LanguagePackClient } from '@bt-synergy/language-pack-client'
-import { readBookV3 } from './bookV3'
+import { giveTurn, readBookV3 } from './bookV3'
 import { packsV3 } from './client'
 
 export type Stat = { median: number; min: number; max: number }
@@ -37,7 +41,7 @@ export type Timings = {
   screen: Stat
   /** The first `passage(ref)` of a reader that has read the book: it reads the maps too (once a reader). */
   firstVerse: Stat
-  /** `passage(ref)` with its notes, on a reader that read the book and answered a verse (a verse tapped in an open book). */
+  /** `passage(ref)` with its notes, on a reader that read the book and answered it once (a later lookup of a verse). */
   passage: Stat
   /** `context(ref)`, on a reader that read the book and answered it once. */
   context: Stat
@@ -101,7 +105,7 @@ export async function measure(lang: string, book: string, ref: string, runs = 20
         },
         yield: async () => {
           const w = performance.now()
-          await breathe()
+          await giveTurn()
           waited += performance.now() - w
         },
       })

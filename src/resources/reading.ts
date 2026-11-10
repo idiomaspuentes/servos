@@ -382,7 +382,11 @@ export interface VerseNote {
 
 /** Whether a note reference (`1:3`, `1:3-5`, `1:intro`) covers this verse. */
 export function referenceCovers(reference: string, chapter: number, verse: number): boolean {
-  const span = referenceSpan(reference)
+  return spanCovers(referenceSpan(reference), chapter, verse)
+}
+
+/** Whether a reference read by `referenceSpan` covers this verse. */
+export function spanCovers(span: ReturnType<typeof referenceSpan>, chapter: number, verse: number): boolean {
   return span !== null && span.chapter === chapter && verse >= span.from && verse <= span.to
 }
 

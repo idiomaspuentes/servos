@@ -324,7 +324,7 @@ const TURN_MS = 50
  * Gives the screen a turn: `scheduler.yield` where the browser has it, else a message to itself, which, unlike a timer,
  * is not clamped to 4 ms when nested nor slowed to once a second in a hidden tab.
  */
-function giveTurn(): Promise<void> {
+export function giveTurn(): Promise<void> {
   const scheduler = (globalThis as { scheduler?: { yield?: () => Promise<void> } }).scheduler
   if (scheduler?.yield) return scheduler.yield()
   if (typeof MessageChannel === 'undefined') return new Promise((resolve) => setTimeout(resolve, 0))

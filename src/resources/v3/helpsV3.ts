@@ -16,7 +16,7 @@ import type { BookModel, HelpRow } from '@bt-synergy/language-pack-v3'
 import type { PackReader } from '@bt-synergy/language-pack-client'
 import type { PrototypeData } from '../../prototype/data'
 import { articleOf, rcLinksIn } from '../articleLinks'
-import { introsOfNotes, referenceCovers, referenceSpan, textQuoteOf, type ChapterIntros, type VerseHelps } from '../reading'
+import { introsOfNotes, referenceCovers, referenceSpan, spanCovers, textQuoteOf, type ChapterIntros, type VerseHelps } from '../reading'
 import { linkPlaces, placesThrough, type PlacesFrame } from '../screenData'
 import { textChapters, type ChapterText } from './bookV3'
 
@@ -125,10 +125,7 @@ export function chapterHelps(rows: ChapterRows, input: ChapterHelpsInput): { ver
   for (const link of links) keep(tw, articleOfLink(link))
 
   const verses: PrototypeData['verses'] = input.verses.map((verse) => {
-    const covers = (r: HelpRow) => {
-      const span = spanOf(r)
-      return span !== null && span.chapter === chapter && verse >= span.from && verse <= span.to
-    }
+    const covers = (r: HelpRow) => spanCovers(spanOf(r), chapter, verse)
     const here = links.filter(covers)
     const linked = linkPlaces(frame, here.map((l) => ({ article: articleOfLink(l), places: placesOf(l).places })), verse)
     return {

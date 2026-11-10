@@ -33,7 +33,7 @@ const LABELS: Record<RowName, string> = {
   passage: 'paquetes3.medirVersiculo',
   context: 'paquetes3.medirContexto',
 }
-const TARGET: Partial<Record<RowName, number>> = { screen: TARGETS.readableMs, passage: TARGETS.verseMs, context: TARGETS.verseMs }
+const TARGET: Partial<Record<RowName, number>> = { screen: TARGETS.readableMs, firstVerse: TARGETS.verseMs, passage: TARGETS.verseMs, context: TARGETS.verseMs }
 
 export function TimingsSheet({ onClose }: { onClose(): void }) {
   const { t, language } = useI18n()
