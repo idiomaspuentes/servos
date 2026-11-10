@@ -19,6 +19,7 @@ import { normalizeReferentFile, type ReferentFile } from '../../original/referen
 import { normalizeTreeFile, type TreeFile } from '../../original/syntaxTree'
 import type { ArticleRef } from '../articleLinks'
 import { rcLinks } from './helpsV3'
+import { articleIdV3 } from './lookups'
 
 type Article = { title: string; markdown: string }
 
@@ -33,12 +34,9 @@ function markdownOf(article: Pick<ArticleModel, 'title' | 'subtitle'> & { sectio
   return rcLinks(parts.join('\n\n')) + '\n'
 }
 
-/** The id format 3 gives an article: `tw:kt/grace` for `bible/kt/grace`, `ta:translate/figs-metaphor`. */
-const idOf = (ref: ArticleRef) => (ref.kind === 'tw' ? `tw:${ref.path.replace(/^bible\//, '')}` : `ta:${ref.path}`)
-
 /** An article of a word or of the Academy, with its title, or null when its group is not installed or lacks it. */
 export async function readArticleV3(reader: PackReader, ref: ArticleRef): Promise<Article | null> {
-  const answer = await reader.article(idOf(ref), 'all')
+  const answer = await reader.article(articleIdV3(ref), 'all')
   const data = answer.data
   if (!data) return null
   // `article` gives the sections; the subtitle (tA) is only in the model.

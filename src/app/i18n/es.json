@@ -1154,5 +1154,22 @@
   "archivo.eliminarSi": "Sí, eliminarlo",
   "archivo.eliminarNo": "No eliminar",
   "archivo.eliminado": "Se eliminó «{nombre}» de este teléfono.",
-  "archivo.eliminado.computadora": "Se eliminó «{nombre}» de esta computadora."
+  "archivo.eliminado.computadora": "Se eliminó «{nombre}» de esta computadora.",
+  "ayudas.enTodaLaBiblia": "En toda la Biblia",
+  "ayudas.enTodaLaBibliaCuenta": "{n} veces en {libros} libros de este aparato",
+  "ayudas.enTodaLaBibliaCuentaUnLibro": "{n} veces en un libro de este aparato",
+  "ayudas.enTodaLaBibliaUnaVez": "Una vez en este aparato",
+  "ayudas.enTodaLaBibliaNada": "Ningún libro de este aparato lo traduce todavía",
+  "ayudas.noEstanEnAparato": "No están en este aparato",
+  "ayudas.verLugares": "Ver los {n} lugares",
+  "ayudas.tambienEn": "También en {libros}, que este idioma todavía no tiene para bajar",
+  "ayudas.bajar": "Bajar",
+  "ayudas.bajarLibro": "Bajar {libro}",
+  "ayudas.bajando": "Bajando…",
+  "ayudas.dondeAparece": "Dónde aparece",
+  "ayudas.vecesN": "{n} veces",
+  "ayudas.unaVez": "una vez",
+  "ayudas.dondeApareceNinguno": "Las notas de los libros no lo nombran",
+  "ayudas.dondeApareceSinDatos": "Las ayudas de este idioma no dicen dónde se usa",
+  "ayudas.irA": "Ir a {lugar}"
 }

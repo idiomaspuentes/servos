@@ -793,6 +793,20 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .word-referents-text, .word-facts-original { font-family: var(--serif); font-size: 1.15rem; }
 .word.is-touched { text-decoration: underline solid var(--accent) 2px; text-underline-offset: 0.25em; }
 @media (prefers-reduced-motion: reduce) { .word-help-more > summary::after, .word-help-other > summary::after { transition: none; } }
+/* «En toda la Biblia» and «Dónde aparece»: the ways a word is rendered and the books, then apart those not here. */
+.across > p { margin-block: 0.25rem 0.5rem; }
+.across-renderings, .across-list { list-style: none; margin: 0; padding: 0; }
+.across-rendering { margin-block-end: 0.6rem; }
+.across-rendering-head { margin-block: 0 0.3rem; }
+.across-rendering .chip { font-size: 0.85rem; }
+.across-missing { margin-block-start: 0.6rem; }
+.across-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-height: var(--touch); border-block-end: 1px solid var(--line); }
+.across-row:last-child { border-block-end: 0; }
+.across-row .chip { flex: none; white-space: nowrap; }
+.across-elsewhere { font-size: 0.85rem; margin-block: 0.5rem; }
+.article-across { border-block-start: 1px solid var(--line); margin-block-start: 1rem; }
+.across-verse > p { margin-block: 0 0.5rem; }
+.across-verse + .button-secondary { margin-block-start: 0.5rem; }
 .word-help-kind { margin: 0; font-size: 0.85rem; font-weight: 700; color: var(--text-soft); display: flex; gap: 0.5rem; align-items: center; }
 
 /* The team's note on what is studied: a box that grows with what is written */

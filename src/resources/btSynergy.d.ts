@@ -732,6 +732,13 @@ declare module '@bt-synergy/language-pack-client' {
     links: unknown[]
   }
 
+  /** How the installed texts render the words of one Strong (`strong` is the key the table resolved). */
+  export type RenderingsData = { strong: string; renderings: { text: string; count: number; refs: string[] }[] }
+  /** One book of a `books` answer; `bytes` when it is not installed and a catalog lists it. */
+  export type BookCell = { state: CellState; count?: number; verses?: number; installed: boolean; bytes?: number }
+  /** `installed: false` (and no cells) when the map that answers is not on the device. */
+  export type BooksData = { installed?: false; books: Record<string, BookCell> }
+
   export type ArticleData = {
     id: string
     title: string
@@ -759,8 +766,8 @@ declare module '@bt-synergy/language-pack-client' {
     context(ref: string): Promise<Answer<unknown>>
     concept(id: string): Promise<Answer<unknown>>
     topics(q?: { category?: string; book?: string }): Promise<Answer<unknown>>
-    books(q: { article: string } | { concept: string }): Promise<Answer<unknown>>
-    renderings(q: { strong: string } | { book: string; word: number }): Promise<Answer<unknown>>
+    books(q: { article: string } | { concept: string }): Promise<Answer<BooksData>>
+    renderings(q: { strong: string } | { book: string; word: number }): Promise<Answer<RenderingsData>>
     search(text: string, filters?: { books?: string[]; kinds?: string[]; limit?: number }): Promise<Answer<unknown[]>>
   }
 }

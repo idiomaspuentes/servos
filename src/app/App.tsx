@@ -47,6 +47,7 @@ import { isOnline, useWaiting, whenNotTyping } from './frame/online'
 import { switchToNewVersion, useNewVersion } from './frame/appUpdate'
 import { onArrived, useDroppedFiles } from './frame/arriving'
 import { waiting } from './projects/outbox'
+import { setVerseOpener } from './frame/verseOpener'
 
 type Screen =
   | { kind: 'home' }
@@ -229,7 +230,20 @@ export function App() {
     }
     setScreen(back ?? { kind: 'book', projectId: appScreen.projectId, book: appScreen.book })
   }
-
+  // A verse of another place, opened from inside a mini app («En toda la Biblia»): in the same mini app, when the book is
+  // the project's and read on this device. Another book comes back here with the mini app's ‹; the same book only moves.
+  useEffect(() => {
+    if (!appScreen) return setVerseOpener(null)
+    const here = appScreen
+    setVerseOpener({
+      can: (p) => Boolean(project(here.projectId)?.books.some((b) => b.code === p.book) && inProject(here.projectId, () => chapterOf(p.book, p.chapter))),
+      open: (p) => {
+        setPosition(p, here.id)
+        if (p.book !== here.book) setScreen({ ...here, book: p.book, back: here })
+      },
+    })
+    return () => setVerseOpener(null)
+  })
   // The phone's back button does what the screen's back arrow does, rather than leave the app. The screens are not
   // history of their own: away from home one entry is kept in the browser's history, and when the button takes it
   // the screen goes back and, if still away from home, sets another.
