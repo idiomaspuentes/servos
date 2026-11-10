@@ -1527,3 +1527,6 @@ button, .file-button, summary, input, select, textarea {
   }
   :root[data-theme='sun'] :is(.button-secondary, .chip):not(:disabled):hover { border-color: var(--accent); }
 }
+.timings-ok, .timings-over { font-size: 0.85rem; font-weight: 600; }
+.timings-ok { color: var(--text); }
+.timings-over { color: var(--danger); }

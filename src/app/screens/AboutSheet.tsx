@@ -4,12 +4,14 @@
  * owes to others. CC BY-SA asks for the credit; saying where the way of working comes from is owed too.
  *
  * Whoever opened Servos once with `?packs=` (to try the Worker's staging copy) also finds here which server the texts
- * and helps come from, to switch back; nobody else sees it (`packsServer.ts`, as the Door43 host picker).
+ * and helps come from, to switch back; nobody else sees it (`packsServer.ts`, as the Door43 host picker). The same
+ * people (or whoever opened Servos with `?medir`) find «Medir paquetes», the format 3 timings (`TimingsSheet`).
  */
 
 import { useEffect, useState } from 'react'
 import { useT } from '../i18n/i18n'
-import { Sheet } from '../frame/Sheet'
+import { MenuRow, Sheet } from '../frame/Sheet'
+import { TimingsSheet } from './TimingsSheet'
 import { appLabel } from '../frame/version'
 import { LEXICON_SUBJECTS } from '../../resources/companions'
 import { creditsOnDevice, type Credit } from '../../resources/credits'
@@ -47,6 +49,9 @@ export function AboutSheet({ onClose }: { onClose(): void }) {
   const [credits, setCredits] = useState<Credit[] | undefined>()
   // Shown only to whoever chose a server once (with `?packs=`).
   const [server, setServer] = useState(() => packsServerChoice())
+  // «Medir paquetes» is for whoever tries format 3: the staging server chosen, or `?medir` in the address.
+  const [measuring, setMeasuring] = useState(false)
+  const mayMeasure = server === 'staging' || new URLSearchParams(location.search).has('medir')
   useEffect(() => {
     let live = true
     creditsOnDevice(openResourceStores(), (_, row) =>
@@ -107,10 +112,12 @@ export function AboutSheet({ onClose }: { onClose(): void }) {
             </div>
           </>
         )}
+        {mayMeasure && <MenuRow label={t('paquetes3.medirTitulo')} description={t('paquetes3.medirFila')} onClick={() => setMeasuring(true)} />}
         <h3 className="menu-heading">{t('acerca.gracias')}</h3>
         <p>{t('acerca.graciasTexto')}</p>
         <p className="quiet menu-version">{appLabel()}</p>
       </div>
+      {measuring && <TimingsSheet onClose={() => setMeasuring(false)} />}
     </Sheet>
   )
 }
