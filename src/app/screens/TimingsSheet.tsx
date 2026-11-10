@@ -27,7 +27,9 @@ const RUNS = 20
 const LABELS: Record<RowName, string> = {
   open: 'paquetes3.medirAbrir',
   book: 'paquetes3.medirLibro',
+  firstChapter: 'paquetes3.medirPrimerCapitulo',
   screen: 'paquetes3.medirPantalla',
+  firstVerse: 'paquetes3.medirPrimerVersiculo',
   passage: 'paquetes3.medirVersiculo',
   context: 'paquetes3.medirContexto',
 }

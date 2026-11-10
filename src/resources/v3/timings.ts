@@ -4,6 +4,11 @@
  * (IndexedDB) costs to read is counted (the bench reads from memory); the first run is reported apart (cold); and a run
  * during which the app went to the background is marked, since the browser slows its timers then.
  *
+ * «A verse with its helps» is what a person waits for after tapping a verse in a book already open: the reader the app
+ * keeps (`readerV3`) has read the book and answered a verse before, so it is timed on a reader that did both, as the
+ * bench does. The first verse a fresh reader answers is timed apart (`firstVerse`): it also reads the maps (`maps()`,
+ * which `passage` needs for its coverage), once per reader.
+ *
  * No module-level cache sits between runs: `readBookV3`, `articlesV3`, `lexiconV3` and `helpsV3` keep none, and each
  * reader (the library's own caches) is made anew by `client.open`. Never `readerV3`, which keeps its reader.
  *
@@ -16,18 +21,25 @@ import { packsV3 } from './client'
 
 export type Stat = { median: number; min: number; max: number }
 
-export const ROWS = ['open', 'book', 'screen', 'passage', 'context'] as const
+export const ROWS = ['open', 'book', 'firstChapter', 'screen', 'firstVerse', 'passage', 'context'] as const
 export type RowName = (typeof ROWS)[number]
 
 export type Timings = {
   open: Stat
   /** The library's row: from the open reader to `book(code)` readable (its segments read from the store). */
   book: Stat
+  /**
+   * From the same fresh open to the first chapter read into screen data: what a person would wait for if the screens
+   * showed a book's chapters as they are read (today they wait for `screen`).
+   */
+  firstChapter: Stat
   /** The book as the screens read it (`readBookV3`: every chapter into screen data), counted from a fresh open. */
   screen: Stat
-  /** `passage(ref)` with its notes, the book already read (as when a verse is tapped in an open book). */
+  /** The first `passage(ref)` of a reader that has read the book: it reads the maps too (once a reader). */
+  firstVerse: Stat
+  /** `passage(ref)` with its notes, on a reader that read the book and answered a verse (a verse tapped in an open book). */
   passage: Stat
-  /** `context(ref)`, the book already read. */
+  /** `context(ref)`, on a reader that read the book and answered it once. */
   context: Stat
   /** Run 1 of each row, ms: the cold one (nothing of this was read in this run of the app before). */
   first: Record<RowName, number>
@@ -65,7 +77,7 @@ export type MeasureOptions = {
  */
 export async function measure(lang: string, book: string, ref: string, runs = 20, o: MeasureOptions = {}): Promise<Timings> {
   const client = o.client ?? (await packsV3())
-  const times = { open: [] as number[], book: [] as number[], screen: [] as number[], passage: [] as number[], context: [] as number[], yielded: [] as number[] }
+  const times = { open: [] as number[], book: [] as number[], firstChapter: [] as number[], screen: [] as number[], firstVerse: [] as number[], passage: [] as number[], context: [] as number[], yielded: [] as number[] }
   let hiddenRuns = 0
   let wasHidden = false
   const seen = () => {
@@ -84,6 +96,9 @@ export async function measure(lang: string, book: string, ref: string, runs = 20
       const t = performance.now()
       const d = await client.open(lang)
       const read = await readBookV3(d, lang, book, {
+        onChapter: (done) => {
+          if (done === 1) times.firstChapter.push(performance.now() - t)
+        },
         yield: async () => {
           const w = performance.now()
           await breathe()
@@ -107,13 +122,16 @@ export async function measure(lang: string, book: string, ref: string, runs = 20
       await b.book(book)
       const t3 = performance.now()
       await b.passage(ref)
-      times.passage.push(performance.now() - t3)
+      times.firstVerse.push(performance.now() - t3)
+      const t4 = performance.now()
+      await b.passage(ref)
+      times.passage.push(performance.now() - t4)
 
       const c = await client.open(lang)
-      await c.book(book)
-      const t4 = performance.now()
       await c.context(ref)
-      times.context.push(performance.now() - t4)
+      const t5 = performance.now()
+      await c.context(ref)
+      times.context.push(performance.now() - t5)
 
       if (wasHidden) hiddenRuns++
       o.onRun?.(i + 1, runs)
@@ -125,10 +143,12 @@ export async function measure(lang: string, book: string, ref: string, runs = 20
   return {
     open: statOf(times.open),
     book: statOf(times.book),
+    firstChapter: statOf(times.firstChapter),
     screen: statOf(times.screen),
+    firstVerse: statOf(times.firstVerse),
     passage: statOf(times.passage),
     context: statOf(times.context),
-    first: { open: times.open[0]!, book: times.book[0]!, screen: times.screen[0]!, passage: times.passage[0]!, context: times.context[0]! },
+    first: { open: times.open[0]!, book: times.book[0]!, firstChapter: times.firstChapter[0]!, screen: times.screen[0]!, firstVerse: times.firstVerse[0]!, passage: times.passage[0]!, context: times.context[0]! },
     yielded: statOf(times.yielded),
     runs,
     hidden: hiddenRuns,
