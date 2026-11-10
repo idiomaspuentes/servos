@@ -317,6 +317,27 @@ export async function sourcesV3(reader: PackReader, language: string, book: stri
   return model ? sourcesOf(model, language, reader.installed(`orig:${book}`) ? await reader.orig(book) : undefined) : null
 }
 
+/** How long the book is read before the screen gets a turn: short enough that a tap is answered without a felt delay. */
+const TURN_MS = 50
+
+/**
+ * Gives the screen a turn: `scheduler.yield` where the browser has it, else a message to itself, which, unlike a timer,
+ * is not clamped to 4 ms when nested nor slowed to once a second in a hidden tab.
+ */
+function giveTurn(): Promise<void> {
+  const scheduler = (globalThis as { scheduler?: { yield?: () => Promise<void> } }).scheduler
+  if (scheduler?.yield) return scheduler.yield()
+  if (typeof MessageChannel === 'undefined') return new Promise((resolve) => setTimeout(resolve, 0))
+  return new Promise((resolve) => {
+    const channel = new MessageChannel()
+    channel.port1.onmessage = () => {
+      channel.port1.close()
+      resolve()
+    }
+    channel.port2.postMessage(null)
+  })
+}
+
 export interface ReadBookOptions {
   sections?: (chapter: number) => SectionStarts | undefined
   /** A resource's title (the catalog's); the reader does not give titles, so without it a text is titled by its key. */
@@ -325,7 +346,10 @@ export interface ReadBookOptions {
   today?: string
   /** Told after each chapter is read (chapters read, of how many), as `loadBook` tells the screens today. */
   onChapter?: (done: number, total: number) => void
-  /** What gives the screen a turn between chapters (a timer by default); the timings screen wraps it to count the wait. */
+  /**
+   * What gives the screen a turn, between chapters once about `TURN_MS` of reading went by (`giveTurn` by default); the
+   * timings screen wraps it to count the wait.
+   */
   yield?: () => Promise<void>
 }
 
@@ -364,6 +388,7 @@ export async function readBookV3(
   const wanted = { tw: new Set<string>(), ta: new Set<string>() }
   const perChapter: Array<{ tw: string[]; ta: string[] }> = []
   const rowsOf = helpsByChapter(quotes)
+  let turn = performance.now()
   for (const [i, chapter] of literal.numbers.entries()) {
     const glt = literal.read(chapter)!
     const own = original.read(chapter)
@@ -414,8 +439,12 @@ export async function readBookV3(
       academy: {},
     })
     o.onChapter?.(i + 1, literal.numbers.length)
-    // A chapter at a time, so the screen stays answering while a long book is read (as `loadBook` does).
-    await (o.yield ?? (() => new Promise<void>((resolve) => setTimeout(resolve, 0))))()
+    // The screen gets a turn once a slice of work is done, so it stays answering while a long book is read. Not after
+    // every chapter: Psalms' 150 timer turns alone cost 0.7 s on a desktop (a browser clamps nested timers to 4 ms).
+    if (performance.now() - turn >= TURN_MS) {
+      await (o.yield ?? giveTurn)()
+      turn = performance.now()
+    }
   }
   // Each article once for the book, then given to the chapters that name it.
   const articles = await articlesV3(reader, [...wanted.tw], [...wanted.ta])

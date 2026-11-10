@@ -382,11 +382,20 @@ export interface VerseNote {
 
 /** Whether a note reference (`1:3`, `1:3-5`, `1:intro`) covers this verse. */
 export function referenceCovers(reference: string, chapter: number, verse: number): boolean {
+  const span = referenceSpan(reference)
+  return span !== null && span.chapter === chapter && verse >= span.from && verse <= span.to
+}
+
+/**
+ * The chapter and verses a note reference covers (`1:3-5` → chapter 1, verses 3 to 5), or null when it covers no verse
+ * (`1:intro`, `front:intro`). Parsed once, a row's reference can be checked against every verse of a chapter cheaply.
+ */
+export function referenceSpan(reference: string): { chapter: number; from: number; to: number } | null {
   const [ch, vs] = reference.split(':')
-  if (Number(ch) !== chapter || !vs) return false
+  if (!vs) return null
   const [from, to] = vs.split('-').map(Number)
-  if (!Number.isFinite(from)) return false
-  return verse >= from && verse <= (Number.isFinite(to) ? to : from)
+  if (!Number.isFinite(from)) return null
+  return { chapter: Number(ch), from, to: Number.isFinite(to) ? to : from }
 }
 
 /**

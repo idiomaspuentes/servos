@@ -16,7 +16,7 @@ import type { BookModel, HelpRow } from '@bt-synergy/language-pack-v3'
 import type { PackReader } from '@bt-synergy/language-pack-client'
 import type { PrototypeData } from '../../prototype/data'
 import { articleOf, rcLinksIn } from '../articleLinks'
-import { introsOfNotes, referenceCovers, textQuoteOf, type ChapterIntros, type VerseHelps } from '../reading'
+import { introsOfNotes, referenceCovers, referenceSpan, textQuoteOf, type ChapterIntros, type VerseHelps } from '../reading'
 import { linkPlaces, placesThrough, type PlacesFrame } from '../screenData'
 import { textChapters, type ChapterText } from './bookV3'
 
@@ -33,11 +33,29 @@ const text = (row: HelpRow, column: string) => String(row.cols[column] ?? '')
 /** A note's quote, as the notes give it: none when its occurrence is 0 (old notes put a heading there). */
 const quoteOf = (row: HelpRow) => (text(row, 'occurrence').trim() === '0' ? '' : text(row, 'quote'))
 
-/** The places of a text's words aligned to a help's quote, in the text's order (none without a quote). */
-function wordsOn(words: ChapterText['words'], quote: number[] | undefined): number[] {
-  const wanted = new Set((quote ?? []).filter((p) => p >= 0))
-  if (!wanted.size) return []
-  return words.flatMap((w, at) => (w.originals.some((p) => wanted.has(p)) ? [at] : []))
+/**
+ * The places of a text's words aligned to a help's quote, in the text's order (none without a quote). `byOriginal` is
+ * the text's words by the original positions they translate (`placesByOriginal`), so a help costs its quote, not the
+ * chapter: walking every word of a chapter for every help, and again for every verse a help covers, made Psalms take
+ * seconds.
+ */
+function wordsOn(byOriginal: Map<number, number[]>, quote: number[] | undefined): number[] {
+  const found = new Set<number>()
+  for (const p of quote ?? []) if (p >= 0) for (const at of byOriginal.get(p) ?? []) found.add(at)
+  return [...found].sort((a, b) => a - b)
+}
+
+/** A text's words by the original positions they translate: a position, the places of its words in the text's order. */
+function placesByOriginal(words: ChapterText['words']): Map<number, number[]> {
+  const out = new Map<number, number[]>()
+  words.forEach((w, at) => {
+    for (const p of w.originals) {
+      const list = out.get(p)
+      if (!list) out.set(p, [at])
+      else if (list[list.length - 1] !== at) list.push(at)
+    }
+  })
+  return out
 }
 
 /** The words of a text a help stands on, as format 2.0 joined them (`textQuoteOf`), or null. */
@@ -83,10 +101,22 @@ const isIntro = (row: HelpRow) => row.cols.isIntro === true || row.from % 1_000 
 export function chapterHelps(rows: ChapterRows, input: ChapterHelpsInput): { verses: PrototypeData['verses']; intros: ChapterIntros; articles: { tw: string[]; ta: string[] } } {
   const { chapter, frame, texts } = input
   const { notes, questions, links } = rows
+  const tplByOriginal = placesByOriginal(texts.TPL)
+  const tpsByOriginal = texts.TPS ? placesByOriginal(texts.TPS) : null
+  // A row that covers several verses is placed once; each verse gets its own copy of the places.
+  const placed = new Map<HelpRow, { tpl: number[]; tps: number[] }>()
   const placesOf = (row: HelpRow) => {
-    const tpl = wordsOn(texts.TPL, row.quote)
-    const tps = texts.TPS ? wordsOn(texts.TPS, row.quote) : []
+    let at = placed.get(row)
+    if (!at) placed.set(row, (at = { tpl: wordsOn(tplByOriginal, row.quote), tps: tpsByOriginal ? wordsOn(tpsByOriginal, row.quote) : [] }))
+    const tpl = [...at.tpl]
+    const tps = [...at.tps]
     return { tpl, tps, places: placesThrough(frame, tpl, tps) }
+  }
+  // Each row's reference read once, not once a verse (`referenceCovers` reads it each time).
+  const spans = new Map<HelpRow, ReturnType<typeof referenceSpan>>()
+  const spanOf = (row: HelpRow) => {
+    if (!spans.has(row)) spans.set(row, referenceSpan(row.ref))
+    return spans.get(row)!
   }
   const articleOfLink = (row: HelpRow) => text(row, 'articlePath') || (row.concept?.startsWith('tw:') ? `bible/${row.concept.slice(3)}` : '')
   const tw: string[] = []
@@ -95,7 +125,10 @@ export function chapterHelps(rows: ChapterRows, input: ChapterHelpsInput): { ver
   for (const link of links) keep(tw, articleOfLink(link))
 
   const verses: PrototypeData['verses'] = input.verses.map((verse) => {
-    const covers = (r: HelpRow) => referenceCovers(r.ref, chapter, verse)
+    const covers = (r: HelpRow) => {
+      const span = spanOf(r)
+      return span !== null && span.chapter === chapter && verse >= span.from && verse <= span.to
+    }
     const here = links.filter(covers)
     const linked = linkPlaces(frame, here.map((l) => ({ article: articleOfLink(l), places: placesOf(l).places })), verse)
     return {
