@@ -40,12 +40,12 @@ export async function createPacksV3(deps: ClientDeps = {}): Promise<LanguagePack
   // where the reader builds one in memory on the first search.
   const index = deps.index === undefined ? searchIndexV3() : (deps.index ?? undefined)
   const made = createClient({ store, source, trust, ...(index ? { index } : {}) })
-  parts.set(made, { store, trust })
+  parts.set(made, { store, trust, ...(index ? { index } : {}) })
   return made
 }
 
 /** Each client's store and trust: the catalogs' resources (titles, licenses) are read from the stored catalog files. */
-const parts = new WeakMap<LanguagePackClient, { store: BlobStore; trust: TrustPolicy }>()
+const parts = new WeakMap<LanguagePackClient, { store: BlobStore; trust: TrustPolicy; index?: SearchIndex }>()
 
 let client: Promise<LanguagePackClient> | null = null
 const readers = new Map<string, Promise<PackReader | null>>()
@@ -134,6 +134,29 @@ export async function planV3(
   const units = catalogs.flatMap((cat) => cat.catalog.units.map((u) => `${cat.name}/${u.id}`))
   const plan = planInstall(catalogs, state, want, new Set(await own.store.ids()))
   return { bytes: plan.bytes, unknown: plan.unknown, units }
+}
+
+/**
+ * The books of a language that a search looks in (`searchable`): those active in format 3 and, when the client keeps a
+ * SQL index, indexed in it. `notIndexed`: active, but not in the index (its indexing failed, or is still going on).
+ * Without a SQL index (the web app) the reader's memory index takes every active book. Lowercase codes, in no order.
+ */
+export async function searchableBooksV3(lang: string): Promise<{ searchable: string[]; notIndexed: string[] }> {
+  const out = { searchable: [] as string[], notIndexed: [] as string[] }
+  const c = await packsV3()
+  const own = parts.get(c)
+  const state = (await own?.store.getState()) as InstalledState | undefined
+  if (!own || !state) return out
+  const name = state.aliases?.[lang] ?? lang
+  for (const [key, unit] of Object.entries(state.units)) {
+    if (!key.startsWith(`${name}/book:`)) continue
+    const book = key.slice(`${name}/book:`.length)
+    const segments = (unit as { segments?: string[] }).segments ?? []
+    let indexed = !own.index || segments.length > 0
+    if (own.index) for (const seg of segments) indexed &&= await own.index.has(seg).catch(() => false)
+    out[indexed ? 'searchable' : 'notIndexed'].push(book)
+  }
+  return out
 }
 
 /** Drops the cached readers; call it after any install or import. */

@@ -1,9 +1,9 @@
 import 'fake-indexeddb/auto'
 import { createHash } from 'node:crypto'
 import { afterEach, describe, expect, it } from 'vitest'
-import { memoryStore } from '@bt-synergy/language-pack-client'
+import { memoryStore, type SearchIndex } from '@bt-synergy/language-pack-client'
 import { packsFormat, PACKS_SERVERS, V3_ORIGINS } from '../online/packsServer'
-import { createPacksV3, forgetReadersV3, packsV3, readerV3, resetPacksV3 } from './client'
+import { createPacksV3, forgetReadersV3, packsV3, readerV3, resetPacksV3, searchableBooksV3 } from './client'
 import { trustedKeys } from './keys'
 import { buildSample, fakeFetch, readKeyFile } from './testing/sample'
 
@@ -69,3 +69,42 @@ describe('packsV3', () => {
     expect(await store.ids()).toEqual([])
   })
 })
+
+describe('searchableBooksV3', () => {
+  /** An index that keeps the segments it was given, and fails to index any when `fails`. */
+  const fakeIndex = (fails = false): SearchIndex => {
+    const kept = new Set<string>()
+    return {
+      init: async () => undefined,
+      addBook: async (_lang, _book, seg) => {
+        if (fails) throw new Error('disk full')
+        kept.add(seg)
+      },
+      removeSegment: async (seg) => void kept.delete(seg),
+      has: async (seg) => kept.has(seg),
+      search: async () => [],
+    }
+  }
+
+  it('a book is searchable once it is in the index, and said not indexed when indexing failed', async () => {
+    const sample = await buildSample()
+    const deps = { fetch: fakeFetch(sample), store: memoryStore(), trustedKeys: { [sample.keyId]: sample.publicKey } }
+    const ok = await packsV3({ ...deps, index: fakeIndex() })
+    await ok.install('es-419', { books: ['tit'] })
+    expect(await searchableBooksV3('es-419')).toEqual({ searchable: ['tit'], notIndexed: [] })
+    resetPacksV3()
+    const failing = await packsV3({ ...deps, store: memoryStore(), index: fakeIndex(true) })
+    await failing.install('es-419', { books: ['tit'] })
+    expect(failing.indexProblems().length).toBeGreaterThan(0)
+    expect(await searchableBooksV3('es-419')).toEqual({ searchable: [], notIndexed: ['tit'] })
+  })
+
+  it('without a SQL index (the web app) every active book is searched; nothing installed is nothing', async () => {
+    const sample = await buildSample()
+    const client = await packsV3({ fetch: fakeFetch(sample), store: memoryStore(), trustedKeys: { [sample.keyId]: sample.publicKey }, index: null })
+    expect(await searchableBooksV3('es-419')).toEqual({ searchable: [], notIndexed: [] })
+    await client.install('es-419', { books: ['tit'] })
+    expect(await searchableBooksV3('es-419')).toEqual({ searchable: ['tit'], notIndexed: [] })
+  })
+})
+

@@ -1,35 +1,70 @@
 import { sqlIndex, type SqlDriver } from '@bt-synergy/language-pack-client'
 import type { BookModel } from '@bt-synergy/language-pack-v3'
-import { DatabaseSync } from 'node:sqlite'
 import { describe, expect, test } from 'vitest'
-import { capacitorDriver, type CapacitorSqlite } from './capacitorDriver'
+import { capacitorDriver, ROWS_PER_SET, setsOf, type CapacitorSqlite } from './capacitorDriver'
 import { searchIndexV3, searchPlatform } from './searchIndex'
-import { splitStatements } from './serial'
-import { tauriDriver, type TauriDb } from './tauriDriver'
+import { splitStatements, type SqlStep } from './serial'
+import { scriptOf, tauriDriver, type TauriDb } from './tauriDriver'
+
+// node's SQLite (it has FTS5, as the plugins' have) says once that it is experimental; the test run stays quiet.
+const warn = process.emitWarning
+process.emitWarning = ((w: string | Error, ...rest: never[]) =>
+  String(typeof w === 'string' ? w : w.message).includes('SQLite') ? undefined : warn.call(process, w, ...rest)) as typeof process.emitWarning
+const { DatabaseSync } = await import('node:sqlite')
+type DatabaseSync = InstanceType<typeof DatabaseSync>
 
 /** Every call a fake plugin got, in order: `[method, sql, params]`. */
 type Log = [string, string, unknown[]?][]
 
-/** Tauri's `Database` over node's SQLite (built with FTS5, as the plugin's is). */
-function fakeTauri(log: Log, db = new DatabaseSync(':memory:')): (path: string) => Promise<TauriDb> {
+const questionsIn = (sql: string) => (sql.match(/\?/g) ?? []).length
+
+/**
+ * Tauri's `Database` over node's SQLite (built with FTS5, as the plugin's is). Like sqlx, one query may hold several
+ * statements, the values bound across them in order. Like the plugin's pool after a connection's 30 minutes, every call
+ * may end on a connection that is then closed: a transaction it leaves open is rolled back (`closeAfterEachCall`).
+ */
+function fakeTauri(log: Log, o: { db?: DatabaseSync; closeAfterEachCall?: boolean } = {}): (path: string) => Promise<TauriDb> {
+  const db = o.db ?? new DatabaseSync(':memory:')
+  const closed = () => {
+    if (!o.closeAfterEachCall) return
+    try {
+      db.exec('ROLLBACK')
+    } catch {
+      // no transaction was open
+    }
+  }
   return async (path) => {
     log.push(['load', path])
     return {
       async execute(query, values = []) {
         log.push(['execute', query, values])
-        if (values.length) db.prepare(query).run(...(values as never[]))
-        else db.exec(query)
+        try {
+          let at = 0
+          for (const statement of splitStatements(query)) {
+            const n = questionsIn(statement)
+            const mine = values.slice(at, at + n)
+            at += n
+            if (n) db.prepare(statement).run(...(mine as never[]))
+            else db.exec(statement)
+          }
+        } finally {
+          closed()
+        }
         return { rowsAffected: 0 }
       },
       async select<T>(query: string, values: unknown[] = []) {
         log.push(['select', query, values])
-        return db.prepare(query).all(...(values as never[])) as T
+        try {
+          return db.prepare(query).all(...(values as never[])) as T
+        } finally {
+          closed()
+        }
       },
     }
   }
 }
 
-/** The Capacitor plugin's calls over node's SQLite. */
+/** The Capacitor plugin's calls over node's SQLite; `executeSet` takes a statement's rows of values. */
 function fakeCapacitor(log: Log, db = new DatabaseSync(':memory:')): () => CapacitorSqlite {
   const plugin = {
     async closeConnection(o: { database?: string }) {
@@ -47,9 +82,11 @@ function fakeCapacitor(log: Log, db = new DatabaseSync(':memory:')): () => Capac
       db.exec(o.statements!)
       return { changes: { changes: 0 } }
     },
-    async run(o: { statement?: string; values?: unknown[]; transaction?: boolean }) {
-      log.push(['run', o.statement!, [...o.values!, o.transaction]])
-      db.prepare(o.statement!).run(...(o.values as never[]))
+    async executeSet(o: { set?: { statement?: string; values?: unknown[][] }[]; transaction?: boolean }) {
+      for (const s of o.set!) {
+        log.push(['executeSet', s.statement!, s.values!.flat()])
+        for (const row of s.values!) db.prepare(s.statement!).run(...(row as never[]))
+      }
       return { changes: { changes: 1 } }
     },
     async query(o: { statement?: string; values?: unknown[] }) {
@@ -79,6 +116,9 @@ const drivers: [string, (log: Log) => SqlDriver][] = [
   ['tauriDriver', (log) => tauriDriver(fakeTauri(log))],
   ['capacitorDriver', (log) => capacitorDriver(fakeCapacitor(log))],
 ]
+
+/** The values the plugin was sent for INSERTs, in order. */
+const inserted = (log: Log) => log.filter(([m, sql]) => m !== 'select' && m !== 'query' && /INSERT/.test(sql)).flatMap(([, , p]) => p ?? [])
 
 /** Titus 3:7 in a bridge text and a note on it whose word has its accent. */
 const book: BookModel = {
@@ -122,10 +162,10 @@ describe.each(drivers)('%s', (_, make) => {
     await driver.exec('CREATE TABLE a (x, y)')
     await driver.run('INSERT INTO a (x, y) VALUES (?, ?)', ['uno', 2])
     expect(await driver.all('SELECT x, y FROM a WHERE y = ?', [2])).toEqual([{ x: 'uno', y: 2 }])
-    expect(log.some(([m, sql, p]) => sql === 'INSERT INTO a (x, y) VALUES (?, ?)' && m !== 'select' && p?.[0] === 'uno' && p[1] === 2)).toBe(true)
+    expect(inserted(log)).toEqual(['uno', 2])
   })
 
-  test('a transaction commits, and rolls back when it throws', async () => {
+  test('a transaction commits, and rolls back when it throws or a write fails', async () => {
     const log: Log = []
     const driver = make(log)
     await driver.exec('CREATE TABLE a (x)')
@@ -136,9 +176,15 @@ describe.each(drivers)('%s', (_, make) => {
         throw new Error('stop')
       })
     ).rejects.toThrow('stop')
+    await expect(
+      driver.transaction(async () => {
+        await driver.run('INSERT INTO a (x) VALUES (?)', ['also lost'])
+        await driver.run('INSERT INTO nowhere (x) VALUES (?)', ['fails'])
+      })
+    ).rejects.toThrow(/nowhere/)
     expect(await driver.all('SELECT x FROM a', [])).toEqual([{ x: 'kept' }])
-    const steps = log.map(([m, sql]) => (m === 'execute' || m === 'run' ? sql : m)).filter((s) => /^(BEGIN|COMMIT|ROLLBACK|begin|commit|rollback|INSERT)/.test(s))
-    expect(steps.map((s) => s.slice(0, 6).toLowerCase())).toEqual(['begin', 'insert', 'commit', 'begin', 'insert', 'rollba'])
+    // A transaction that threw sent nothing.
+    expect(inserted(log)).not.toContain('lost')
   })
 
   test('two transactions at once run one after the other', async () => {
@@ -151,8 +197,21 @@ describe.each(drivers)('%s', (_, make) => {
         await driver.run('INSERT INTO a (x) VALUES (?)', [`${x}2`])
       })
     await Promise.all([fill('a'), fill('b')])
-    const inserted = log.filter(([, sql]) => sql.startsWith('INSERT')).map(([, , p]) => p![0])
-    expect(inserted).toEqual(['a1', 'a2', 'b1', 'b2'])
+    expect(inserted(log)).toEqual(['a1', 'a2', 'b1', 'b2'])
+    expect((await driver.all<{ x: string }>('SELECT x FROM a', [])).map((r) => r.x)).toEqual(['a1', 'a2', 'b1', 'b2'])
+  })
+
+  test('a read inside a transaction sees its writes, in order', async () => {
+    const driver = make([])
+    await driver.exec('CREATE TABLE a (x)')
+    const seen = await driver.transaction(async () => {
+      await driver.run('INSERT INTO a (x) VALUES (?)', ['one'])
+      const rows = await driver.all<{ n: number }>('SELECT count(*) AS n FROM a', [])
+      await driver.run('INSERT INTO a (x) VALUES (?)', ['two'])
+      return rows[0]!.n
+    })
+    expect(seen).toBe(1)
+    expect(await driver.all('SELECT x FROM a', [])).toEqual([{ x: 'one' }, { x: 'two' }])
   })
 
   test('search finds a note by a word without its accent', async () => {
@@ -167,6 +226,70 @@ describe.each(drivers)('%s', (_, make) => {
     expect(note.snippet).toContain('«gracía»')
     await index.removeSegment('seg-tit')
     expect(await index.search('es-419', 'gracia')).toEqual([])
+  })
+})
+
+describe('tauriDriver', () => {
+  test('a transaction is one execute, which a connection closed after each call cannot split', async () => {
+    const log: Log = []
+    const index = sqlIndex(tauriDriver(fakeTauri(log, { closeAfterEachCall: true })))
+    await index.init()
+    log.length = 0
+    await index.addBook('es-419', book, 'seg-tit')
+    const sent = log.filter(([m]) => m === 'execute')
+    expect(sent.length).toBe(1)
+    expect(splitStatements(sent[0]![1])[0]).toBe('BEGIN')
+    expect(splitStatements(sent[0]![1]).at(-1)).toBe('COMMIT')
+    expect((await index.search('es-419', 'gracia')).length).toBe(2)
+  })
+
+  test('rows of the same INSERT go as multi-row INSERTs, under SQLite’s limit of values', () => {
+    const insert = 'INSERT INTO pieces (body, kind, lang, book, ref, res, rid, seg) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    const steps: SqlStep[] = [
+      { sql: 'DELETE FROM pieces WHERE seg = ?', params: ['s'] },
+      ...Array.from({ length: 5000 }, (_, i) => ({ sql: insert, params: [`b${i}`, 'text', 'es', 'tit', '1:1', 'r', '', 's'] })),
+      { sql: 'INSERT INTO indexed (seg, lang, book) VALUES (?, ?, ?)', params: ['s', 'es', 'tit'] },
+    ]
+    const { sql, params } = scriptOf(steps)
+    expect(sql.length).toBe(4)
+    expect(sql.map(questionsIn)).toEqual([1, 4000 * 8, 1000 * 8, 3])
+    expect(params.length).toBe(1 + 5000 * 8 + 3)
+    expect(params.slice(1, 3)).toEqual(['b0', 'text'])
+    expect(sql.every((s) => questionsIn(s) <= 32766)).toBe(true)
+  })
+})
+
+describe('capacitorDriver', () => {
+  test('a transaction is begin, its rows in sets of at most 500, commit', async () => {
+    const log: Log = []
+    const driver = capacitorDriver(fakeCapacitor(log))
+    await driver.exec('CREATE TABLE a (x)')
+    log.length = 0
+    await driver.transaction(async () => {
+      for (let i = 0; i < 1200; i++) await driver.run('INSERT INTO a (x) VALUES (?)', [i])
+    })
+    expect(log.map(([m]) => m)).toEqual(['begin', 'executeSet', 'executeSet', 'executeSet', 'commit'])
+    expect(log.filter(([m]) => m === 'executeSet').map(([, , p]) => p!.length)).toEqual([500, 500, 200])
+    expect((await driver.all<{ n: number }>('SELECT count(*) AS n FROM a', []))[0]!.n).toBe(1200)
+  })
+
+  test('sets keep the order of different statements', () => {
+    const steps: SqlStep[] = [
+      { sql: 'DELETE FROM t WHERE s = ?', params: ['x'] },
+      ...Array.from({ length: ROWS_PER_SET }, (_, i) => ({ sql: 'INSERT INTO t (v) VALUES (?)', params: [i] })),
+      { sql: 'INSERT INTO u (v) VALUES (?)', params: ['last'] },
+    ]
+    const sets = setsOf(steps)
+    expect(sets.map((set) => set.map((s) => [s.statement.slice(0, 13), s.values.length]))).toEqual([
+      [
+        ['DELETE FROM t', 1],
+        ['INSERT INTO t', 499],
+      ],
+      [
+        ['INSERT INTO t', 1],
+        ['INSERT INTO u', 1],
+      ],
+    ])
   })
 })
 

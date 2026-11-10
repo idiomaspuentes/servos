@@ -1176,11 +1176,11 @@
   "buscar.titulo": "Search",
   "buscar.menuAyuda": "A word in the texts and helps of the books on this device",
   "buscar.campo": "Word to look for",
-  "buscar.ayuda": "Type one word or more. It looks in the texts and helps of the books on this device, with or without accents.",
+  "buscar.ayuda": "Type one word or more. It looks, with or without accents, in the texts and helps of {libros}.",
   "buscar.buscando": "Searching…",
-  "buscar.sinLibros": "There are no books of this language to search on this device yet. Books downloaded or received from now on can be searched.",
+  "buscar.sinLibros": "There are no books of this language that can be searched on this device yet.",
   "buscar.noSePudo": "Could not search now. Try again.",
-  "buscar.nada": "Nothing with “{texto}” in the books on this device.",
+  "buscar.nada": "Nothing with “{texto}” in {libros}.",
   "buscar.uno": "One place",
   "buscar.varios": "{n} places",
   "buscar.primeros": "The first {n} places. Type one more word to find fewer.",
@@ -1190,5 +1190,9 @@
   "buscar.tipo.link": "In the key words",
   "buscar.tipo.otro": "In other helps",
   "buscar.introLibro": "{libro}, introduction",
-  "buscar.introCapitulo": "{libro} {n}, introduction"
+  "buscar.introCapitulo": "{libro} {n}, introduction",
+  "buscar.antesUno": "{libro} cannot be searched yet: it came in an earlier pack. It can be once it comes again, downloaded or received.",
+  "buscar.antesVarios": "{libros} cannot be searched yet: they came in earlier packs. They can be once they come again, downloaded or received.",
+  "buscar.preparandoUno": "{libro} cannot be searched yet: it is being prepared. Try again in a while.",
+  "buscar.preparandoVarios": "{libros} cannot be searched yet: they are being prepared. Try again in a while."
 }

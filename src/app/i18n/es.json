@@ -1176,11 +1176,11 @@
   "buscar.titulo": "Buscar",
   "buscar.menuAyuda": "Una palabra en los textos y las ayudas de los libros de este aparato",
   "buscar.campo": "Palabra que busca",
-  "buscar.ayuda": "Escriba una palabra o más. Se busca en los textos y las ayudas de los libros de este aparato, con o sin acentos.",
+  "buscar.ayuda": "Escriba una palabra o más. Se busca, con o sin acentos, en los textos y las ayudas de {libros}.",
   "buscar.buscando": "Buscando…",
-  "buscar.sinLibros": "Todavía no hay libros de este idioma para buscar en este aparato. Se pueden buscar los que se bajan o se reciben desde ahora.",
+  "buscar.sinLibros": "Todavía no hay libros de este idioma en los que se pueda buscar en este aparato.",
   "buscar.noSePudo": "No se pudo buscar ahora. Intente otra vez.",
-  "buscar.nada": "Nada con «{texto}» en los libros de este aparato.",
+  "buscar.nada": "Nada con «{texto}» en {libros}.",
   "buscar.uno": "Un lugar",
   "buscar.varios": "{n} lugares",
   "buscar.primeros": "Los primeros {n} lugares. Escriba otra palabra más para encontrar menos.",
@@ -1190,5 +1190,9 @@
   "buscar.tipo.link": "En las palabras clave",
   "buscar.tipo.otro": "En otras ayudas",
   "buscar.introLibro": "{libro}, introducción",
-  "buscar.introCapitulo": "{libro} {n}, introducción"
+  "buscar.introCapitulo": "{libro} {n}, introducción",
+  "buscar.antesUno": "En {libro} todavía no se puede buscar: vino en un paquete de antes. Se podrá cuando llegue de nuevo, bajado o recibido.",
+  "buscar.antesVarios": "En {libros} todavía no se puede buscar: vinieron en paquetes de antes. Se podrá cuando lleguen de nuevo, bajados o recibidos.",
+  "buscar.preparandoUno": "En {libro} todavía no se puede buscar: se está preparando. Vuelva a intentarlo en un rato.",
+  "buscar.preparandoVarios": "En {libros} todavía no se puede buscar: se están preparando. Vuelva a intentarlo en un rato."
 }

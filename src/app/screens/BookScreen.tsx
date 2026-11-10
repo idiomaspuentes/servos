@@ -19,7 +19,7 @@
  * When they cannot come now, the notice says why, with no button to try again: the app tries by itself (spec §2).
  */
 
-import { languageOf, type BookState } from '../projects/library'
+import { bookIsHere, helpsLanguagesHere, languageOf, type BookState } from '../projects/library'
 import { useEffect, useState } from 'react'
 import type { PrototypeData } from '../../prototype/data'
 import { RowButton, Suggestion } from '../frame/Actions'
@@ -135,6 +135,7 @@ export function BookScreen({
   const [bookNoteOpen, setBookNoteOpen] = useState(false)
   const [sharing, setSharing] = useState(false)
   const [searching, setSearching] = useState(false)
+  const searchLanguage = languageOf(project.id)
   const [saidMore, setSaidMore] = useState<string | null>(null)
   // Format 3: whether «Pasar textos y ayudas» is offered, asked of the store when «More» opens.
   const [passable, setPassable] = useState(false)
@@ -587,14 +588,16 @@ export function BookScreen({
           onClose={() => setNaming(false)}
         />
       )}
-      {searching && current && (
-        // A hit opens its verse in the mini app last worked in (or the book's first), in the hit's book.
+      {searching && (
+        // A hit opens its verse in the mini app last worked in, or else the book's first (`current`); with no mini app
+        // to open it in, the hits are only read.
         <SearchSheet
-          language={languageOf(project.id)}
-          canOpen={canOpenVerse}
+          language={searchLanguage}
+          readable={readableHere(searchLanguage, book.code)}
+          canOpen={(place) => Boolean(current) && canOpenVerse(place)}
           onOpen={(place) => {
             setSearching(false)
-            onOpenVerse(current, place)
+            if (current) onOpenVerse(current, place)
           }}
           onClose={() => setSearching(false)}
         />
@@ -640,4 +643,10 @@ function BookNameSheet({
       </form>
     </Sheet>
   )
+}
+
+/** The books of a language read on this device, in either format, and the open one when it is the bundled example. */
+function readableHere(language: string, book: string): string[] {
+  const books = helpsLanguagesHere().find((l) => l.code === language)?.books ?? []
+  return bookIsHere(book, language) ? [...books, book] : books
 }

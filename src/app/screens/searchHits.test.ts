@@ -1,7 +1,7 @@
 import type { Hit } from '@bt-synergy/language-pack-client'
 import { describe, expect, test } from 'vitest'
 import type { T } from '../i18n/i18n'
-import { groupHits, groupKey, hitPlace, hitWhere, resLabel, snippetParts } from './searchHits'
+import { groupHits, groupKey, hitPlace, hitWhere, resLabel, searchCoverage, snippetParts } from './searchHits'
 
 const hit = (kind: string, ref: string, extra: Partial<Hit> = {}): Hit => ({ kind, book: 'tit', ref, res: `es-419/${kind}`, snippet: '', score: 1, ...extra })
 const t: T = (key, values) => `${key}${values ? JSON.stringify(values) : ''}`
@@ -47,5 +47,14 @@ describe('the search sheet', () => {
       { text: '» y «favor» …', found: false },
     ])
     expect(snippetParts('su «GRÁCIA» y «paz»', 'gracia paz').filter((p) => p.found).map((p) => p.text)).toEqual(['GRÁCIA', 'paz'])
+  })
+
+  test('names the books read here that a search does not look in', () => {
+    // Titus read from today's pack, Jonah and Ruth in format 3, 3 John installed but not indexed yet.
+    const c = searchCoverage(['TIT', 'jon', 'rut'], { searchable: ['rut', 'jon'], notIndexed: ['3jn'] })
+    expect(c).toEqual({ searchable: ['rut', 'jon'], notIndexed: ['3jn'], before: ['tit'] })
+    // Nothing read here outside format 3: nothing to name.
+    expect(searchCoverage(['tit'], { searchable: ['tit'], notIndexed: [] }).before).toEqual([])
+    expect(searchCoverage(['tit'], { searchable: [], notIndexed: [] })).toEqual({ searchable: [], notIndexed: [], before: ['tit'] })
   })
 })

@@ -4,6 +4,7 @@
  * marked the words found (« »).
  */
 import type { Hit } from '@bt-synergy/language-pack-client'
+import { inBibleOrder } from '../../resources/reading'
 import { parsePlace } from '../../resources/v3/lookups'
 import type { VersePlace } from '../frame/verseOpener'
 import type { T } from '../i18n/i18n'
@@ -72,3 +73,19 @@ export function snippetParts(snippet: string, searched: string): { text: string;
 
 /** A text's short name (`es-419/glt` is GLT), as the verse sheet shows one it has no abbreviation for. */
 export const resLabel = (res: string): string => res.slice(res.lastIndexOf('/') + 1).toUpperCase()
+
+/**
+ * Which books a search looks in, and which books read here it does not: `before`, read from a pack of before (format 2;
+ * format 3 has not got them); `notIndexed`, in format 3 but not in the index yet (or their indexing failed). Codes in
+ * Bible order. A search never says «nothing» of a book it did not look in.
+ */
+export function searchCoverage(readable: string[], v3: { searchable: string[]; notIndexed: string[] }) {
+  const low = (books: string[]) => new Set(books.map((b) => b.toLowerCase()))
+  const searchable = low(v3.searchable)
+  const notIndexed = low(v3.notIndexed)
+  return {
+    searchable: inBibleOrder(searchable),
+    notIndexed: inBibleOrder(notIndexed),
+    before: inBibleOrder([...low(readable)].filter((b) => !searchable.has(b) && !notIndexed.has(b))),
+  }
+}
