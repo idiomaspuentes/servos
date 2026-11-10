@@ -1,7 +1,11 @@
 /**
  * Timings of format 3 on the device, as the library's desktop bench (`language-pack-client/bench/timings.ts`) takes
- * them, with one difference that matters on a phone: every run opens a fresh reader over the real store, so what the
- * store (IndexedDB) costs to read is counted. The bench reads from memory and does not count it.
+ * them, with differences that matter on a phone: every run opens fresh readers over the real store, so what the store
+ * (IndexedDB) costs to read is counted (the bench reads from memory); the first run is reported apart (cold); and a run
+ * during which the app went to the background is marked, since the browser slows its timers then.
+ *
+ * No module-level cache sits between runs: `readBookV3`, `articlesV3`, `lexiconV3` and `helpsV3` keep none, and each
+ * reader (the library's own caches) is made anew by `client.open`. Never `readerV3`, which keeps its reader.
  *
  * Targets (the proposal, for a 2 GB Android phone): a whole book readable in under 3 s, a verse with its helps under
  * 50 ms.
@@ -12,8 +16,10 @@ import { packsV3 } from './client'
 
 export type Stat = { median: number; min: number; max: number }
 
+export const ROWS = ['open', 'book', 'screen', 'passage', 'context'] as const
+export type RowName = (typeof ROWS)[number]
+
 export type Timings = {
-  /** `client.open(lang)`: the catalogs read from the store and checked. */
   open: Stat
   /** The library's row: from the open reader to `book(code)` readable (its segments read from the store). */
   book: Stat
@@ -23,6 +29,13 @@ export type Timings = {
   passage: Stat
   /** `context(ref)`, the book already read. */
   context: Stat
+  /** Run 1 of each row, ms: the cold one (nothing of this was read in this run of the app before). */
+  first: Record<RowName, number>
+  /** How much of `screen` was waiting for the screen between chapters (the yield, which a timer slows in the background). */
+  yielded: Stat
+  runs: number
+  /** How many runs had the app in the background at some moment: more than 0, the table is not valid. */
+  hidden: number
 }
 
 export const TARGETS = { readableMs: 3000, verseMs: 50 } as const
@@ -35,55 +48,91 @@ export const statOf = (times: number[]): Stat => {
 /** Lets the page draw between runs, so a screen showing progress is not frozen. */
 const breathe = () => new Promise<void>((resolve) => setTimeout(resolve, 0))
 
-async function timed<T>(times: number[], run: () => Promise<T>): Promise<T> {
-  const t = performance.now()
-  const out = await run()
-  times.push(performance.now() - t)
-  return out
-}
-
 export type MeasureOptions = {
   /** Tests give their own; the app's client by default. */
   client?: LanguagePackClient
   /** Told after each run (done, of how many). */
   onRun?: (done: number, total: number) => void
+  /** Stops the measure (the sheet closed): it rejects with the signal's reason. */
+  signal?: AbortSignal
 }
 
 /**
  * The median, minimum and maximum, in ms, of `runs` runs of each step over `book` of `lang` (code in lowercase, as
- * `'psa'`), each on a reader opened anew, with `ref` (as `'psa 23:1'`) for the verse steps. Throws what the library or
- * `readBookV3` throws (a book that is not installed, an original missing): the caller says it.
+ * `'psa'`), each on readers opened anew, with `ref` (as `'psa 23:1'`) for the verse steps. In every run `screen` goes
+ * first, on a fresh open, before the others read the book. Throws what the library or `readBookV3` throws (a book that
+ * is not installed, an original missing): the caller says it.
  */
 export async function measure(lang: string, book: string, ref: string, runs = 20, o: MeasureOptions = {}): Promise<Timings> {
   const client = o.client ?? (await packsV3())
-  const open: number[] = []
-  const bookT: number[] = []
-  const screen: number[] = []
-  const passage: number[] = []
-  const context: number[] = []
-  for (let i = 0; i < runs; i++) {
-    // Never `readerV3`: it keeps its reader, and a kept reader has already read what it is asked.
-    const a = await timed(open, () => client.open(lang))
-    await timed(bookT, () => a.book(book))
-
-    const b = await client.open(lang)
-    await b.book(book)
-    await timed(passage, () => b.passage(ref))
-
-    const c = await client.open(lang)
-    await c.book(book)
-    await timed(context, () => c.context(ref))
-
-    // The person's wait for the book: a reader opened and the book read into screen data.
-    const t = performance.now()
-    const d = await client.open(lang)
-    const read = await readBookV3(d, lang, book)
-    screen.push(performance.now() - t)
-    if (!read) throw new Error(`${lang}/${book} is not installed`)
-    o.onRun?.(i + 1, runs)
-    await breathe()
+  const times = { open: [] as number[], book: [] as number[], screen: [] as number[], passage: [] as number[], context: [] as number[], yielded: [] as number[] }
+  let hiddenRuns = 0
+  let wasHidden = false
+  const seen = () => {
+    if (typeof document !== 'undefined' && document.hidden) wasHidden = true
   }
-  return { open: statOf(open), book: statOf(bookT), screen: statOf(screen), passage: statOf(passage), context: statOf(context) }
+  if (typeof document !== 'undefined') document.addEventListener('visibilitychange', seen)
+  const stop = () => o.signal?.throwIfAborted()
+  try {
+    for (let i = 0; i < runs; i++) {
+      stop()
+      wasHidden = false
+      seen()
+      // The person's wait for the book, first so that it is the cold one: a reader opened and the book read into screen
+      // data. The wait between chapters is counted apart.
+      let waited = 0
+      const t = performance.now()
+      const d = await client.open(lang)
+      const read = await readBookV3(d, lang, book, {
+        yield: async () => {
+          const w = performance.now()
+          await breathe()
+          waited += performance.now() - w
+        },
+      })
+      times.screen.push(performance.now() - t)
+      times.yielded.push(waited)
+      if (!read) throw new Error(`${lang}/${book} is not installed`)
+      stop()
+
+      // Never `readerV3`: it keeps its reader, and a kept reader has already read what it is asked.
+      const t1 = performance.now()
+      const a = await client.open(lang)
+      times.open.push(performance.now() - t1)
+      const t2 = performance.now()
+      await a.book(book)
+      times.book.push(performance.now() - t2)
+
+      const b = await client.open(lang)
+      await b.book(book)
+      const t3 = performance.now()
+      await b.passage(ref)
+      times.passage.push(performance.now() - t3)
+
+      const c = await client.open(lang)
+      await c.book(book)
+      const t4 = performance.now()
+      await c.context(ref)
+      times.context.push(performance.now() - t4)
+
+      if (wasHidden) hiddenRuns++
+      o.onRun?.(i + 1, runs)
+      await breathe()
+    }
+  } finally {
+    if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', seen)
+  }
+  return {
+    open: statOf(times.open),
+    book: statOf(times.book),
+    screen: statOf(times.screen),
+    passage: statOf(times.passage),
+    context: statOf(times.context),
+    first: { open: times.open[0]!, book: times.book[0]!, screen: times.screen[0]!, passage: times.passage[0]!, context: times.context[0]! },
+    yielded: statOf(times.yielded),
+    runs,
+    hidden: hiddenRuns,
+  }
 }
 
 /** Whether the book and its original are in format 3 on this device (what `measure` needs). */

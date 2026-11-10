@@ -1219,5 +1219,17 @@
   "paquetes3.medirCumple": "cumple",
   "paquetes3.medirNoCumple": "no cumple",
   "paquetes3.medirAyuda.computadora": "Mide cuánto tarda esta computadora en leer los Salmos en inglés de los paquetes nuevos. Sirve para saber si hay que mejorar algo.",
-  "paquetes3.medirFallo.computadora": "No se pudo medir. Los Salmos en inglés no están completos en esta computadora."
+  "paquetes3.medirFallo.computadora": "No se pudo medir. Los Salmos en inglés no están completos en esta computadora.",
+  "paquetes3.medirPrimera": "primera vez: {valor}",
+  "paquetes3.medirEspera": "de eso, esperando a la pantalla: {valor}",
+  "paquetes3.medirInvalida": "Esta medida no vale: Servos pasó a segundo plano en {n} de {total} vueltas. Mida otra vez con la pantalla encendida y Servos al frente.",
+  "paquetes3.medirAlFrenteAviso": "Deje la pantalla encendida y Servos al frente hasta que termine.",
+  "paquetes3.medirDatos": "Versión: {version} · memoria: {memoria} · núcleos: {nucleos} · servidor: {servidor} · formato {formato} · fecha: {fecha}",
+  "paquetes3.medirNavegador": "Navegador: {ua}",
+  "paquetes3.medirAlFrente": "Servos al frente toda la medida: {si}",
+  "paquetes3.medirSi": "sí",
+  "paquetes3.medirNo": "no",
+  "paquetes3.medirSinDato": "sin dato",
+  "paquetes3.medirError": "Error: {detalle}",
+  "paquetes3.medirCopiaManual": "No se pudo copiar solo. Seleccione el texto de abajo y cópielo."
 }

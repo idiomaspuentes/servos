@@ -22,7 +22,7 @@ describe('measure', { timeout: 30000 }, () => {
     const told: number[] = []
     const out = await measure('es-419', 'tit', 'tit 1:1', 3, { client, onRun: (n) => told.push(n) })
     expect(told).toEqual([1, 2, 3])
-    for (const stat of Object.values(out)) {
+    for (const stat of [out.open, out.book, out.screen, out.passage, out.context, out.yielded]) {
       expect(stat.min).toBeGreaterThanOrEqual(0)
       expect(stat.min).toBeLessThanOrEqual(stat.median)
       expect(stat.median).toBeLessThanOrEqual(stat.max)

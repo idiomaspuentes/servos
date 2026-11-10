@@ -1219,5 +1219,17 @@
   "paquetes3.medirCumple": "met",
   "paquetes3.medirNoCumple": "not met",
   "paquetes3.medirAyuda.computadora": "Measures how long this computer takes to read English Psalms from the new packs. It tells whether anything needs to be improved.",
-  "paquetes3.medirFallo.computadora": "Could not measure. English Psalms are not complete on this computer."
+  "paquetes3.medirFallo.computadora": "Could not measure. English Psalms are not complete on this computer.",
+  "paquetes3.medirPrimera": "first run: {valor}",
+  "paquetes3.medirEspera": "of which waiting for the screen: {valor}",
+  "paquetes3.medirInvalida": "This measure is not valid: Servos went to the background in {n} of {total} runs. Measure again with the screen on and Servos in front.",
+  "paquetes3.medirAlFrenteAviso": "Keep the screen on and Servos in front until it ends.",
+  "paquetes3.medirDatos": "Version: {version} · memory: {memoria} · cores: {nucleos} · server: {servidor} · format {formato} · date: {fecha}",
+  "paquetes3.medirNavegador": "Browser: {ua}",
+  "paquetes3.medirAlFrente": "Servos in front the whole measure: {si}",
+  "paquetes3.medirSi": "yes",
+  "paquetes3.medirNo": "no",
+  "paquetes3.medirSinDato": "no data",
+  "paquetes3.medirError": "Error: {detalle}",
+  "paquetes3.medirCopiaManual": "It could not be copied by itself. Select the text below and copy it."
 }

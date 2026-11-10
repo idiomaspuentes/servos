@@ -325,6 +325,8 @@ export interface ReadBookOptions {
   today?: string
   /** Told after each chapter is read (chapters read, of how many), as `loadBook` tells the screens today. */
   onChapter?: (done: number, total: number) => void
+  /** What gives the screen a turn between chapters (a timer by default); the timings screen wraps it to count the wait. */
+  yield?: () => Promise<void>
 }
 
 /**
@@ -413,7 +415,7 @@ export async function readBookV3(
     })
     o.onChapter?.(i + 1, literal.numbers.length)
     // A chapter at a time, so the screen stays answering while a long book is read (as `loadBook` does).
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await (o.yield ?? (() => new Promise<void>((resolve) => setTimeout(resolve, 0))))()
   }
   // Each article once for the book, then given to the chapters that name it.
   const articles = await articlesV3(reader, [...wanted.tw], [...wanted.ta])

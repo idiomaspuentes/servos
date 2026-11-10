@@ -1530,3 +1530,4 @@ button, .file-button, summary, input, select, textarea {
 .timings-ok, .timings-over { font-size: 0.85rem; font-weight: 600; }
 .timings-ok { color: var(--text); }
 .timings-over { color: var(--danger); }
+.timings-text { width: 100%; font: 0.8rem/1.4 ui-monospace, monospace; resize: vertical; }
