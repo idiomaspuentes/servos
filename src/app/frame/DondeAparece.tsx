@@ -23,8 +23,8 @@ export function DondeAparece({ language, article }: { language: string; article:
 
   const times = (n: number) => (n === 1 ? t('ayudas.unaVez') : t('ayudas.vecesN', { n }))
   const counts = new Map(books?.missing.map((b) => [b.book, b.count]))
-  const bringable = books?.missing.filter((b): b is { book: string; count: number; bytes: number } => b.bytes !== undefined) ?? []
-  const notCarried = books?.missing.filter((b) => b.bytes === undefined).map((b) => b.book) ?? []
+  const bringable = books?.missing.filter((b) => b.bringable).map((b) => b.book) ?? []
+  const notCarried = books?.missing.filter((b) => !b.bringable).map((b) => b.book) ?? []
   const nothing = books && !books.here.length && !books.missing.length
 
   return (
@@ -45,7 +45,10 @@ export function DondeAparece({ language, article }: { language: string; article:
       )}
       {books && (
         <>
-          <MissingBooks language={language} books={bringable} meta={(book) => <span className="quiet"> · {times(counts.get(book) ?? 0)}</span>} />
+          <MissingBooks language={language} books={bringable} meta={(book) => {
+              const n = counts.get(book)
+              return n ? <span className="quiet"> · {times(n)}</span> : null
+            }} />
           <ElsewhereBooks books={notCarried} />
         </>
       )}

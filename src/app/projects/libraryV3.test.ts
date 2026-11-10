@@ -114,6 +114,28 @@ describe('the library reads format 3 first', () => {
     client.resetPacksV3()
   }, 60_000)
 
+  it('a refresh keeps an open book until it is read again; a book not read again is forgotten after', async () => {
+    const { library, data } = await freshApp()
+    await library.openLibrary([project])
+    await library.loadBook('tit', 'es-419')
+    expect(data.bookOnDevice('es-419', 'tit')).toBe(true)
+    // A book brought or a pack opened reads the library anew: every time the screens are told, the open book still
+    // has its chapters, so a mini app on it is not sent away (App: a book without chapters leaves for its screen).
+    const seen: boolean[] = []
+    const stop = library.subscribeLibrary(() => void seen.push(data.bookOnDevice('es-419', 'tit')))
+    await library.refreshLibrary()
+    await library.loadBook('tit', 'es-419')
+    await vi.waitFor(() => expect(seen.length).toBeGreaterThan(3))
+    stop()
+    expect(seen.every(Boolean)).toBe(true)
+    expect(data.bookOnDevice('es-419', 'tit')).toBe(true)
+
+    // A book no longer read (its project gone, its pack no longer here) is forgotten once the new read ended.
+    library.setProjects([])
+    await library.refreshLibrary()
+    await vi.waitFor(() => expect(data.bookOnDevice('es-419', 'tit')).toBe(false))
+  }, 60_000)
+
   it('keeps reading rows until format 3 has the book', async () => {
     useStaging()
     const { library, client, sample } = await freshApp()

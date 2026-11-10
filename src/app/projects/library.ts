@@ -12,7 +12,7 @@
  */
 
 import { strongParts, type LexiconFile } from '../../lexicon/lexicon'
-import { EXAMPLE_LANGUAGE, forgetBooks, isBundled, keepBook, keepLexicon, setLanguageResolver, type PrototypeData } from '../../prototype/data'
+import { EXAMPLE_LANGUAGE, booksReadNow, forgetBooksNotReadAgain, isBundled, keepBook, keepLexicon, setLanguageResolver, type PrototypeData } from '../../prototype/data'
 import { keepMacula } from '../../prototype/original'
 import { readLexiconEntry, readMacula } from '../../resources/companions'
 import { booksOfText, inBibleOrder, kindOf } from '../../resources/reading'
@@ -103,17 +103,24 @@ export async function openLibrary(next: Project[]): Promise<void> {
   void readAll()
 }
 
-/** After a pack was opened: what is on this device again, and its books read anew. */
+/**
+ * After a pack was opened or a book brought: what is on this device again, and its books read anew. The chapters read
+ * before stay until the new read of their book ended, so a book open on screen does not vanish under the person (a
+ * mini app whose book has no chapters leaves for the book's screen); a book not read again is forgotten after.
+ */
 export async function refreshLibrary(): Promise<void> {
   if (!stores) stores = openResourceStores()
   index = await deviceIndex(stores, new Set(openingLeft()?.keys ?? []))
   forgetReadersV3()
   v3 = await readV3()
-  forgetBooks()
+  const before = booksReadNow()
   states.clear()
   loads.clear()
   changed()
-  void readAll()
+  void readAll().then(() => {
+    forgetBooksNotReadAgain(before)
+    changed()
+  })
 }
 
 /**

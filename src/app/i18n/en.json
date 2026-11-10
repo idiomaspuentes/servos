@@ -1159,17 +1159,18 @@
   "ayudas.enTodaLaBibliaCuenta": "{n} times in {libros} books on this device",
   "ayudas.enTodaLaBibliaCuentaUnLibro": "{n} times in one book on this device",
   "ayudas.enTodaLaBibliaUnaVez": "Once on this device",
-  "ayudas.enTodaLaBibliaNada": "No book on this device translates it yet",
+  "ayudas.enTodaLaBibliaNada": "The texts on this device do not show it aligned",
   "ayudas.noEstanEnAparato": "Not on this device",
   "ayudas.verLugares": "See the {n} places",
-  "ayudas.tambienEn": "Also in {libros}, which this language has no texts of yet",
   "ayudas.bajar": "Download",
   "ayudas.bajarLibro": "Download {libro}",
   "ayudas.bajando": "Downloading…",
   "ayudas.dondeAparece": "Where it appears",
   "ayudas.vecesN": "{n} times",
   "ayudas.unaVez": "once",
-  "ayudas.dondeApareceNinguno": "The notes of the books do not name it",
+  "ayudas.dondeApareceNinguno": "The books of this language do not use it",
   "ayudas.dondeApareceSinDatos": "This language's helps do not say where it is used",
-  "ayudas.irA": "Go to {lugar}"
+  "ayudas.irA": "Go to {lugar}",
+  "ayudas.yEnLibrosMas": "And in {n} more books this language does not have yet",
+  "ayudas.yEnUnLibroMas": "And in one more book this language does not have yet"
 }

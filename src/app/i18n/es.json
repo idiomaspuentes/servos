@@ -1159,17 +1159,18 @@
   "ayudas.enTodaLaBibliaCuenta": "{n} veces en {libros} libros de este aparato",
   "ayudas.enTodaLaBibliaCuentaUnLibro": "{n} veces en un libro de este aparato",
   "ayudas.enTodaLaBibliaUnaVez": "Una vez en este aparato",
-  "ayudas.enTodaLaBibliaNada": "Ningún libro de este aparato lo traduce todavía",
+  "ayudas.enTodaLaBibliaNada": "Los textos de este aparato no lo muestran alineado",
   "ayudas.noEstanEnAparato": "No están en este aparato",
   "ayudas.verLugares": "Ver los {n} lugares",
-  "ayudas.tambienEn": "También en {libros}, que este idioma todavía no tiene para bajar",
   "ayudas.bajar": "Bajar",
   "ayudas.bajarLibro": "Bajar {libro}",
   "ayudas.bajando": "Bajando…",
   "ayudas.dondeAparece": "Dónde aparece",
   "ayudas.vecesN": "{n} veces",
   "ayudas.unaVez": "una vez",
-  "ayudas.dondeApareceNinguno": "Las notas de los libros no lo nombran",
+  "ayudas.dondeApareceNinguno": "Los libros de este idioma no lo usan",
   "ayudas.dondeApareceSinDatos": "Las ayudas de este idioma no dicen dónde se usa",
-  "ayudas.irA": "Ir a {lugar}"
+  "ayudas.irA": "Ir a {lugar}",
+  "ayudas.yEnLibrosMas": "Y en {n} libros más que este idioma todavía no tiene",
+  "ayudas.yEnUnLibroMas": "Y en un libro más que este idioma todavía no tiene"
 }

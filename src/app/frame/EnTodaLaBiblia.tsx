@@ -7,9 +7,9 @@
 
 import { useState } from 'react'
 import type { PrototypeData } from '../../prototype/data'
-import { wordAcrossBooks, type Rendering } from '../../resources/v3/lookups'
+import { renderingsByText, wordAcrossBooks, type Rendering } from '../../resources/v3/lookups'
 import { useT } from '../i18n/i18n'
-import { ElsewhereBooks, MissingBooks, placeName, useLookup, useMapHere, VerseSheet } from './acrossBooks'
+import { booksRead, ElsewhereBooks, MissingBooks, placeName, useLookup, useMapHere, VerseSheet } from './acrossBooks'
 
 /** A rendering's places are listed at once up to this many; more wait behind «Ver los N lugares». */
 const SHOWN_PLACES = 12
@@ -19,9 +19,14 @@ export function EnTodaLaBiblia({ data, strong }: { data: PrototypeData; strong: 
   const here = useMapHere(data.language, 'xmap')
   const [open, setOpen] = useState(false)
   const [verse, setVerse] = useState<string | null>(null)
-  const answer = useLookup(open && here, data.language, `renderings ${strong}`, (reader) => reader.renderings({ strong }))
-  const word = answer ? wordAcrossBooks(answer) : null
+  const word = useLookup(open && here, data.language, `renderings ${strong}`, async (reader) => {
+    const answer = await reader.renderings({ strong })
+    // The reader adds the texts together; by text, and the word counted once, from the books themselves.
+    const byText = renderingsByText(await booksRead(reader), answer.data?.strong ?? strong)
+    return wordAcrossBooks(answer, byText, (book) => reader.listed(`book:${book}`))
+  })
   if (!here || (word && !word.installed)) return null
+  const labelOf = (res: string) => data.texts.find((x) => x.key === res)?.abbreviation ?? res.slice(res.lastIndexOf('/') + 1).toUpperCase()
 
   const count =
     word && word.total > 0
@@ -38,13 +43,17 @@ export function EnTodaLaBiblia({ data, strong }: { data: PrototypeData; strong: 
       {word && (
         <>
           <p className="quiet">{count}</p>
-          {word.renderings.length > 0 && (
-            <ul className="across-renderings">
-              {word.renderings.map((r) => (
-                <RenderingRow key={r.text} rendering={r} folded={word.folded} onPlace={setVerse} />
-              ))}
-            </ul>
-          )}
+          {/* Each bridge text apart, by its name in the panes (TPL, TPS): how one renders it is not how the other does. */}
+          {word.texts.map((x) => (
+            <section key={x.res} className="across-text">
+              {word.texts.length > 1 && <p className="word-help-label">{labelOf(x.res)}</p>}
+              <ul className="across-renderings">
+                {x.renderings.map((r) => (
+                  <RenderingRow key={r.text} rendering={r} folded={word.folded} onPlace={setVerse} />
+                ))}
+              </ul>
+            </section>
+          ))}
           <MissingBooks language={data.language} books={word.missing} />
           <ElsewhereBooks books={word.elsewhere} />
         </>
