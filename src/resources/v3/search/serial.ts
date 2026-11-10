@@ -7,9 +7,9 @@
  * - a transaction's writes are not sent one by one (a book is hundreds of rows, a message each took 40 s for Titus on
  *   a phone): `run` inside a transaction only keeps the write, and they go together, in order, as one atomic call to
  *   the plugin (`SqlCalls.atomic`) when `fn` ends. A transaction whose `fn` throws sends nothing.
- * A read or `exec` made while a transaction is open sends the writes kept so far first, as their own atomic call, so
- * it sees them; `sqlIndex` never reads inside a transaction, so its transactions stay whole. A transaction asked for from
- * inside another one waits for it forever, so `fn` never opens one (`sqlIndex` does not).
+ * A read or `exec` made while a transaction is open does not send them: it sees the state before the transaction, so
+ * another caller's read never commits half of one, and `fn` cannot read its own writes (`sqlIndex` never does). A
+ * transaction asked for from inside another one waits for it forever, so `fn` never opens one (`sqlIndex` does not).
  */
 import type { SqlDriver } from '@bt-synergy/language-pack-client'
 
@@ -59,6 +59,30 @@ export function runsOf(steps: SqlStep[]): { sql: string; rows: unknown[][] }[] {
   return out
 }
 
+const INSERT = /^(INSERT INTO [^]*? VALUES )(\(\s*\?(?:\s*,\s*\?)*\s*\))$/i
+
+/**
+ * The steps as statements with their values bound by `?`: rows of the same INSERT become multi-row INSERTs of at most
+ * `maxParams` values and `maxRows` rows each; any other statement stays one per row.
+ */
+export function statementsOf(steps: SqlStep[], maxParams: number, maxRows = Infinity): SqlStep[] {
+  const out: SqlStep[] = []
+  for (const run of runsOf(steps)) {
+    const insert = INSERT.exec(run.sql.trim())
+    const perRow = run.rows[0]!.length
+    if (!insert || run.rows.length === 1 || perRow === 0) {
+      for (const row of run.rows) out.push({ sql: run.sql, params: row })
+      continue
+    }
+    const size = Math.max(1, Math.min(maxRows, Math.floor(maxParams / perRow)))
+    for (let at = 0; at < run.rows.length; at += size) {
+      const chunk = run.rows.slice(at, at + size)
+      out.push({ sql: insert[1] + chunk.map(() => insert[2]).join(', '), params: chunk.flat() })
+    }
+  }
+  return out
+}
+
 /** A `SqlDriver` over a plugin's calls, opened on the first use (and again after an open that failed). */
 export function serialDriver(open: () => Promise<SqlCalls>): SqlDriver {
   let calls: Promise<SqlCalls> | undefined
@@ -76,31 +100,23 @@ export function serialDriver(open: () => Promise<SqlCalls>): SqlDriver {
   }
   /** The writes of the transaction running now; none outside one. */
   let kept: SqlStep[] | null = null
-  const flush = async (): Promise<void> => {
-    if (!kept?.length) return
-    const steps = kept.splice(0)
-    await one((c) => c.atomic(steps))
-  }
   let transactions: Promise<unknown> = Promise.resolve()
   return {
     async exec(sql) {
-      await flush()
       for (const statement of splitStatements(sql)) await one((c) => c.exec(statement))
     },
     async run(sql, params) {
       if (kept) kept.push({ sql, params })
       else await one((c) => c.write([{ sql, params }]))
     },
-    async all<T>(sql: string, params: unknown[]) {
-      await flush()
-      return one((c) => c.all<T>(sql, params))
-    },
+    all: <T>(sql: string, params: unknown[]) => one((c) => c.all<T>(sql, params)),
     transaction<T>(fn: () => Promise<T>): Promise<T> {
       const next = transactions.then(async () => {
-        kept = []
+        const steps: SqlStep[] = (kept = [])
         try {
           const result = await fn()
-          await flush()
+          kept = null
+          if (steps.length) await one((c) => c.atomic(steps))
           return result
         } finally {
           kept = null

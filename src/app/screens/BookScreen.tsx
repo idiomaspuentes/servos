@@ -19,7 +19,7 @@
  * When they cannot come now, the notice says why, with no button to try again: the app tries by itself (spec §2).
  */
 
-import { bookIsHere, helpsLanguagesHere, languageOf, type BookState } from '../projects/library'
+import { helpsLanguagesHere, languageOf, type BookState } from '../projects/library'
 import { useEffect, useState } from 'react'
 import type { PrototypeData } from '../../prototype/data'
 import { RowButton, Suggestion } from '../frame/Actions'
@@ -593,7 +593,7 @@ export function BookScreen({
         // to open it in, the hits are only read.
         <SearchSheet
           language={searchLanguage}
-          readable={readableHere(searchLanguage, book.code)}
+          readable={readableHere(searchLanguage)}
           canOpen={(place) => Boolean(current) && canOpenVerse(place)}
           onOpen={(place) => {
             setSearching(false)
@@ -645,8 +645,10 @@ function BookNameSheet({
   )
 }
 
-/** The books of a language read on this device, in either format, and the open one when it is the bundled example. */
-function readableHere(language: string, book: string): string[] {
-  const books = helpsLanguagesHere().find((l) => l.code === language)?.books ?? []
-  return bookIsHere(book, language) ? [...books, book] : books
+/**
+ * The books of a language whose texts are stored on this device, in either format. Not the example bundled in the app,
+ * nor a book still coming: the sheet names those of them search cannot look in as come «in a pack of before».
+ */
+function readableHere(language: string): string[] {
+  return helpsLanguagesHere().find((l) => l.code === language)?.books ?? []
 }

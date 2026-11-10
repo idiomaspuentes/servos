@@ -1,7 +1,7 @@
 import { sqlIndex, type SqlDriver } from '@bt-synergy/language-pack-client'
 import type { BookModel } from '@bt-synergy/language-pack-v3'
 import { describe, expect, test } from 'vitest'
-import { capacitorDriver, ROWS_PER_SET, setsOf, type CapacitorSqlite } from './capacitorDriver'
+import { capacitorDriver, MAX_PARAMS, setsOf, type CapacitorSqlite } from './capacitorDriver'
 import { searchIndexV3, searchPlatform } from './searchIndex'
 import { splitStatements, type SqlStep } from './serial'
 import { scriptOf, tauriDriver, type TauriDb } from './tauriDriver'
@@ -64,7 +64,14 @@ function fakeTauri(log: Log, o: { db?: DatabaseSync; closeAfterEachCall?: boolea
   }
 }
 
-/** The Capacitor plugin's calls over node's SQLite; `executeSet` takes a statement's rows of values. */
+/** A value written into SQL as the plugin's `multipleRowsStatement` writes it. */
+const inlined = (v: unknown) => (typeof v === 'string' ? `'${v.replace(/'/g, "''")}'` : v === null || v === undefined ? 'NULL' : String(v))
+
+/**
+ * The Capacitor plugin's calls over node's SQLite. `executeSet` does what the plugin 8.1.1 does (Database.java): flat
+ * `values` are bound to the `?`; a list of rows is written into the SQL, only into a `VALUES (?…)`, and any other
+ * statement then runs with nothing bound (its `?` are NULL).
+ */
 function fakeCapacitor(log: Log, db = new DatabaseSync(':memory:')): () => CapacitorSqlite {
   const plugin = {
     async closeConnection(o: { database?: string }) {
@@ -82,10 +89,21 @@ function fakeCapacitor(log: Log, db = new DatabaseSync(':memory:')): () => Capac
       db.exec(o.statements!)
       return { changes: { changes: 0 } }
     },
-    async executeSet(o: { set?: { statement?: string; values?: unknown[][] }[]; transaction?: boolean }) {
+    async executeSet(o: { set?: { statement?: string; values?: unknown[] }[]; transaction?: boolean }) {
+      log.push(['executeSet', o.set!.map((s) => s.statement).join('; '), o.set!.flatMap((s) => s.values!).flat()])
       for (const s of o.set!) {
-        log.push(['executeSet', s.statement!, s.values!.flat()])
-        for (const row of s.values!) db.prepare(s.statement!).run(...(row as never[]))
+        const values = s.values!
+        if (!Array.isArray(values[0])) {
+          db.prepare(s.statement!).run(...(values as never[]))
+          continue
+        }
+        const valuesAt = /VALUES\s*\((\s*\?\s*,?)+\)/i.exec(s.statement!)
+        if (!valuesAt) {
+          db.prepare(s.statement!).run()
+          continue
+        }
+        const rows = (values as unknown[][]).map((row) => `(${row.map(inlined).join(', ')})`).join(', ')
+        db.exec(s.statement!.slice(0, valuesAt.index) + 'VALUES ' + rows)
       }
       return { changes: { changes: 1 } }
     },
@@ -201,17 +219,35 @@ describe.each(drivers)('%s', (_, make) => {
     expect((await driver.all<{ x: string }>('SELECT x FROM a', [])).map((r) => r.x)).toEqual(['a1', 'a2', 'b1', 'b2'])
   })
 
-  test('a read inside a transaction sees its writes, in order', async () => {
-    const driver = make([])
+  test('a read while a transaction is open sees the state before it, and commits nothing', async () => {
+    const log: Log = []
+    const driver = make(log)
     await driver.exec('CREATE TABLE a (x)')
-    const seen = await driver.transaction(async () => {
+    let seen = -1
+    await driver.transaction(async () => {
       await driver.run('INSERT INTO a (x) VALUES (?)', ['one'])
-      const rows = await driver.all<{ n: number }>('SELECT count(*) AS n FROM a', [])
+      seen = (await driver.all<{ n: number }>('SELECT count(*) AS n FROM a', []))[0]!.n
+      expect(inserted(log)).toEqual([])
       await driver.run('INSERT INTO a (x) VALUES (?)', ['two'])
-      return rows[0]!.n
     })
-    expect(seen).toBe(1)
+    expect(seen).toBe(0)
     expect(await driver.all('SELECT x FROM a', [])).toEqual([{ x: 'one' }, { x: 'two' }])
+  })
+
+  test('removing a segment and adding a book again leave its rows once', async () => {
+    const log: Log = []
+    const driver = make(log)
+    const index = sqlIndex(driver)
+    await index.init()
+    await index.addBook('es-419', book, 'seg-tit')
+    await index.addBook('es-419', book, 'seg-tit')
+    const count = async () => (await driver.all<{ n: number }>('SELECT count(*) AS n FROM pieces WHERE seg = ?', ['seg-tit']))[0]!.n
+    expect(await count()).toBe(2)
+    await index.removeSegment('seg-tit')
+    expect(await count()).toBe(0)
+    expect(await index.has('seg-tit')).toBe(false)
+    // Every value went bound, none written into the SQL.
+    expect(log.some(([, sql]) => sql.includes('seg-tit'))).toBe(false)
   })
 
   test('search finds a note by a word without its accent', async () => {
@@ -260,36 +296,31 @@ describe('tauriDriver', () => {
 })
 
 describe('capacitorDriver', () => {
-  test('a transaction is begin, its rows in sets of at most 500, commit', async () => {
+  test('a transaction is begin, its rows as multi-row INSERTs in few sets, commit', async () => {
     const log: Log = []
     const driver = capacitorDriver(fakeCapacitor(log))
     await driver.exec('CREATE TABLE a (x)')
     log.length = 0
     await driver.transaction(async () => {
-      for (let i = 0; i < 1200; i++) await driver.run('INSERT INTO a (x) VALUES (?)', [i])
+      for (let i = 0; i < 9000; i++) await driver.run('INSERT INTO a (x) VALUES (?)', [i])
     })
-    expect(log.map(([m]) => m)).toEqual(['begin', 'executeSet', 'executeSet', 'executeSet', 'commit'])
-    expect(log.filter(([m]) => m === 'executeSet').map(([, , p]) => p!.length)).toEqual([500, 500, 200])
-    expect((await driver.all<{ n: number }>('SELECT count(*) AS n FROM a', []))[0]!.n).toBe(1200)
+    expect(log.map(([m]) => m)).toEqual(['begin', 'executeSet', 'executeSet', 'commit'])
+    expect((await driver.all<{ n: number }>('SELECT count(*) AS n FROM a', []))[0]!.n).toBe(9000)
   })
 
-  test('sets keep the order of different statements', () => {
+  test('each statement goes in the one-row form, under 999 values, in order', () => {
+    const insert = 'INSERT INTO pieces (body, kind, lang, book, ref, res, rid, seg) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     const steps: SqlStep[] = [
-      { sql: 'DELETE FROM t WHERE s = ?', params: ['x'] },
-      ...Array.from({ length: ROWS_PER_SET }, (_, i) => ({ sql: 'INSERT INTO t (v) VALUES (?)', params: [i] })),
-      { sql: 'INSERT INTO u (v) VALUES (?)', params: ['last'] },
+      { sql: 'DELETE FROM pieces WHERE seg = ?', params: ['s'] },
+      ...Array.from({ length: 300 }, (_, i) => ({ sql: insert, params: [`b${i}`, 'text', 'es', 'tit', '1:1', 'r', '', 's'] })),
+      { sql: 'INSERT INTO indexed (seg, lang, book) VALUES (?, ?, ?)', params: ['s', 'es', 'tit'] },
     ]
     const sets = setsOf(steps)
-    expect(sets.map((set) => set.map((s) => [s.statement.slice(0, 13), s.values.length]))).toEqual([
-      [
-        ['DELETE FROM t', 1],
-        ['INSERT INTO t', 499],
-      ],
-      [
-        ['INSERT INTO t', 1],
-        ['INSERT INTO u', 1],
-      ],
-    ])
+    const all = sets.flat()
+    expect(all.every((e) => !Array.isArray(e.values[0]) && e.values.length <= MAX_PARAMS)).toBe(true)
+    expect(all.map((e) => questionsIn(e.statement))).toEqual([1, 124 * 8, 124 * 8, 52 * 8, 3])
+    expect(all.every((e) => questionsIn(e.statement) === e.values.length)).toBe(true)
+    expect(all[0]).toEqual({ statement: 'DELETE FROM pieces WHERE seg = ?', values: ['s'] })
   })
 })
 

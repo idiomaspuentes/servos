@@ -6,7 +6,7 @@
 import type { SqlDriver } from '@bt-synergy/language-pack-client'
 import type { CapacitorSQLitePlugin } from '@capacitor-community/sqlite'
 import { registerPlugin } from '@capacitor/core'
-import { runsOf, serialDriver, type SqlStep } from './serial'
+import { serialDriver, statementsOf, type SqlStep } from './serial'
 
 /** The part of the native plugin used here, so a test can give its own. */
 export type CapacitorSqlite = Pick<
@@ -16,26 +16,29 @@ export type CapacitorSqlite = Pick<
 
 export const CAPACITOR_SEARCH_DB = 'servos-busqueda'
 
-/** Rows sent to the plugin in one `executeSet` (one message to the native side each). */
-export const ROWS_PER_SET = 500
+/** SQLite's most `?` in one statement on Android's older builds (SQLITE_MAX_VARIABLE_NUMBER before 3.32). */
+export const MAX_PARAMS = 999
+/** Values sent to the plugin in one `executeSet` (one message to the native side each), at most. */
+export const VALUES_PER_SET = 8000
 
-/** The steps as `executeSet` sets: consecutive rows of a statement together, at most `ROWS_PER_SET` rows a set. */
-export function setsOf(steps: SqlStep[]): { statement: string; values: unknown[][] }[][] {
-  const out: { statement: string; values: unknown[][] }[][] = []
-  let set: { statement: string; values: unknown[][] }[] = []
-  let rows = 0
-  for (const run of runsOf(steps)) {
-    for (let at = 0; at < run.rows.length; ) {
-      if (rows === ROWS_PER_SET) {
-        out.push(set)
-        set = []
-        rows = 0
-      }
-      const take = run.rows.slice(at, at + ROWS_PER_SET - rows)
-      set.push({ statement: run.sql, values: take })
-      rows += take.length
-      at += take.length
+/**
+ * The steps as `executeSet` sets. Each statement goes in the plugin's one-row form (`values` flat), which binds them
+ * by `?`: the plugin's form with a list of rows writes the values into the SQL itself and fills only a `VALUES (…)`, so
+ * a `DELETE … WHERE seg = ?` would run with nothing bound and delete nothing. Rows of an INSERT are made multi-row
+ * INSERTs here instead.
+ */
+export function setsOf(steps: SqlStep[]): { statement: string; values: unknown[] }[][] {
+  const out: { statement: string; values: unknown[] }[][] = []
+  let set: { statement: string; values: unknown[] }[] = []
+  let size = 0
+  for (const s of statementsOf(steps, MAX_PARAMS)) {
+    if (set.length && size + s.params.length > VALUES_PER_SET) {
+      out.push(set)
+      set = []
+      size = 0
     }
+    set.push({ statement: s.sql, values: s.params })
+    size += s.params.length
   }
   if (set.length) out.push(set)
   return out

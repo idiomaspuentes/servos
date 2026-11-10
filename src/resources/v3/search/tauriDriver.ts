@@ -9,7 +9,7 @@
  */
 import type { SqlDriver } from '@bt-synergy/language-pack-client'
 import Database from '@tauri-apps/plugin-sql'
-import { runsOf, serialDriver, type SqlStep } from './serial'
+import { serialDriver, statementsOf, type SqlStep } from './serial'
 
 /** The part of the plugin's `Database` used here, so a test can give its own. */
 export type TauriDb = {
@@ -24,30 +24,10 @@ const MAX_PARAMS = 32766
 /** Rows in one multi-row INSERT, at most. */
 const MAX_ROWS = 4000
 
-const INSERT = /^(INSERT INTO [^]*? VALUES )(\(\s*\?(?:\s*,\s*\?)*\s*\))$/i
-
 /** The steps as statements to send in one query, and their values in order. */
 export function scriptOf(steps: SqlStep[]): { sql: string[]; params: unknown[] } {
-  const sql: string[] = []
-  const params: unknown[] = []
-  for (const run of runsOf(steps)) {
-    const insert = INSERT.exec(run.sql.trim())
-    const perRow = run.rows[0]!.length
-    if (!insert || run.rows.length === 1 || perRow === 0) {
-      for (const row of run.rows) {
-        sql.push(run.sql)
-        params.push(...row)
-      }
-      continue
-    }
-    const size = Math.max(1, Math.min(MAX_ROWS, Math.floor(MAX_PARAMS / perRow)))
-    for (let at = 0; at < run.rows.length; at += size) {
-      const chunk = run.rows.slice(at, at + size)
-      sql.push(insert[1] + chunk.map(() => insert[2]).join(', '))
-      for (const row of chunk) params.push(...row)
-    }
-  }
-  return { sql, params }
+  const statements = statementsOf(steps, MAX_PARAMS, MAX_ROWS)
+  return { sql: statements.map((s) => s.sql), params: statements.flatMap((s) => s.params) }
 }
 
 export function tauriDriver(load: (path: string) => Promise<TauriDb> = (path) => Database.load(path), path = TAURI_SEARCH_DB): SqlDriver {
