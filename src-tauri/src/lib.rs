@@ -98,6 +98,7 @@ pub fn run() {
         }))
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_sql::Builder::default().build())
         .manage(Waiting(Mutex::new(shared_files(&args, &cwd))))
         .invoke_handler(tauri::generate_handler![opened_files, save_file])
         // The window is made here, not from the configuration alone, to say where its links to the internet go.

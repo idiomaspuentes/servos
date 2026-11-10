@@ -9,12 +9,14 @@ import {
   type InstalledState,
   type LanguagePackClient,
   type PackReader,
+  type SearchIndex,
   type TrustPolicy,
   type VerifiedCatalog,
   type Want,
 } from '@bt-synergy/language-pack-client'
 import { V3_ORIGINS } from '../online/packsServer'
 import { trustedKeys } from './keys'
+import { searchIndexV3 } from './search/searchIndex'
 
 /** The format 3 database. The format 2.0 ones (`servos-recursos`, `servos-catalogo`, ...) are never opened from here. */
 export const STORE_NAME_V3 = 'servos-paquetes-v3'
@@ -25,6 +27,8 @@ export type ClientDeps = {
   store?: BlobStore
   base?: string
   trustedKeys?: Record<string, Uint8Array>
+  /** The search index; `null` for none (the reader's memory index). Absent: the platform's (`searchIndexV3`). */
+  index?: SearchIndex | null
 }
 
 /** A client for format 3 packs. `packsV3` is the one the app uses; this takes its parts so a test can give its own. */
@@ -32,8 +36,10 @@ export async function createPacksV3(deps: ClientDeps = {}): Promise<LanguagePack
   const store = deps.store ?? (await indexedDbStore({ name: STORE_NAME_V3 }))
   const source = httpSource({ base: deps.base ?? V3_ORIGINS.staging, ...(deps.fetch ? { fetch: deps.fetch } : {}) })
   const trust = { trustedKeys: deps.trustedKeys ?? trustedKeys() }
-  // `index` (the search index) arrives with the search task; until then the reader builds one in memory.
-  const made = createClient({ store, source, trust })
+  // The full-text index the client keeps up to date on installs and imports (SQLite in the apps); none on the web,
+  // where the reader builds one in memory on the first search.
+  const index = deps.index === undefined ? searchIndexV3() : (deps.index ?? undefined)
+  const made = createClient({ store, source, trust, ...(index ? { index } : {}) })
   parts.set(made, { store, trust })
   return made
 }

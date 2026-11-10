@@ -471,6 +471,14 @@ export function App() {
           }}
           step={bookScreen.step}
           onStep={(step) => setScreen({ kind: 'book', projectId: bookScreen.projectId, book: bookScreen.book, ...(step ? { step } : {}) })}
+          canOpenVerse={(p) =>
+            Boolean(project(bookScreen.projectId)?.books.some((b) => b.code === p.book) && inProject(bookScreen.projectId, () => chapterOf(p.book, p.chapter)))
+          }
+          onOpenVerse={(app, p) => {
+            keepLastApp(person, p.book, app.id)
+            setPosition(p, app.id)
+            setScreen({ kind: 'app', projectId: bookScreen.projectId, book: p.book, id: app.id, back: bookScreen })
+          }}
           onTogether={(on) =>
             setProjects(
               projects.map((p) =>

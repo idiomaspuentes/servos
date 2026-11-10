@@ -8,8 +8,9 @@
  * split a book and gather it on one computer); the step's other mini apps, one row each. From 900 px the steps are a
  * column at the left and the step chosen is beside it, opened at the step last worked in (principle 13), so the window
  * costs no extra click. What is used now and then (sharing the book, receiving work from another computer, the
- * project's glossary, naming the book) is in «More»; in format 3, passing the book's texts and helps as a file too, when
- * they came from the server (a book made here from an old pack has a catalog another device does not trust).
+ * project's glossary, naming the book) is in «More»; in format 3, searching the texts and helps of the language's books
+ * on this device (SearchSheet), and passing the book's texts and helps as a file, when they came from the server (a book
+ * made here from an old pack has a catalog another device does not trust).
  * The steps are kinds of work, not stages the book has to be moved through: any is opened at any time, a team studies
  * one chapter while it translates another, and nobody has to decide for everyone that the book «is» in one (philosophy,
  * principle 5). A step is marked ✓ when its work is done. A book whose texts and helps are not on the phone says so,
@@ -18,7 +19,7 @@
  * When they cannot come now, the notice says why, with no button to try again: the app tries by itself (spec §2).
  */
 
-import type { BookState } from '../projects/library'
+import { languageOf, type BookState } from '../projects/library'
 import { useEffect, useState } from 'react'
 import type { PrototypeData } from '../../prototype/data'
 import { RowButton, Suggestion } from '../frame/Actions'
@@ -41,7 +42,9 @@ import { bookUsfm } from '../projects/usfmExport'
 import { askForBook, useBookAsked, useDownloadSize } from '../projects/onlineBooks'
 import { blockedKey, downloadSaid, percentOf, sizeIn } from '../projects/onlineWords'
 import { useOnlineResources } from '../../resources/online/onlineResources'
+import { SearchSheet } from './SearchSheet'
 import { ShareSheet } from './ShareSheet'
+import type { VersePlace } from '../frame/verseOpener'
 
 type Place = { chapter: number; verse: number }
 
@@ -64,6 +67,8 @@ export function BookScreen({
   placeFor,
   step: openStep,
   onStep,
+  canOpenVerse,
+  onOpenVerse,
 }: {
   project: Project
   book: BookEntry
@@ -96,6 +101,10 @@ export function BookScreen({
   step?: Phase
   /** Opens a step, or goes back to the book's steps (`null`). */
   onStep(step: Phase | null): void
+  /** Whether a verse found by «Buscar» can be opened here: a book of the project, read on this device. */
+  canOpenVerse(place: VersePlace): boolean
+  /** Opens a mini app at a verse found by «Buscar», in its book. */
+  onOpenVerse(app: MiniApp, place: VersePlace): void
 }) {
   const { t, language: lang } = useI18n()
   // The book as the team named it in its language; the bridge text's name, until then and beside it.
@@ -125,6 +134,7 @@ export function BookScreen({
   const [more, setMore] = useState(false)
   const [bookNoteOpen, setBookNoteOpen] = useState(false)
   const [sharing, setSharing] = useState(false)
+  const [searching, setSearching] = useState(false)
   const [saidMore, setSaidMore] = useState<string | null>(null)
   // Format 3: whether «Pasar textos y ayudas» is offered, asked of the store when «More» opens.
   const [passable, setPassable] = useState(false)
@@ -462,6 +472,16 @@ export function BookScreen({
             setSaidMore(null)
           }}
         >
+          {packsFormat() === 3 && (
+            <MenuRow
+              label={t('buscar.titulo')}
+              description={t('buscar.menuAyuda')}
+              onClick={() => {
+                setMore(false)
+                setSearching(true)
+              }}
+            />
+          )}
           <MenuRow
             label={t('libro.nombre')}
             description={book.name ? t('libro.nombreEs', { idioma: project.languageName, nombre: book.name }) : t('libro.nombreSinPoner', { libro: source })}
@@ -565,6 +585,18 @@ export function BookScreen({
             setNaming(false)
           }}
           onClose={() => setNaming(false)}
+        />
+      )}
+      {searching && current && (
+        // A hit opens its verse in the mini app last worked in (or the book's first), in the hit's book.
+        <SearchSheet
+          language={languageOf(project.id)}
+          canOpen={canOpenVerse}
+          onOpen={(place) => {
+            setSearching(false)
+            onOpenVerse(current, place)
+          }}
+          onClose={() => setSearching(false)}
         />
       )}
       {sharing && <ShareSheet project={project} books={[book.code]} person={person} onClose={() => setSharing(false)} />}

@@ -698,8 +698,28 @@ declare module '@bt-synergy/language-pack-client' {
     store: BlobStore
     source?: PackSource
     trust: TrustPolicy
-    index?: unknown
+    index?: SearchIndex
   }): LanguagePackClient
+
+  export type SearchKind = 'text' | 'note' | 'question' | 'link'
+  export type SearchFilters = { books?: string[]; kinds?: SearchKind[]; limit?: number }
+  /** `ref` as the resource has it (`1:4`); `snippet` with the matched words between « and »; a higher `score` is better. */
+  export type Hit = { kind: string; book: string; ref: string; res: string; id?: string; snippet: string; score: number }
+  export interface SearchIndex {
+    init(): Promise<void>
+    addBook(lang: string, book: import('@bt-synergy/language-pack-v3').BookModel, segmentId: string): Promise<void>
+    removeSegment(segmentId: string): Promise<void>
+    has(segmentId: string): Promise<boolean>
+    search(lang: string, text: string, f?: SearchFilters): Promise<Hit[]>
+  }
+  /** What `sqlIndex` needs of a SQLite binding: `exec` may hold several statements; `?` params; a transaction. */
+  export interface SqlDriver {
+    exec(sql: string): Promise<void>
+    run(sql: string, params: unknown[]): Promise<void>
+    all<T>(sql: string, params: unknown[]): Promise<T[]>
+    transaction<T>(fn: () => Promise<T>): Promise<T>
+  }
+  export function sqlIndex(driver: SqlDriver): SearchIndex
 
   export type QueryName =
     | 'passage'
@@ -768,6 +788,6 @@ declare module '@bt-synergy/language-pack-client' {
     topics(q?: { category?: string; book?: string }): Promise<Answer<unknown>>
     books(q: { article: string } | { concept: string }): Promise<Answer<BooksData>>
     renderings(q: { strong: string } | { book: string; word: number }): Promise<Answer<RenderingsData>>
-    search(text: string, filters?: { books?: string[]; kinds?: string[]; limit?: number }): Promise<Answer<unknown[]>>
+    search(text: string, filters?: SearchFilters): Promise<Answer<Hit[]>>
   }
 }

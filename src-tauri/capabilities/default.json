@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "What Servos's window may ask of the computer: the window's own basics and hearing that a file was opened. Saving and reading files is done by the app's own commands (src/lib.rs), not by the page.",
+  "description": "What Servos's window may ask of the computer: the window's own basics and hearing that a file was opened. Saving and reading files is done by the app's own commands (src/lib.rs), not by the page. The search index of format 3 packs is a SQLite database the page opens, reads and writes (sql:default opens and reads; sql:allow-execute writes).",
   "windows": ["main"],
-  "permissions": ["core:default"]
+  "permissions": ["core:default", "sql:default", "sql:allow-execute"]
 }
