@@ -1,7 +1,7 @@
 import type { Hit } from '@bt-synergy/language-pack-client'
 import { describe, expect, test } from 'vitest'
 import type { T } from '../i18n/i18n'
-import { groupHits, groupKey, hitPlace, hitWhere, resLabel, searchCoverage, snippetParts } from './searchHits'
+import { groupHits, groupKey, hitPlace, hitWhere, plainSnippet, resLabel, searchCoverage, snippetParts } from './searchHits'
 
 const hit = (kind: string, ref: string, extra: Partial<Hit> = {}): Hit => ({ kind, book: 'tit', ref, res: `es-419/${kind}`, snippet: '', score: 1, ...extra })
 const t: T = (key, values) => `${key}${values ? JSON.stringify(values) : ''}`
@@ -56,5 +56,19 @@ describe('the search sheet', () => {
     // Nothing read here outside format 3: nothing to name.
     expect(searchCoverage(['tit'], { searchable: ['tit'], notIndexed: [] }).before).toEqual([])
     expect(searchCoverage(['tit'], { searchable: [], notIndexed: [] })).toEqual({ searchable: [], notIndexed: [], before: ['tit'] })
+  })
+
+  test("a note's snippet is plain text: no markdown marks, links as their words, the found words kept", () => {
+    // As the emulator showed them (B9): bold, a link, and a link cut by the snippet's end.
+    expect(plainSnippet('La frase **he hallado «gracia» ante tus ojos** es')).toBe('La frase he hallado «gracia» ante tus ojos es')
+    expect(plainSnippet('(ver [Tito 2:11](../02/11.md)) y la «gracia» de')).toBe('(ver Tito 2:11) y la «gracia» de')
+    expect(plainSnippet('la «gracia» ([Tito 2:11](../02/11…')).toBe('la «gracia» (Tito 2:11')
+    expect(plainSnippet('# Gracia\n> la *«gracia»* de `Dios` y __más__')).toBe('Gracia la «gracia» de Dios y más')
+    // What is not markdown stays: a name with an underscore, a lone asterisk.
+    expect(plainSnippet('es-419_gl 3 * 4 y la «gracia» de Dios')).toBe('es-419_gl 3 * 4 y la «gracia» de Dios')
+    expect(snippetParts('**«gracia»** de [Dios](x)', 'gracia')).toEqual([
+      { text: 'gracia', found: true },
+      { text: ' de Dios', found: false },
+    ])
   })
 })

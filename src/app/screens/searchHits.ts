@@ -47,11 +47,27 @@ export const groupKey = (kind: string): string => ((KINDS as readonly string[]).
 const fold = (w: string) => w.normalize('NFD').replace(/[^\p{L}\p{N}]/gu, '').toLowerCase()
 
 /**
- * The snippet in pieces, `found` for the words searched. The library marks them with « », which Spanish texts also
- * use as quotes: a mark is a « » around one of the searched words (accents and case aside), and any other « » is the
- * text's own (`La palabra ««gracía»» aquí` has the word found inside its quotes).
+ * A snippet as plain text: the notes and articles are markdown, which a snippet must not show as typed. Links keep
+ * their words (a link cut by the snippet's end too: `[Tito 2:11](../02/11…`), emphasis and code marks go, and so do a
+ * heading's or a quote's marks at the start of a line. The library's « » marks are kept.
  */
-export function snippetParts(snippet: string, searched: string): { text: string; found: boolean }[] {
+export function plainSnippet(snippet: string): string {
+  return snippet
+    .replace(/!?\[([^\]]*)\]\([^)\s]*(?:\)|$|…)/g, '$1')
+    .replace(/\*\*|__/g, '')
+    .replace(/(^|[^\p{L}\p{N}*])[*_](?=\S)([^*_]*?\S)[*_](?![\p{L}\p{N}])/gu, '$1$2')
+    .replace(/`+/g, '')
+    .replace(/(^|\n)\s*(?:#{1,6}|>)\s+/g, '$1')
+    .replace(/\s*\n\s*/g, ' ')
+}
+
+/**
+ * The snippet in pieces (as plain text, `plainSnippet`), `found` for the words searched. The library marks them with
+ * « », which Spanish texts also use as quotes: a mark is a « » around one of the searched words (accents and case
+ * aside), and any other « » is the text's own (`La palabra ««gracía»» aquí` has the word found inside its quotes).
+ */
+export function snippetParts(raw: string, searched: string): { text: string; found: boolean }[] {
+  const snippet = plainSnippet(raw)
   const words = new Set(searched.split(/\s+/).filter(Boolean).map(fold))
   const out: { text: string; found: boolean }[] = []
   const push = (text: string, found: boolean) => {
