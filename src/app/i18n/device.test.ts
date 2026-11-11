@@ -62,6 +62,12 @@ describe('the app’s phrases on a computer', () => {
   const NAMES_A_COMPUTER = [
     'interfaz.enComputadora',
     'door43.host.mock',
+    // Files for another computer: said so on a phone too since books are shared in one file (fc725d4).
+    'ajustes.compartirAyuda',
+    'glosario.compartirAyuda',
+    'libro.compartirAyuda',
+    'libro.recibirTrabajo',
+    'libro.recibirTrabajoAyuda',
   ]
 
   it('no phrase speaks of a finger or of this phone', () => {
