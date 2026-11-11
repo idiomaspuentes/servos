@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { ImportPackResult } from '@bt-synergy/language-pack'
 import { asOnlineApply, holdsOnlineLock } from '../../resources/online/onlineLock'
 import type { ResourceStores } from '../../resources/store'
-import { openPackSeeingChanges, type ReceiveDeps } from './receiveHelps'
+import { openPackSeeingChanges, receiveFileV3, type ReceiveDeps, type ReceiveV3Deps } from './receiveHelps'
 
 const stores = {} as ResourceStores
 const tick = () => new Promise((resolve) => setTimeout(resolve, 10))
@@ -97,5 +97,51 @@ describe('what the pack replaces is decided under the lock (fix round R1)', () =
     await Promise.all([applying, receiving])
     expect(log.slice(0, 3)).toEqual(['applied', 'decide', 'watchHelps'])
     expect(replaced).toEqual(['after'])
+  })
+})
+
+describe('a file received in format 3, under the online lock', () => {
+  function fakesV3(log: string[], keeping: Promise<void>, outcome: Awaited<ReturnType<ReceiveV3Deps['importOldPackV3']>>) {
+    const deps: ReceiveV3Deps = {
+      watchHelpsV3: async (language, books) => {
+        log.push(`watch ${language} ${books.join(',')}`)
+        return [{ project: 'p', book: 'tit', places: [], before: [] }]
+      },
+      importOldPackV3: async () => (log.push('importOldPack'), outcome),
+      importTransferV3: async () => (log.push('importTransfer'), outcome),
+      refreshLibrary: async () => void log.push('refreshLibrary'),
+      keepHelpsChangesV3: async () => {
+        log.push('keep')
+        await keeping
+        return [{ project: 'p', book: 'tit', changes: [] }]
+      },
+    }
+    return deps
+  }
+  const added = { state: 'added' as const, language: 'es-419', books: ['tit'], articles: false }
+
+  it('a v3 install asked during the import waits until what changed is kept', async () => {
+    const log: string[] = []
+    let keep!: () => void
+    const keeping = new Promise<void>((r) => (keep = r))
+    const receiving = receiveFileV3(new Uint8Array(), { kind: 'oldPack', language: 'es-419', books: ['tit'] }, fakesV3(log, keeping, added))
+    await tick()
+    expect(log).toEqual(['watch es-419 tit', 'importOldPack', 'refreshLibrary', 'keep'])
+    const install = asOnlineApply(async () => void log.push('install'))
+    await tick()
+    expect(log).not.toContain('install')
+    keep()
+    const [{ outcome, changed }] = await Promise.all([receiving, install])
+    expect(outcome).toEqual(added)
+    expect(changed).toHaveLength(1)
+    expect(log.at(-1)).toBe('install')
+  })
+
+  it('reads nothing again when the file added nothing', async () => {
+    const log: string[] = []
+    const { outcome, changed } = await receiveFileV3(new Uint8Array(), { kind: 'transfer' }, fakesV3(log, Promise.resolve(), { state: 'noConfiable' }))
+    expect(outcome).toEqual({ state: 'noConfiable' })
+    expect(changed).toEqual([])
+    expect(log).toEqual(['importTransfer'])
   })
 })

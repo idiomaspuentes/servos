@@ -10,6 +10,7 @@ import type { PrototypeData } from '../../prototype/data'
 import { articleFrom, type ArticleRef } from '../../resources/articleLinks'
 import { useT } from '../i18n/i18n'
 import { articlesOnDevice, readArticle } from '../projects/library'
+import { DondeAparece } from './DondeAparece'
 import { Markdown, type ArticleLinks } from './Markdown'
 import { Sheet } from './Sheet'
 
@@ -50,6 +51,7 @@ export function ArticleSheet({ data, article, onClose }: { data: PrototypeData; 
         </button>
       )}
       <Markdown key={stack.length} text={shown.markdown} skipFirstHeading links={links} />
+      {shown.ref && <DondeAparece key={stack.length} language={data.language} article={shown.ref} />}
     </Sheet>
   )
 }

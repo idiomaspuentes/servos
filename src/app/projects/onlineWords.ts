@@ -45,6 +45,7 @@ const BLOCKED: Record<Blocked, string> = {
   sinIdioma: 'enLinea.sinIdioma',
   noDisponible: 'enLinea.noDisponible',
   sinEspacio: 'enLinea.sinEspacio',
+  noConfiable: 'paquetes3.noConfiable',
 }
 
 /** Why a language's texts and helps cannot come now, as the notice says it (no retry: the app tries by itself). */

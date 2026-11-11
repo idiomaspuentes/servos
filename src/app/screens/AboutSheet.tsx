@@ -4,18 +4,21 @@
  * owes to others. CC BY-SA asks for the credit; saying where the way of working comes from is owed too.
  *
  * Whoever opened Servos once with `?packs=` (to try the Worker's staging copy) also finds here which server the texts
- * and helps come from, to switch back; nobody else sees it (`packsServer.ts`, as the Door43 host picker).
+ * and helps come from, to switch back; nobody else sees it (`packsServer.ts`, as the Door43 host picker). The same
+ * people (or whoever opened Servos with `?medir`) find «Medir paquetes», the format 3 timings (`TimingsSheet`).
  */
 
 import { useEffect, useState } from 'react'
 import { useT } from '../i18n/i18n'
-import { Sheet } from '../frame/Sheet'
+import { MenuRow, Sheet } from '../frame/Sheet'
+import { TimingsSheet } from './TimingsSheet'
 import { appLabel } from '../frame/version'
 import { LEXICON_SUBJECTS } from '../../resources/companions'
 import { creditsOnDevice, type Credit } from '../../resources/credits'
 import { openResourceStores } from '../../resources/store'
+import { resourcesV3OnDevice } from '../../resources/v3/client'
 import { choosePacksServer as switchPacksServer } from '../../resources/online/onlineResources'
-import { PACKS_SERVERS, packsServerChoice, type PacksServerId } from '../../resources/online/packsServer'
+import { PACKS_SERVERS, packsFormat, packsServerChoice, type PacksServerId } from '../../resources/online/packsServer'
 
 const SERVER_NAMES: Record<PacksServerId, string> = { produccion: 'enLinea.servidorPrincipal', staging: 'enLinea.servidorPrueba' }
 
@@ -47,11 +50,22 @@ export function AboutSheet({ onClose }: { onClose(): void }) {
   const [credits, setCredits] = useState<Credit[] | undefined>()
   // Shown only to whoever chose a server once (with `?packs=`).
   const [server, setServer] = useState(() => packsServerChoice())
+  // «Medir paquetes» is for whoever tries format 3: the staging server chosen, or `?medir` in the address.
+  const [measuring, setMeasuring] = useState(false)
+  const mayMeasure = server === 'staging' || new URLSearchParams(location.search).has('medir')
   useEffect(() => {
     let live = true
-    creditsOnDevice(openResourceStores(), (_, row) =>
-      row.subject === LEXICON_SUBJECTS.greek ? t('acerca.lexicoGriego') : row.subject === LEXICON_SUBJECTS.hebrew ? t('acerca.lexicoHebreo') : undefined
-    )
+    // The format 3 catalogs too: a phone whose books came only in format 3 has no rows. A store that cannot be read
+    // credits what the rows say. Only where format 3 is used (the staging server), as the library reads it.
+    const v3 = packsFormat() === 3 ? resourcesV3OnDevice().catch(() => []) : Promise.resolve([])
+    v3.then((resources) =>
+        creditsOnDevice(
+          openResourceStores(),
+          (_, row) =>
+            row.subject === LEXICON_SUBJECTS.greek ? t('acerca.lexicoGriego') : row.subject === LEXICON_SUBJECTS.hebrew ? t('acerca.lexicoHebreo') : undefined,
+          resources,
+        ),
+      )
       .then((c) => live && setCredits(c))
       // A browser without IndexedDB: nothing received, as for a new phone.
       .catch(() => live && setCredits([]))
@@ -78,6 +92,11 @@ export function AboutSheet({ onClose }: { onClose(): void }) {
               <li key={c.keys.join(' ')}>
                 <span className="credit-titles">{listed(c.titles, lang)}</span>
                 <span className="quiet">{lineOf(c)}</span>
+                {c.notes.map((note) => (
+                  <span key={note} className="quiet credit-note">
+                    {note}
+                  </span>
+                ))}
               </li>
             ))}
           </ul>
@@ -107,10 +126,12 @@ export function AboutSheet({ onClose }: { onClose(): void }) {
             </div>
           </>
         )}
+        {mayMeasure && <MenuRow label={t('paquetes3.medirTitulo')} description={t('paquetes3.medirFila')} onClick={() => setMeasuring(true)} />}
         <h3 className="menu-heading">{t('acerca.gracias')}</h3>
         <p>{t('acerca.graciasTexto')}</p>
         <p className="quiet menu-version">{appLabel()}</p>
       </div>
+      {measuring && <TimingsSheet onClose={() => setMeasuring(false)} />}
     </Sheet>
   )
 }

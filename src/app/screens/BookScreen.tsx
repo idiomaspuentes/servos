@@ -8,7 +8,9 @@
  * split a book and gather it on one computer); the step's other mini apps, one row each. From 900 px the steps are a
  * column at the left and the step chosen is beside it, opened at the step last worked in (principle 13), so the window
  * costs no extra click. What is used now and then (sharing the book, receiving work from another computer, the
- * project's glossary, naming the book) is in «More».
+ * project's glossary, naming the book) is in «More»; in format 3, searching the texts and helps of the language's books
+ * on this device (SearchSheet), and passing the book's texts and helps as a file, when they came from the server (a book
+ * made here from an old pack has a catalog another device does not trust).
  * The steps are kinds of work, not stages the book has to be moved through: any is opened at any time, a team studies
  * one chapter while it translates another, and nobody has to decide for everyone that the book «is» in one (philosophy,
  * principle 5). A step is marked ✓ when its work is done. A book whose texts and helps are not on the phone says so,
@@ -17,8 +19,8 @@
  * When they cannot come now, the notice says why, with no button to try again: the app tries by itself (spec §2).
  */
 
-import type { BookState } from '../projects/library'
-import { useState } from 'react'
+import { helpsLanguagesHere, languageOf, type BookState } from '../projects/library'
+import { useEffect, useRef, useState } from 'react'
 import type { PrototypeData } from '../../prototype/data'
 import { RowButton, Suggestion } from '../frame/Actions'
 import { useOnline } from '../frame/online'
@@ -34,11 +36,15 @@ import { namesTogether } from '../projects/mix'
 import { sectionsToGather, versesToChoose, versionsFrom } from '../projects/versions'
 import { BOOK_NOTE_CHAPTER, introNoteOn, workOf } from '../projects/work'
 import { saveFile } from '../frame/saveFile'
+import { packsFormat } from '../../resources/online/packsServer'
+import { exportBookV3, exportableV3, transferName } from '../../resources/v3/filesV3'
 import { bookUsfm } from '../projects/usfmExport'
 import { askForBook, useBookAsked, useDownloadSize } from '../projects/onlineBooks'
 import { blockedKey, downloadSaid, percentOf, sizeIn } from '../projects/onlineWords'
 import { useOnlineResources } from '../../resources/online/onlineResources'
+import { SearchSheet } from './SearchSheet'
 import { ShareSheet } from './ShareSheet'
+import type { VersePlace } from '../frame/verseOpener'
 
 type Place = { chapter: number; verse: number }
 
@@ -61,6 +67,8 @@ export function BookScreen({
   placeFor,
   step: openStep,
   onStep,
+  canOpenVerse,
+  onOpenVerse,
 }: {
   project: Project
   book: BookEntry
@@ -93,6 +101,10 @@ export function BookScreen({
   step?: Phase
   /** Opens a step, or goes back to the book's steps (`null`). */
   onStep(step: Phase | null): void
+  /** Whether a verse found by «Buscar» can be opened here: a book of the project, read on this device. */
+  canOpenVerse(place: VersePlace): boolean
+  /** Opens a mini app at a verse found by «Buscar», in its book. */
+  onOpenVerse(app: MiniApp, place: VersePlace): void
 }) {
   const { t, language: lang } = useI18n()
   // The book as the team named it in its language; the bridge text's name, until then and beside it.
@@ -122,7 +134,26 @@ export function BookScreen({
   const [more, setMore] = useState(false)
   const [bookNoteOpen, setBookNoteOpen] = useState(false)
   const [sharing, setSharing] = useState(false)
+  const [searching, setSearching] = useState(false)
+  const searchLanguage = languageOf(project.id)
   const [saidMore, setSaidMore] = useState<string | null>(null)
+  // Format 3: whether «Pasar textos y ayudas» is offered, asked of the store when «More» opens.
+  const [passable, setPassable] = useState(false)
+  // While a transfer file is being made and saved (seconds): a second touch would make it again over the first.
+  const [passing, setPassing] = useState(false)
+  const passingNow = useRef(false)
+  useEffect(() => {
+    // Asked anew each time: closed, or for another book or language, the last answer is not offered.
+    setPassable(false)
+    if (!more || packsFormat() !== 3 || !project.helpsLanguage) return
+    let live = true
+    exportableV3(project.helpsLanguage, book.code)
+      .catch(() => false)
+      .then((yes) => live && setPassable(yes))
+    return () => {
+      live = false
+    }
+  }, [more, project.helpsLanguage, book.code])
 
   const isDone = (app: MiniApp, chapter: number, verse: number) => app.done!({ book: book.code, chapter, verse })
   const doneIn = (app: MiniApp, c: PrototypeData) => doneInBook(app, book.code, c)
@@ -447,6 +478,16 @@ export function BookScreen({
             setSaidMore(null)
           }}
         >
+          {packsFormat() === 3 && (
+            <MenuRow
+              label={t('buscar.titulo')}
+              description={t('buscar.menuAyuda')}
+              onClick={() => {
+                setMore(false)
+                setSearching(true)
+              }}
+            />
+          )}
           <MenuRow
             label={t('libro.nombre')}
             description={book.name ? t('libro.nombreEs', { idioma: project.languageName, nombre: book.name }) : t('libro.nombreSinPoner', { libro: source })}
@@ -470,6 +511,29 @@ export function BookScreen({
               onClick={async () => {
                 const saved = await saveFile(`${book.code.toUpperCase()}.usfm`, bookUsfm(book.code, project.name, chapters, 'TPL', book.name, true), 'text/plain', t('compartir.guardarEnTelefono'))
                 setSaidMore(saved.state === 'saved' ? t('compartir.guardado', { archivo: saved.name }) : saved.state === 'failed' ? t('compartir.noGuardado') : null)
+              }}
+            />
+          )}
+          {passable && (
+            <MenuRow
+              label={t('paquetes3.pasar')}
+              description={t('paquetes3.pasarAyuda', { libro: name })}
+              disabled={passing}
+              onClick={async () => {
+                // The ref, not only the state: two touches in one frame both see the state as it was.
+                if (passingNow.current) return
+                passingNow.current = true
+                setPassing(true)
+                try {
+                  const lang = project.helpsLanguage
+                  const saved = await exportBookV3(lang, book.code)
+                    .then((bytes) => saveFile(transferName(lang, book.code), bytes, 'application/octet-stream', t('compartir.guardarEnTelefono')))
+                    .catch(() => ({ state: 'failed' as const, name: '' }))
+                  setSaidMore(saved.state === 'saved' ? t('compartir.guardado', { archivo: saved.name }) : saved.state === 'failed' ? t('paquetes3.noGuardado') : null)
+                } finally {
+                  passingNow.current = false
+                  setPassing(false)
+                }
               }}
             />
           )}
@@ -539,6 +603,20 @@ export function BookScreen({
           onClose={() => setNaming(false)}
         />
       )}
+      {searching && (
+        // A hit opens its verse in the mini app last worked in, or else the book's first (`current`); with no mini app
+        // to open it in, the hits are only read.
+        <SearchSheet
+          language={searchLanguage}
+          readable={readableHere(searchLanguage)}
+          canOpen={(place) => Boolean(current) && canOpenVerse(place)}
+          onOpen={(place) => {
+            setSearching(false)
+            if (current) onOpenVerse(current, place)
+          }}
+          onClose={() => setSearching(false)}
+        />
+      )}
       {sharing && <ShareSheet project={project} books={[book.code]} person={person} onClose={() => setSharing(false)} />}
     </div>
   )
@@ -580,4 +658,12 @@ function BookNameSheet({
       </form>
     </Sheet>
   )
+}
+
+/**
+ * The books of a language whose texts are stored on this device, in either format. Not the example bundled in the app,
+ * nor a book still coming: the sheet names those of them search cannot look in as come «in a pack of before».
+ */
+function readableHere(language: string): string[] {
+  return helpsLanguagesHere().find((l) => l.code === language)?.books ?? []
 }

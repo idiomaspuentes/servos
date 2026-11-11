@@ -44,7 +44,14 @@ import {
   type Register,
 } from '@bt-synergy/language-pack'
 import { isOnline as realIsOnline, whenNotTyping as realWhenNotTyping } from '../../app/frame/online'
-import { keepHelpsChanges as realKeepHelpsChanges, watchHelps as realWatchHelps, type BookChanges, type Watched } from '../../app/projects/helpsWatch'
+import {
+  keepHelpsChanges as realKeepHelpsChanges,
+  keepHelpsChangesV3 as realKeepHelpsChangesV3,
+  watchHelps as realWatchHelps,
+  watchHelpsV3 as realWatchHelpsV3,
+  type BookChanges,
+  type Watched,
+} from '../../app/projects/helpsWatch'
 import { bookIsHere as realBookIsHere, refreshLibrary as realRefreshLibrary } from '../../app/projects/library'
 import type { Project } from '../../app/projects/model'
 import { RESOURCE_VERSIONS, openPartsStaging, openResourceStores, readPartsRegister, type ResourceStores } from '../store'
@@ -52,7 +59,10 @@ import { downloadParts, type Progress } from './downloads'
 import { indexedDbKeptStore, type KeptStore } from './keptLists'
 import { asOnlineApply } from './onlineLock'
 import { MAX_RETRY, RETRY, fetchList, fetchOriginals, fetchPart, type ClientOptions } from './packsClient'
-import { packsServer, setPacksServer, type PacksServerId } from './packsServer'
+import { packsFormat, packsServer, setPacksServer, type PacksServerId } from './packsServer'
+import type { LanguagePackClient } from '@bt-synergy/language-pack-client'
+import { forgetReadersV3, packsV3 as realPacksV3 } from '../v3/client'
+import { bookOfUnit, booksV3, installV3, lexWantV3, offerV3, planBooksV3, refreshV3, type OutcomeV3 } from '../v3/onlineV3'
 import {
   NO_STAMP,
   SHARED,
@@ -131,6 +141,12 @@ export type OnlineDeps = {
   keepHelpsChanges: (stores: ResourceStores, language: string, watched: readonly Watched[]) => Promise<BookChanges[]>
   applyParts: (input: ApplyInput) => Promise<ApplyResult>
   versions: PackVersions
+  /** The packs format: 3 exactly when the server is staging (`packsFormat`); then the runs go through `onlineV3.ts`. */
+  format: () => 2 | 3
+  /** The format 3 client (never asked for in format 2). */
+  packsV3: () => Promise<LanguagePackClient>
+  watchHelpsV3: (language: string, books: readonly string[]) => Promise<Watched[]>
+  keepHelpsChangesV3: (language: string, watched: readonly Watched[]) => Promise<BookChanges[]>
 }
 
 const KEYS = {
@@ -170,11 +186,17 @@ function defaults(): OnlineDeps {
     keepHelpsChanges: realKeepHelpsChanges,
     applyParts: realApplyParts,
     versions: RESOURCE_VERSIONS,
+    format: () => packsFormat(),
+    packsV3: () => realPacksV3(),
+    watchHelpsV3: realWatchHelpsV3,
+    keepHelpsChangesV3: (language, watched) => realKeepHelpsChangesV3(language, watched),
   }
 }
 
 let deps: OnlineDeps | null = null
 const d = (): OnlineDeps => (deps ??= defaults())
+/** Format 3: the format 2.0 lists, staging and stores are neither read nor written. */
+const isV3 = (): boolean => d().format() === 3
 
 // ---------------------------------------------------------------------------------------------------------------
 // What is kept on the device: lists (for 304s and planning offline; IndexedDB), waits, «Ahora no», the last check
@@ -312,6 +334,7 @@ let askedLanguage: string | null = null
  */
 let dropping: Promise<void> | null = null
 function dropUnusedLists(): void {
+  if (isV3()) return
   dropping ??= (async () => {
     try {
       await listsReady()
@@ -571,7 +594,8 @@ function wantedOfProjects() {
   const languages = new Set(languagesOf(projects))
   for (const [language, set] of wanted) {
     const units = new Set(unitsOf(projects, language))
-    for (const u of [...set]) if (!languages.has(language) || !units.has(u)) set.delete(u)
+    // A unit by its format 3 key (an offered update, `es-419/book:tit`) stays while a project reads its language.
+    for (const u of [...set]) if (!languages.has(language) || (!units.has(u) && !u.includes('/'))) set.delete(u)
     if (!set.size) wanted.delete(language)
   }
 }
@@ -620,7 +644,7 @@ function startRun(kind: Run['kind'], body: (ctx: Ctx) => Promise<void>, about: {
   const run: Run = { kind, ...about, ctrl, generation, promise: Promise.resolve() }
   run.promise = (async () => {
     try {
-      await listsReady()
+      if (!isV3()) await listsReady()
       await body(newCtx(kind, ctrl.signal))
     } catch (error) {
       // Never to the caller: what failed is tried again at the next check. But said: in the log always, and to the
@@ -1157,6 +1181,7 @@ async function stagedUnits(plan: PartsPlan): Promise<string[]> {
 }
 
 async function check(force: boolean, ctx: Ctx) {
+  if (isV3()) return checkV3(force, ctx)
   if (!d().isOnline()) return
   // The lists are asked for, and what they bring planned, at a pause in the typing (spec §4).
   if (!(await untilNotTyping(ctx.signal))) return
@@ -1191,6 +1216,7 @@ async function check(force: boolean, ctx: Ctx) {
 }
 
 async function download(language: string, ctx: Ctx) {
+  if (isV3()) return downloadV3(language, ctx)
   if (!d().isOnline()) return
   if ((await refreshList(language, ctx, true)) !== 'ok') return
   const originals = await resolveOriginals(ctx)
@@ -1211,6 +1237,189 @@ async function runDownload(language: string): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
+// Format 3 (`onlineV3.ts`): the same runs, waits, offers and words, over the format 3 client. Nothing of format 2.0
+// (lists, staging, the register) is read or written here.
+
+/** What a format 3 answer that did not go through says for a language, as format 2.0's answers say it. */
+function refusedV3(language: string, outcome: Exclude<OutcomeV3, { kind: 'listo' }>, ctx: Ctx) {
+  switch (outcome.kind) {
+    case 'parado':
+      return
+    case 'espera':
+      retryLater(language, outcome.retryAfter, 'noDisponible')
+      setBlocked(language, 'noDisponible')
+      break
+    case 'noDisponible':
+      unavailableFor(language)
+      break
+    case 'sinIdioma':
+    case 'noConfiable':
+    case 'sinEspacio':
+      setBlocked(language, outcome.kind)
+      break
+  }
+  ctx.stopped.add(language)
+}
+
+/** The language's catalogs asked again, unless a wait holds: true when they came (or had not changed). */
+async function refreshForV3(language: string, ctx: Ctx): Promise<boolean> {
+  if (waiting(language) || ctx.signal.aborted) return false
+  const outcome = await refreshV3(await d().packsV3(), language, ctx.signal)
+  if (ctx.signal.aborted) return false
+  if (outcome.kind !== 'listo') {
+    refusedV3(language, outcome, ctx)
+    return false
+  }
+  noWait(language)
+  setBlocked(language, null)
+  moved()
+  return true
+}
+
+/** A check: the catalogs asked again as format 2.0 asks for its lists, a cut download finished, the updates offered. */
+async function checkV3(force: boolean, ctx: Ctx) {
+  if (!d().isOnline()) return
+  if (!(await untilNotTyping(ctx.signal))) return
+  const languages = languagesOf(projects)
+  const due = force || !(d().now() - lastCheck() < RECHECK_MS)
+  for (const language of languages) {
+    if (ctx.signal.aborted) return
+    if (due || waitOver(language) || (wanted.has(language) && !waiting(language))) await refreshForV3(language, ctx)
+  }
+  if (ctx.signal.aborted) return
+  if (due && languages.length) {
+    mem().buscado = iso(d().now())
+    save('buscado')
+  }
+  for (const language of languages) {
+    if (ctx.signal.aborted) return
+    if (!wanted.has(language) || ctx.stopped.has(language) || waiting(language)) continue
+    await installWantedV3(language, ctx)
+  }
+  for (const language of languages) await updateOfferV3(language, ctx)
+}
+
+async function downloadV3(language: string, ctx: Ctx) {
+  if (!d().isOnline()) return
+  if (!(await refreshForV3(language, ctx))) return
+  await installWantedV3(language, ctx)
+  await updateOfferV3(language, ctx)
+}
+
+/**
+ * Installs what the person asked for in a language (`wanted`: books as `book tit`, offered updates by their format 3
+ * key), with the screen kept on: the books and what they need first, then the lexicon groups their originals use
+ * (`lexWantV3`). What the translated verses read is watched before, and compared after the library is read again. A
+ * stop keeps what was complete (the client activates it), so the library reads that too.
+ */
+async function installWantedV3(language: string, ctx: Ctx) {
+  const units = [...(wanted.get(language) ?? [])]
+  if (!units.length || ctx.signal.aborted) return
+  const keys = units.filter((u) => u.includes('/'))
+  const books = booksOfUnits(units)
+  if (!books.length && !keys.length) return served(language, units)
+  const client = await d().packsV3()
+  const planned = await planBooksV3(client, language, books, keys)
+  if (ctx.signal.aborted) return
+  // No catalog kept after one came: the store could not keep it.
+  if (planned === undefined) return unavailableFor(language)
+  // A book the language's packs do not have: nothing to bring.
+  if (planned === null) return served(language, units)
+  if (!(await roomFor(planned.bytes))) return setBlocked(language, 'sinEspacio')
+  if (ctx.signal.aborted) return
+  setBlocked(language, null)
+  const touched = [...new Set([...books, ...keys.flatMap((k) => bookOfUnit(k) ?? [])])]
+  const show = (progress: Progress) => {
+    if (!ctx.signal.aborted) set({ busy: { language, books: touched, progress } })
+  }
+  show({ done: 0, total: 0, bytesDone: 0, bytesTotal: planned.bytes })
+  const lock = await d()
+    .wakeLock()
+    .catch(() => null)
+  try {
+    // An apply as format 2.0's (`onlineLock.ts`): a file received meanwhile (`receiveFileV3`) waits for it to end, and
+    // it waits for a file being received, so neither counts the other's books as its own change.
+    const ran = await asOnlineApply(async () => {
+      const watched = touched.length ? await d().watchHelpsV3(language, touched).catch((): Watched[] => []) : []
+      const done = await installV3(client, language, planned.want, { signal: ctx.signal, planned: planned.bytes, onProgress: show })
+      let { outcome } = done
+      // Then the lexicon groups the books' originals use, now that they can be read; the bar goes on from the first step.
+      const lex = outcome.kind === 'listo' && !ctx.signal.aborted ? await lexWantV3(client, language, books).catch(() => null) : null
+      if (lex) {
+        const after = done.bytes
+        const more = await installV3(client, language, lex.want, {
+          signal: ctx.signal,
+          planned: lex.bytes,
+          onProgress: (p) => show({ ...p, bytesDone: after + p.bytesDone, bytesTotal: after + p.bytesTotal }),
+        })
+        outcome = more.outcome
+      }
+      if (outcome.kind === 'parado' || ctx.signal.aborted) return null
+      // Nothing new is active when the first step ended so: the library has nothing to read again.
+      const first = done.outcome.kind
+      const nothingNew = first === 'noConfiable' || first === 'sinEspacio' || first === 'sinIdioma'
+      if (!nothingNew) await afterInstallV3(language, watched, ctx)
+      return { outcome, done }
+    })
+    if (!ran) return
+    const { outcome, done } = ran
+    if (outcome.kind !== 'listo') return refusedV3(language, outcome, ctx)
+    // A unit left waiting (a segment the server did not have): tried again at the next check, up to three times.
+    const cut = units.filter((u) => done.waiting.some((k) => k === u || (u.startsWith('book ') && bookOfUnit(k) === u.slice('book '.length))))
+    if (cut.length) {
+      failedToApply(language, cut)
+      unavailableFor(language)
+    }
+    served(
+      language,
+      units.filter((u) => !cut.includes(u)),
+    )
+  } finally {
+    try {
+      void lock?.release().catch(() => {})
+    } catch {
+      /* already let go */
+    }
+  }
+}
+
+/** After an install: the library read anew once nobody types (as an apply waits), and what changed kept. */
+async function afterInstallV3(language: string, watched: readonly Watched[], ctx: Ctx) {
+  if (!(await untilNotTyping(ctx.signal))) return
+  forgetReadersV3()
+  await d()
+    .refreshLibrary()
+    .catch(() => {})
+  const changed = await d()
+    .keepHelpsChangesV3(language, watched)
+    .catch((): BookChanges[] => [])
+  const verses = changed.reduce((n, c) => n + c.changes.length, 0)
+  if (verses && !ctx.signal.aborted) set({ done: { language, changedVerses: verses } })
+}
+
+/** The updates of a language's installed units, offered unless it is being downloaded or was refused in this run. */
+async function updateOfferV3(language: string, ctx: Ctx) {
+  if (ctx.signal.aborted) return
+  let offer: { bytes: number; key: string; units: string[] } | null = null
+  if (!wanted.has(language) && !ctx.stopped.has(language)) offer = await offerV3(await d().packsV3(), language).catch(() => null)
+  if (ctx.signal.aborted) return
+  if (offer) offers.set(language, offer)
+  else offers.delete(language)
+  showOffer()
+}
+
+/** A book's size in format 3: what its install would fetch now. The catalogs are asked once per run when none is kept. */
+async function sizeV3(language: string, book: string, listed: Set<string>, ctx: Ctx): Promise<BookSize> {
+  const client = await d().packsV3()
+  let planned = await planBooksV3(client, language, [book])
+  if (planned === undefined && !listed.has(language)) {
+    listed.add(language)
+    if (d().isOnline() && (await refreshForV3(language, ctx))) planned = await planBooksV3(client, language, [book])
+  }
+  return planned === undefined ? undefined : planned === null ? null : planned.bytes
+}
+
+// ---------------------------------------------------------------------------------------------------------------
 // What the app calls.
 
 /** At startup, after the library is read: B's heal with each language's current plan, then a check if online. */
@@ -1222,7 +1431,7 @@ export async function startOnline(next: Project[]): Promise<void> {
   dropUnusedLists()
   while (current) await current.promise
   return startRun('check', async (ctx) => {
-    await heal(ctx)
+    if (!isV3()) await heal(ctx)
     await check(false, ctx)
   })
 }
@@ -1302,7 +1511,7 @@ async function answerSizes() {
 async function sizesRun(ctx: Ctx) {
   const listed = new Set<string>()
   let originals: PartsList | null | undefined
-  const sizeOf = async (language: string, book: string): Promise<BookSize> => {
+  const sizeOf = isV3() ? (language: string, book: string) => sizeV3(language, book, listed, ctx) : async (language: string, book: string): Promise<BookSize> => {
     if (!kept(language) && !listed.has(language)) {
       listed.add(language)
       if (d().isOnline() && (await refreshList(language, ctx, true)) === 'ok') originals = undefined
@@ -1382,6 +1591,10 @@ const answerOf = (why: Blocked | null | undefined): LanguageAnswer => (why && wh
 async function askList(language: string, ctx: Ctx): Promise<LanguageAnswer> {
   if (!d().isOnline()) return NOT_NOW
   if (waiting(language)) return answerOf(mem().reintentar[language]?.reason)
+  if (isV3()) {
+    if (await refreshForV3(language, ctx)) return { kind: 'listo', books: await booksV3(await d().packsV3(), language) }
+    return answerOf(state.blocked[language])
+  }
   const asked = await refreshList(language, ctx, true)
   if (asked === 'ok') {
     const k = kept(language)
@@ -1405,6 +1618,11 @@ export async function choosePacksServer(id: PacksServerId): Promise<void> {
   offers.clear()
   set({ blocked: {}, offer: null })
   moved()
+  // The server chooses the packs format (`packsFormat`): the library reads this device again in the new one, so it
+  // does not go on reading books of the other format until the app restarts.
+  await d()
+    .refreshLibrary()
+    .catch(() => {})
   for (;;) {
     const run = current
     if (!run) return startRun('check', (ctx) => check(true, ctx))

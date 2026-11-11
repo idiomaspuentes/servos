@@ -6,6 +6,9 @@
  * The prototype, shared as one page inside Claude, cannot download by itself: there the page asks the viewer to accept
  * the file (its `downloads` capability), and the extensions it may give are a fixed list, so a `.servos` file goes as
  * `.servos.json`, which «Receive» opens all the same.
+ *
+ * A file is text (a book shared, USFM) or bytes (a transfer file of texts and helps, `.tcpack`); bytes go the same
+ * ways, but inside Claude, whose downloads take text only.
  */
 
 import { onDesktop, saveOnDesktop } from './desktop'
@@ -22,7 +25,7 @@ const ALLOWED = /\.(json|txt|md|csv|html|zip)$/i
 const fallbackFor = (filename: string) => (/\.servos$/i.test(filename) ? '.json' : '.txt')
 
 /** `keepHere` names, in the app's language, the place on a phone's share sheet that keeps the file on the phone itself. */
-export async function saveFile(filename: string, text: string, type = 'application/json', keepHere = ''): Promise<Saved> {
+export async function saveFile(filename: string, text: string | Uint8Array, type = 'application/json', keepHere = ''): Promise<Saved> {
   if (onDesktop()) {
     try {
       const name = await saveOnDesktop(filename, text)
@@ -41,6 +44,7 @@ export async function saveFile(filename: string, text: string, type = 'applicati
   }
   const host = (window as unknown as { claude?: Host }).claude
   if (host?.use) {
+    if (typeof text !== 'string') return { state: 'failed', name: filename }
     const downloads = (await host.use('downloads').catch(() => null)) as Downloads | null
     if (downloads) {
       const name = ALLOWED.test(filename) ? filename : `${filename}${fallbackFor(filename)}`
@@ -56,7 +60,7 @@ export async function saveFile(filename: string, text: string, type = 'applicati
   }
   try {
     const link = document.createElement('a')
-    link.href = URL.createObjectURL(new Blob([text], { type }))
+    link.href = URL.createObjectURL(new Blob([text as BlobPart], { type }))
     link.download = filename
     link.click()
     URL.revokeObjectURL(link.href)

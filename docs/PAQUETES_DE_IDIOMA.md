@@ -237,6 +237,43 @@ hay internet. tc-study no tiene todavía ese constructor: su exportación de col
 - **Con paquetes reales**: `SERVOS_PAQUETES=<carpeta> npx vitest run src/resources/realPacks.test.ts` abre los
   originales, el base y Tito, y lee Tito 1 con sus notas, sin red.
 
+### 5.1 El formato 3, en las versiones de prueba (noviembre de 2026)
+
+**Hecho**, solo en versiones de prueba. Producción sigue igual: formato 2.0 por partes, como arriba.
+
+- **Cuándo.** El formato 3 se usa solo con el servidor de prueba (`packsFormat()`, `src/resources/online/packsServer.ts`):
+  `?packs=staging` en la web, o una app compilada con `VITE_SERVOS_PACKS=staging` (el APK y el instalador no tienen
+  barra de direcciones). Esa app lo dice en su versión («… · staging», `src/app/frame/version.ts`) y no se compila si no
+  encuentra las llaves públicas con que se firman los catálogos (`trustedKeysV3`, `vite.config.ts`). «Acerca de» deja
+  volver a «Principal».
+- **El cliente.** `@bt-synergy/language-pack-client` (bt-synergy, rama de la parte A), envuelto en
+  `src/resources/v3/client.ts`: catálogos firmados, unidades (`book:tit`, `map`, `art:…`, `lex:G5`…) y segmentos
+  guardados en IndexedDB (`servos-paquetes-v3`). Bajar y actualizar: `onlineV3.ts`, desde `onlineResources.ts`, con la
+  misma oferta en Inicio.
+- **Los paquetes de hoy.** Los paquetes dentro de la app y los que llegan por tarjeta se convierten con `importOldPack`
+  (`src/resources/v3/filesV3.ts`, `src/app/projects/packsInside.ts`): sus libros quedan en un catálogo local, con su
+  original, y se leen sin internet. El paquete de los originales se guarda y se usa cuando llega un libro.
+- **Pasar a otro aparato.** «Pasar textos y ayudas» (menú «Más» del libro) guarda un `.tcpack` con un libro bajado del
+  servidor; «Recibir textos y ayudas» lo abre (`exportBookV3`, `importTransferV3`).
+- **Leer.** `bookV3.ts`, `helpsV3.ts`, `companionsV3.ts` dan a las pantallas lo mismo que el formato de hoy.
+- **Entre libros.** «En toda la Biblia» en la tarjeta de una palabra y «Dónde aparece» en un artículo
+  (`src/resources/v3/lookups.ts`, `src/app/frame/EnTodaLaBiblia.tsx`, `DondeAparece.tsx`).
+- **Buscar.** «Buscar» en el menú «Más» del libro (`src/app/screens/SearchSheet.tsx`), con un índice en SQLite en
+  Android y Windows (`src/resources/v3/search/`) y en memoria en la web.
+- **Medir.** «Acerca de» → «Medir paquetes» (`src/app/screens/TimingsSheet.tsx`, `src/resources/v3/timings.ts`).
+
+**En su teléfono (Abel).**
+
+1. Pase al teléfono el APK de prueba (`servos-0.1.0-rc.3-c3-staging.apk`; su versión dice «staging») e instálelo. Si
+   ya tiene Servos, se instala encima y guarda el trabajo (va firmado con la misma llave).
+2. Ábralo con internet.
+3. Menú de la persona (arriba a la derecha) → «Acerca de Servos» → «Medir paquetes».
+4. Si dice «Bajar Salmos en inglés · 2,6 MB», púlselo y espere a que termine.
+5. Deje la pantalla encendida y Servos al frente; no cambie de aplicación. Pulse «Medir» y espere a que termine (unos
+   minutos; 20 vueltas).
+6. Si la tabla dice que la medida no vale, repita el paso 5. Si no, pulse «Copiar» (o seleccione el texto de abajo y
+   cópielo) y péguelo en el chat.
+
 ## 6. Cómo lo usa tc-study
 
 tc-study y Servos comparten el código que **hace** los paquetes y el que guarda y lee las filas: son las mismas claves
@@ -364,6 +401,7 @@ compartir ese código, le falta:
 | Servos: qué cambió en lo traducido | Hecho | `src/app/projects/helpsChanges.ts` |
 | Servos: bajar partes de internet y aplicarlas | Hecho | `src/resources/online/` (PR #10) |
 | Servos: pasar recursos a otro aparato | Propuesto | `buildLanguagePack` existe |
+| Servos: formato 3 con el servidor de prueba (cliente, paquetes de hoy, `.tcpack`, entre libros, buscar) | Hecho en versiones de prueba | sección 5.1, `src/resources/v3/` |
 | tc-study: abrir paquetes | Propuesto | README de `language-pack` |
 | MCP: notas y enlaces desde vistas | Hecho | `translation-helps-mcp/src/api/routes/packViews.ts` |
 | MCP: repartir paquetes y partes por `/v2/packs` | Hecho; construcciones en partes desde producción: PR #87 abierto | `src/api/routes/packs.ts` |

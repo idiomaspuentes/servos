@@ -112,6 +112,8 @@ declare module '@bt-synergy/language-pack' {
     skippedLayers: PackLayer[]
     skippedResources: Array<{ key: string; why: string }>
     originals: Array<PackRequirement & { status: 'present' | 'in-pack' | 'missing' | 'other-release' }>
+    /** Quote and align rows left out, by resource and layer: made against another release (or blob) of an original than the device's. */
+    droppedRows: Record<string, Partial<Record<PackLayer, number>>>
   }
   export type CacheRow = { key: string; entry: unknown }
   export type PackSource = {
@@ -416,4 +418,377 @@ declare module '@bt-synergy/resource-pipeline/helps/helpsQuoteCache' {
 
 declare module '@bt-synergy/resource-pipeline/helps/helpsCacheKeys' {
   export const HELPS_TEXT_VERSION: number
+}
+
+/**
+ * Language packs format 3: the model types of `packages/language-pack-v3` (its `src/model.ts`) that Servos reads, and the
+ * few functions it calls, kept to the library's signatures.
+ */
+declare module '@bt-synergy/language-pack-v3' {
+  /** At `position` (pieces before it) a chapter or verse starts (`arg`: its number as published, `"1-2"`), a node opens (`"type:marker"`) or the last one closes (`""`). */
+  export type Event = [position: number, kind: 'chapter' | 'verse' | 'open' | 'close', arg: string]
+  /** A piece of a text: a word (`isWord`) or what lies between words. */
+  export type Piece = [text: string, isWord: boolean]
+  export type OrigWord = { form: string; lemma: string; strong: string; morph: string; other?: Record<string, string> }
+  /** One book of the original: a word's position is its index in `words`, footnotes included. */
+  export type OrigModel = {
+    book: string
+    key: string
+    stamp: string
+    words: OrigWord[]
+    pieces: Piece[]
+    events: Event[]
+    attrs?: Record<number, Record<string, string>>
+    macula?: { release: string; trees?: unknown; referents?: unknown }
+  }
+  /** A bridge text of a book; `align` has one list per word piece: the original positions it translates. */
+  export type TextModel = {
+    res: string
+    pieces: Piece[]
+    events: Event[]
+    attrs?: Record<number, Record<string, string>>
+    align?: number[][]
+    alignMissing?: [word: number, verse: number, original: string, occurrence: number][]
+  }
+  /** A note, question or word link. `from`/`to` are verse ids; `quote` the original positions of its quote (`-1`: none). */
+  export type HelpRow = {
+    id: string
+    ref: string
+    from: number
+    to: number
+    concept?: string
+    cols: Record<string, string | boolean>
+    quote?: number[]
+    quoteKinds?: [piece: number, kind: string][]
+    quoteMissing?: [piece: number, verse: number, word: string, occurrence: number][]
+  }
+  export type HelpTable = { res: string; rows: HelpRow[] }
+  export type BookModel = {
+    lang: string
+    book: string
+    orig: [string, string]
+    res: [string, string][]
+    texts: TextModel[]
+    notes?: HelpTable
+    questions?: HelpTable
+    links?: HelpTable
+  }
+  export type Role =
+    | 'intro'
+    | 'definition'
+    | 'facts'
+    | 'translation-suggestions'
+    | 'examples'
+    | 'strategies'
+    | 'description'
+    | 'reason'
+    | 'bible-references'
+    | 'word-data'
+    | 'unknown'
+  export type SectionModel = { sid: string; level: number; role: Role; title?: string; lang: string; md: string; aliases?: string[] }
+  export type ArticleModel = {
+    id: string
+    res: string
+    title: string
+    subtitle?: string
+    related?: string[]
+    aliases?: string[]
+    sections: SectionModel[]
+  }
+  /** `refs` are verse-id ranges `[from, to]` in our numbering. */
+  export type LexSense = {
+    code?: string
+    definition?: string
+    glosses?: string[]
+    domain?: string
+    domainCode?: string
+    comments?: string
+    etymology?: string
+    lang?: string
+    definitionLang?: string
+    refs?: [number, number][]
+  }
+  export type LexEntry = {
+    res: string
+    strong: string
+    lemma: string
+    brief?: string
+    long?: string
+    pos?: string[]
+    senses: LexSense[]
+    notes?: string[]
+    aramaic?: boolean
+    source?: string
+    review?: string
+  }
+  /** A checked segment: its header and its tables (read with a view). */
+  export type Segment = { h: { class: string; [field: string]: unknown }; t: Record<string, unknown>; ulen?: number }
+  export function lexView(seg: Segment): { group: string; entries: LexEntry[] }
+  /** The 66 books; a book's number is its index plus 1. */
+  export const BOOKS: readonly string[]
+  /** `LLCCCVVV`: `verseId('tit', 2, 11)` is 56002011. */
+  export function verseId(book: string, chapter: number, verse: number): number
+  /** A source of format 2.0 rows (a pack read as rows). */
+  export type RowSource = { resources(lang: string): Promise<unknown[]> }
+  export function zipSource(zip: Uint8Array, originals?: RowSource): Promise<RowSource & { language: string }>
+}
+
+/**
+ * Language packs format 3: the surface of `packages/language-pack-client` (its `src/index.ts`) that Servos calls, kept
+ * to the library's signatures. Data types Servos does not read yet are left loose (`unknown`).
+ */
+declare module '@bt-synergy/language-pack-client' {
+  export const CLIENT_ERROR_CODES: readonly [
+    'E_DOWNGRADE',
+    'E_COMMON',
+    'E_NO_BASE',
+    'E_NO_PACK',
+    'E_NETWORK',
+    'E_STORE',
+    'E_NOT_INSTALLED',
+    'E_ARG',
+  ]
+  export type ClientErrorCode = (typeof CLIENT_ERROR_CODES)[number]
+  export class ClientError extends Error {
+    code: ClientErrorCode
+    status?: number
+    /** Seconds, for a 429. */
+    retryAfter?: number
+  }
+
+  /** Keeps segments by id (64 lowercase hex) and one installed-state record. */
+  export interface BlobStore {
+    has(id: string): Promise<boolean>
+    get(id: string): Promise<Uint8Array | undefined>
+    put(id: string, bytes: Uint8Array): Promise<void>
+    delete(id: string): Promise<void>
+    ids(): Promise<string[]>
+    getState(): Promise<unknown>
+    setState(state: never): Promise<void>
+  }
+  export function memoryStore(): BlobStore
+  export function indexedDbStore(o?: { name?: string; indexedDB?: IDBFactory }): Promise<BlobStore>
+
+  export interface PackSource {
+    catalog(
+      name: string,
+      o?: { etag?: string; signal?: AbortSignal },
+    ): Promise<{ bytes: Uint8Array; etag?: string } | 'not-modified'>
+    segment(id: string, signal?: AbortSignal): Promise<Uint8Array>
+  }
+  export function httpSource(o: { base: string; fetch?: typeof fetch }): PackSource
+
+  /** Ed25519 public keys (32 raw bytes) by key id. Given, even empty, it demands signatures. */
+  export type TrustPolicy = { trustedKeys?: Record<string, Uint8Array> }
+
+  export type InstalledCatalog = {
+    name: string
+    publisher: string
+    revision: number
+    id: string
+    origin: 'published' | 'local'
+    etag?: string
+  }
+  /** A resource a catalog lists (`catalog.cddl`, `resource`); `books` is the book set. */
+  export type CatalogResource = {
+    key: string
+    title: string
+    subject: string
+    release: string
+    license: string
+    rights?: string
+    attribution?: string
+    books: Uint8Array
+  }
+  /** A catalog file read and checked; only the tables Servos reads are typed. */
+  export type VerifiedCatalog = {
+    id: string
+    name: string
+    publisher: string
+    revision: number
+    origin: 'published' | 'local'
+    catalog: {
+      resources: CatalogResource[]
+      requires?: [catalog: string, revision: number, id: Uint8Array][]
+      units: { id: string; needs?: string[]; segments: number[]; optional?: boolean }[]
+    }
+  }
+  export function verifyCatalogFile(
+    bytes: Uint8Array,
+    policy: TrustPolicy,
+    o: { from: 'network' | 'transfer' | 'store' | 'bridge'; expectedId?: string },
+  ): Promise<VerifiedCatalog>
+  export type InstalledState = {
+    v: 1
+    published: Record<string, InstalledCatalog>
+    active: Record<string, InstalledCatalog>
+    units: Record<string, unknown>
+    aliases?: Record<string, string>
+  }
+  export type Want = { books?: string[]; units?: string[]; aligned?: true | string[]; defaults?: boolean }
+  /** `bytes`: what this install has stored so far (a running total). */
+  export type Progress = { done: number; total: number; bytes: number; key: string }
+  /** The units a want names, with what they need, in order; `bytes` of the segments not in `have`. */
+  export function planInstall(
+    catalogs: VerifiedCatalog[],
+    state: InstalledState,
+    want: Want,
+    have: ReadonlySet<string>,
+  ): { steps: { key: string; complete: boolean }[]; bytes: number; unknown: string[] }
+  export type InstallReport = {
+    activated: string[]
+    waiting: { key: string; missing: string[] }[]
+    fetched: string[]
+    bytes: number
+    unknown: string[]
+  }
+  /** An installed unit whose segments changed in a newer catalog: `bytes` of the segments it does not have yet. */
+  export type Update = { key: string; from: number; to: number; bytes: number }
+  export type RefreshReport = {
+    catalogs: InstalledCatalog[]
+    updates: Update[]
+    unchanged: boolean
+    missingCommon?: { name: string; revision: number; id: string }
+  }
+  export type Status = {
+    lang: string
+    published?: InstalledCatalog
+    active?: InstalledCatalog
+    /** `local`: installed from an old pack on this device (`importOldPack`), not from the published catalog. */
+    units: { key: string; revision: number; installed: boolean; optional: boolean; bytes: number; local: boolean }[]
+    updates: Update[]
+    missingCommon?: RefreshReport['missingCommon']
+  }
+  export type ImportReport = {
+    catalogs: InstalledCatalog[]
+    stored: string[]
+    rejected: { id: string; code: string }[]
+    skipped?: true
+    missing: string[]
+    activated: string[]
+    waiting: { key: string; missing: string[] }[]
+  }
+
+  export interface LanguagePackClient {
+    open(lang: string): Promise<PackReader>
+    /** A format 1.1 pack bridged on the device into format 3 (a local catalog); `originals` are the rows of the originals. */
+    importOldPack(
+      zip: Uint8Array,
+      o?: { originals?: import('@bt-synergy/language-pack-v3').RowSource; device?: string; now?: string; confirmDowngrade?: boolean },
+    ): Promise<ImportReport>
+    refresh(lang: string, o?: { confirmDowngrade?: boolean; signal?: AbortSignal }): Promise<RefreshReport>
+    install(
+      lang: string,
+      want?: Want,
+      o?: { signal?: AbortSignal; onProgress?: (p: Progress) => void; concurrency?: number },
+    ): Promise<InstallReport>
+    status(lang: string): Promise<Status>
+    prune(): Promise<{ removed: string[] }>
+    verify(): Promise<{ bad: string[] }>
+    importTransfer(bytes: Uint8Array, o?: { confirmDowngrade?: boolean }): Promise<ImportReport>
+    exportTransfer(o: {
+      lang: string
+      mode: 'full' | 'update'
+      books?: string[]
+      units?: string[]
+      base?: Uint8Array[]
+    }): Promise<Uint8Array>
+    indexProblems(): { segment?: string; message: string }[]
+  }
+  export function createClient(o: {
+    store: BlobStore
+    source?: PackSource
+    trust: TrustPolicy
+    index?: SearchIndex
+  }): LanguagePackClient
+
+  export type SearchKind = 'text' | 'note' | 'question' | 'link'
+  export type SearchFilters = { books?: string[]; kinds?: SearchKind[]; limit?: number }
+  /** `ref` as the resource has it (`1:4`); `snippet` with the matched words between « and »; a higher `score` is better. */
+  export type Hit = { kind: string; book: string; ref: string; res: string; id?: string; snippet: string; score: number }
+  export interface SearchIndex {
+    init(): Promise<void>
+    addBook(lang: string, book: import('@bt-synergy/language-pack-v3').BookModel, segmentId: string): Promise<void>
+    removeSegment(segmentId: string): Promise<void>
+    has(segmentId: string): Promise<boolean>
+    search(lang: string, text: string, f?: SearchFilters): Promise<Hit[]>
+  }
+  /** What `sqlIndex` needs of a SQLite binding: `exec` may hold several statements; `?` params; a transaction. */
+  export interface SqlDriver {
+    exec(sql: string): Promise<void>
+    run(sql: string, params: unknown[]): Promise<void>
+    all<T>(sql: string, params: unknown[]): Promise<T[]>
+    transaction<T>(fn: () => Promise<T>): Promise<T>
+  }
+  export function sqlIndex(driver: SqlDriver): SearchIndex
+
+  export type QueryName =
+    | 'passage'
+    | 'concept'
+    | 'article'
+    | 'renderings'
+    | 'search'
+    | 'topics'
+    | 'books'
+    | 'context'
+  export type Cite = { res: string; release: string; id?: string; ref?: string; section?: string }
+  export type NotInstalled = { book?: string; unit: string; bytes: number; what?: string }
+  /** `none` means the source does not cover the book; it is not zero. */
+  export type CellState = 'count' | 'zero' | 'none' | 'partial'
+  export type Answer<T> = {
+    query: QueryName
+    /** null when the unit that answers is not installed. */
+    data: T | null
+    cites: Cite[]
+    revision: { lang?: number; common?: number; units: Record<string, number> }
+    coverage?: Record<string, CellState>
+    notInstalled: NotInstalled[]
+  }
+  export type PassageData = {
+    book: string
+    ref: string
+    texts: { res: string; text: string }[]
+    notes: unknown[]
+    questions: unknown[]
+    links: unknown[]
+  }
+
+  /** How the installed texts render the words of one Strong (`strong` is the key the table resolved). */
+  export type RenderingsData = { strong: string; renderings: { text: string; count: number; refs: string[] }[] }
+  /** One book of a `books` answer; `bytes` when it is not installed and a catalog lists it. */
+  export type BookCell = { state: CellState; count?: number; verses?: number; installed: boolean; bytes?: number }
+  /** `installed: false` (and no cells) when the map that answers is not on the device. */
+  export type BooksData = { installed?: false; books: Record<string, BookCell> }
+
+  export type ArticleData = {
+    id: string
+    title: string
+    sections: (import('@bt-synergy/language-pack-v3').SectionModel & { otherLang: boolean })[]
+    more: { sid: string; title?: string; role: import('@bt-synergy/language-pack-v3').Role }[]
+  }
+
+  export interface PackReader {
+    lang: string
+    /** Segments that were stored but do not read as the segment their id says. */
+    problems: { id: string; code: string }[]
+    revisions(): { lang?: number; common?: number }
+    installed(unit: string): boolean
+    listed(unit: string): boolean
+    size(unit: string): number
+    unitOf(cls: 'book' | 'art' | 'orig', key: string): string | undefined
+    unitRevision(unit: string): number | undefined
+    book(book: string): Promise<import('@bt-synergy/language-pack-v3').BookModel | undefined>
+    orig(book: string): Promise<import('@bt-synergy/language-pack-v3').OrigModel | undefined>
+    articles(group: string): Promise<import('@bt-synergy/language-pack-v3').ArticleModel[] | undefined>
+    /** The checked segments of an installed unit (`lex:G5`), or `undefined` when it is not installed. */
+    segments(unit: string): Promise<import('@bt-synergy/language-pack-v3').Segment[] | undefined>
+    passage(ref: string): Promise<Answer<PassageData>>
+    article(id: string, section?: string | 'all'): Promise<Answer<ArticleData>>
+    context(ref: string): Promise<Answer<unknown>>
+    concept(id: string): Promise<Answer<unknown>>
+    topics(q?: { category?: string; book?: string }): Promise<Answer<unknown>>
+    books(q: { article: string } | { concept: string }): Promise<Answer<BooksData>>
+    renderings(q: { strong: string } | { book: string; word: number }): Promise<Answer<RenderingsData>>
+    search(text: string, filters?: SearchFilters): Promise<Answer<Hit[]>>
+  }
 }

@@ -210,3 +210,26 @@ export function availability(index: DeviceIndex, language: string, book: string)
     extras: { lexicon: Boolean(lexicon), macula: Boolean(macula) },
   }
 }
+
+/**
+ * A book installed in format 3, merged with what the rows say of it: it can be opened, and its parts are those its
+ * format 3 book has (`has`, from the catalog). A part it lacks is «not on this device» when the rows say its language
+ * published it, else «not yet in the language». `sources` are known once the book was read (null before);
+ * `rows` is null when the rows could not be read.
+ */
+export function withFormat3(rows: Availability | null, has: Record<SourcePart, boolean>, sources: BookSources | null, extras: { lexicon: boolean }): Availability {
+  const parts: SourcePart[] = ['literal', 'simple', 'notes', 'questions', 'wordLinks']
+  const notOnDevice = (rows?.notOnDevice ?? []).filter((p) => !has[p])
+  return {
+    here: true,
+    has,
+    notOnDevice,
+    notInLanguage: parts.filter((p) => !has[p] && !notOnDevice.includes(p)),
+    needsOriginal: false,
+    stale: false,
+    interrupted: false,
+    sources,
+    // MACULA travels inside the original's book in format 3: whether it has it is known once the book is read.
+    extras: { lexicon: extras.lexicon || Boolean(rows?.extras.lexicon), macula: Boolean(rows?.extras.macula) },
+  }
+}

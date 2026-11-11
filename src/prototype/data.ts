@@ -115,6 +115,16 @@ export function forgetBooks() {
   DEVICE.clear()
 }
 
+/** Whether a book's chapters were read from this device in a language (not the example's). */
+export const bookOnDevice = (language: string, book: string): boolean => DEVICE.has(`${language}:${book}`)
+
+/** The books read from this device now, as they are: to tell, once they were read anew, which were not. */
+export const booksReadNow = (): ReadonlyMap<string, unknown> => new Map(DEVICE)
+
+/** Forgets the books still as they were in `before`: what was not read anew is no longer on this device. */
+export function forgetBooksNotReadAgain(before: ReadonlyMap<string, unknown>) {
+  for (const [key, chapters] of before) if (DEVICE.get(key) === chapters) DEVICE.delete(key)
+}
 /** Keeps lexicon entries read from this device, by Strong number (`hebrew:7121`). */
 export function keepLexicon(language: string, entries: Record<string, LexiconFile>) {
   for (const [key, file] of Object.entries(entries)) DEVICE_LEXICON.set(`${language}:${key}`, file)

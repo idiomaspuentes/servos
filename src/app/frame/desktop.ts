@@ -26,9 +26,13 @@ export function receiveOpenedFiles() {
   })().catch(() => {})
 }
 
-/** Saves a file in the system's save dialog, under the name given; the name it got, or null when the dialog was closed. */
-export async function saveOnDesktop(name: string, text: string): Promise<string | null> {
+/**
+ * Saves a file in the system's save dialog, under the name given; the name it got, or null when the dialog was closed.
+ * Bytes go as a list of numbers (`bytes`), which the program writes as they are.
+ */
+export async function saveOnDesktop(name: string, text: string | Uint8Array): Promise<string | null> {
   const { invoke } = await import('@tauri-apps/api/core')
+  if (typeof text !== 'string') return invoke<string | null>('save_file', { name, text: '', bytes: Array.from(text) })
   return invoke<string | null>('save_file', { name, text })
 }
 

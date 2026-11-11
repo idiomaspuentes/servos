@@ -1,32 +1,43 @@
 /**
  * Receive a pack: choose the file, see what it brings, open it into this device's stores (`src/resources`); then the
  * projects' books are read from it again (projects/library.ts), and the screens show them.
+ *
+ * In format 3 (`packsFormat() === 3`) the file goes to the format 3 store (`filesV3.ts`): a `.langpack.zip` through
+ * `importOldPack`, shown first as today; a transfer file (`.tcpack`), which the library cannot describe before it is
+ * imported, shown by its name and size, and what it added said after.
  */
 
 import { Fragment, useState } from 'react'
 import { LEXICON_SUBJECTS } from '../../resources/companions'
 import { bringsAnything, packAgainstDevice, type PackAgainstDevice, type PackResourceStanding } from '../../resources/freshness'
+import { packsFormat } from '../../resources/online/packsServer'
 import { describePack, openingLeft, type PackSummary } from '../../resources/packs'
 import { openResourceStores } from '../../resources/store'
+import { hasOriginals, type FileOutcome } from '../../resources/v3/filesV3'
 import { RowButton } from '../frame/Actions'
 import { useChangeSummary } from '../miniapps/editor/HelpsChanged'
 import type { BookChanges } from '../projects/helpsWatch'
 import { availabilityOf, copiesOnDevice, loadBook, onDevice } from '../projects/library'
-import { openPackSeeingChanges } from '../projects/receiveHelps'
+import { openPackSeeingChanges, receiveFileV3 } from '../projects/receiveHelps'
 import { bookName, loadProjects } from '../projects/model'
-import { useT } from '../i18n/i18n'
+import { sizeIn } from '../projects/onlineWords'
+import { useI18n } from '../i18n/i18n'
 
 type Step =
   | { kind: 'choose' }
   /** What it brings, each resource against this device's copy (`freshness.ts`). */
-  | { kind: 'summary'; bytes: Uint8Array; summary: PackSummary; file: string; against: PackAgainstDevice }
-  /** Being opened: rows gone through of all, for a phone that takes a minute or two. */
-  | { kind: 'opening'; summary: PackSummary; done: number; total: number }
+  | { kind: 'summary'; bytes: Uint8Array; summary: PackSummary; file: string; against: PackAgainstDevice; originals?: boolean }
+  /** Format 3: a transfer file, by its name and size (nothing reads what it brings before it is imported). */
+  | { kind: 'transfer'; bytes: Uint8Array; file: string }
+  /** Being opened: rows gone through of all, for a phone that takes a minute or two (format 3 says no progress). */
+  | { kind: 'opening'; done: number; total: number }
   /**
    * Opened: the books it brought that can now be read, and those that wait for the originals; and the verses already
    * translated whose helps it changed (helpsChanges.ts).
    */
   | { kind: 'done'; summary: PackSummary; readable: string[]; waiting: string[]; changed: BookChanges[] }
+  /** Format 3: imported, said in a sentence, with the verses already translated whose helps it changed. */
+  | { kind: 'doneV3'; text: string; changed: BookChanges[] }
   | { kind: 'error'; message: string }
 
 /** How many changed verses the last step lists: the rest are marked in the editor all the same. */
@@ -42,8 +53,10 @@ export function ReceivePack({
   /** Opens a verse of a project's book in the editor. */
   onOpenVerse(projectId: string, book: string, chapter: number, verse: number): void
 }) {
-  const t = useT()
+  const { t, language: lang } = useI18n()
   const [step, setStep] = useState<Step>({ kind: 'choose' })
+  // The packs server chooses the format: staging is format 3 (`packsServer.ts`).
+  const [v3] = useState(() => packsFormat() === 3)
   // A pack whose opening did not end the last time (the app closed, the phone went off).
   const [left] = useState(openingLeft)
 
@@ -62,6 +75,47 @@ export function ReceivePack({
         : s.waiting.length
           ? t('paquete.listoFaltanOriginales', { libros: names(s.waiting) })
           : t('paquete.listoAyudas')
+
+  /** What a format 3 import came to: the sentence, and whether it is a refusal (said as an error). */
+  const outcomeText = (o: FileOutcome): { text: string; refused: boolean } => {
+    switch (o.state) {
+      case 'added':
+        return {
+          text: o.books.length ? t('paquete.listo', { libros: names(o.books) }) : o.articles ? t('paquete.listoAyudas') : t('paquete.nadaNuevo'),
+          refused: false,
+        }
+      case 'originales':
+        return { text: t('paquete.listoOriginales'), refused: false }
+      // Nothing new, nothing wrong: the texts are here.
+      case 'yaEstan':
+        return { text: t('paquetes3.yaEstan'), refused: false }
+      default:
+        return { text: t(`paquetes3.${o.state}`), refused: true }
+    }
+  }
+
+  /** The screen stays on while a file opens: a phone that sleeps can stop it halfway. */
+  const keepAwake = () =>
+    (navigator as { wakeLock?: { request(type: 'screen'): Promise<{ release(): Promise<void> }> } }).wakeLock?.request('screen').catch(() => null) ??
+    Promise.resolve(null)
+
+  /** Format 3: imports the file, then says what it added and what changed in the verses already translated. */
+  const openV3 = async (bytes: Uint8Array, file: Parameters<typeof receiveFileV3>[1]) => {
+    setStep({ kind: 'opening', done: 0, total: 0 })
+    const lock = await keepAwake()
+    try {
+      const { outcome, changed } = await receiveFileV3(bytes, file)
+      const said = outcomeText(outcome)
+      if (said.refused) return setStep({ kind: 'error', message: said.text })
+      // The books with changed verses are read first, so the editor opens at once on one of them.
+      if (outcome.state === 'added') for (const c of changed) await loadBook(c.book, outcome.language)
+      setStep({ kind: 'doneV3', text: said.text, changed })
+    } catch (error) {
+      setStep({ kind: 'error', message: error instanceof Error ? error.message : String(error) })
+    } finally {
+      void lock?.release().catch(() => {})
+    }
+  }
 
   const standingText = (a: PackResourceStanding) => {
     if (a.stale) return t('paquete.estado.reemplaza')
@@ -98,20 +152,23 @@ export function ReceivePack({
                 {t('paquete.interrumpido', { archivo: left.files.join(', ') || t('paquete.unPaquete') })}
               </p>
             )}
-            <p>{t('paquete.elegirAyuda')}</p>
+            <p>{t(v3 ? 'paquetes3.elegirAyuda' : 'paquete.elegirAyuda')}</p>
             <label className="button-primary file-button">
               {t('paquete.elegir')}
               <input
                 type="file"
-                accept=".zip,application/zip"
+                accept={v3 ? '.zip,.tcpack,application/zip,application/octet-stream' : '.zip,application/zip'}
                 onChange={async (e) => {
                   const file = e.target.files?.[0]
                   if (!file) return
                   try {
                     const bytes = new Uint8Array(await file.arrayBuffer())
+                    if (v3 && /\.tcpack$/i.test(file.name)) return setStep({ kind: 'transfer', bytes, file: file.name })
                     const summary = await describePack(bytes)
                     const against = packAgainstDevice({ resources: summary.resources, books: summary.kind === 'book' ? summary.books : undefined }, copiesOnDevice())
-                    setStep({ kind: 'summary', bytes, summary, file: file.name, against })
+                    // Format 3 builds a pack's books with the originals here; whether there are any is said before.
+                    const originals = v3 ? await hasOriginals() : undefined
+                    setStep({ kind: 'summary', bytes, summary, file: file.name, against, originals })
                   } catch (error) {
                     setStep({ kind: 'error', message: error instanceof Error ? error.message : String(error) })
                   }
@@ -138,7 +195,7 @@ export function ReceivePack({
                   <li key={r.key}>
                     <span className="pack-resource">
                       <strong>{titleOf(r)}</strong>
-                      {standing && !step.summary.otherVersion && (
+                      {standing && !step.summary.otherVersion && !v3 && (
                         <span className={`badge${replaced(step.against, standing) || standing.standing === 'new' || standing.adds.length ? '' : ' badge-quiet'}`}>
                           {standingText(standing)}
                         </span>
@@ -150,7 +207,32 @@ export function ReceivePack({
               })}
             </ul>
             <p>{t('paquete.libros', { libros: books(step.summary) })}</p>
-            {!step.summary.otherVersion &&
+            {v3 && !step.summary.otherVersion && (
+              <>
+                {/* Its books cannot be built without the originals: the one thing to do is choose their pack first. */}
+                {step.summary.kind !== 'originals' && step.summary.needs.length > 0 && !step.originals ? (
+                  <>
+                    <p className="notice">{t('paquete.necesitaOriginales')}</p>
+                    <button type="button" className="button-secondary" onClick={() => setStep({ kind: 'choose' })}>
+                      {t('paquete.elegir')}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className="button-primary"
+                    onClick={() => {
+                      const { bytes, summary } = step
+                      void openV3(bytes, { kind: 'oldPack', language: summary.language, books: summary.kind === 'originals' ? [] : booksOf(summary) })
+                    }}
+                  >
+                    {t('paquete.abrir')}
+                  </button>
+                )}
+              </>
+            )}
+            {!v3 &&
+              !step.summary.otherVersion &&
               step.against.resources
                 .filter((a) => a.lacking.length)
                 .map((a) => {
@@ -162,22 +244,19 @@ export function ReceivePack({
                     </p>
                   )
                 })}
-            {!step.summary.otherVersion && !bringsAnything(step.against) && <p role="status">{t('paquete.nadaNuevo')}</p>}
-            {!step.summary.otherVersion && step.summary.needs.some((n) => !onDevice(n.key)) && (
+            {!v3 && !step.summary.otherVersion && !bringsAnything(step.against) && <p role="status">{t('paquete.nadaNuevo')}</p>}
+            {!v3 && !step.summary.otherVersion && step.summary.needs.some((n) => !onDevice(n.key)) && (
               <p className="notice">{t('paquete.necesitaOriginales')}</p>
             )}
-            {!step.summary.otherVersion && step.against.replace.length > 0 && <p className="quiet">{t('paquete.trabajoNoCambia')}</p>}
-            {!step.summary.otherVersion && (bringsAnything(step.against) || step.against.resources.some((a) => a.standing === 'same')) && (
+            {!v3 && !step.summary.otherVersion && step.against.replace.length > 0 && <p className="quiet">{t('paquete.trabajoNoCambia')}</p>}
+            {!v3 && !step.summary.otherVersion && (bringsAnything(step.against) || step.against.resources.some((a) => a.standing === 'same')) && (
               <button
                 type="button"
                 className={bringsAnything(step.against) ? 'button-primary' : 'button-secondary'}
                 onClick={async () => {
                   const { bytes, summary, file } = step
-                  setStep({ kind: 'opening', summary, done: 0, total: 0 })
-                  // The screen stays on while it opens: a phone that sleeps can stop it halfway.
-                  const lock = await (navigator as { wakeLock?: { request(type: 'screen'): Promise<{ release(): Promise<void> }> } }).wakeLock
-                    ?.request('screen')
-                    .catch(() => null)
+                  setStep({ kind: 'opening', done: 0, total: 0 })
+                  const lock = await keepAwake()
                   try {
                     const stores = openResourceStores()
                     // What the verses already translated read in the resources it replaces, read before their rows
@@ -192,7 +271,7 @@ export function ReceivePack({
                         packAgainstDevice({ resources: summary.resources, books: summary.kind === 'book' ? summary.books : undefined }, copiesOnDevice())
                           .replace,
                       file,
-                      onProgress: (done, total) => setStep({ kind: 'opening', summary, done, total }),
+                      onProgress: (done, total) => setStep({ kind: 'opening', done, total }),
                     })
                     // The books with changed verses are read first, so the editor opens at once on one of them.
                     for (const c of changed) await loadBook(c.book, summary.language)
@@ -217,6 +296,20 @@ export function ReceivePack({
           </>
         )}
 
+        {step.kind === 'transfer' && (
+          <>
+            <h1>{t('paquetes3.transferencia')}</h1>
+            <p>
+              <strong>{step.file}</strong>
+              <span className="quiet"> · {sizeIn(t, step.bytes.length, lang)}</span>
+            </p>
+            <p className="quiet">{t('paquetes3.transferenciaAyuda')}</p>
+            <button type="button" className="button-primary" onClick={() => void openV3(step.bytes, { kind: 'transfer' })}>
+              {t('paquete.abrir')}
+            </button>
+          </>
+        )}
+
         {step.kind === 'opening' && (
           <section className="pack-opening">
             <p role="status">
@@ -229,7 +322,8 @@ export function ReceivePack({
           </section>
         )}
 
-        {step.kind === 'done' && <Done step={step} text={doneText(step)} onStudy={onStudy} onOpenVerse={onOpenVerse} />}
+        {step.kind === 'done' && <Done changed={step.changed} text={doneText(step)} onStudy={onStudy} onOpenVerse={onOpenVerse} />}
+        {step.kind === 'doneV3' && <Done changed={step.changed} text={step.text} onStudy={onStudy} onOpenVerse={onOpenVerse} />}
 
         {step.kind === 'error' && (
           <>
@@ -255,22 +349,22 @@ const replaced = (against: PackAgainstDevice, a: PackResourceStanding) => agains
  * verses, one row each; the filled button opens the first in the editor. Leaving is the header's «‹».
  */
 function Done({
-  step,
+  changed,
   text,
   onStudy,
   onOpenVerse,
 }: {
-  step: Extract<Step, { kind: 'done' }>
+  changed: BookChanges[]
   text: string
   onStudy(): void
   onOpenVerse(projectId: string, book: string, chapter: number, verse: number): void
 }) {
-  const t = useT()
+  const { t } = useI18n()
   const summaryOf = useChangeSummary()
-  const verses = step.changed.flatMap((b) => b.changes.map((c) => ({ ...b, change: c })))
+  const verses = changed.flatMap((b) => b.changes.map((c) => ({ ...b, change: c })))
   const projects = loadProjects()
   // Each project's name over its verses, when the pack changed verses of more than one.
-  const several = new Set(step.changed.map((b) => b.project)).size > 1
+  const several = new Set(changed.map((b) => b.project)).size > 1
   const listed = verses.slice(0, LISTED)
   const first = verses[0]
   return (

@@ -14,7 +14,9 @@ import {
   readChapter,
   readVerseHelps,
   referenceCovers,
+  referenceSpan,
   resourcesOnDevice,
+  spanCovers,
   textQuoteOf,
   versesInLines,
   wordsInLines,
@@ -429,5 +431,27 @@ describe('leer sin internet', () => {
     expect(referenceCovers('1:3-5', 1, 6)).toBe(false)
     expect(referenceCovers('2:3', 1, 3)).toBe(false)
     expect(referenceCovers('1:intro', 1, 1)).toBe(false)
+  })
+})
+
+describe('referenceSpan', () => {
+  it('reads a note reference once, as referenceCovers reads it each time', () => {
+    const cases: Array<[string, ReturnType<typeof referenceSpan>]> = [
+      // An introduction covers no verse.
+      ['front:intro', null],
+      ['1:intro', null],
+      ['1:3-5', { chapter: 1, from: 3, to: 5 }],
+      // A range into another chapter is read up to the colon: verses 3 to 2 of chapter 1, so no verse.
+      ['1:3-2:4', { chapter: 1, from: 3, to: 2 }],
+      // A list of verses is not a number: no verse.
+      ['1:3,5', null],
+    ]
+    for (const [reference, span] of cases) {
+      expect(referenceSpan(reference), reference).toEqual(span)
+      for (const [chapter, verse] of [[1, 2], [1, 3], [1, 4], [1, 5], [1, 6], [2, 4]] as const)
+        expect(spanCovers(referenceSpan(reference), chapter, verse), `${reference} ${chapter}:${verse}`).toBe(referenceCovers(reference, chapter, verse))
+    }
+    expect(spanCovers(referenceSpan('1:3-5'), 1, 4)).toBe(true)
+    expect(spanCovers(referenceSpan('1:3-5'), 2, 4)).toBe(false)
   })
 })

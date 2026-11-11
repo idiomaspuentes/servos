@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { PACKS_SERVERS, packsServer, packsServerChoice, setPacksServer } from './packsServer'
+import { PACKS_SERVERS, packsServer, packsServerChoice, setPacksServer, stagingBuild } from './packsServer'
 
 const KEY = 'servos.enLinea.servidor'
 
@@ -39,6 +39,25 @@ describe('the server to download parts from', () => {
     expect(packsServer('')).toBe(PACKS_SERVERS.produccion)
     // Chosen once, the setting stays shown.
     expect(packsServerChoice('')).toBe('produccion')
+  })
+
+  it('a test build (VITE_SERVOS_PACKS=staging) starts on staging only when nothing was chosen; without it nothing changes', () => {
+    vi.stubEnv('VITE_SERVOS_PACKS', '')
+    expect(packsServerChoice('')).toBeNull()
+    expect(packsServer('')).toBe(PACKS_SERVERS.produccion)
+    expect(stagingBuild()).toBe(false)
+    vi.stubEnv('VITE_SERVOS_PACKS', 'otro')
+    expect(packsServerChoice('')).toBeNull()
+    vi.stubEnv('VITE_SERVOS_PACKS', 'staging')
+    expect(stagingBuild()).toBe(true)
+    expect(packsServerChoice('')).toBe('staging')
+    expect(packsServer('')).toBe(PACKS_SERVERS.staging)
+    expect(kept.size).toBe(0)
+    // A choice made on the device wins, and `?packs=produccion` switches back.
+    setPacksServer('produccion')
+    expect(packsServerChoice('')).toBe('produccion')
+    expect(packsServer('?packs=staging')).toBe(PACKS_SERVERS.staging)
+    vi.unstubAllEnvs()
   })
 
   it('the URL wins over the saved choice', () => {

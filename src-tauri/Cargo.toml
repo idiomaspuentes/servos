@@ -22,6 +22,8 @@ tauri-plugin-single-instance = "2"
 tauri-plugin-window-state = "2"
 serde = { version = "1", features = ["derive"] }
 tauri-plugin-opener = "2"
+# The search index of format 3 packs (SQLite FTS5), filled and read by the page (src/resources/v3/search).
+tauri-plugin-sql = { version = "2", features = ["sqlite"] }
 
 # A smaller program: the installer travels on memory cards and by Bluetooth.
 [profile.release]

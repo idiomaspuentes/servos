@@ -38,17 +38,40 @@ export function setPacksServer(id: PacksServerId): void {
 
 const currentSearch = () => (typeof location === 'undefined' ? '' : location.search)
 
-/** The server chosen on this device: one asked for in the URL (and saved), else the saved one, else none. */
+/**
+ * Whether this is a test build that starts on staging: the APK or installer has no address bar to type `?packs=` in,
+ * so it is built with `VITE_SERVOS_PACKS=staging`. Production builds never set it.
+ */
+export const stagingBuild = (): boolean => import.meta.env?.VITE_SERVOS_PACKS === 'staging'
+
+/**
+ * The server chosen on this device: one asked for in the URL (and saved), else the saved one, else staging in a test
+ * build (`stagingBuild`; a saved choice, made in «Acerca de», wins over it), else none.
+ */
 export function packsServerChoice(search = currentSearch()): PacksServerId | null {
   const asked = new URLSearchParams(search).get('packs')
   if (isId(asked)) {
     setPacksServer(asked)
     return asked
   }
-  return saved()
+  return saved() ?? (stagingBuild() ? 'staging' : null)
 }
 
 /** The server to download from: the chosen one, else production. */
 export function packsServer(search = currentSearch()): string {
   return PACKS_SERVERS[packsServerChoice(search) ?? 'produccion']
+}
+
+/**
+ * Where format 3 packs (`/v3/packs/...`, read with `@bt-synergy/language-pack-client`) are served from. Production's
+ * origin is listed for completeness only: `packsFormat()` is never 3 there, so no request is sent to it.
+ */
+export const V3_ORIGINS: Record<PacksServerId, string> = {
+  produccion: 'https://tc-helps.mcp.servant.bible',
+  staging: 'https://translation-helps-mcp-v2-preview.unfoldingword.workers.dev',
+}
+
+/** The packs format this device downloads: 3 exactly when the packs server is staging, else today's 2. */
+export function packsFormat(search = currentSearch()): 2 | 3 {
+  return packsServer(search) === PACKS_SERVERS.staging ? 3 : 2
 }

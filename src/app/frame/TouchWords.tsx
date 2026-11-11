@@ -14,12 +14,13 @@ import type { WordLine } from '../../resources/reading'
 import { useT } from '../i18n/i18n'
 import { entriesAbout, type GlossaryEntry } from '../projects/glossary'
 import { lexiconOf } from '../../prototype/data'
-import { sensesOfWord, strongCode, type LexiconSense } from '../../lexicon/lexicon'
+import { sensesOfWord, strongCode, strongParts, type LexiconSense } from '../../lexicon/lexicon'
 import { Markdown } from './Markdown'
 import { hasReferents, OriginalFacts, Referents } from './OriginalWord'
 import { SentenceDiagram } from './SentenceDiagram'
 import { inSight, keepPlace, litOf, pagedHelps, revealBelow, shortGloss } from './wordCard'
 import { ArticleSheet, articleIn, type OpenArticle } from './ArticleSheet'
+import { EnTodaLaBiblia } from './EnTodaLaBiblia'
 
 export type WordHelp =
   /** What the original says of how a word of it is read: the qere of a ketiv, another possible reading, a note. */
@@ -523,6 +524,14 @@ export function WordHelpCard({
     return [...list].sort((a, b) => Number(minor(a.place)) - Number(minor(b.place)))
   }
 
+  // The original word's Strong as published (`G54850`, `H0853`), of the part the lexicon card is about: the short code
+  // the card shows (`G5485`) loses the leading zeros of a small Greek number (`G00110` is `G11`).
+  const publishedStrong = (l: (typeof lexicons)[number]): string =>
+    (original?.words?.[l.place]?.strong ?? '')
+      .split(':')
+      .map((part) => part.trim())
+      .find((part) => strongParts(part).some((p) => strongCode(p) === l.code)) ?? l.code
+
   function lexiconBody(l: (typeof lexicons)[number], i: number) {
     return (
       <>
@@ -548,6 +557,7 @@ export function WordHelpCard({
             ))}
           </details>
         )}
+        <EnTodaLaBiblia data={data} strong={publishedStrong(l)} />
         <RowButton label={t('st.open')} onClick={() => setDiagram({ verse: l.verse, place: l.place })} />
         <p className="quiet lexicon-credit">
           {t('ayudas.lexicoCredito')}

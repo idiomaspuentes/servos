@@ -170,9 +170,13 @@ export async function readChapter(
 ): Promise<ChapterPiece[] | null> {
   const entry = await stores.cache.get(preparedUnitKey('scripture', textKey, book, chapter, 'light'))
   const light = unwrapVersioned<ScriptureLightChapter>(entry, SCRIPTURE_PREPARE_VERSION)
-  if (!light) return null
+  return light ? piecesOfLight(light.blocks) : null
+}
+
+/** The light tier's blocks as headings and paragraphs of verses (format 3 builds the same blocks, `v3/bookV3.ts`). */
+export function piecesOfLight(blocks: ScriptureLightChapter['blocks']): ChapterPiece[] {
   const pieces: ChapterPiece[] = []
-  for (const block of light.blocks) {
+  for (const block of blocks) {
     let paragraph: Extract<ChapterPiece, { kind: 'paragraph' }> | null = null
     for (const item of block.inline) {
       if (item.kind === 'heading') {
@@ -378,11 +382,24 @@ export interface VerseNote {
 
 /** Whether a note reference (`1:3`, `1:3-5`, `1:intro`) covers this verse. */
 export function referenceCovers(reference: string, chapter: number, verse: number): boolean {
+  return spanCovers(referenceSpan(reference), chapter, verse)
+}
+
+/** Whether a reference read by `referenceSpan` covers this verse. */
+export function spanCovers(span: ReturnType<typeof referenceSpan>, chapter: number, verse: number): boolean {
+  return span !== null && span.chapter === chapter && verse >= span.from && verse <= span.to
+}
+
+/**
+ * The chapter and verses a note reference covers (`1:3-5` → chapter 1, verses 3 to 5), or null when it covers no verse
+ * (`1:intro`, `front:intro`). Parsed once, a row's reference can be checked against every verse of a chapter cheaply.
+ */
+export function referenceSpan(reference: string): { chapter: number; from: number; to: number } | null {
   const [ch, vs] = reference.split(':')
-  if (Number(ch) !== chapter || !vs) return false
+  if (!vs) return null
   const [from, to] = vs.split('-').map(Number)
-  if (!Number.isFinite(from)) return false
-  return verse >= from && verse <= (Number.isFinite(to) ? to : from)
+  if (!Number.isFinite(from)) return null
+  return { chapter: Number(ch), from, to: Number.isFinite(to) ? to : from }
 }
 
 /**
@@ -483,7 +500,12 @@ export interface ChapterIntros {
 export async function introsOf(stores: ResourceStores, notesKey: string, book: string, chapter: number): Promise<ChapterIntros> {
   const entry = await stores.cache.get(preparedUnitKey('notes', notesKey, book, chapter, 'light'))
   const light = unwrapVersioned<NotesLightChapter>(entry, NOTES_PREPARE_VERSION)
-  const intros = (light?.notes ?? []).filter((n) => n.isIntro && n.note.trim()).map((n) => n.note)
+  return introsOfNotes(light?.notes ?? [], chapter)
+}
+
+/** The introductions among a chapter's notes, in their order (`introsOf`; format 3 gives the same rows, `v3/helpsV3.ts`). */
+export function introsOfNotes(notes: ReadonlyArray<{ isIntro?: boolean; note: string }>, chapter: number): ChapterIntros {
+  const intros = notes.filter((n) => n.isIntro && n.note.trim()).map((n) => n.note)
   if (chapter !== 1) return { book: null, chapter: intros[0] ?? null }
   if (intros.length >= 2) return { book: intros[0], chapter: intros[1] }
   const only = intros[0] ?? null
