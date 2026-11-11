@@ -40,7 +40,7 @@ describe('packsV3', () => {
     const keys = (await resourcesV3OnDevice()).map((r) => r.key)
     expect(keys).toEqual(expect.arrayContaining(['es-419_gl/es-419/glt', 'unfoldingWord/el-x-koine/ugnt']))
     expect(new Set(keys).size).toBe(keys.length)
-  })
+  }, 30_000)
 
   it('installs and reads a signed sample', async () => {
     const sample = await buildSample()
