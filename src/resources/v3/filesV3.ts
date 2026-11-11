@@ -25,8 +25,10 @@ export type FileOutcome =
   | { state: 'originales' }
   /** A book pack and no originals on this device to build its books with: nothing was imported. */
   | { state: 'sinOriginales' }
-  /** The device has a published (newer) catalog of the language: the old pack's texts are not used. */
+  /** The device has a newer catalog of the language (a lower revision, another device's): the file is not used. */
   | { state: 'yaPublicado' }
+  /** An old pack that brings nothing the device has not installed already (the same pack again, or its published texts). */
+  | { state: 'yaEstan' }
   /** A transfer file whose catalog is not signed by a trusted key (a local one too): nothing was imported. */
   | { state: 'noConfiable' }
   /** The store would not take it: the state is the one before. */
@@ -184,8 +186,8 @@ function addedBy(report: ImportReport, language?: string): FileOutcome {
 
 /**
  * Imports a `.langpack.zip` of today's format. An originals pack is kept for later; a pack with books needs the
- * originals here (`sinOriginales` otherwise, and nothing is imported); a published catalog of its language here
- * wins (`yaPublicado`).
+ * originals here (`sinOriginales` otherwise, and nothing is imported); a pack that brings nothing new says so
+ * (`yaEstan`), and a newer catalog of its language here wins (`yaPublicado`).
  */
 export async function importOldPackV3(bytes: Uint8Array, deps: FilesDeps = REAL): Promise<FileOutcome> {
   let summary: Awaited<ReturnType<typeof describePack>>
@@ -211,7 +213,8 @@ export async function importOldPackV3(bytes: Uint8Array, deps: FilesDeps = REAL)
   }
   try {
     const report = await (await deps.client()).importOldPack(bytes, originals ? { originals } : {})
-    if (report.skipped) return { state: 'yaPublicado' }
+    // `skipped` only says nothing is new here, not that what is here is newer: said as it is.
+    if (report.skipped) return { state: 'yaEstan' }
     return addedBy(report, summary.language)
   } catch (e) {
     return failed(e)

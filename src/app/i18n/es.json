@@ -1105,6 +1105,7 @@
   "paquetes3.transferenciaAyuda": "Lo que trae se dice cuando se abre.",
   "paquetes3.sinOriginales": "Para abrir este paquete hace falta también el de los originales.",
   "paquetes3.yaPublicado": "Este aparato ya tiene una versión más nueva de estos textos.",
+  "paquetes3.yaEstan": "Este aparato ya tiene estos textos.",
   "paquetes3.sinEspacio": "No hay espacio en este teléfono para abrirlo. Nada cambió.",
   "paquetes3.sinEspacio.computadora": "No hay espacio en esta computadora para abrirlo. Nada cambió.",
   "paquetes3.noEsPaquete": "Este archivo no es un paquete de textos y ayudas, o le falta una parte. Pídalo otra vez a quien se lo dio.",

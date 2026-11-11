@@ -70,12 +70,12 @@ describe('today\'s packs in format 3', () => {
     expect((await client.status('es-419')).active).toBeUndefined()
   })
 
-  it('a published catalog here says yaPublicado', async () => {
+  it('a pack whose texts are here from the published catalog says yaEstan', async () => {
     const sample = await buildSample()
     const store = memoryStore()
     const client = await published(sample, store)
     const before = JSON.stringify(await store.getState())
-    expect(await importOldPackV3(BOOK(), depsOf(client, true))).toEqual({ state: 'yaPublicado' })
+    expect(await importOldPackV3(BOOK(), depsOf(client, true))).toEqual({ state: 'yaEstan' })
     expect(JSON.stringify(await store.getState())).toBe(before)
   }, 60_000)
 

@@ -86,6 +86,9 @@ export function ReceivePack({
         }
       case 'originales':
         return { text: t('paquete.listoOriginales'), refused: false }
+      // Nothing new, nothing wrong: the texts are here.
+      case 'yaEstan':
+        return { text: t('paquetes3.yaEstan'), refused: false }
       default:
         return { text: t(`paquetes3.${o.state}`), refused: true }
     }
