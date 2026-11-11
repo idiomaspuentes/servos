@@ -11,7 +11,9 @@
  *   halfway left its complete segments stored, so the size of the rest is smaller. Before the book's original is on the
  *   device its groups are not known: the size then counts every group of its testament, so «Bajar · 3,9 MB» never says
  *   less than what comes (an upper bound by the lexicon's part).
- * - An update is an installed unit whose segments changed in the catalog `refresh` kept (`status().updates`).
+ * - An update is an installed unit whose segments changed in the catalog `refresh` kept (`status().updates`), or a
+ *   unit made here from an old pack that the published catalog lists, with what its published unit needs (the common
+ *   catalog's original): accepting the offer replaces the bridged books, so they can then be passed as a file.
  */
 
 import type { LanguagePackClient, PackReader, Progress as ProgressV3, Want } from '@bt-synergy/language-pack-client'

@@ -28,7 +28,9 @@ import { createPacksV3, packsV3, resetPacksV3 } from './client'
 import { lexUnitsFor, testamentLexOf } from './onlineV3'
 import { lexGroupsOf } from './companionsV3'
 import { trustedKeys } from './keys'
-import { buildSample, fakeFetch, type Sample } from './testing/sample'
+import { zipSource } from '@bt-synergy/language-pack-v3'
+import { exportBookV3, exportableV3, importOldPackV3 } from './filesV3'
+import { buildSample, fakeFetch, specData, type Sample } from './testing/sample'
 
 type Project = Parameters<typeof setOnlineProjects>[0][number]
 const project = (helpsLanguage: string, books: string[]): Project =>
@@ -344,6 +346,29 @@ describe('format 3 online', () => {
     expect((await client.status('es-419')).updates).toEqual([])
     expect(onlineState().blocked).toEqual({})
   })
+
+  it('a book made from an old pack is replaced by the published one the offer brings, and can be passed', async () => {
+    const sample = await buildSample()
+    const w = worker(sample)
+    const client = await createPacksV3({ fetch: w.fetch, store: memoryStore(), trustedKeys: { [sample.keyId]: sample.publicKey } })
+    // The packs the app carries, opened offline at first start: Titus is bridged.
+    const deps = { client: async () => client, originals: async () => zipSource(specData('originals-tit.langpack.zip')), keepOriginals: async () => {} }
+    expect(await importOldPackV3(specData('es-419-tit.langpack.zip'), deps)).toMatchObject({ state: 'added', books: ['tit'] })
+    expect(await exportableV3('es-419', 'tit', deps)).toBe(false)
+    // The book is here, so nothing is wanted: only the offer can bring the published one.
+    device(client, { bookIsHere: () => true })
+
+    await checkForUpdates({ force: true })
+    const offer = onlineState().offer
+    expect(offer).toMatchObject({ language: 'es-419' })
+    await downloadOffer()
+    expect(onlineState().offer).toBeNull()
+    const units = (await client.status('es-419')).units.filter((u) => u.installed)
+    expect(units.filter((u) => u.local)).toEqual([])
+    expect(units.map((u) => u.key)).toEqual(expect.arrayContaining(['es-419/book:tit', 'common/orig:tit']))
+    expect(await exportableV3('es-419', 'tit', deps)).toBe(true)
+    expect((await exportBookV3('es-419', 'tit', deps)).byteLength).toBeGreaterThan(0)
+  }, 60_000)
 })
 
 describe.runIf(process.env.SERVOS_WORKER === 'staging')('format 3 from the staging Worker', () => {
