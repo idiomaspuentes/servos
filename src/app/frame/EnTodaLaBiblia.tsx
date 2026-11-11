@@ -7,9 +7,10 @@
 
 import { useState } from 'react'
 import type { PrototypeData } from '../../prototype/data'
-import { renderingsByText, wordAcrossBooks, type Rendering } from '../../resources/v3/lookups'
+import { booksNamed, occurrencesIn, renderingsByText, wordAcrossBooks, type Rendering } from '../../resources/v3/lookups'
 import { useT } from '../i18n/i18n'
-import { booksRead, ElsewhereBooks, MissingBooks, placeName, useLookup, useMapHere, VerseSheet } from './acrossBooks'
+import { BeforeBooks, booksRead, ElsewhereBooks, MissingBooks, placeName, useBooksBefore, useLookup, useMapHere, VerseSheet } from './acrossBooks'
+import { BOOKS } from '@bt-synergy/language-pack-v3'
 
 /** A rendering's places are listed at once up to this many; more wait behind «Ver los N lugares». */
 const SHOWN_PLACES = 12
@@ -19,30 +20,45 @@ export function EnTodaLaBiblia({ data, strong }: { data: PrototypeData; strong: 
   const here = useMapHere(data.language, 'xmap')
   const [open, setOpen] = useState(false)
   const [verse, setVerse] = useState<string | null>(null)
-  const word = useLookup(open && here, data.language, `renderings ${strong}`, async (reader) => {
+  const before = useBooksBefore(data.language)
+  const word = useLookup(open && here, data.language, `renderings ${strong} ${[...before].join(',')}`, async (reader) => {
     const answer = await reader.renderings({ strong })
-    // The reader adds the texts together; by text, and the word counted once, from the books themselves.
-    const byText = renderingsByText(await booksRead(reader), answer.data?.strong ?? strong)
-    return wordAcrossBooks(answer, byText, (book) => reader.listed(`book:${book}`))
+    const key = answer.data?.strong ?? strong
+    // The reader adds the texts together; by text, and the word counted once, from the books themselves: only those
+    // its places are in, not every book on the device.
+    const named = booksNamed(answer)
+    const byText = renderingsByText(await booksRead(reader, named), key)
+    // No rendering anywhere: whether the word is in the books here (not aligned) or not at all, from the originals only.
+    if (!named.size) {
+      const origs = []
+      for (const book of BOOKS) if (reader.installed(`book:${book}`) && reader.installed(`orig:${book}`)) origs.push(await reader.orig(book))
+      Object.assign(byText, occurrencesIn(origs.filter((o) => o !== undefined), key))
+    }
+    return wordAcrossBooks(answer, byText, (book) => reader.listed(`book:${book}`), before)
   })
   if (!here || (word && !word.installed)) return null
   const labelOf = (res: string) => data.texts.find((x) => x.key === res)?.abbreviation ?? res.slice(res.lastIndexOf('/') + 1).toUpperCase()
 
-  const count =
-    word && word.total > 0
-      ? word.total === 1
+  // Not here is not zero: no time in the books on this device is said so; there but in no rendering, «not aligned».
+  const count = !word
+    ? ''
+    : word.total === 0
+      ? t('ayudas.enTodaLaBibliaNoEsta')
+      : word.total === 1
         ? t('ayudas.enTodaLaBibliaUnaVez')
         : word.books === 1
           ? t('ayudas.enTodaLaBibliaCuentaUnLibro', { n: word.total })
           : t('ayudas.enTodaLaBibliaCuenta', { n: word.total, libros: word.books })
-      : t('ayudas.enTodaLaBibliaNada')
 
   return (
     <details className="word-help-other across" onToggle={(e) => setOpen(e.currentTarget.open)}>
       <summary>{t('ayudas.enTodaLaBiblia')}</summary>
+      {open && word === undefined && <p className="quiet">{t('ayudas.buscando')}</p>}
+      {open && word === null && <p className="quiet">{t('ayudas.noSePudoBuscar')}</p>}
       {word && (
         <>
           <p className="quiet">{count}</p>
+          {word.total > 0 && word.texts.length === 0 && <p className="quiet">{t('ayudas.enTodaLaBibliaNada')}</p>}
           {/* Each bridge text apart, by its name in the panes (TPL, TPS): how one renders it is not how the other does. */}
           {word.texts.map((x) => (
             <section key={x.res} className="across-text">
@@ -54,6 +70,7 @@ export function EnTodaLaBiblia({ data, strong }: { data: PrototypeData; strong: 
               </ul>
             </section>
           ))}
+          <BeforeBooks language={data.language} books={word.before} />
           <MissingBooks language={data.language} books={word.missing} />
           <ElsewhereBooks books={word.elsewhere} />
         </>

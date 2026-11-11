@@ -36,6 +36,11 @@ export type WordAcrossBooks = {
   missing: string[]
   /** Books where the word is, of which the language has no bridge text to bring. */
   elsewhere: string[]
+  /**
+   * Books where the word is that this device reads from a pack of before (today's rows, not format 3): they are here,
+   * so they are not offered as missing, but not counted either; «Bajar» brings them in format 3.
+   */
+  before: string[]
 }
 
 const bookIndex = (book: string): number => {
@@ -133,7 +138,12 @@ export function renderingsByText(books: BookRead[], key: string): { texts: WordA
  * A `renderings` answer and the renderings by text (`renderingsByText`), as the word card's «En toda la Biblia» draws
  * them. `listed(book)`: whether the language's catalog has the book's bridge text, so it can be brought.
  */
-export function wordAcrossBooks(answer: Answer<RenderingsData>, byText: ReturnType<typeof renderingsByText>, listed: (book: string) => boolean): WordAcrossBooks {
+export function wordAcrossBooks(
+  answer: Answer<RenderingsData>,
+  byText: ReturnType<typeof renderingsByText>,
+  listed: (book: string) => boolean,
+  before: ReadonlySet<string> = new Set()
+): WordAcrossBooks {
   // Without the Strong table the books not here cannot be told, and a short Greek key may miss its words.
   const installed = answer.data !== null && !answer.notInstalled.some((n) => n.unit === 'xmap')
   // The books the word is in that the device cannot read (its text, or the original it is aligned to, is not here).
@@ -143,15 +153,39 @@ export function wordAcrossBooks(answer: Answer<RenderingsData>, byText: ReturnTy
     if (n.book && n.what !== 'stale' && (n.unit.startsWith('book:') || n.unit.startsWith('orig:'))) lacking.add(n.book)
   }
   const order = [...lacking].sort((a, b) => bookIndex(a) - bookIndex(b))
+  const away = order.filter((b) => !before.has(b))
   return {
     installed,
     texts: byText.texts,
     total: byText.total,
     books: byText.books,
     folded: byText.total > MANY_PLACES,
-    missing: order.filter(listed),
-    elsewhere: order.filter((b) => !listed(b)),
+    missing: away.filter(listed),
+    elsewhere: away.filter((b) => !listed(b)),
+    before: order.filter((b) => before.has(b)),
   }
+}
+
+/** The books a `renderings` answer names places in: only those need to be read to tell the renderings by text. */
+export function booksNamed(answer: Answer<RenderingsData>): Set<string> {
+  const out = new Set<string>()
+  for (const r of answer.data?.renderings ?? []) for (const ref of r.refs) {
+    const at = parsePlace(ref)
+    if (at) out.add(at.book)
+  }
+  return out
+}
+
+/** How many times the word keyed `key` is in these originals, and in how many of them (no text read). */
+export function occurrencesIn(origs: OrigModel[], key: string): { total: number; books: number } {
+  let total = 0
+  let books = 0
+  for (const orig of origs) {
+    const n = orig.words.filter((w) => strongKey(w.strong) === key).length
+    total += n
+    if (n) books++
+  }
+  return { total, books }
 }
 
 export type ArticleAcrossBooks = {
@@ -164,6 +198,8 @@ export type ArticleAcrossBooks = {
    * gives its size then), not when the language's packs do not carry it. What bringing it costs is asked apart.
    */
   missing: { book: string; count: number; bringable: boolean }[]
+  /** Books that use it that this device reads from a pack of before (not format 3): here, but not counted by the map. */
+  before: { book: string; count: number }[]
   /** Books the source does not cover: unknown, not zero. */
   none: string[]
   /** Whether the source covers any book (used there or not): when none, the helps do not tell where it is used. */
@@ -171,8 +207,8 @@ export type ArticleAcrossBooks = {
 }
 
 /** A `books` answer, as an article's «Dónde aparece» draws it. A book where it is used zero times is left out. */
-export function articleAcrossBooks(answer: Answer<BooksData>): ArticleAcrossBooks {
-  const out: ArticleAcrossBooks = { installed: false, here: [], missing: [], none: [], covered: false }
+export function articleAcrossBooks(answer: Answer<BooksData>, before: ReadonlySet<string> = new Set()): ArticleAcrossBooks {
+  const out: ArticleAcrossBooks = { installed: false, here: [], missing: [], before: [], none: [], covered: false }
   if (!answer.data || answer.data.installed === false) return out
   out.installed = true
   const cells = Object.entries(answer.data.books).sort(([a], [b]) => bookIndex(a) - bookIndex(b))
@@ -185,6 +221,7 @@ export function articleAcrossBooks(answer: Answer<BooksData>): ArticleAcrossBook
     // `zero` is the source saying the book does not use it; a counted cell with no count says nothing either.
     if ((cell.state !== 'count' && cell.state !== 'partial') || !cell.count) continue
     if (cell.installed) out.here.push({ book, count: cell.count })
+    else if (before.has(book)) out.before.push({ book, count: cell.count })
     else out.missing.push({ book, count: cell.count, bringable: cell.bytes !== undefined })
   }
   return out

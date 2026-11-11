@@ -162,10 +162,30 @@ export async function searchableBooksV3(lang: string): Promise<{ searchable: str
 /** Drops the cached readers; call it after any install or import. */
 export function forgetReadersV3(): void {
   readers.clear()
+  readersChanged()
+}
+
+/**
+ * The readers' generation: one more each time they are forgotten (an install, a refresh, a pack received). What asks
+ * the readers (the lookups, search's books) follows it rather than the library's version, which moves at every chapter
+ * read while a download is applied.
+ */
+let generation = 0
+const readerListeners = new Set<() => void>()
+function readersChanged() {
+  generation++
+  readerListeners.forEach((fn) => fn())
+}
+export const readersGenerationV3 = () => generation
+/** For `useSyncExternalStore`. */
+export function subscribeReadersV3(fn: () => void): () => void {
+  readerListeners.add(fn)
+  return () => void readerListeners.delete(fn)
 }
 
 /** For tests: forgets the client and the readers, as a new app run would. */
 export function resetPacksV3(): void {
   client = null
   readers.clear()
+  readersChanged()
 }

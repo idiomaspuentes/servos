@@ -8,11 +8,10 @@
  */
 import type { Hit } from '@bt-synergy/language-pack-client'
 import { useEffect, useState, useSyncExternalStore } from 'react'
-import { readerV3, searchableBooksV3 } from '../../resources/v3/client'
+import { readersGenerationV3, readerV3, searchableBooksV3, subscribeReadersV3 } from '../../resources/v3/client'
 import { Sheet } from '../frame/Sheet'
 import type { VersePlace } from '../frame/verseOpener'
 import { useT } from '../i18n/i18n'
-import { libraryVersion, subscribeLibrary } from '../projects/library'
 import { namesTogether } from '../projects/mix'
 import { bookName } from '../projects/model'
 import { groupHits, groupKey, hitPlace, hitWhere, resLabel, searchCoverage, snippetParts } from './searchHits'
@@ -42,14 +41,19 @@ export function SearchSheet({
   const t = useT()
   const [text, setText] = useState('')
   const [found, setFound] = useState<Found | null>(null)
-  const library = useSyncExternalStore(subscribeLibrary, libraryVersion)
+  // What is searched changes when the readers are made anew (an install, a refresh), not at each chapter the library reads.
+  const library = useSyncExternalStore(subscribeReadersV3, readersGenerationV3)
   const wanted = text.trim()
-  const [books, setBooks] = useState<{ searchable: string[]; notIndexed: string[] } | null>(null)
+  const [books, setBooks] = useState<{ searchable: string[]; notIndexed: string[]; listed: (book: string) => boolean } | null>(null)
   useEffect(() => {
     let live = true
-    searchableBooksV3(language)
-      .catch(() => ({ searchable: [], notIndexed: [] }))
-      .then((b) => live && setBooks(b))
+    // Whether the language's catalog lists a book: then it can come again from the internet, else only from a pack.
+    const listedNow = () =>
+      readerV3(language)
+        .then((reader) => (book: string) => Boolean(reader?.listed(`book:${book.toLowerCase()}`)))
+        .catch(() => () => false)
+    Promise.all([searchableBooksV3(language).catch(() => ({ searchable: [], notIndexed: [] })), listedNow()])
+      .then(([b, listed]) => live && setBooks({ ...b, listed }))
     return () => {
       live = false
     }
@@ -103,7 +107,18 @@ export function SearchSheet({
       </p>
       {coverage && coverage.before.length > 0 && (
         <p className="notice">
-          {coverage.before.length === 1 ? t('buscar.antesUno', { libro: names(coverage.before) }) : t('buscar.antesVarios', { libros: names(coverage.before) })}
+          {/* Only the ways it can come today: from the internet when the catalog lists every one, else in a pack. */}
+          {(() => {
+            const online = books!.listed && coverage.before.every(books!.listed)
+            const one = coverage.before.length === 1
+            return online
+              ? one
+                ? t('buscar.antesUno', { libro: names(coverage.before) })
+                : t('buscar.antesVarios', { libros: names(coverage.before) })
+              : one
+                ? t('buscar.antesUnoPaquete', { libro: names(coverage.before) })
+                : t('buscar.antesVariosPaquete', { libros: names(coverage.before) })
+          })()}
         </p>
       )}
       {coverage && coverage.notIndexed.length > 0 && (

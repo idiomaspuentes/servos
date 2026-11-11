@@ -8,12 +8,12 @@ import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react
 import type { PrototypeData } from '../../prototype/data'
 import { packsFormat } from '../../resources/online/packsServer'
 import { useOnlineResources } from '../../resources/online/onlineResources'
-import { readerV3 } from '../../resources/v3/client'
+import { readersGenerationV3, readerV3, subscribeReadersV3 } from '../../resources/v3/client'
 import { parsePlace, type BookRead } from '../../resources/v3/lookups'
 import { BOOKS } from '@bt-synergy/language-pack-v3'
 import type { PackReader } from '@bt-synergy/language-pack-client'
 import { useI18n, useT } from '../i18n/i18n'
-import { libraryVersion, subscribeLibrary } from '../projects/library'
+import { helpsLanguagesHere, libraryVersion, subscribeLibrary, v3Books } from '../projects/library'
 import { bookName } from '../projects/model'
 import { askForBook, useBookAsked, useDownloadSize } from '../projects/onlineBooks'
 import { sizeIn } from '../projects/onlineWords'
@@ -24,10 +24,10 @@ import { verseOpener } from './verseOpener'
 /**
  * Whether the map unit that answers (`xmap`, `map`) is on this device in format 3: a section without it is not shown
  * (nobody looked, which is not «nowhere»). Asks only the reader's installed state, no query. Asked again when the
- * library changes (a book brought or received).
+ * readers are made anew (a book brought or received), not at every chapter the library reads.
  */
 export function useMapHere(language: string, unit: 'xmap' | 'map'): boolean {
-  const library = useSyncExternalStore(subscribeLibrary, libraryVersion)
+  const library = useSyncExternalStore(subscribeReadersV3, readersGenerationV3)
   const [here, setHere] = useState(false)
   useEffect(() => {
     if (packsFormat() !== 3 || !language) return setHere(false)
@@ -43,11 +43,12 @@ export function useMapHere(language: string, unit: 'xmap' | 'map'): boolean {
 }
 
 /**
- * A query run only once its section is opened, and again when the library changes while it is open. Undefined until
- * it answers; null when it could not be asked (no reader, an error): the section then says nothing.
+ * A query run only once its section is opened, and again when the readers are made anew while it is open (an install,
+ * a refresh: not every chapter read while a download is applied). Undefined until it answers; null when it could not
+ * be asked (no reader, an error).
  */
 export function useLookup<T>(open: boolean, language: string, key: string, ask: (reader: NonNullable<Awaited<ReturnType<typeof readerV3>>>) => Promise<T>): T | null | undefined {
-  const library = useSyncExternalStore(subscribeLibrary, libraryVersion)
+  const library = useSyncExternalStore(subscribeReadersV3, readersGenerationV3)
   const [found, setFound] = useState<{ key: string; value: T | null } | null>(null)
   const of = `${language}|${key}`
   useEffect(() => {
@@ -72,15 +73,49 @@ export function placeName(ref: string): string {
   return p ? `${bookName(p.book)} ${p.chapter}:${p.verse}` : ref
 }
 
-/** The books of a language this device can read in format 3 (their text and the original it is aligned to), read. */
-export async function booksRead(reader: PackReader): Promise<BookRead[]> {
+/**
+ * The books of a language this device can read in format 3 (their text and the original it is aligned to), read: those
+ * of `only` when given (the books an answer names), else all.
+ */
+export async function booksRead(reader: PackReader, only?: ReadonlySet<string>): Promise<BookRead[]> {
   const out: BookRead[] = []
   for (const book of BOOKS) {
+    if (only && !only.has(book)) continue
     if (!reader.installed(`book:${book}`) || !reader.installed(`orig:${book}`)) continue
     const [model, orig] = await Promise.all([reader.book(book), reader.orig(book)])
     if (model && orig) out.push({ book, model, orig })
   }
   return out
+}
+
+/**
+ * The books of a language this device reads from a pack of before (today's rows) and not from format 3: they are here,
+ * but the format 3 lookups do not see them. Follows the library (a book received moves from here to format 3).
+ */
+export function useBooksBefore(language: string): ReadonlySet<string> {
+  useSyncExternalStore(subscribeLibrary, libraryVersion)
+  const inV3 = v3Books().get(language) ?? new Set<string>()
+  const here = helpsLanguagesHere().find((l) => l.code === language)?.books ?? []
+  return new Set(here.map((b) => b.toLowerCase()).filter((b) => !inV3.has(b)))
+}
+
+/**
+ * The books where it is that this device reads from a pack of before: said apart, as search says them, with «Bajar»
+ * to bring them in format 3 where the language can. `meta` says more of a book.
+ */
+export function BeforeBooks({ language, books, meta }: { language: string; books: string[]; meta?(book: string): ReactNode }) {
+  const t = useT()
+  if (!books.length) return null
+  return (
+    <div className="across-missing">
+      <p className="word-help-label">{t('ayudas.dePaqueteAntes')}</p>
+      <ul className="across-list">
+        {books.map((book) => (
+          <MissingBook key={book} language={language} book={book} meta={meta?.(book)} />
+        ))}
+      </ul>
+    </div>
+  )
 }
 
 /**
@@ -166,6 +201,8 @@ export function VerseSheet({ data, place, onClose }: { data: PrototypeData; plac
   const label = (res: string) => data.texts.find((x) => x.key === res)?.abbreviation ?? res.slice(res.lastIndexOf('/') + 1).toUpperCase()
   return (
     <Sheet title={placeName(place)} onClose={onClose}>
+      {passage === undefined && <p className="quiet">{t('ayudas.buscando')}</p>}
+      {passage !== undefined && !passage?.data?.texts.length && <p className="quiet">{t('ayudas.versiculoNoLlego')}</p>}
       {passage?.data?.texts.map((x) => (
         <div key={x.res} className="across-verse">
           <p className="word-help-label">{label(x.res)}</p>

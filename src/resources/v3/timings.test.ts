@@ -67,4 +67,14 @@ describe('measure', { timeout: 30000 }, () => {
     await client.install('es-419', { books: ['tit'] })
     await expect(measure('es-419', 'gen', 'gen 1:1', 2, { client })).rejects.toThrow()
   })
+
+  it('stops on an aborted signal of an old WebView (no throwIfAborted), with its reason', async () => {
+    const sample = await buildSample()
+    const client = await createPacksV3({ fetch: fakeFetch(sample), store: memoryStore(), trustedKeys: { [sample.keyId]: sample.publicKey }, index: null })
+    await client.refresh('es-419')
+    await client.install('es-419', { books: ['tit'] })
+    const reason = new Error('closed')
+    const old = { aborted: true, reason } as unknown as AbortSignal
+    await expect(measure('es-419', 'tit', 'tit 1:1', 2, { client, signal: old })).rejects.toBe(reason)
+  })
 })

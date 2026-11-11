@@ -95,7 +95,8 @@ export function TimingsSheet({ onClose }: { onClose(): void }) {
         fecha: new Date().toISOString(),
       }),
       t('paquetes3.medirNavegador', { ua: nav?.userAgent ?? none }),
-      t('paquetes3.medirAlFrente', { si: !r || r.hidden === 0 ? t('paquetes3.medirSi') : t('paquetes3.medirNo') }),
+      // Without a result nothing says whether Servos stayed in front.
+      t('paquetes3.medirAlFrente', { si: !r ? none : r.hidden === 0 ? t('paquetes3.medirSi') : t('paquetes3.medirNo') }),
       ...(r ? [t('paquetes3.medirCabecera', { veces: r.runs })] : []),
       ...(r ? ROWS : []).map((row) => {
         if (!r) return ''

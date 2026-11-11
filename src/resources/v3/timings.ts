@@ -88,7 +88,10 @@ export async function measure(lang: string, book: string, ref: string, runs = 20
     if (typeof document !== 'undefined' && document.hidden) wasHidden = true
   }
   if (typeof document !== 'undefined') document.addEventListener('visibilitychange', seen)
-  const stop = () => o.signal?.throwIfAborted()
+  // Not `signal.throwIfAborted()`: older WebViews (Chrome before 100) lack it.
+  const stop = () => {
+    if (o.signal?.aborted) throw o.signal.reason
+  }
   try {
     for (let i = 0; i < runs; i++) {
       stop()

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Answer, BookCell, BooksData, NotInstalled, RenderingsData } from '@bt-synergy/language-pack-client'
-import { articleAcrossBooks, articleIdV3, parsePlace, renderingsByText, wordAcrossBooks, type BookRead } from './lookups'
+import { articleAcrossBooks, articleIdV3, booksNamed, occurrencesIn, parsePlace, renderingsByText, wordAcrossBooks, type BookRead } from './lookups'
 
 const envelope = <T>(query: Answer<T>['query'], data: T | null, notInstalled: NotInstalled[] = []): Answer<T> => ({
   query,
@@ -139,7 +139,7 @@ describe('articleAcrossBooks', () => {
 
   it('no map hides the section', () => {
     const a = articleAcrossBooks(envelope<BooksData>('books', { installed: false, books: {} }, [{ unit: 'map', bytes: 0 }]))
-    expect(a).toEqual({ installed: false, here: [], missing: [], none: [], covered: false })
+    expect(a).toEqual({ installed: false, here: [], missing: [], before: [], none: [], covered: false })
   })
 })
 
@@ -152,5 +152,41 @@ describe('the ids and places', () => {
   it('reads a place', () => {
     expect(parsePlace('tit 2:11')).toEqual({ book: 'tit', chapter: 2, verse: 11 })
     expect(parsePlace('tit')).toBeNull()
+  })
+})
+
+describe('books read from a pack of before (final fix S1, S3)', () => {
+  it('a book here from today’s rows is neither missing nor counted: it is said apart', () => {
+    const w = wordAcrossBooks(
+      grace([
+        { book: 'rut', unit: 'book:rut', bytes: 53497, what: 'G54850' },
+        { book: 'jon', unit: 'book:jon', bytes: 1000, what: 'G54850' },
+      ]),
+      renderingsByText([titus()], 'G54850'),
+      listed,
+      new Set(['rut'])
+    )
+    expect(w.before).toEqual(['rut'])
+    expect(w.missing).toEqual(['jon'])
+    expect(w.total).toBe(2)
+  })
+
+  it('an article’s book from today’s rows goes apart with its count', () => {
+    const cells: Record<string, BookCell> = {
+      tit: { state: 'count', count: 3, installed: true },
+      rut: { state: 'count', count: 2, installed: false, bytes: 10 },
+      jon: { state: 'count', count: 1, installed: false, bytes: 10 },
+    }
+    const a = articleAcrossBooks(envelope<BooksData>('books', { books: cells }), new Set(['rut']))
+    expect(a.here).toEqual([{ book: 'tit', count: 3 }])
+    expect(a.before).toEqual([{ book: 'rut', count: 2 }])
+    expect(a.missing).toEqual([{ book: 'jon', count: 1, bringable: true }])
+  })
+
+  it('reads only the books an answer names, and counts a word from the originals when none renders it', () => {
+    expect([...booksNamed(grace())]).toEqual(['tit'])
+    expect(booksNamed(envelope<RenderingsData>('renderings', { strong: 'G1', renderings: [] })).size).toBe(0)
+    expect(occurrencesIn([titus().orig], 'G54850')).toEqual({ total: 2, books: 1 })
+    expect(occurrencesIn([titus().orig], 'G99990')).toEqual({ total: 0, books: 0 })
   })
 })
