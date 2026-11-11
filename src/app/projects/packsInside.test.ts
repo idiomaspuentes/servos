@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { asOnlineApply, holdsOnlineLock } from '../../resources/online/onlineLock'
 import type { ResourceStores } from '../../resources/store'
-import { openDecidingUnderLock, toOpen } from './packsInside'
+import { insideStepV3, isOriginalsFile, openDecidingUnderLock, toOpen } from './packsInside'
 
 describe('the packs the app brings', () => {
   const inside = [
@@ -51,5 +51,32 @@ describe('a pack inside decides what it replaces under the lock (fix round R1)',
     // Nothing to bring: not opened.
     expect(await openDecidingUnderLock({} as ResourceStores, new Uint8Array(), () => against([]), {}, open)).toBe(false)
     expect(opened).toHaveLength(1)
+  })
+})
+
+describe('a pack inside in format 3 (final fix F3)', () => {
+  const inside = [
+    { file: 'originals.langpack.zip', id: 'a1' },
+    { file: 'es-419.langpack.zip', id: 'b2' },
+  ]
+  const never = async (): Promise<{ state: string }> => {
+    throw new Error('the originals are not read here')
+  }
+
+  it('the originals are known by their file name and not read', async () => {
+    expect(isOriginalsFile('originals.langpack.zip')).toBe(true)
+    expect(isOriginalsFile('es-419.langpack.zip')).toBe(false)
+    expect(await insideStepV3(inside[0], inside, never)).toBe('opened')
+  })
+
+  it('sinOriginales with the originals inside means reading them failed: tried again, not marked opened', async () => {
+    expect(await insideStepV3(inside[1], inside, async () => ({ state: 'sinOriginales' }))).toBe('failed')
+    // Without originals inside the app there is nothing to try again with.
+    expect(await insideStepV3(inside[1], [inside[1]], async () => ({ state: 'sinOriginales' }))).toBe('opened')
+  })
+
+  it('no room waits for the next start; anything else is done', async () => {
+    expect(await insideStepV3(inside[1], inside, async () => ({ state: 'sinEspacio' }))).toBe('later')
+    for (const state of ['added', 'yaPublicado', 'noEsPaquete', 'otraVersion']) expect(await insideStepV3(inside[1], inside, async () => ({ state }))).toBe('opened')
   })
 })

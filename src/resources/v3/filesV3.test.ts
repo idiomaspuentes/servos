@@ -124,6 +124,33 @@ describe('transfer files', () => {
     expect(await importTransferV3(file, { client: async () => to })).toEqual({ state: 'added', language: 'es-419', books: [], articles: false })
   }, 60_000)
 
+  it('offers only books installed from the published catalog: not a bridged one beside them', async () => {
+    // A bridged Ruth beside a published Titus: the language has a published catalog, but Ruth is local.
+    const unit = (key: string, local: boolean) => ({ key, revision: 1, installed: true, optional: false, bytes: 1, local })
+    const status = {
+      lang: 'es-419',
+      published: { name: 'es-419', revision: 1, id: 'p', origin: 'published' },
+      active: { name: 'es-419', revision: 1, id: 'p', origin: 'published' },
+      units: [unit('es-419/book:tit', false), unit('es-419/book:rut', true)],
+      updates: [],
+    }
+    const client = { status: async () => status } as unknown as LanguagePackClient
+    expect(await exportableV3('es-419', 'tit', { client: async () => client })).toBe(true)
+    expect(await exportableV3('es-419', 'rut', { client: async () => client })).toBe(false)
+    // No published catalog: nothing is offered.
+    const none = { status: async () => ({ ...status, published: undefined }) } as unknown as LanguagePackClient
+    expect(await exportableV3('es-419', 'tit', { client: async () => none })).toBe(false)
+  })
+
+  it('a bridged book stays unoffered after the published catalog arrives', async () => {
+    const sample = await buildSample()
+    const client = await device(sample, memoryStore(), fakeFetch(sample))
+    await importOldPackV3(BOOK(), depsOf(client, true))
+    await client.refresh('es-419')
+    expect((await client.status('es-419')).published).toBeDefined()
+    expect(await exportableV3('es-419', 'tit', { client: async () => client })).toBe(false)
+  }, 60_000)
+
   it('a transfer file with a local catalog says noConfiable', async () => {
     const sample = await buildSample()
     const from = await device(sample)

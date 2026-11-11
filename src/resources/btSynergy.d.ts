@@ -654,7 +654,8 @@ declare module '@bt-synergy/language-pack-client' {
     lang: string
     published?: InstalledCatalog
     active?: InstalledCatalog
-    units: { key: string; revision: number; installed: boolean; optional: boolean; bytes: number }[]
+    /** `local`: installed from an old pack on this device (`importOldPack`), not from the published catalog. */
+    units: { key: string; revision: number; installed: boolean; optional: boolean; bytes: number; local: boolean }[]
     updates: Update[]
     missingCommon?: RefreshReport['missingCommon']
   }

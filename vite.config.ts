@@ -95,8 +95,13 @@ function packsInside(): Plugin {
 function trustedKeysV3(): Plugin {
   const id = 'virtual:servos-v3-keys'
   const folder = join(BT, 'language-pack-v3', 'keys')
+  // A staging build (`VITE_SERVOS_PACKS=staging`) starts on format 3: without keys it could install nothing.
+  let stagingBuild = false
   return {
     name: 'servos-v3-keys',
+    configResolved(config) {
+      stagingBuild = config.command === 'build' && config.env.VITE_SERVOS_PACKS === 'staging'
+    },
     resolveId: (source) => (source === id ? `\0${id}` : undefined),
     load(loaded) {
       if (loaded !== `\0${id}`) return undefined
@@ -105,7 +110,10 @@ function trustedKeysV3(): Plugin {
         this.addWatchFile(join(folder, file))
         keys[file.slice(0, -'.pub'.length)] = readFileSync(join(folder, file), 'utf8').trim()
       }
-      if (!Object.keys(keys).length) this.warn(`No *.pub keys in ${folder}: format 3 catalogs will not be trusted`)
+      if (!Object.keys(keys).length) {
+        if (stagingBuild) this.error(`No *.pub keys in ${folder}: a staging build (VITE_SERVOS_PACKS=staging) would trust no format 3 catalog`)
+        this.warn(`No *.pub keys in ${folder}: format 3 catalogs will not be trusted`)
+      }
       return `export default ${JSON.stringify(keys)}`
     },
   }

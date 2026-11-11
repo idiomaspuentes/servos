@@ -140,6 +140,8 @@ export function BookScreen({
   // Format 3: whether «Pasar textos y ayudas» is offered, asked of the store when «More» opens.
   const [passable, setPassable] = useState(false)
   useEffect(() => {
+    // Asked anew each time: closed, or for another book or language, the last answer is not offered.
+    setPassable(false)
     if (!more || packsFormat() !== 3 || !project.helpsLanguage) return
     let live = true
     exportableV3(project.helpsLanguage, book.code)

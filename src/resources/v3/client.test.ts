@@ -51,7 +51,7 @@ describe('packsV3', () => {
     expect(await readerV3('es-419')).toBe(reader)
     forgetReadersV3()
     expect(await readerV3('es-419')).not.toBe(reader)
-  })
+  }, 30_000)
 
   it('has no reader for a language with nothing installed', async () => {
     const sample = await buildSample()

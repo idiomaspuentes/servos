@@ -238,6 +238,8 @@ export function Home({
             {t('inicio.dentroAbriendo', { pct: Math.floor(100 * inside.part) })}
           </p>
         )}
+        {/* Format 3: a pack inside could not be opened after its tries; it is not tried by itself again. */}
+        {!inside.opening && inside.failed && <p className="notice">{t('inicio.dentroNoSeAbrio')}</p>}
         {/* Texts and helps coming from the Worker, until they are applied; then, for a while, what they changed. */}
         {net.busy ? (
           <p className="status" role="status">

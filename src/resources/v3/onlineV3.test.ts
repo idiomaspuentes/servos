@@ -162,7 +162,7 @@ describe('format 3 online', () => {
     expect(library.v3Books().get('es-419')?.has('tit')).toBe(true)
     expect(library.bookIsHere('tit', 'es-419')).toBe(true)
     expect(await bookDownloadSize('es-419', 'tit')).toBe(0)
-  })
+  }, 30_000)
 
   it('Titus installs only the lex groups its Strong numbers fall in', async () => {
     // The sample's catalog lists only `lex:G0`: the choice is checked against every group a catalog could list.

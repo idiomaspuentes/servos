@@ -237,10 +237,11 @@ export const transferName = (lang: string, book: string) => `${lang}-${book.toLo
 
 /**
  * Whether a book can be passed as a transfer file: installed from a published catalog. A book made here from an old
- * pack has a local catalog, which another device refuses (its signature cannot be checked), so it is not offered.
+ * pack is local (`status().units[].local`), which another device refuses (its signature cannot be checked) and an export
+ * leaves out, so it is not offered, even when the language has a published catalog for its other books.
  */
 export async function exportableV3(lang: string, book: string, deps: Pick<FilesDeps, 'client'> = REAL): Promise<boolean> {
   const status = await (await deps.client()).status(lang)
-  if (status.active?.origin !== 'published') return false
-  return status.units.some((u) => u.installed && u.key.endsWith(`/book:${book.toLowerCase()}`))
+  if (status.published === undefined) return false
+  return status.units.some((u) => u.installed && !u.local && u.key.endsWith(`/book:${book.toLowerCase()}`))
 }
