@@ -101,6 +101,47 @@ describe('saving a file in the app for phones', () => {
     expect(share).not.toHaveBeenCalled()
   })
 
+  it('shares one file at a time: a second one waits until the first is written and shared', async () => {
+    const log: string[] = []
+    let release!: () => void
+    share.mockImplementation(async ({ name }: { name: string }) => {
+      log.push(`share ${name}`)
+      // The first sheet stays up until released.
+      if (log.filter((l) => l.startsWith('share')).length === 1) await new Promise<void>((r) => (release = r))
+      return {}
+    })
+    write.mockImplementation(async ({ name, append }: { name: string; append: boolean }) => {
+      log.push(`write ${name} ${append ? 'append' : 'start'}`)
+      await new Promise((r) => setTimeout(r, 1))
+    })
+    const bytes = new Uint8Array(PIECE * 2 + 1)
+    const a = saveFile('es-419-tit.tcpack', bytes, 'application/octet-stream')
+    const b = saveFile('es-419-tit.tcpack', bytes, 'application/octet-stream')
+    await vi.waitFor(() => expect(log).toContain('share es-419-tit.tcpack'))
+    // While the first is on the sheet, the second has written nothing.
+    expect(log.filter((l) => l.startsWith('write'))).toHaveLength(3)
+    release()
+    await Promise.all([a, b])
+    expect(log).toEqual([
+      'write es-419-tit.tcpack start',
+      'write es-419-tit.tcpack append',
+      'write es-419-tit.tcpack append',
+      'share es-419-tit.tcpack',
+      'write es-419-tit.tcpack start',
+      'write es-419-tit.tcpack append',
+      'write es-419-tit.tcpack append',
+      'share es-419-tit.tcpack',
+    ])
+  })
+
+  it('goes on after a share that failed', async () => {
+    share.mockRejectedValueOnce(new Error('No space left')).mockResolvedValueOnce({})
+    const a = saveFile('a.servos', '{}')
+    const b = saveFile('b.servos', '{}')
+    expect(await a).toEqual({ state: 'failed', name: 'a.servos' })
+    expect(await b).toEqual({ state: 'shared', name: 'b.servos' })
+  })
+
   it('says the name it was kept under when it was kept on the phone', async () => {
     share.mockResolvedValue({ saved: 'Jonás (1).servos' })
     expect(await saveFile('Jonás.servos', '{}', 'application/json', 'Guardar en el teléfono')).toEqual({ state: 'saved', name: 'Jonás (1).servos' })

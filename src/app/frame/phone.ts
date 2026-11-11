@@ -118,13 +118,23 @@ export async function shareTextOnPhone(text: string): Promise<void> {
   await (await files()).plugin.shareText({ text })
 }
 
+/** The share before, settled or not; the next starts after it. */
+let sharing: Promise<unknown> = Promise.resolve()
+
 /**
  * Sends a file out by the phone's share sheet, under the name given and with its type (an app refuses a file whose type
  * it is not told): to WhatsApp, Bluetooth, or kept on the phone itself, in a folder the person chooses, the first place
  * on the sheet, named `keepHere`. Gives back the name it was kept under on the phone; elsewhere, nothing: Android does
  * not say where it went, nor whether the sheet was left without choosing.
  */
-export async function shareOnPhone(name: string, text: string | Uint8Array, type: string, keepHere: string): Promise<string | null> {
+export function shareOnPhone(name: string, text: string | Uint8Array, type: string, keepHere: string): Promise<string | null> {
+  // One at a time: two of the same name at once (a double touch) would cut and mix each other's pieces in one file.
+  const turn = sharing.then(() => shareNow(name, text, type, keepHere))
+  sharing = turn.catch(() => {})
+  return turn
+}
+
+async function shareNow(name: string, text: string | Uint8Array, type: string, keepHere: string): Promise<string | null> {
   const { plugin } = await files()
   await writeInPieces(plugin, name, typeof text === 'string' ? new TextEncoder().encode(text) : text)
   // Only the name crosses with the call that opens the sheet: Android keeps that call in the activity's saved state

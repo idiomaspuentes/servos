@@ -109,7 +109,8 @@ public class FilesPlugin extends Plugin {
             call.resolve();
         } catch (Exception | OutOfMemoryError e) {
             new File(sharedFolder(), name).delete();
-            call.reject("Not written", e instanceof Exception ? (Exception) e : null);
+            // The error in the message too: an OutOfMemoryError is not an Exception, and would be said with no cause.
+            call.reject("Not written: " + e, e instanceof Exception ? (Exception) e : null);
         }
     }
 
@@ -189,31 +190,58 @@ public class FilesPlugin extends Plugin {
     /** Where the sheet went: a file kept on the phone is written there now; anywhere else has the file already. */
     @ActivityCallback
     private void chosen(PluginCall call, ActivityResult result) {
-        if (call == null) return;
         Intent data = result.getData();
         Uri place = data == null ? null : data.getData();
+        boolean chose = result.getResultCode() == Activity.RESULT_OK && place != null;
+        if (call == null) {
+            // The call is lost (the app was made again and could not get it back): nothing will be written in the
+            // document the picker made, so it does not stay there empty.
+            if (chose) forgetIfEmpty(place);
+            return;
+        }
         JSObject answer = new JSObject();
-        if (result.getResultCode() != Activity.RESULT_OK || place == null) {
+        if (!chose) {
             call.resolve(answer);
             return;
         }
         // Copied from the file written for the sheet, a buffer at a time: nothing of it is held whole. The place
         // chosen is written over ("wt"), so choosing a file there that was left empty (a save cut short) replaces it.
         File file = new File(sharedFolder(), call.getString("name", ""));
-        try (InputStream in = new FileInputStream(file); OutputStream out = getContext().getContentResolver().openOutputStream(place, "wt")) {
-            if (out == null) throw new Exception("No place");
-            byte[] buffer = new byte[64 * 1024];
-            int n;
-            while ((n = in.read(buffer)) != -1) out.write(buffer, 0, n);
+        if (!file.isFile()) {
+            // Gone from the cache (cleared while the picker was up): a file chosen to be written over stays as it was.
+            forgetIfEmpty(place);
+            call.reject("Not saved: the file to save is gone");
+            return;
+        }
+        boolean cut = false;
+        try (InputStream in = new FileInputStream(file)) {
+            try (OutputStream out = getContext().getContentResolver().openOutputStream(place, "wt")) {
+                if (out == null) throw new Exception("No place");
+                // From here what was in the place is gone: a failure leaves it cut.
+                cut = true;
+                byte[] buffer = new byte[64 * 1024];
+                int n;
+                while ((n = in.read(buffer)) != -1) out.write(buffer, 0, n);
+            }
         } catch (Exception e) {
             // A document left empty or cut would stay in the folder (and in the phone's list of files) as if it were
-            // the file: it goes.
-            forget(place);
-            call.reject("Not saved", e);
+            // the file: it goes. One the provider would not open for writing is someone's file as it was: it stays.
+            if (cut) forget(place);
+            else forgetIfEmpty(place);
+            call.reject("Not saved: " + e, e);
             return;
         }
         answer.put("saved", nameOf(place));
         call.resolve(answer);
+    }
+
+    /** Deletes a document the picker made that nothing was written in (its size 0); any other stays. */
+    private void forgetIfEmpty(Uri place) {
+        try (Cursor cursor = getContext().getContentResolver().query(place, new String[] { OpenableColumns.SIZE }, null, null, null)) {
+            if (cursor != null && cursor.moveToFirst() && !cursor.isNull(0) && cursor.getLong(0) == 0) forget(place);
+        } catch (Exception e) {
+            // Its size unknown, it is left as it is.
+        }
     }
 
     /** Deletes a document the sheet made that could not be written. */

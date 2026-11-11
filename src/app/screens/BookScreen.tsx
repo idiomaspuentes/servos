@@ -20,7 +20,7 @@
  */
 
 import { helpsLanguagesHere, languageOf, type BookState } from '../projects/library'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { PrototypeData } from '../../prototype/data'
 import { RowButton, Suggestion } from '../frame/Actions'
 import { useOnline } from '../frame/online'
@@ -139,6 +139,9 @@ export function BookScreen({
   const [saidMore, setSaidMore] = useState<string | null>(null)
   // Format 3: whether «Pasar textos y ayudas» is offered, asked of the store when «More» opens.
   const [passable, setPassable] = useState(false)
+  // While a transfer file is being made and saved (seconds): a second touch would make it again over the first.
+  const [passing, setPassing] = useState(false)
+  const passingNow = useRef(false)
   useEffect(() => {
     // Asked anew each time: closed, or for another book or language, the last answer is not offered.
     setPassable(false)
@@ -515,12 +518,22 @@ export function BookScreen({
             <MenuRow
               label={t('paquetes3.pasar')}
               description={t('paquetes3.pasarAyuda', { libro: name })}
+              disabled={passing}
               onClick={async () => {
-                const lang = project.helpsLanguage
-                const saved = await exportBookV3(lang, book.code)
-                  .then((bytes) => saveFile(transferName(lang, book.code), bytes, 'application/octet-stream', t('compartir.guardarEnTelefono')))
-                  .catch(() => ({ state: 'failed' as const, name: '' }))
-                setSaidMore(saved.state === 'saved' ? t('compartir.guardado', { archivo: saved.name }) : saved.state === 'failed' ? t('paquetes3.noGuardado') : null)
+                // The ref, not only the state: two touches in one frame both see the state as it was.
+                if (passingNow.current) return
+                passingNow.current = true
+                setPassing(true)
+                try {
+                  const lang = project.helpsLanguage
+                  const saved = await exportBookV3(lang, book.code)
+                    .then((bytes) => saveFile(transferName(lang, book.code), bytes, 'application/octet-stream', t('compartir.guardarEnTelefono')))
+                    .catch(() => ({ state: 'failed' as const, name: '' }))
+                  setSaidMore(saved.state === 'saved' ? t('compartir.guardado', { archivo: saved.name }) : saved.state === 'failed' ? t('paquetes3.noGuardado') : null)
+                } finally {
+                  passingNow.current = false
+                  setPassing(false)
+                }
               }}
             />
           )}
