@@ -15,7 +15,7 @@
 import type { ImportReport, LanguagePackClient } from '@bt-synergy/language-pack-client'
 import { zipSource, type RowSource } from '@bt-synergy/language-pack-v3'
 import { describePack } from '../packs'
-import { packsV3 } from './client'
+import { installedSegmentsV3, packsV3 } from './client'
 
 /** What receiving a file came to. */
 export type FileOutcome =
@@ -221,10 +221,24 @@ export async function importOldPackV3(bytes: Uint8Array, deps: FilesDeps = REAL)
   }
 }
 
-/** Imports a transfer file (`.tcpack`). */
-export async function importTransferV3(bytes: Uint8Array, deps: Pick<FilesDeps, 'client'> = REAL): Promise<FileOutcome> {
+/**
+ * Imports a transfer file (`.tcpack`). Said are only the books and articles the file brought: an import also activates
+ * again units that were here already (all the books of a language whose catalog the file publishes), which it did not
+ * bring. `installed` gives the segments of each installed unit after the import (`installedSegmentsV3`).
+ */
+export async function importTransferV3(
+  bytes: Uint8Array,
+  deps: Pick<FilesDeps, 'client'> & { installed?: (c: LanguagePackClient) => Promise<Record<string, string[]> | null> } = REAL,
+): Promise<FileOutcome> {
   try {
-    return addedBy(await (await deps.client()).importTransfer(bytes))
+    const client = await deps.client()
+    const report = await client.importTransfer(bytes)
+    const units = await (deps.installed ?? installedSegmentsV3)(client).catch(() => null)
+    if (!units) return addedBy(report)
+    const brought = new Set(report.stored)
+    // A unit not in the state (none should be, once activated) is kept: better one book too many than one left out.
+    const activated = report.activated.filter((key) => units[key]?.some((s) => brought.has(s)) ?? true)
+    return addedBy({ ...report, activated })
   } catch (e) {
     return failed(e)
   }

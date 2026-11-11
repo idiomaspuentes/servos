@@ -124,6 +124,31 @@ describe('transfer files', () => {
     expect(await importTransferV3(file, { client: async () => to })).toEqual({ state: 'added', language: 'es-419', books: [], articles: false })
   }, 60_000)
 
+  it('says only the books the file brought, not the ones it activated again', async () => {
+    // A Titus file over a device with Ruth: publishing the file's catalog activates Ruth again, from what was here.
+    const report = {
+      catalogs: [{ name: 'es-419', publisher: 'unfoldingWord', revision: 2, id: 'c', origin: 'published' }],
+      stored: ['s-tit', 's-art'],
+      rejected: [],
+      missing: [],
+      activated: ['es-419/book:rut', 'es-419/book:tit', 'es-419/art:tw:kt', 'es-419/map'],
+      waiting: [],
+    }
+    const client = { importTransfer: async () => report } as unknown as LanguagePackClient
+    const installed = async () => ({
+      'es-419/book:rut': ['s-rut'],
+      'es-419/book:tit': ['s-tit'],
+      'es-419/art:tw:kt': ['s-art'],
+      'es-419/map': ['s-map'],
+    })
+    expect(await importTransferV3(new Uint8Array(), { client: async () => client, installed })).toEqual({
+      state: 'added',
+      language: 'es-419',
+      books: ['tit'],
+      articles: true,
+    })
+  })
+
   it('offers only books installed from the published catalog: not a bridged one beside them', async () => {
     // A bridged Ruth beside a published Titus: the language has a published catalog, but Ruth is local.
     const unit = (key: string, local: boolean) => ({ key, revision: 1, installed: true, optional: false, bytes: 1, local })

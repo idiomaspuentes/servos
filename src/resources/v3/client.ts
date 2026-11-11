@@ -171,6 +171,18 @@ export async function searchableBooksV3(lang: string): Promise<{ searchable: str
   return out
 }
 
+/**
+ * The segments of each unit installed by a client's store (`<catalog>/<unit>` → segment ids); null for a client this
+ * module did not make (a test's own).
+ */
+export async function installedSegmentsV3(c: LanguagePackClient): Promise<Record<string, string[]> | null> {
+  const state = (await parts.get(c)?.store.getState()) as InstalledState | undefined
+  if (!state) return null
+  const out: Record<string, string[]> = {}
+  for (const [key, unit] of Object.entries(state.units)) out[key] = (unit as { segments?: string[] }).segments ?? []
+  return out
+}
+
 /** Drops the cached readers; call it after any install or import. */
 export function forgetReadersV3(): void {
   readers.clear()
