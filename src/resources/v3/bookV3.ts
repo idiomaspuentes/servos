@@ -338,6 +338,16 @@ export function giveTurn(): Promise<void> {
   })
 }
 
+/** A `Pace` that gives the screen a turn once about `TURN_MS` of work went by since the last turn. */
+export function pacer(give: () => Promise<void> = giveTurn): () => Promise<void> {
+  let turn = performance.now()
+  return async () => {
+    if (performance.now() - turn < TURN_MS) return
+    await give()
+    turn = performance.now()
+  }
+}
+
 export interface ReadBookOptions {
   sections?: (chapter: number) => SectionStarts | undefined
   /** A resource's title (the catalog's); the reader does not give titles, so without it a text is titled by its key. */
@@ -347,8 +357,8 @@ export interface ReadBookOptions {
   /** Told after each chapter is read (chapters read, of how many), as `loadBook` tells the screens today. */
   onChapter?: (done: number, total: number) => void
   /**
-   * What gives the screen a turn, between chapters once about `TURN_MS` of reading went by (`giveTurn` by default); the
-   * timings screen wraps it to count the wait.
+   * What gives the screen a turn once about `TURN_MS` of reading went by, between chapters and then while the articles,
+   * the lexicon and MACULA are read (`giveTurn` by default); the timings screen wraps it to count the wait.
    */
   yield?: () => Promise<void>
 }
@@ -388,7 +398,7 @@ export async function readBookV3(
   const wanted = { tw: new Set<string>(), ta: new Set<string>() }
   const perChapter: Array<{ tw: string[]; ta: string[] }> = []
   const rowsOf = helpsByChapter(quotes)
-  let turn = performance.now()
+  const pace = pacer(o.yield ?? giveTurn)
   for (const [i, chapter] of literal.numbers.entries()) {
     const glt = literal.read(chapter)!
     const own = original.read(chapter)
@@ -397,7 +407,8 @@ export async function readBookV3(
     const verses = glt.pieces.flatMap((p) => (p.kind === 'paragraph' ? p.verses.map((v) => v.verse) : []))
     // A position of the original → its place among the chapter's words; a qere's → its ketiv's.
     const place = new Map(own.words.map((w, i) => [w.word, i]))
-    for (const [qere, ketiv] of qereOf(own.tree)) if (place.has(ketiv)) place.set(qere, place.get(ketiv)!)
+    const qere = qereOf(own.tree)
+    for (const [q, ketiv] of qere) if (place.has(ketiv)) place.set(q, place.get(ketiv)!)
     const toOriginal = (t: ChapterText) => t.words.map((w) => w.originals.map((p) => place.get(p)).filter((p): p is number => p !== undefined))
     const read = originalWordsIn(own.tree, orig, own.words.length)
     const frame: PlacesFrame = {
@@ -406,7 +417,7 @@ export async function readBookV3(
       strongs: (read?.words ?? []).map((w) => w.strong),
       originalsOfVerse: (verse) => (own.lines[verse] ?? []).flatMap((l) => l.pieces.map((p) => p.word).filter((w): w is number => w !== undefined)),
     }
-    const helps = chapterHelps(rowsOf(chapter), { book, chapter, verses, frame, texts: { TPL: glt.words, ...(gst ? { TPS: gst.words } : {}) } })
+    const helps = chapterHelps(rowsOf(chapter), { book, chapter, verses, frame, texts: { TPL: glt.words, ...(gst ? { TPS: gst.words } : {}) }, qere })
     helps.articles.tw.forEach((p) => wanted.tw.add(p))
     helps.articles.ta.forEach((p) => wanted.ta.add(p))
     perChapter.push(helps.articles)
@@ -441,18 +452,22 @@ export async function readBookV3(
     o.onChapter?.(i + 1, literal.numbers.length)
     // The screen gets a turn once a slice of work is done, so it stays answering while a long book is read. Not after
     // every chapter: Psalms' 150 timer turns alone cost 0.7 s on a desktop (a browser clamps nested timers to 4 ms).
-    if (performance.now() - turn >= TURN_MS) {
-      await (o.yield ?? giveTurn)()
-      turn = performance.now()
-    }
+    await pace()
   }
+  // After the chapters the same: a turn between the articles, the lexicon and MACULA, and inside their loops, so the
+  // screen does not freeze once the last chapter is read.
   // Each article once for the book, then given to the chapters that name it.
-  const articles = await articlesV3(reader, [...wanted.tw], [...wanted.ta])
+  const articles = await articlesV3(reader, [...wanted.tw], [...wanted.ta], pace)
   chapters.forEach((c, i) => {
     for (const p of perChapter[i].tw) c.words[p] = articles.tw[p]
     for (const p of perChapter[i].ta) c.academy[p] = articles.ta[p]
   })
+  await pace()
   const strongs = chapters.flatMap((c) => c.texts.find((t) => t.original)?.words?.map((w) => w.strong) ?? [])
-  return { chapters, lexicon: await lexiconV3(reader, strongs), macula: maculaV3(orig) }
+  const lexicon = await lexiconV3(reader, strongs, pace)
+  await pace()
+  const macula = maculaV3(orig)
+  await pace()
+  return { chapters, lexicon, macula }
 }
 

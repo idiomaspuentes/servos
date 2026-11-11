@@ -60,6 +60,25 @@ describe('the helps of a chapter from format 3', () => {
     expect(helps.verses[0].notes[0]).toMatchObject({ glt: 'de … fe', places: { TPL: [0, 2], Griego: [0, 1] } })
   })
 
+  it('takes a qere as its ketiv, in a quote and in a bridge word', () => {
+    // Ruth 3:4 «y acuéstate»: the note quotes the qere (7), the bridge words translate the ketiv (5) or the qere.
+    const hebrew: ChapterHelpsInput = {
+      ...input,
+      frame: { original: 'Hebreo', toOriginal: { TPL: [[0], [0], [1]] }, strongs: ['H7901', 'H0000'], originalsOfVerse: () => [0, 1] },
+      texts: { TPL: [{ word: 0, verse: 1, text: 'y', originals: [5] }, { word: 1, verse: 1, text: 'acuéstate', originals: [7] }, { word: 2, verse: 1, text: 'allí', originals: [6] }] },
+      qere: new Map([[7, 5]]),
+    }
+    const note = (id: string, quote: number[]) => row(id, { quote: 'וְשָׁכָבְתְּ', occurrence: '1', note: '' }, { quote })
+    const helps = chapterHelps(ch1({ notes: { res: 'tn', rows: [note('qere', [7]), note('ketiv', [5])] } }), hebrew)
+    expect(helps.verses[0].notes.map((n) => [n.glt, n.places.TPL])).toEqual([
+      ['y acuéstate', [0, 1]],
+      ['y acuéstate', [0, 1]],
+    ])
+    // Without the qere map, the quote of the qere finds only the word that names it.
+    const raw = chapterHelps(ch1({ notes: { res: 'tn', rows: [note('qere', [7])] } }), { ...hebrew, qere: undefined })
+    expect(raw.verses[0].notes[0].glt).toBe('acuéstate')
+  })
+
   it('takes the introductions from the notes marked so: in chapter 1 the book’s, then the chapter’s', () => {
     const intro = (id: string, note: string) => row(id, { note, isIntro: true, quote: '', occurrence: '0' }, { quote: [] })
     const helps = chapterHelps(ch1({ notes: { res: 'tn', rows: [intro('i1', '# Introducción a Tito\n(Ver: [[tw:kt/grace]])'), intro('i2', '# Tito 1')] } }), input)

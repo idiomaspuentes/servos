@@ -5,8 +5,8 @@
  * as `library.ts` reads a book) and once bridged into a format 3 client (`importOldPack`, then `readBookV3`), and every
  * chapter is compared. The allowed differences are listed below, each with its reason; anything else fails.
  *
- * The fixtures are bt-synergy's spec test data (es-419 Titus and the UGNT of Titus, format 1.1). With real packs, Titus
- * and Jonah of es-419 with their articles and lexicons:
+ * The fixtures are bt-synergy's spec test data (es-419 Titus and the UGNT of Titus, format 1.1). With real packs, Titus,
+ * Jonah, Ruth, Nehemiah, Esther and 3 John of es-419 with their articles and lexicons (`SERVOS_V3_BOOKS` names others):
  *
  *   SERVOS_PAQUETES=<folder with originals.langpack.zip and es-419.langpack.zip> npx vitest run src/resources/v3/sameBook.test.ts
  */
@@ -261,17 +261,56 @@ async function maskCaseShifts(rows: PrototypeData, v3: PrototypeData, reader: Pa
   return out
 }
 
-/** The differences beyond the allowed ones, and the words `CASE_SHIFT` left out. */
-async function compareBooks(rows: PrototypeData[], v3: PrototypeData[], reader: PackReader): Promise<{ found: string[]; masked: string[] }> {
+/** Allowed difference between the two sides of a chapter: a bridge word whose milestone lost its `x-occurrence`. */
+const NO_OCCURRENCE = {
+  what: 'the original words of a bridge word whose milestone has no usable x-occurrence',
+  why:
+    'The source loses one now and then (es-419 GST Ruth 4:11: the `zaln-s` of «שֵׁ֖ם» has `x-morph="x-occurrence1"` and no ' +
+    '`x-occurrence`). tc-study places it anyway; format 3 does not guess which occurrence is meant: it leaves the position ' +
+    'out and names it in `alignMissing` with occurrence 0 (bookTexts.ts). Only such words are allowed, and only to have ' +
+    'fewer original words on the format 3 side, each of them in the rows’ list.',
+}
+
+/**
+ * Applies `NO_OCCURRENCE` to a chapter's two sides (copies already normalised): where a word is named in its text's
+ * `alignMissing` with occurrence 0 and format 3 gives it a part of the rows' original words, the rows' are cut to it.
+ * Returns the words so treated, as `book chapter text place word`.
+ */
+async function maskLostOccurrences(rows: PrototypeData, v3: PrototypeData, reader: PackReader): Promise<string[]> {
+  const { book: { id: book }, chapter } = rows
+  const model = (await reader.book(book))!
+  const out: string[] = []
+  for (const text of rows.texts.filter((t) => t.toOriginal)) {
+    const source = model.texts.find((t) => t.res === text.key)!
+    const lost = new Set((source.alignMissing ?? []).filter(([, , , occurrence]) => occurrence === 0).map(([word]) => word))
+    if (!lost.size) continue
+    const mine = v3.texts.find((t) => t.abbreviation === text.abbreviation)!
+    const words = textChapters(source).read(chapter)!.words
+    words.forEach((w, at) => {
+      if (!lost.has(w.word)) return
+      const theirs = text.toOriginal![at]
+      const ours = mine.toOriginal![at]
+      if (JSON.stringify(theirs) === JSON.stringify(ours) || !ours.every((p) => theirs.includes(p))) return
+      text.toOriginal![at] = [...ours]
+      out.push(`${book} ${chapter} ${text.abbreviation} ${at} ${w.text}`)
+    })
+  }
+  return out
+}
+
+/** The differences beyond the allowed ones, and the words `CASE_SHIFT` and `NO_OCCURRENCE` left out. */
+async function compareBooks(rows: PrototypeData[], v3: PrototypeData[], reader: PackReader): Promise<{ found: string[]; masked: string[]; lost: string[] }> {
   const found: string[] = []
   const masked: string[] = []
+  const lost: string[] = []
   expect(v3.map((c) => c.chapter)).toEqual(rows.map((c) => c.chapter))
   for (const [i, c] of rows.entries()) {
     const [a, b] = [normal(v3[i]), normal(c)]
+    lost.push(...(await maskLostOccurrences(b, a, reader)))
     masked.push(...(await maskCaseShifts(b, a, reader)))
     differences(a, b, `${c.book.id} ${c.chapter}`, found)
   }
-  return { found, masked }
+  return { found, masked, lost }
 }
 
 describe('a book read from format 3 is the same book on screen', () => {
@@ -322,7 +361,7 @@ describe('a book read from format 3 is the same book on screen', () => {
 })
 
 const folder = process.env.SERVOS_PAQUETES
-const BOOKS = (process.env.SERVOS_V3_BOOKS ?? 'tit,jon').split(',')
+const BOOKS = (process.env.SERVOS_V3_BOOKS ?? 'tit,jon,rut,neh,est,3jn').split(',')
 
 describe.skipIf(!folder)('the same, with the real packs of es-419', () => {
   it(`${BOOKS.join(', ')}: every chapter, the lexicon and MACULA the same`, async () => {
@@ -332,12 +371,14 @@ describe.skipIf(!folder)('the same, with the real packs of es-419', () => {
     for (const pack of [originals, language]) expect((await openPack(stores, pack)).skippedResources).toEqual([])
     const found: string[] = []
     const masked: string[] = []
+    const lost: string[] = []
     for (const book of BOOKS) {
       const rows = await rowsBook(stores, 'es-419', book)
       const v3 = await v3Book([language], originals, 'es-419', book)
       const compared = await compareBooks(rows.chapters, v3.chapters, v3.reader)
       const here = compared.found
       masked.push(...compared.masked)
+      lost.push(...compared.lost)
       differences(ALLOWED_BESIDE.lexicon.apply(v3.lexicon), ALLOWED_BESIDE.lexicon.apply(rows.lexicon), `${book} lexicon`, here)
       // MACULA: the same when the bridged orig has it (see ALLOWED_BESIDE.macula).
       if (v3.macula.trees || v3.macula.referents) differences(v3.macula, rows.macula, `${book} macula`, here)
@@ -346,6 +387,7 @@ describe.skipIf(!folder)('the same, with the real packs of es-419', () => {
         `\n${book}: ${rows.chapters.length} chapters, ${notes.length} notes (${notes.filter((n) => n.places.TPL.length).length} on words), ` +
           `${Object.keys(rows.lexicon).length} lexicon entries, MACULA ${rows.macula.trees ? 'yes' : 'no'}; ` +
           `${compared.masked.length} words left out (${CASE_SHIFT.what}: ${compared.masked.join('; ')}); ` +
+          `${compared.lost.length} words cut (${NO_OCCURRENCE.what}: ${compared.lost.join('; ')}); ` +
           `${here.length} differences beyond the allowed ones\n${here.join('\n')}`
       )
       found.push(...here)
@@ -353,5 +395,8 @@ describe.skipIf(!folder)('the same, with the real packs of es-419', () => {
     expect(found).toEqual([])
     // A few words, not every word with a capitalised twin in its verse.
     expect(masked.length).toBeLessThan(20)
+    // The one milestone the source lost its occurrence in, where the six books are read.
+    if (BOOKS.includes('rut')) expect(lost).toEqual(expect.arrayContaining(['rut 4 TPS 486 y', 'rut 4 TPS 487 famoso']))
+    expect(lost.length).toBeLessThan(10)
   }, 900_000)
 })

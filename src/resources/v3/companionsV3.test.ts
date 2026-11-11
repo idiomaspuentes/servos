@@ -53,6 +53,21 @@ describe('what a format 3 pack gives beside the texts', () => {
     })
   })
 
+  it('reads each group once, finds each number among the entries that share its thousand, and gives turns', async () => {
+    const entry = (strong: string) => ({ ...(lexG5.t.entries as object[])[0], strong, lemma: strong })
+    const group: Segment = { ...lexG5, t: { entries: [entry('G5228'), entry('G5000'), entry('G05228')] } }
+    let read = 0
+    let turns = 0
+    const r = reader({ 'lex:G5': [group] })
+    const counted = { ...r, segments: async (unit: string) => (read++, r.segments(unit)) } as PackReader
+    const found = await lexiconV3(counted, ['G52280', 'G50000', 'G59990'], async () => void turns++)
+    expect(read).toBe(1)
+    expect(Object.keys(found).sort()).toEqual(['greek:5000', 'greek:5228'])
+    // G05228 is the same number.
+    expect(found['greek:5228'].entries.map((e) => e.strong)).toEqual(['G5228', 'G05228'])
+    expect(turns).toBe(3)
+  })
+
   it('reads no lexicon of a group that is not installed', async () => {
     expect(await lexiconV3(reader({}), ['G52280'])).toEqual({})
   })

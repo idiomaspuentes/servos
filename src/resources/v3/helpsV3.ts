@@ -39,17 +39,21 @@ const quoteOf = (row: HelpRow) => (text(row, 'occurrence').trim() === '0' ? '' :
  * chapter: walking every word of a chapter for every help, and again for every verse a help covers, made Psalms take
  * seconds.
  */
-function wordsOn(byOriginal: Map<number, number[]>, quote: number[] | undefined): number[] {
+function wordsOn(byOriginal: Map<number, number[]>, quote: number[] | undefined, fold: (p: number) => number): number[] {
   const found = new Set<number>()
-  for (const p of quote ?? []) if (p >= 0) for (const at of byOriginal.get(p) ?? []) found.add(at)
+  for (const p of quote ?? []) if (p >= 0) for (const at of byOriginal.get(fold(p)) ?? []) found.add(at)
   return [...found].sort((a, b) => a - b)
 }
 
-/** A text's words by the original positions they translate: a position, the places of its words in the text's order. */
-function placesByOriginal(words: ChapterText['words']): Map<number, number[]> {
+/**
+ * A text's words by the original positions they translate: a position, the places of its words in the text's order. A
+ * qere's position is folded into its ketiv's (`fold`), as the screens place it (`readBookV3`).
+ */
+function placesByOriginal(words: ChapterText['words'], fold: (p: number) => number): Map<number, number[]> {
   const out = new Map<number, number[]>()
   words.forEach((w, at) => {
-    for (const p of w.originals) {
+    for (const original of w.originals) {
+      const p = fold(original)
       const list = out.get(p)
       if (!list) out.set(p, [at])
       else if (list[list.length - 1] !== at) list.push(at)
@@ -69,6 +73,11 @@ export interface ChapterHelpsInput {
   frame: PlacesFrame
   /** The words of each bridge text of the chapter (`TPS` when the chapter has the simple one). */
   texts: { TPL: ChapterText['words']; TPS?: ChapterText['words'] }
+  /**
+   * The chapter's qere positions → their ketiv's (`qereOf`). A Hebrew word read otherwise than written has both in the
+   * original; a quote or a bridge word may name either, so both are taken as the ketiv before they are matched.
+   */
+  qere?: ReadonlyMap<number, number>
 }
 
 /** The notes, questions and word links of one chapter, in the order of their tables. */
@@ -101,13 +110,14 @@ const isIntro = (row: HelpRow) => row.cols.isIntro === true || row.from % 1_000 
 export function chapterHelps(rows: ChapterRows, input: ChapterHelpsInput): { verses: PrototypeData['verses']; intros: ChapterIntros; articles: { tw: string[]; ta: string[] } } {
   const { chapter, frame, texts } = input
   const { notes, questions, links } = rows
-  const tplByOriginal = placesByOriginal(texts.TPL)
-  const tpsByOriginal = texts.TPS ? placesByOriginal(texts.TPS) : null
+  const fold = (p: number) => input.qere?.get(p) ?? p
+  const tplByOriginal = placesByOriginal(texts.TPL, fold)
+  const tpsByOriginal = texts.TPS ? placesByOriginal(texts.TPS, fold) : null
   // A row that covers several verses is placed once; each verse gets its own copy of the places.
   const placed = new Map<HelpRow, { tpl: number[]; tps: number[] }>()
   const placesOf = (row: HelpRow) => {
     let at = placed.get(row)
-    if (!at) placed.set(row, (at = { tpl: wordsOn(tplByOriginal, row.quote), tps: tpsByOriginal ? wordsOn(tpsByOriginal, row.quote) : [] }))
+    if (!at) placed.set(row, (at = { tpl: wordsOn(tplByOriginal, row.quote, fold), tps: tpsByOriginal ? wordsOn(tpsByOriginal, row.quote, fold) : [] }))
     const tpl = [...at.tpl]
     const tps = [...at.tps]
     return { tpl, tps, places: placesThrough(frame, tpl, tps) }

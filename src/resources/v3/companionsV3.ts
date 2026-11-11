@@ -23,6 +23,10 @@ import { articleIdV3 } from './lookups'
 
 type Article = { title: string; markdown: string }
 
+/** Gives the screen a turn when enough work went by since the last (`pacer` in bookV3); nothing by default. */
+export type Pace = () => Promise<void>
+const noPace: Pace = async () => {}
+
 /** An article's markdown, as the published file has it: its title, then each section under its heading. */
 function markdownOf(article: Pick<ArticleModel, 'title' | 'subtitle'> & { sections: ArticleModel['sections'] }, kind: ArticleRef['kind']): string {
   const parts = [`# ${article.title}`]
@@ -49,13 +53,15 @@ export async function readArticleV3(reader: PackReader, ref: ArticleRef): Promis
  * The articles a book's chapters name, by path: a word's titled by its title, the Academy's by its first heading. One
  * not installed is kept as `chapterData` keeps it: titled by its name, with no text.
  */
-export async function articlesV3(reader: PackReader, tw: string[], ta: string[]): Promise<{ tw: Record<string, Article>; ta: Record<string, Article> }> {
+export async function articlesV3(reader: PackReader, tw: string[], ta: string[], pace: Pace = noPace): Promise<{ tw: Record<string, Article>; ta: Record<string, Article> }> {
   const out = { tw: {} as Record<string, Article>, ta: {} as Record<string, Article> }
   for (const path of tw) {
+    await pace()
     const found = await readArticleV3(reader, { kind: 'tw', path })
     out.tw[path] = found ?? { title: path.replace(/^bible\//, '').split('/').pop()!, markdown: '' }
   }
   for (const path of ta) {
+    await pace()
     const found = await readArticleV3(reader, { kind: 'ta', path })
     out.ta[path] = found ? { title: found.markdown.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? path, markdown: found.markdown } : { title: path, markdown: '' }
   }
@@ -106,20 +112,37 @@ export function lexGroupsOf(strongs: Iterable<string>): Set<string> {
   return out
 }
 
-/** The lexicon entries of these Strong numbers (as the original writes them), keyed as `keepLexicon` keeps them (`greek:5228`). */
-export async function lexiconV3(reader: PackReader, strongs: string[]): Promise<Record<string, LexiconFile>> {
+/**
+ * The lexicon entries of these Strong numbers (as the original writes them), keyed as `keepLexicon` keeps them
+ * (`greek:5228`). Each group (about a thousand entries) is indexed once by number: filtering it again for every number,
+ * a regular expression an entry, took Psalms' 2500 numbers most of a second on a desktop.
+ */
+export async function lexiconV3(reader: PackReader, strongs: string[], pace: Pace = noPace): Promise<Record<string, LexiconFile>> {
   const wanted = new Map<string, { letter: 'G' | 'H'; number: number }>()
   for (const strong of strongs)
     for (const part of strongParts(strong)) wanted.set(`${part.kind}:${part.number}`, { letter: part.kind === 'greek' ? 'G' : 'H', number: part.number })
-  const groups = new Map<string, LexEntry[] | null>()
+  const groups = new Map<string, Map<string, LexEntry[]> | null>()
   const out: Record<string, LexiconFile> = {}
   for (const [key, { letter, number }] of wanted) {
+    await pace()
     const group = lexGroup(letter, number)
     if (!groups.has(group)) {
       const segment = reader.installed(group) ? (await reader.segments(group))?.[0] : undefined
-      groups.set(group, segment ? lexView(segment).entries : null)
+      let byNumber: Map<string, LexEntry[]> | null = null
+      if (segment) {
+        byNumber = new Map()
+        for (const e of lexView(segment).entries) {
+          const n = NUMBER.exec(e.strong)?.[1]
+          if (n === undefined) continue
+          const at = `${e.strong[0]}${Number(n)}`
+          const list = byNumber.get(at)
+          if (list) list.push(e)
+          else byNumber.set(at, [e])
+        }
+      }
+      groups.set(group, byNumber)
     }
-    const entries = (groups.get(group) ?? []).filter((e) => e.strong[0] === letter && Number(NUMBER.exec(e.strong)?.[1]) === number)
+    const entries = groups.get(group)?.get(`${letter}${number}`) ?? []
     const file = entries.length ? fileOf(entries) : null
     if (file) out[key] = file
   }
