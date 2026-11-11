@@ -23,7 +23,12 @@ const OPENED = 'archivos-abiertos'
 /** Files between Servos and the rest of the phone (`android/…/FilesPlugin.java`). */
 interface Files {
   opened(): Promise<{ files: Arrived[] }>
-  share(file: { name: string; text: string; base64?: string; type: string; keepHere: string }): Promise<{ saved?: string }>
+  /** Writes a piece of a file to share (`append` false: the first, which starts it anew). */
+  write(piece: { name: string; base64: string; append: boolean }): Promise<void>
+  /** Deletes a file to share that could not be written whole. */
+  discard(file: { name: string }): Promise<void>
+  /** Shares the file written under `name`. */
+  share(file: { name: string; type: string; keepHere: string }): Promise<{ saved?: string }>
   shareText(options: { text: string }): Promise<void>
   addListener(event: string, listener: () => void): Promise<unknown>
 }
@@ -121,9 +126,31 @@ export async function shareTextOnPhone(text: string): Promise<void> {
  */
 export async function shareOnPhone(name: string, text: string | Uint8Array, type: string, keepHere: string): Promise<string | null> {
   const { plugin } = await files()
-  // Bytes cross to Android as base64 (`base64`), which the plugin writes as they are.
-  const { saved } = typeof text === 'string' ? await plugin.share({ name, text, type, keepHere }) : await plugin.share({ name, text: '', base64: base64Of(text), type, keepHere })
+  await writeInPieces(plugin, name, typeof text === 'string' ? new TextEncoder().encode(text) : text)
+  // Only the name crosses with the call that opens the sheet: Android keeps that call in the activity's saved state
+  // while the sheet is up, and a file in it (megabytes) is over what it lets through, which closed the app.
+  const { saved } = await plugin.share({ name, type, keepHere })
   return saved ?? null
+}
+
+/** The bytes of one piece: a multiple of 3, so each piece is base64 by itself (256 KB of it). */
+export const PIECE = 196_608
+
+/**
+ * Writes a file for the share sheet into the app's cache, a piece per call: a whole file in one call is held several
+ * times over as text on both sides of the bridge. A file that could not be written whole is deleted.
+ */
+export async function writeInPieces(plugin: Pick<Files, 'write' | 'discard'>, name: string, bytes: Uint8Array, piece = PIECE): Promise<void> {
+  try {
+    let at = 0
+    do {
+      await plugin.write({ name, base64: base64Of(bytes.subarray(at, at + piece)), append: at > 0 })
+      at += piece
+    } while (at < bytes.length)
+  } catch (e) {
+    await plugin.discard({ name }).catch(() => {})
+    throw e
+  }
 }
 
 /** Bytes as base64, a piece at a time (a whole megabyte spread into one call would overflow the stack). */

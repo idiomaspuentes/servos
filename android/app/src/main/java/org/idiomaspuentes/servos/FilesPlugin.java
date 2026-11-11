@@ -7,6 +7,7 @@ import android.content.pm.LabeledIntent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
+import android.provider.DocumentsContract;
 import android.provider.OpenableColumns;
 import android.util.Base64;
 import android.webkit.MimeTypeMap;
@@ -21,6 +22,7 @@ import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -83,7 +85,44 @@ public class FilesPlugin extends Plugin {
     }
 
     /**
-     * Writes the file where the app keeps what it lets go of, and offers it to the phone's share sheet, with one more
+     * Writes a piece of a file to share where the app keeps what it lets go of: the first piece ({@code append} false)
+     * starts it anew, the rest go after it. A file crosses from the page a piece at a time, and the call that shares it
+     * ({@code share}) names it only: Android keeps that call in the activity's saved state while the sheet is up, and
+     * a file in it, megabytes, is over what Android lets through (TransactionTooLargeException closed the app).
+     */
+    @PluginMethod
+    public void write(PluginCall call) {
+        String name = call.getString("name", "");
+        String base64 = call.getString("base64", "");
+        boolean append = Boolean.TRUE.equals(call.getBoolean("append", false));
+        if (!named(name)) {
+            call.reject("No name");
+            return;
+        }
+        try {
+            File folder = sharedFolder();
+            if (!folder.isDirectory() && !folder.mkdirs()) throw new Exception("No folder");
+            if (!append) clearShared(folder);
+            try (FileOutputStream out = new FileOutputStream(new File(folder, name), append)) {
+                out.write(Base64.decode(base64, Base64.DEFAULT));
+            }
+            call.resolve();
+        } catch (Exception | OutOfMemoryError e) {
+            new File(sharedFolder(), name).delete();
+            call.reject("Not written", e instanceof Exception ? (Exception) e : null);
+        }
+    }
+
+    /** Deletes a file to share that the page could not write whole. */
+    @PluginMethod
+    public void discard(PluginCall call) {
+        String name = call.getString("name", "");
+        if (named(name)) new File(sharedFolder(), name).delete();
+        call.resolve();
+    }
+
+    /**
+     * Offers the file written under its name ({@code write}) to the phone's share sheet, with one more
      * place at its head: the phone itself («Guardar en el teléfono», its label from the page, in the app's language),
      * where the system asks for the folder (Descargas, a memory card). Many phones offer no other way to keep a file
      * of a type they do not know. Gives back the name it was saved under there, or nothing when it went elsewhere,
@@ -94,18 +133,13 @@ public class FilesPlugin extends Plugin {
         String name = call.getString("name", "");
         String type = call.getString("type", "application/octet-stream");
         String keepHere = call.getString("keepHere", "");
-        if (name.isEmpty() || name.contains("/")) {
+        if (!named(name)) {
             call.reject("No name");
             return;
         }
         try {
-            File folder = sharedFolder();
-            if (!folder.isDirectory() && !folder.mkdirs()) throw new Exception("No folder");
-            clearShared(folder);
-            File file = new File(folder, name);
-            try (FileOutputStream out = new FileOutputStream(file)) {
-                out.write(bodyOf(call));
-            }
+            File file = new File(sharedFolder(), name);
+            if (!file.isFile()) throw new Exception("Not written");
             Uri uri = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", file);
             Intent send = new Intent(Intent.ACTION_SEND);
             send.setType(type);
@@ -163,21 +197,38 @@ public class FilesPlugin extends Plugin {
             call.resolve(answer);
             return;
         }
-        try (OutputStream out = getContext().getContentResolver().openOutputStream(place, "wt")) {
+        // Copied from the file written for the sheet, a buffer at a time: nothing of it is held whole. The place
+        // chosen is written over ("wt"), so choosing a file there that was left empty (a save cut short) replaces it.
+        File file = new File(sharedFolder(), call.getString("name", ""));
+        try (InputStream in = new FileInputStream(file); OutputStream out = getContext().getContentResolver().openOutputStream(place, "wt")) {
             if (out == null) throw new Exception("No place");
-            out.write(bodyOf(call));
-            answer.put("saved", nameOf(place));
-            call.resolve(answer);
+            byte[] buffer = new byte[64 * 1024];
+            int n;
+            while ((n = in.read(buffer)) != -1) out.write(buffer, 0, n);
         } catch (Exception e) {
+            // A document left empty or cut would stay in the folder (and in the phone's list of files) as if it were
+            // the file: it goes.
+            forget(place);
             call.reject("Not saved", e);
+            return;
+        }
+        answer.put("saved", nameOf(place));
+        call.resolve(answer);
+    }
+
+    /** Deletes a document the sheet made that could not be written. */
+    private void forget(Uri place) {
+        try {
+            if (DocumentsContract.isDocumentUri(getContext(), place)) DocumentsContract.deleteDocument(getContext().getContentResolver(), place);
+            else getContext().getContentResolver().delete(place, null, null);
+        } catch (Exception e) {
+            // Nothing more can be done from here: the person sees the save failed.
         }
     }
 
-    /** What a file holds: bytes given as base64 (a transfer file), or else its text. */
-    private static byte[] bodyOf(PluginCall call) {
-        String base64 = call.getString("base64", null);
-        if (base64 != null) return Base64.decode(base64, Base64.DEFAULT);
-        return call.getString("text", "").getBytes(StandardCharsets.UTF_8);
+    /** A file's own name: no folder in it, not empty. */
+    private static boolean named(String name) {
+        return !name.isEmpty() && !name.contains("/") && !name.contains("\\") && !name.equals(".") && !name.equals("..");
     }
 
     /** Where a file waits for the app it is shared to, inside Servos's own cache. */
