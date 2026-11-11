@@ -116,6 +116,18 @@ export async function catalogResourcesV3(lang: string): Promise<CatalogResource[
 }
 
 /**
+ * The resources of every language active in format 3 here, and of the catalogs they require, each key once: what the
+ * credits of «Acerca de» read (`creditsOnDevice`). A language whose catalog cannot be read is left out.
+ */
+export async function resourcesV3OnDevice(): Promise<CatalogResource[]> {
+  const out = new Map<string, CatalogResource>()
+  for (const lang of await languagesV3()) {
+    for (const r of await catalogResourcesV3(lang).catch((): CatalogResource[] => [])) if (!out.has(r.key)) out.set(r.key, r)
+  }
+  return [...out.values()]
+}
+
+/**
  * What installing `want` from the newest catalog of a language (the one `refresh` kept) would fetch: the bytes of the
  * segments not in the store, with what the units need (`planInstall`, as `install` plans it). `units` are the keys of
  * every unit the catalogs list. Null when no catalog of the language is kept.

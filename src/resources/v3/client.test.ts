@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import { afterEach, describe, expect, it } from 'vitest'
 import { memoryStore, type SearchIndex } from '@bt-synergy/language-pack-client'
 import { packsFormat, PACKS_SERVERS, V3_ORIGINS } from '../online/packsServer'
-import { createPacksV3, forgetReadersV3, packsV3, readerV3, resetPacksV3, searchableBooksV3 } from './client'
+import { createPacksV3, forgetReadersV3, packsV3, readerV3, resetPacksV3, resourcesV3OnDevice, searchableBooksV3 } from './client'
 import { trustedKeys } from './keys'
 import { buildSample, fakeFetch, readKeyFile } from './testing/sample'
 
@@ -31,6 +31,17 @@ describe('packsFormat', () => {
 })
 
 describe('packsV3', () => {
+  it('lists the resources of the installed catalogs once each, for the credits', async () => {
+    const sample = await buildSample()
+    const client = await packsV3({ fetch: fakeFetch(sample), store: memoryStore(), index: null, trustedKeys: { [sample.keyId]: sample.publicKey } })
+    expect(await resourcesV3OnDevice()).toEqual([])
+    await client.refresh('es-419')
+    await client.install('es-419', { books: ['tit'] })
+    const keys = (await resourcesV3OnDevice()).map((r) => r.key)
+    expect(keys).toEqual(expect.arrayContaining(['es-419_gl/es-419/glt', 'unfoldingWord/el-x-koine/ugnt']))
+    expect(new Set(keys).size).toBe(keys.length)
+  })
+
   it('installs and reads a signed sample', async () => {
     const sample = await buildSample()
     const fetch = fakeFetch(sample)

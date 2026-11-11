@@ -16,8 +16,9 @@ import { appLabel } from '../frame/version'
 import { LEXICON_SUBJECTS } from '../../resources/companions'
 import { creditsOnDevice, type Credit } from '../../resources/credits'
 import { openResourceStores } from '../../resources/store'
+import { resourcesV3OnDevice } from '../../resources/v3/client'
 import { choosePacksServer as switchPacksServer } from '../../resources/online/onlineResources'
-import { PACKS_SERVERS, packsServerChoice, type PacksServerId } from '../../resources/online/packsServer'
+import { PACKS_SERVERS, packsFormat, packsServerChoice, type PacksServerId } from '../../resources/online/packsServer'
 
 const SERVER_NAMES: Record<PacksServerId, string> = { produccion: 'enLinea.servidorPrincipal', staging: 'enLinea.servidorPrueba' }
 
@@ -54,9 +55,17 @@ export function AboutSheet({ onClose }: { onClose(): void }) {
   const mayMeasure = server === 'staging' || new URLSearchParams(location.search).has('medir')
   useEffect(() => {
     let live = true
-    creditsOnDevice(openResourceStores(), (_, row) =>
-      row.subject === LEXICON_SUBJECTS.greek ? t('acerca.lexicoGriego') : row.subject === LEXICON_SUBJECTS.hebrew ? t('acerca.lexicoHebreo') : undefined
-    )
+    // The format 3 catalogs too: a phone whose books came only in format 3 has no rows. A store that cannot be read
+    // credits what the rows say. Only where format 3 is used (the staging server), as the library reads it.
+    const v3 = packsFormat() === 3 ? resourcesV3OnDevice().catch(() => []) : Promise.resolve([])
+    v3.then((resources) =>
+        creditsOnDevice(
+          openResourceStores(),
+          (_, row) =>
+            row.subject === LEXICON_SUBJECTS.greek ? t('acerca.lexicoGriego') : row.subject === LEXICON_SUBJECTS.hebrew ? t('acerca.lexicoHebreo') : undefined,
+          resources,
+        ),
+      )
       .then((c) => live && setCredits(c))
       // A browser without IndexedDB: nothing received, as for a new phone.
       .catch(() => live && setCredits([]))
@@ -83,6 +92,11 @@ export function AboutSheet({ onClose }: { onClose(): void }) {
               <li key={c.keys.join(' ')}>
                 <span className="credit-titles">{listed(c.titles, lang)}</span>
                 <span className="quiet">{lineOf(c)}</span>
+                {c.notes.map((note) => (
+                  <span key={note} className="quiet credit-note">
+                    {note}
+                  </span>
+                ))}
               </li>
             ))}
           </ul>
