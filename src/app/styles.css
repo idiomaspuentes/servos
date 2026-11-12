@@ -1216,6 +1216,11 @@ button.search-hit .search-hit-place { color: var(--accent); }
 .row-button-label { flex: 1; min-width: 0; }
 .row-button-meta { color: var(--text-soft); font-weight: 400; font-size: 0.9rem; }
 .row-button::after { content: '›'; color: var(--text-soft); font-size: 1.25rem; line-height: 1; }
+/* A row that names a place and quotes it (an article's notes in this book, a book's issues): two lines, the second soft */
+.in-book-list { list-style: none; margin: 0; padding: 0; }
+.in-book-place, .issue-row-title { display: block; }
+.in-book-quote { font-family: var(--serif); font-weight: 400; }
+.in-book-gist, .issue-row-meta { display: block; color: var(--text-soft); font-weight: 400; font-size: 0.9rem; overflow-wrap: anywhere; }
 .row-button.is-fold::after { content: '▾'; font-size: 1rem; transition: transform 0.15s; }
 .row-button.is-fold[aria-expanded='true']::after { transform: rotate(180deg); }
 .suggestion { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-card); }
