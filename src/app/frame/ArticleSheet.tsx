@@ -63,9 +63,9 @@ export function ArticleSheet({ data, article, onClose, inBook }: { data: Prototy
           ‹ {t('ayudas.volverA', { titulo: stack[stack.length - 2].title.split(',')[0].trim() })}
         </button>
       )}
-      {inBook && shown.ref?.kind === 'ta' && <NotesInBook key={stack.length} inBook={inBook} path={shown.ref.path} onClose={onClose} />}
-      <Markdown key={stack.length} text={shown.markdown} skipFirstHeading links={links} />
-      {shown.ref && <DondeAparece key={stack.length} language={data.language} article={shown.ref} />}
+      {inBook && shown.ref?.kind === 'ta' && <NotesInBook key={`in-book-${stack.length}`} inBook={inBook} path={shown.ref.path} onClose={onClose} />}
+      <Markdown key={`text-${stack.length}`} text={shown.markdown} skipFirstHeading links={links} />
+      {shown.ref && <DondeAparece key={`where-${stack.length}`} language={data.language} article={shown.ref} />}
     </Sheet>
   )
 }

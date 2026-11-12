@@ -272,6 +272,12 @@ function Center({ context }: MiniAppCenterProps) {
       />
     ),
   }
+  // The book's issues in this section: an index above its text on a phone; on a computer in the column beside it, over
+  // the note, where a touched word's card goes, so it is not stretched across the window.
+  const here = { chapter: position.chapter, verses: shown }
+  const sectionIssues = (
+    <SectionIssues rows={issuesOfSection(context.bookIssues, position.chapter, shown)} chapter={position.chapter} bookName={context.bookTitle} onOpen={(i) => void openIssue(i, here)} />
+  )
   const panes: Pane[] = [
     ...(wider ? [together] : texts),
     {
@@ -279,6 +285,7 @@ function Center({ context }: MiniAppCenterProps) {
       label: t('estudio.miNota'),
       content: (
         <>
+          {wide && sectionIssues}
           {cardAside()}
           <StudyNotes
             ref={box}
@@ -293,11 +300,9 @@ function Center({ context }: MiniAppCenterProps) {
     },
   ]
 
-  // The book's issues in this section, an index above its text; one opens with the section's notes first.
-  const here = { chapter: position.chapter, verses: shown }
   return (
     <div className="study" ref={root}>
-      <SectionIssues rows={issuesOfSection(context.bookIssues, position.chapter, shown)} chapter={position.chapter} bookName={context.bookTitle} onOpen={(i) => void openIssue(i, here)} />
+      {!wide && sectionIssues}
       <Panes panes={panes} label={t('estudio.paneles')} fixed="nota" open={open} onPane={setPane} holdFocus={false} />
       {issueSheet}
     </div>
