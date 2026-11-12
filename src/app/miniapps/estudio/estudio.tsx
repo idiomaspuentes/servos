@@ -24,9 +24,10 @@ import { BOOK_INTRO, BOOK_ISSUES, CHAPTER_INTRO, type MiniApp, type MiniAppCente
 import { StudyNotes, withLine } from './StudyNotes'
 import { VerseExtras } from './VerseExtras'
 import { ArticleSheet, articleIn, type InBook, type OpenArticle } from '../../frame/ArticleSheet'
-import type { BookIssue } from '../../projects/bookIssues'
+import { issuesOfSection, type BookIssue } from '../../projects/bookIssues'
 import { readArticle } from '../../projects/library'
 import { BookIssues } from './BookIssues'
+import { SectionIssues } from './SectionIssues'
 
 /** How long a section stays on screen before moving on past it counts as having read it. */
 export const READ_SECONDS = 5
@@ -292,9 +293,13 @@ function Center({ context }: MiniAppCenterProps) {
     },
   ]
 
+  // The book's issues in this section, an index above its text; one opens with the section's notes first.
+  const here = { chapter: position.chapter, verses: shown }
   return (
     <div className="study" ref={root}>
+      <SectionIssues rows={issuesOfSection(context.bookIssues, position.chapter, shown)} chapter={position.chapter} bookName={context.bookTitle} onOpen={(i) => void openIssue(i, here)} />
       <Panes panes={panes} label={t('estudio.paneles')} fixed="nota" open={open} onPane={setPane} holdFocus={false} />
+      {issueSheet}
     </div>
   )
 }
@@ -354,6 +359,8 @@ export const estudio: MiniApp = {
       asuntoCuentaUnCapitulo: '{n} notas · en 1 capítulo',
       leido: 'Leído',
       otrosAsuntos: 'Ver los otros {n} asuntos',
+      asuntosAqui: 'Asuntos de traducción aquí ({n})',
+      enTodoLibro: '{n} en todo {libro}',
       'lengua.hbo': 'Hebreo',
       'lengua.grc': 'Griego',
       'lengua.original': 'Original',
@@ -391,6 +398,8 @@ export const estudio: MiniApp = {
       asuntoCuentaUnCapitulo: '{n} notas · em 1 capítulo',
       leido: 'Lido',
       otrosAsuntos: 'Ver os outros {n} assuntos',
+      asuntosAqui: 'Assuntos de tradução aqui ({n})',
+      enTodoLibro: '{n} em todo {libro}',
       'lengua.hbo': 'Hebraico',
       'lengua.grc': 'Grego',
       'lengua.original': 'Original',
@@ -428,6 +437,8 @@ export const estudio: MiniApp = {
       asuntoCuentaUnCapitulo: '{n} notes · in 1 chapter',
       leido: 'Read',
       otrosAsuntos: 'See the other {n} issues',
+      asuntosAqui: 'Translation issues here ({n})',
+      enTodoLibro: '{n} in all of {libro}',
       'lengua.hbo': 'Hebrew',
       'lengua.grc': 'Greek',
       'lengua.original': 'Original',
