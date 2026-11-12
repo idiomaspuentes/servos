@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { PrototypeData, PrototypeNote } from '../../prototype/data'
-import { issuesOfBook, issuesOfSection, noteGist, notesInBook } from './bookIssues'
+import { issuesOfBook, issuesOfBookKept, issuesOfSection, noteGist, notesInBook } from './bookIssues'
 
 type N = { id: string; academy: string | null; quote?: string; note?: string }
 
@@ -62,6 +62,19 @@ describe('issuesOfBook', () => {
     // The loaders keep an article not found with its path as the title and no text.
     const [away] = issuesOfBook([chapter(1, { 1: [{ id: 'a', academy: META }] }, { [META]: { title: META, markdown: '' } })])
     expect(away).toMatchObject({ title: 'figs-metaphor', onDevice: false })
+  })
+})
+
+describe('issuesOfBookKept', () => {
+  it('gives the same answer while the chapters are the same, and a new one when one changes', () => {
+    const a = chapter(1, { 1: [{ id: 'a', academy: META }] })
+    const b = chapter(2, { 1: [{ id: 'b', academy: META }] })
+    const first = issuesOfBookKept([a, b])
+    expect(issuesOfBookKept([{ ...a }, { ...b }])).toBe(first)
+    const b2 = chapter(2, { 1: [{ id: 'b', academy: PASSIVE }] })
+    const next = issuesOfBookKept([a, b2])
+    expect(next).not.toBe(first)
+    expect(next.map((i) => i.path)).toEqual([PASSIVE, META])
   })
 })
 

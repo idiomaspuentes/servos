@@ -45,6 +45,19 @@ export function issuesOfBook(chapters: ReadonlyArray<{ chapter: number; data: Pr
   return issues.sort((a, b) => b.notes.length - a.notes.length || a.title.localeCompare(b.title))
 }
 
+let kept: { datas: PrototypeData[]; issues: BookIssue[] } | null = null
+
+/**
+ * `issuesOfBook`, kept while the chapters are the same objects (the library replaces a chapter's data when it reads
+ * it again): the frame asks at every render, and a long book has thousands of notes.
+ */
+export function issuesOfBookKept(chapters: ReadonlyArray<{ chapter: number; data: PrototypeData }>): BookIssue[] {
+  const datas = chapters.map((c) => c.data)
+  if (kept && kept.datas.length === datas.length && kept.datas.every((d, i) => d === datas[i])) return kept.issues
+  kept = { datas, issues: issuesOfBook(chapters) }
+  return kept.issues
+}
+
 /** The issues with a note on these verses of a chapter, each with the verses it is on, in the book's order. */
 export function issuesOfSection(issues: BookIssue[], chapter: number, verses: number[]): Array<{ issue: BookIssue; verses: number[] }> {
   const out: Array<{ issue: BookIssue; verses: number[] }> = []
