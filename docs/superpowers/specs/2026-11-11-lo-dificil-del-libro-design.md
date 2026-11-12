@@ -67,7 +67,7 @@ Nombres de personas        Leído  ›
 …
 Ver los otros 12 asuntos          ▾
 ──────────────────────────────────────
-[ Rut ·  Lo difícil · 2 de 30  ‹ › ]
+[ Rut · Lo difícil de este libro ‹ › ]
         [ Seguir leyendo ]
 ```
 
@@ -140,10 +140,10 @@ Todo sale de lo que la mini app ya tiene en memoria; nada se lee, se espera ni s
 `src/app/projects/bookIssues.ts` (nuevo, puro):
 
 ```ts
-type IssueNote = { chapter: number; verse: number; id: string; quote: string; note: string }
-type BookIssue = { path: string; notes: IssueNote[]; chapters: number }
+type IssueNote = { chapter: number; verse: number; covers: number[]; id: string; quote: string; note: string }
+type BookIssue = { path: string; title: string; onDevice: boolean; notes: IssueNote[]; chapters: number }
 
-/** The Academy articles the book's notes point to, most used first (then by path). */
+/** The Academy articles the book's notes point to, most used first (then by title). */
 function issuesOfBook(chapters: ReadonlyArray<{ chapter: number; data: PrototypeData }>): BookIssue[]
 
 /** The issues with a note on these verses of a chapter, each with the verses it is on, in the book's order. */
