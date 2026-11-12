@@ -47,6 +47,12 @@ describe('issuesOfBook', () => {
     expect(issue.notes[0]).toMatchObject({ chapter: 1, verse: 1, covers: [1, 2], id: 'n1' })
   })
 
+  it('quotes the note in the literal bridge text when aligned, else in the original', () => {
+    const c = chapter(1, { 1: [{ id: 'a', academy: META, quote: 'δοῦλος' }, { id: 'b', academy: META, quote: 'Θεοῦ' }] })
+    c.data.verses[0].notes[0].glt = 'siervo'
+    expect(issuesOfBook([c])[0].notes.map((n) => n.quote)).toEqual(['siervo', 'Θεοῦ'])
+  })
+
   it('leaves out notes without an article', () => {
     expect(issuesOfBook([chapter(1, { 1: [{ id: 'a', academy: null }] })])).toEqual([])
   })
@@ -134,6 +140,11 @@ describe('notesInBook', () => {
 describe('noteGist', () => {
   it('is the first line, without markdown', () => {
     expect(noteGist('**Siervo** es una [metáfora](rc://*/ta/man/translate/figs-metaphor).\nOtra línea')).toBe('Siervo es una metáfora.')
+  })
+
+  it('drops the links to other articles, and the «see» they leave empty', () => {
+    expect(noteGist('Dos términos similares. (ver también: [[rc://es-419/ta/man/translate/figs-doublet]]).')).toBe('Dos términos similares.')
+    expect(noteGist('Una figura [[rc://*/ta/man/translate/figs-metaphor]] aquí.')).toBe('Una figura aquí.')
   })
 
   it('also ends at a written line end', () => {

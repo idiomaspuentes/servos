@@ -9,6 +9,7 @@
 
 import type { PrototypeData } from '../../prototype/data'
 
+/** `quote`: the note's words in the literal bridge text when aligned, else in the original. */
 export type IssueNote = { chapter: number; verse: number; covers: number[]; id: string; quote: string; note: string }
 export type BookIssue = { path: string; title: string; onDevice: boolean; notes: IssueNote[]; chapters: number }
 
@@ -28,7 +29,7 @@ export function issuesOfBook(chapters: ReadonlyArray<{ chapter: number; data: Pr
         const kept = issue.notes.get(key)
         if (kept) {
           if (!kept.covers.includes(verse)) kept.covers.push(verse)
-        } else issue.notes.set(key, { chapter, verse, covers: [verse], id: n.id, quote: n.quote, note: n.note })
+        } else issue.notes.set(key, { chapter, verse, covers: [verse], id: n.id, quote: n.glt || n.quote, note: n.note })
       }
     }
   }
@@ -85,7 +86,12 @@ export function noteGist(markdown: string): string {
   const first = markdown.trimStart().split(/\\n|\n/)[0] ?? ''
   return first
     .replace(/^#+\s*/, '')
+    // Links to other articles say nothing in a list, nor the «(see: …)» around them.
+    .replace(/\s*\[\[[^\]]*\]\]/g, '')
+    .replace(/\s*\([^()]*:\s*\)/g, '')
     .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
     .replace(/[*_`]/g, '')
+    .replace(/\s+([.,;:])/g, '$1')
+    .replace(/\.{2,}$/, '.')
     .trim()
 }
