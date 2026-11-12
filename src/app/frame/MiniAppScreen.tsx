@@ -13,6 +13,7 @@ import { HelpsPanel } from './HelpsPanel'
 import { KEYS, useKey } from './keys'
 import { keepFocus, useWide } from './Panes'
 import { PlacePicker, passageOf, stopsOf } from './PlacePicker'
+import { issuesOfBookKept } from '../projects/bookIssues'
 import { MenuRow, Sheet } from './Sheet'
 
 /**
@@ -124,7 +125,17 @@ export function MiniAppScreen({
       /* chosen for this visit */
     }
   }
-  const stops = stopsOf(data, unit, app.intros)
+  // What is hard in the book, for a mini app that stops there: from every chapter on this device (kept while they stay).
+  const bookIssues = app.issues
+    ? issuesOfBookKept(chapters.flatMap((c) => {
+        const d = dataOf(c)
+        return d ? [{ chapter: c, data: d }] : []
+      }))
+    : []
+  const withIssues = bookIssues.length > 0
+  // The issues stop is in the book's first chapter on this device, after its introduction when it has one.
+  const issuesIn = (chapter: number) => withIssues && chapter === chapters[0]
+  const stops = stopsOf(data, unit, app.intros, issuesIn(position.chapter))
   const at = Math.max(0, stops.findIndex((s) => s.includes(position.verse)))
   const shown = stops[at] ?? [position.verse]
   const goStop = (index: number) => onPosition({ ...position, verse: stops[index][0] })
@@ -152,7 +163,7 @@ export function MiniAppScreen({
   const cross = (chapter: number, last: boolean) => {
     const next = dataOf(chapter)
     if (!next) return
-    const s = stopsOf(next, unit, app.intros)
+    const s = stopsOf(next, unit, app.intros, issuesIn(chapter))
     onPosition({ ...position, chapter, verse: (last ? s[s.length - 1] : s[0])[0] })
     setCrossed(chapter)
   }
@@ -211,6 +222,7 @@ export function MiniAppScreen({
     shown,
     chapters,
     chapterData: dataOf,
+    bookIssues,
     marked,
     frame: {
       switchText: () => {
@@ -358,6 +370,7 @@ export function MiniAppScreen({
           bookId={data.book.id}
           chapters={chapters}
           dataOf={dataOf}
+          issues={withIssues}
           chapter={position.chapter}
           verse={position.verse}
           unit={unit}

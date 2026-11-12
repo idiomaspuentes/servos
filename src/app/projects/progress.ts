@@ -6,7 +6,7 @@
 
 import { chapterOf, chaptersOf, type PrototypeData } from '../../prototype/data'
 import type { T } from '../i18n/i18n'
-import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp } from '../miniapps/contract'
+import { BOOK_INTRO, BOOK_ISSUES, CHAPTER_INTRO, type MiniApp } from '../miniapps/contract'
 import { miniApp } from '../miniapps/registry'
 import type { Phase, Project } from './model'
 
@@ -43,6 +43,7 @@ export function stepPercent(project: Project, book: string, phase: Phase, chapte
 /** A place in a book as a person says it: «Jonás 1:6», or the book's or a chapter's introduction. */
 export function placeLabel(t: T, name: string, place: { chapter: number; verse: number }): string {
   if (place.verse === BOOK_INTRO) return t('libro.introLibro', { libro: name })
+  if (place.verse === BOOK_ISSUES) return t('libro.loDificil', { libro: name })
   if (place.verse === CHAPTER_INTRO) return t('libro.introCapitulo', { libro: name, capitulo: place.chapter })
   return `${name} ${place.chapter}:${place.verse}`
 }

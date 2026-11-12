@@ -177,6 +177,22 @@ export function markStudied(book: string, chapter: number, verses: number[]) {
   if (all.length !== before.length) write(studiedKey(book, chapter), JSON.stringify(all))
 }
 
+/** The Academy articles of a book's issues opened in the study (`bookIssues.ts`): marked «Leído» in its list. */
+const issuesReadKey = (book: string) => `${KEY}.asuntosLeidos.${scoped(book)}`
+
+export function issuesReadIn(book: string): string[] {
+  try {
+    return JSON.parse(read(issuesReadKey(book)) ?? '[]') as string[]
+  } catch {
+    return []
+  }
+}
+
+export function markIssueRead(book: string, path: string) {
+  const before = issuesReadIn(book)
+  if (!before.includes(path)) write(issuesReadKey(book), JSON.stringify([...before, path]))
+}
+
 /**
  * The note on an introduction: a chapter's is its note on verse 0, the book's that of chapter 0. They are kept, shared
  * and taken in as any other note, and no verse is ever 0, so `studyNotesAbout` a verse never brings them.

@@ -8,6 +8,7 @@
  * is plain data plus one component, and it reaches the device's data only through the context it is given.
  */
 
+import type { BookIssue } from '../projects/bookIssues'
 import type { ComponentType, ReactNode } from 'react'
 import type { BaseLanguage, T, Texts } from '../i18n/i18n'
 import type { PrototypeData } from '../../prototype/data'
@@ -23,6 +24,8 @@ export type ResourceNeed = 'text' | 'notes' | 'questions' | 'words' | 'academy'
  */
 export const BOOK_INTRO = -1
 export const CHAPTER_INTRO = 0
+/** What is hard in the book: the Academy articles its notes use, after the book's introduction (`MiniApp.issues`). */
+export const BOOK_ISSUES = -2
 
 /** A verse at a time, or a section (the translators' sections of the chapter) at a time. */
 export type Unit = 'verse' | 'section'
@@ -56,6 +59,8 @@ export interface MiniAppContext {
   /** The chapters of the book on this device, and each one's texts and helps: for a mini app that goes through the book. */
   chapters: number[]
   chapterData(chapter: number): PrototypeData | null
+  /** What is hard in the book: the Academy articles its notes use (`bookIssues.ts`); empty unless `MiniApp.issues`. */
+  bookIssues: BookIssue[]
   /** Words of the bridge text to mark in the open verse (from the help the person is reading). */
   marked: string | null
   /** What the frame can do for a mini app. */
@@ -147,6 +152,11 @@ export interface MiniApp {
    * then stops at them first (`BOOK_INTRO`, `CHAPTER_INTRO` as the verse).
    */
   intros?: boolean
+  /**
+   * With `intros`: whether it also stops, after the book's introduction, at what is hard in the book (`BOOK_ISSUES`),
+   * when the book's notes use an Academy article.
+   */
+  issues?: boolean
   /** Whether the helps panel shows under its center. */
   helps: boolean
   /**

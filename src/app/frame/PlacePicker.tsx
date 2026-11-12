@@ -8,28 +8,41 @@
 import { useState } from 'react'
 import type { PrototypeData } from '../../prototype/data'
 import { useT, type T } from '../i18n/i18n'
-import { BOOK_INTRO, CHAPTER_INTRO, type MiniApp, type Unit } from '../miniapps/contract'
+import { BOOK_INTRO, BOOK_ISSUES, CHAPTER_INTRO, type MiniApp, type Unit } from '../miniapps/contract'
 import { authorOf, workOf } from '../projects/work'
 import { Sheet } from './Sheet'
 
-/** The stops of a chapter: its verses, or its sections; first its introductions, for a mini app that reads them. */
-export function stopsOf(data: PrototypeData, unit: Unit, intros = false): number[][] {
+/**
+ * The stops of a chapter: its verses, or its sections; first its introductions, for a mini app that reads them, and
+ * after the book's, what is hard in the book (`issues`: the chapter is the book's first on this device, the mini app
+ * asks for it and the book's notes use an article). A book without an introduction opens with it.
+ */
+export function stopsOf(data: PrototypeData, unit: Unit, intros = false, issues = false): number[][] {
   const body = unit === 'section' && data.sections.length ? data.sections : data.verses.map((v) => [v.verse])
   if (!intros) return body
-  return [...(data.bookIntro ? [[BOOK_INTRO]] : []), ...(data.intro ? [[CHAPTER_INTRO]] : []), ...body]
+  const book = [...(data.bookIntro ? [[BOOK_INTRO]] : []), ...(issues ? [[BOOK_ISSUES]] : [])]
+  return [...book, ...(data.intro ? [[CHAPTER_INTRO]] : []), ...body]
 }
 
 export const rangeOf = (s: number[]) => (s.length > 1 ? `${s[0]}–${s[s.length - 1]}` : String(s[0]))
 
-/** A stop as a list cell says it: «4–5», «Intro.», «Libro». */
+/** A stop as a list cell says it: «4–5», «Intro.», «Libro», «Difícil». */
 export const stopLabel = (s: number[], t: T) =>
-  s[0] === BOOK_INTRO ? t('marco.introLibroCorta') : s[0] === CHAPTER_INTRO ? t('marco.introCapituloCorta') : rangeOf(s)
+  s[0] === BOOK_INTRO
+    ? t('marco.introLibroCorta')
+    : s[0] === BOOK_ISSUES
+      ? t('marco.loDificilCorta')
+      : s[0] === CHAPTER_INTRO
+        ? t('marco.introCapituloCorta')
+        : rangeOf(s)
 
 /** A stop as the position line says it: «Jonás 2:3–4», «Jonás 2 · Introducción». */
 export const passageOf = (book: string, chapter: number, s: number[], t: T) =>
   s[0] === BOOK_INTRO
     ? `${book} · ${t('marco.introLibro')}`
-    : s[0] === CHAPTER_INTRO
+    : s[0] === BOOK_ISSUES
+      ? `${book} · ${t('marco.loDificil')}`
+      : s[0] === CHAPTER_INTRO
       ? `${book} ${chapter} · ${t('marco.introCapitulo')}`
       : `${book} ${chapter}:${rangeOf(s)}`
 
@@ -41,6 +54,7 @@ export function PlacePicker({
   bookId,
   chapters,
   dataOf,
+  issues = false,
   chapter,
   verse,
   unit,
@@ -53,6 +67,8 @@ export function PlacePicker({
   bookId: string
   chapters: number[]
   dataOf(chapter: number): PrototypeData | null
+  /** Whether the book has issues to stop at (`stopsOf`), in its first chapter. */
+  issues?: boolean
   chapter: number
   verse: number
   unit: Unit
@@ -64,7 +80,7 @@ export function PlacePicker({
   const t = useT()
   const [open, setOpen] = useState(chapter)
   const data = dataOf(open)
-  const stops = data ? stopsOf(data, unit, app.intros) : []
+  const stops = data ? stopsOf(data, unit, app.intros, issues && open === chapters[0]) : []
   const writersHere =
     app.writes && data
       ? [...new Set(data.verses.map((v) => authorOf(bookId, open, v.verse)).filter((x): x is string => Boolean(x)))].sort()
