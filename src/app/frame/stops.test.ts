@@ -21,8 +21,8 @@ describe('the stop for the book’s issues', () => {
     expect(stopsOf(first, 'verse', true, false)).toEqual([[BOOK_INTRO], [CHAPTER_INTRO], [1], [2]])
   })
 
-  it('is only in the chapter with the book’s introduction', () => {
-    expect(stopsOf(chapter({ intro: '# Rut 2' }), 'verse', true, true)).toEqual([[CHAPTER_INTRO], [1], [2]])
+  it('opens the book when it has no introduction', () => {
+    expect(stopsOf(chapter({ intro: '# Rut 1' }), 'verse', true, true)).toEqual([[BOOK_ISSUES], [CHAPTER_INTRO], [1], [2]])
   })
 
   it('is not there for a mini app without introductions', () => {

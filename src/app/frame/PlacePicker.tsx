@@ -14,13 +14,13 @@ import { Sheet } from './Sheet'
 
 /**
  * The stops of a chapter: its verses, or its sections; first its introductions, for a mini app that reads them, and
- * after the book's, what is hard in the book when it has some (`issues`: the mini app asks for it and the book's notes
- * use an article).
+ * after the book's, what is hard in the book (`issues`: the chapter is the book's first on this device, the mini app
+ * asks for it and the book's notes use an article). A book without an introduction opens with it.
  */
 export function stopsOf(data: PrototypeData, unit: Unit, intros = false, issues = false): number[][] {
   const body = unit === 'section' && data.sections.length ? data.sections : data.verses.map((v) => [v.verse])
   if (!intros) return body
-  const book = data.bookIntro ? [[BOOK_INTRO], ...(issues ? [[BOOK_ISSUES]] : [])] : []
+  const book = [...(data.bookIntro ? [[BOOK_INTRO]] : []), ...(issues ? [[BOOK_ISSUES]] : [])]
   return [...book, ...(data.intro ? [[CHAPTER_INTRO]] : []), ...body]
 }
 
@@ -67,7 +67,7 @@ export function PlacePicker({
   bookId: string
   chapters: number[]
   dataOf(chapter: number): PrototypeData | null
-  /** Whether the book has issues to stop at (`stopsOf`). */
+  /** Whether the book has issues to stop at (`stopsOf`), in its first chapter. */
   issues?: boolean
   chapter: number
   verse: number
@@ -80,7 +80,7 @@ export function PlacePicker({
   const t = useT()
   const [open, setOpen] = useState(chapter)
   const data = dataOf(open)
-  const stops = data ? stopsOf(data, unit, app.intros, issues) : []
+  const stops = data ? stopsOf(data, unit, app.intros, issues && open === chapters[0]) : []
   const writersHere =
     app.writes && data
       ? [...new Set(data.verses.map((v) => authorOf(bookId, open, v.verse)).filter((x): x is string => Boolean(x)))].sort()

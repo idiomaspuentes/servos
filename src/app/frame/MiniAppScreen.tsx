@@ -133,7 +133,9 @@ export function MiniAppScreen({
       }))
     : []
   const withIssues = bookIssues.length > 0
-  const stops = stopsOf(data, unit, app.intros, withIssues)
+  // The issues stop is in the book's first chapter on this device, after its introduction when it has one.
+  const issuesIn = (chapter: number) => withIssues && chapter === chapters[0]
+  const stops = stopsOf(data, unit, app.intros, issuesIn(position.chapter))
   const at = Math.max(0, stops.findIndex((s) => s.includes(position.verse)))
   const shown = stops[at] ?? [position.verse]
   const goStop = (index: number) => onPosition({ ...position, verse: stops[index][0] })
@@ -161,7 +163,7 @@ export function MiniAppScreen({
   const cross = (chapter: number, last: boolean) => {
     const next = dataOf(chapter)
     if (!next) return
-    const s = stopsOf(next, unit, app.intros, withIssues)
+    const s = stopsOf(next, unit, app.intros, issuesIn(chapter))
     onPosition({ ...position, chapter, verse: (last ? s[s.length - 1] : s[0])[0] })
     setCrossed(chapter)
   }
