@@ -733,6 +733,18 @@ declare module '@bt-synergy/language-pack-client' {
   export type Direction = 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW'
   /** The great-circle distance (haversine, not rounded) and the bearing from `a` to `b`. */
   export function distance(a: LatLon, b: LatLon): { km: number; bearing: number; direction: Direction }
+  export type TravelMode = 'foot' | 'horse' | 'ship'
+  /** Whole days to cover `km` in a mode: `{ low: 0, high: 1 }` is "less than a day". */
+  export function travelDays(km: number, mode: TravelMode): { low: number; high: number }
+  /** The trip between two places: `days` is absent for the two closer than 3 km (`near`) or when the least sure is below 2; `ship` only between two Mediterranean ports. `undefined` when either has no point or a form with nothing to measure (area, water). */
+  export type Trip = {
+    km: number
+    direction: Direction
+    bearing: number
+    sure: 1 | 2 | 3
+    near: boolean
+    days?: { foot: { low: number; high: number }; horse: { low: number; high: number }; ship?: { low: number; high: number } }
+  }
   /** A place in an answer: `lat` and `lon` when it has a point; `sure` 0 none, 1 doubtful, 2 probable, 3 sure; `form` 1 point, 2 area, 3 water, 4 height, 5 port. */
   export type PlaceRef = { id: string; name: string; note?: string; lat?: number; lon?: number; sure: 0 | 1 | 2 | 3; form: 1 | 2 | 3 | 4 | 5 }
   export type PlaceData = PlaceRef & {
@@ -746,6 +758,7 @@ declare module '@bt-synergy/language-pack-client' {
   }
   /** A place named in a verse or a passage, with the first verse of the passage that names it. */
   export type PlaceAt = PlaceRef & { verse: number }
+  export function trip(a: PlaceRef, b: PlaceRef): Trip | undefined
   export function placeQuery(reader: PackReader, id: string): Promise<Answer<PlaceData | null>>
   /** The places named in one verse (a verse id), every form. `data: null` when `xtopics` is not installed. */
   export function placesOf(reader: PackReader, verse: number): Promise<Answer<PlaceAt[] | null>>
@@ -774,6 +787,8 @@ declare module '@bt-synergy/language-pack-client' {
   /** The view of a map: the center in degrees and `scale` in pixels per degree of latitude. */
   export type Frame = { lat: number; lon: number; scale: number; width: number; height: number }
   export function project(f: Frame, lat: number, lon: number): [number, number]
+  /** The point in degrees of a pixel of a frame (the inverse of `project`). */
+  export function unproject(f: Frame, x: number, y: number): { lat: number; lon: number }
   /** The frame that fits the points (those with `ref` are ignored) with `margin` pixels around them. */
   export function fit(points: readonly { lat: number; lon: number; ref?: true }[], width: number, height: number, margin?: number): Frame
   export type DrawMapOptions = {
