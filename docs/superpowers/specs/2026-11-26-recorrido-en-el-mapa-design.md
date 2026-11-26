@@ -177,3 +177,22 @@ Valen sobre lo de arriba.
 - **Las pruebas** usan las coordenadas reales del paquete de staging: las cifras de este diseño (880 km, 33 a 42 días)
   son de ejemplo y se comprueban contra el paquete, no contra la memoria.
 - **«Borrar el recorrido»** no pide confirmación: rehacerlo cuesta pocos toques y no es trabajo del traductor.
+
+### Segunda revisión
+
+- **Un lugar fuera del mapa base:**
+  - se puede elegir (Tarsis en Jonás 1:3 importa), y cuenta en la lista y en el cálculo;
+  - en el mapa, sus tramos no se dibujan: `drawMap` une solo los puntos que dibuja y no llevaría la línea hasta el
+    borde. El tramo dice en la lista «Este tramo no se ve en el mapa».
+  - Esto reemplaza lo de «la línea llega hasta el borde».
+- **Las regiones:**
+  - la lista sale de `passagePlaces`, que no trae regiones, así que una región solo entra al recorrido si es el lugar
+    que se tocó en la tarjeta (que sale de `placesOf`);
+  - para ese caso queda «X es una región»;
+  - no se buscan regiones en el capítulo en esta etapa.
+- **El mapa fijo y la lista larga:**
+  - la hoja corre entera y el mapa queda fijo arriba mientras corre la lista;
+  - es la excepción que permite el principio 2: se fija porque sin él no se ve crecer el recorrido;
+  - con el teclado abierto no hay nada que escribir en esta hoja, así que no tapa ninguna caja.
+- **Los nombres de las paradas:** «Parada 1» es la de salida y la última es la de llegada. No se dicen «origen» ni
+  «destino» aparte.
