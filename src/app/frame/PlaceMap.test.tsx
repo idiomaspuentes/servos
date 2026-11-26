@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { LIGHT_REFERENCE, LIGHT_THEME, type PlaceAt } from '@bt-synergy/language-pack-client'
 import es from '../i18n/es.json'
 import { TEST_BASEMAP } from '../../resources/v3/testing/sample'
-import { PlaceMapView, PlaceSheetView, placeMapSvg, sourceName, type PlaceMapState } from './PlaceMap'
+import { PlaceMapView, placeMapSvg, type PlaceMapState } from './PlaceMap'
 
 const texts = es as Record<string, string>
 const t = (key: string, values: Record<string, string | number> = {}) => (texts[key] ?? key).replace(/\{(\w+)\}/g, (_, k) => String(values[k] ?? ''))
@@ -77,28 +77,5 @@ describe('PlaceMapView', () => {
   it('shows nothing without a place, or while asking', () => {
     expect(view(null)).toBe('')
     expect(view(undefined)).toBe('')
-  })
-})
-
-describe('PlaceSheetView', () => {
-  it('lists the places with where the chapter names them, and credits the sources', () => {
-    const html = renderToStaticMarkup(<PlaceSheetView t={t} state={state(joppa)} chapterNumber={1} svg={drawn()} />)
-    expect(html).toContain('<svg')
-    expect(html).toContain('Jope · 1:3')
-    expect(html).toContain('Nínive · 1:3')
-    expect(html).toContain('Natural Earth, de dominio público')
-    expect(html).toContain('OpenBible.info (CC BY 4.0)')
-  })
-
-  it('says which of the chapter places the map leaves out (Tarsis, too far)', () => {
-    const shown = renderToStaticMarkup(<PlaceSheetView t={t} state={state(joppa)} chapterNumber={1} svg={drawn()} drawn={new Set(['lug:nineveh'])} />)
-    expect(shown).not.toContain('fuera de este mapa')
-    const left = renderToStaticMarkup(<PlaceSheetView t={t} state={state(joppa)} chapterNumber={1} svg={drawn()} drawn={new Set()} />)
-    expect(left).toContain('Nínive · 1:3<span class="quiet"> · fuera de este mapa</span>')
-  })
-
-  it('names the sources of the places', () => {
-    expect(sourceName('robertrouse/theographic-bible-metadata')).toBe('Theographic')
-    expect(sourceName('x/otra')).toBe('otra')
   })
 })

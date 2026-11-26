@@ -842,6 +842,31 @@ fieldset.field { border: 0; padding: 0; margin: 0; }
 .place-map-list .is-here { font-weight: 700; }
 .place-map-credit { font-size: 0.85rem; }
 .sheet-body .place-map-svg { margin-inline: -1rem; width: calc(100% + 2rem); }
+
+/* The big sheet of a place with a route: the map stays at the top while the list runs under it, and the line is an SVG over the map's, which takes no touches. */
+.route-map { position: sticky; top: -0.75rem; /* the body's own top padding: stuck flush under the head, no gap for the text behind */ z-index: 2; margin: -0.75rem -1rem 0.5rem; background: var(--map-sea); }
+.route-map-box { display: block; width: 100%; overflow: hidden; background: var(--map-sea); cursor: pointer; }
+.route-map-box > svg { display: block; width: 100%; height: 100%; }
+.route-map-overlay { position: absolute; inset: 0; pointer-events: none; }
+.route-map-overlay > svg { display: block; width: 100%; height: 100%; }
+.route-stops, .route-places { list-style: none; margin: 0 0 0.5rem; padding: 0; }
+.route-stops li { display: flex; align-items: center; gap: 0.5rem; min-height: var(--touch); border-block-start: 1px solid var(--hair); }
+.route-stop-n { flex: none; color: var(--map-route); font-weight: 700; }
+.route-stop-name { flex: 1; min-width: 0; }
+.route-stop-remove { flex: none; min-height: var(--touch); }
+.route-legs { margin-block: 0.5rem; }
+.route-leg { margin-block-end: 0.5rem; }
+.route-leg p { margin: 0; }
+.route-leg-head { font-weight: 600; }
+.route-total { padding-block-start: 0.4rem; border-block-start: 1px solid var(--hair); }
+.route-clear { margin-block-end: 0.5rem; }
+.route-places li { border-block-start: 1px solid var(--hair); }
+.route-places .is-here { font-weight: 700; }
+.route-place { display: flex; align-items: center; gap: 0.5rem; width: 100%; min-height: var(--touch); padding: 0.4rem 0.25rem; border: 0; background: none; color: var(--text); font: inherit; text-align: start; }
+button.route-place::after { content: '+'; margin-inline-start: auto; color: var(--text-soft); font-size: 1.25rem; line-height: 1; }
+li.is-none .route-place { color: var(--text-soft); font-weight: 400; }
+.route-book > summary { display: flex; align-items: center; min-height: var(--touch); border-block-start: 1px solid var(--hair); font-weight: 600; cursor: pointer; list-style: none; }
+.route-book > summary::-webkit-details-marker { display: none; }
 .word-help-read:hover { text-decoration: underline; text-underline-offset: 0.2em; }
 .article-back { margin-block-end: 0.5rem; }
 .word-help-more { border-block-start: 1px solid var(--line); margin-block-start: 0.7rem; }

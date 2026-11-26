@@ -14,7 +14,7 @@ vi.mock('@bt-synergy/language-pack-client', async (original) => ({
   placeQuery: async (_: unknown, id: string) => ({ data: world.data[id] ?? null }),
 }))
 
-import { chapterPlaces, inBasemap, mapFrame, mapPoints, neighbours, placeOfWord, verseIdV3, type Bbox } from './placesV3'
+import { bookPlaces, bookRangeV3, chapterPlaces, citeOfVerse, inBasemap, mapFrame, mapPoints, neighbours, placeOfWord, sheetBounds, verseIdV3, type Bbox } from './placesV3'
 
 const reader = {} as PackReader
 /** The basemap of the common catalog: from 8 to 52 east, from 22 to 43 north (degrees x 100). */
@@ -161,5 +161,39 @@ describe('chapterPlaces', () => {
     expect(await chapterPlaces(reader, 'jon', 1)).toEqual([joppa])
     world.chapter = null
     expect(await chapterPlaces(reader, 'jon', 1)).toEqual([])
+  })
+})
+
+describe('bookPlaces and bookRangeV3', () => {
+  it('asks for the whole book, from its first verse id to its last', () => {
+    expect(bookRangeV3('jon')).toEqual([32000000, 32999999])
+    expect(bookRangeV3('gen')).toEqual([1000000, 1999999])
+  })
+
+  it('is the places of the book, or none without xtopics', async () => {
+    world.chapter = [joppa, nineveh]
+    expect(await bookPlaces(reader, 'jon')).toEqual([joppa, nineveh])
+    world.chapter = null
+    expect(await bookPlaces(reader, 'jon')).toEqual([])
+  })
+})
+
+describe('citeOfVerse', () => {
+  it('is the chapter and verse of the place own verse', () => {
+    expect(citeOfVerse(32001003)).toBe('1:3')
+    expect(citeOfVerse(32003010)).toBe('3:10')
+  })
+})
+
+describe('sheetBounds', () => {
+  it('is the place, the others and the two corners 150 km around the place', () => {
+    const b = sheetBounds(joppa, [nineveh])
+    expect(b).toHaveLength(4)
+    expect(b[0]).toEqual({ lat: 32.05, lon: 34.75 })
+    expect(b[1]).toEqual({ lat: 36.36, lon: 43.15 })
+    expect(b[2]!.lat).toBeCloseTo(32.05 + 1.35, 6)
+    expect(b[3]!.lat).toBeCloseTo(32.05 - 1.35, 6)
+    expect(b[2]!.lon).toBeLessThan(34.75)
+    expect(b[3]!.lon).toBeGreaterThan(34.75)
   })
 })
