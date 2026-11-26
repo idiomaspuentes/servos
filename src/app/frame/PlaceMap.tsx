@@ -12,7 +12,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'reac
 import { drawMap, type PlaceAt, type Theme } from '@bt-synergy/language-pack-client'
 import type { PrototypeData } from '../../prototype/data'
 import { basemapV3, type BasemapHere } from '../../resources/v3/basemapV3'
-import { chapterPlaces, mapFrame, mapPoints, neighbours, NEIGHBOURS_IN_CARD, placeOfWord, verseIdV3, type Bbox } from '../../resources/v3/placesV3'
+import { chapterPlaces, citeOfVerse, mapFrame, mapPoints, neighbours, NEIGHBOURS_IN_CARD, placeOfWord, verseIdV3, type Bbox } from '../../resources/v3/placesV3'
 import { useT, type T } from '../i18n/i18n'
 import { useLookup, useMapHere } from './acrossBooks'
 import { currentMapTheme, measureText } from './mapTheme'
@@ -170,21 +170,16 @@ export function PlaceMapView({
 export const sourceName = (key: string): string =>
   key.startsWith('openbibleinfo/') ? 'OpenBible.info (CC BY 4.0)' : key.startsWith('robertrouse/') ? 'Theographic' : (key.split('/').pop() ?? key)
 
-/** «1:3», where the chapter names a place first. */
-const citeOf = (place: PlaceAt, chapter: number): string => `${chapter}:${place.verse % 1000}`
-
 /** The sheet's content: the chapter's map, the list of its places and the credit. */
 export function PlaceSheetView({
   t,
   state,
-  chapterNumber,
   svg,
   setBox,
   drawn,
 }: {
   t: T
   state: PlaceMapState
-  chapterNumber: number
   svg: string | null
   setBox?(el: HTMLElement | null): void
   /** The places the map draws; one of the chapter's that it leaves out (too far, off the basemap) is said so. */
@@ -206,7 +201,7 @@ export function PlaceSheetView({
       <ul className="place-map-list">
         {all.map((p) => (
           <li key={p.id} className={p.id === place.id ? 'is-here' : undefined}>
-            {t('ayudas.mapaLugarEn', { lugar: p.name, cita: citeOf(p, chapterNumber) })}
+            {t('ayudas.mapaLugarEn', { lugar: p.name, cita: citeOfVerse(p.verse) })}
             {base && drawn && p.id !== place.id && !drawn.has(p.id) && <span className="quiet"> · {t('ayudas.mapaFuera')}</span>}
           </li>
         ))}
@@ -231,20 +226,20 @@ export function PlaceMap({ data, article, verse, dir }: { data: PrototypeData; a
   return (
     <>
       <PlaceMapView t={t} state={state} svg={ready ? card.svg : null} setBox={card.setBox} onBig={() => setBig(true)} />
-      {big && state && <PlaceSheet data={data} state={state} dir={dir} onClose={() => setBig(false)} />}
+      {big && state && <PlaceSheet state={state} dir={dir} onClose={() => setBig(false)} />}
     </>
   )
 }
 
 /** The big sheet: the chapter's places, all those under 1,000 km, with the place touched marked. */
-function PlaceSheet({ data, state, dir, onClose }: { data: PrototypeData; state: PlaceMapState; dir?: 'ltr' | 'rtl'; onClose(): void }) {
+function PlaceSheet({ state, dir, onClose }: { state: PlaceMapState; dir?: 'ltr' | 'rtl'; onClose(): void }) {
   const t = useT()
   const near = useMemo(() => neighbours(state.found.place, state.chapter ?? [], state.bbox, 1000), [state])
   const sheet = useMapSvg({ place: state.found.place, near, basemap: state.found.base, height: SHEET_HEIGHT, ...(dir ? { dir } : {}) })
   return (
     <Sheet title={t('ayudas.mapaTitulo', { lugar: state.found.place.name })} onClose={onClose}>
       <div dir={dir}>
-        <PlaceSheetView t={t} state={state} chapterNumber={data.chapter} svg={sheet.svg} setBox={sheet.setBox} drawn={new Set(near.map((p) => p.id))} />
+        <PlaceSheetView t={t} state={state} svg={sheet.svg} setBox={sheet.setBox} drawn={new Set(near.map((p) => p.id))} />
       </div>
     </Sheet>
   )

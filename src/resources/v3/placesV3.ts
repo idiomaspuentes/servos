@@ -37,6 +37,17 @@ export function chapterRangeV3(book: string, chapter: number): [number, number] 
   return [verseIdV3(book, chapter, 0), verseIdV3(book, chapter, 999)]
 }
 
+/** The first and last verse id of a whole book (`passagePlaces` takes a range). */
+export function bookRangeV3(book: string): [number, number] {
+  const first = verseIdV3(book, 0, 0)
+  return [first, first + 999_999]
+}
+
+/** «3:3»: the chapter and verse a verse id names (a place is cited by its own verse, not by the chapter of the sheet). */
+export function citeOfVerse(verse: number): string {
+  return `${Math.floor(verse / 1000) % 1000}:${verse % 1000}`
+}
+
 /** Whether a point lies inside the basemap's box. */
 export function inBasemap(p: LatLon, bbox: Bbox): boolean {
   return p.lon * 100 >= bbox[0] && p.lon * 100 <= bbox[2] && p.lat * 100 >= bbox[1] && p.lat * 100 <= bbox[3]
@@ -88,6 +99,12 @@ export async function chapterPlaces(reader: PackReader, book: string, chapter: n
   return (await passagePlaces(reader, first, last)).data ?? []
 }
 
+/** The places of a whole book as `passagePlaces` gives them: each once, in order of appearance (empty without `xtopics`). */
+export async function bookPlaces(reader: PackReader, book: string): Promise<PlaceAt[]> {
+  const [first, last] = bookRangeV3(book)
+  return (await passagePlaces(reader, first, last)).data ?? []
+}
+
 /**
  * The points for `drawMap`: the place always as a full dot with its name (`sure: 3`, `form: 1`: the doubt is said by a
  * line under the map, not by the drawing), the neighbours as grey references.
@@ -101,18 +118,23 @@ export function mapPoints(place: PlaceAt, near: readonly PlaceAt[]): MapPoint[] 
 }
 
 /**
- * The frame: `fit` of the place, its neighbours and two invisible corners 150 km to the north-west and the south-east
- * of the place, so that at least about 300 km are seen around it. None of them is `ref`, or `fit` would ignore them.
+ * What a sheet's map must show at the start: the place, the places of the chapter that the map draws and two invisible
+ * corners 150 km to the north-west and the south-east of the place, so that at least about 300 km are seen around it.
+ * The frame is `fit` of these, kept in degrees so it can be fitted again at any width.
  */
-export function mapFrame(place: PlaceAt, near: readonly PlaceAt[], width: number, height: number): Frame {
+export function sheetBounds(place: PlaceAt, others: readonly PlaceAt[]): LatLon[] {
   const lat = place.lat!
   const lon = place.lon!
   const dLon = MARGIN_DEGREES / Math.cos((lat * Math.PI) / 180)
-  const all = [
+  return [
     { lat, lon },
-    ...near.map((p) => ({ lat: p.lat!, lon: p.lon! })),
+    ...others.map((p) => ({ lat: p.lat!, lon: p.lon! })),
     { lat: lat + MARGIN_DEGREES, lon: lon - dLon },
     { lat: lat - MARGIN_DEGREES, lon: lon + dLon },
   ]
-  return fit(all, width, height)
+}
+
+/** The frame of the card and of the sheet without a route: `fit` of `sheetBounds`. None of them is `ref`, or `fit` would ignore them. */
+export function mapFrame(place: PlaceAt, near: readonly PlaceAt[], width: number, height: number): Frame {
+  return fit(sheetBounds(place, near), width, height)
 }
