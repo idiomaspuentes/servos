@@ -179,12 +179,15 @@ export function PlaceSheetView({
   chapterNumber,
   svg,
   setBox,
+  drawn,
 }: {
   t: T
   state: PlaceMapState
   chapterNumber: number
   svg: string | null
   setBox?(el: HTMLElement | null): void
+  /** The places the map draws; one of the chapter's that it leaves out (too far, off the basemap) is said so. */
+  drawn?: ReadonlySet<string>
 }) {
   const { place, sources, base } = state.found
   const all = [place, ...(state.chapter ?? []).filter((p) => p.id !== place.id && p.sure > 0)]
@@ -203,6 +206,7 @@ export function PlaceSheetView({
         {all.map((p) => (
           <li key={p.id} className={p.id === place.id ? 'is-here' : undefined}>
             {t('ayudas.mapaLugarEn', { lugar: p.name, cita: citeOf(p, chapterNumber) })}
+            {base && drawn && p.id !== place.id && !drawn.has(p.id) && <span className="quiet"> · {t('ayudas.mapaFuera')}</span>}
           </li>
         ))}
       </ul>
@@ -239,7 +243,7 @@ function PlaceSheet({ data, state, dir, onClose }: { data: PrototypeData; state:
   return (
     <Sheet title={t('ayudas.mapaTitulo', { lugar: state.found.place.name })} onClose={onClose}>
       <div dir={dir}>
-        <PlaceSheetView t={t} state={state} chapterNumber={data.chapter} svg={sheet.svg} setBox={sheet.setBox} />
+        <PlaceSheetView t={t} state={state} chapterNumber={data.chapter} svg={sheet.svg} setBox={sheet.setBox} drawn={new Set(near.map((p) => p.id))} />
       </div>
     </Sheet>
   )

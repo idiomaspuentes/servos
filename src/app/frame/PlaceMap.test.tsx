@@ -90,6 +90,13 @@ describe('PlaceSheetView', () => {
     expect(html).toContain('OpenBible.info (CC BY 4.0)')
   })
 
+  it('says which of the chapter places the map leaves out (Tarsis, too far)', () => {
+    const shown = renderToStaticMarkup(<PlaceSheetView t={t} state={state(joppa)} chapterNumber={1} svg={drawn()} drawn={new Set(['lug:nineveh'])} />)
+    expect(shown).not.toContain('fuera de este mapa')
+    const left = renderToStaticMarkup(<PlaceSheetView t={t} state={state(joppa)} chapterNumber={1} svg={drawn()} drawn={new Set()} />)
+    expect(left).toContain('Nínive · 1:3<span class="quiet"> · fuera de este mapa</span>')
+  })
+
   it('names the sources of the places', () => {
     expect(sourceName('robertrouse/theographic-bible-metadata')).toBe('Theographic')
     expect(sourceName('x/otra')).toBe('otra')
