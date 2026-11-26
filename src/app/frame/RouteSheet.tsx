@@ -325,7 +325,7 @@ export function PlaceSheetView({
           ))}
         </ul>
         <details className="route-book" open={bookOpen} onToggle={(e) => onBook(e.currentTarget.open)}>
-          <summary>+ {t('ayudas.recorridoLibro')}</summary>
+          <summary>{t('ayudas.recorridoLibro')}</summary>
           {book === undefined ? (
             <p className="quiet">{t('ayudas.recorridoLibroBuscando')}</p>
           ) : others.length === 0 ? (
@@ -373,7 +373,7 @@ export function PlaceSheet({ data, state, dir, onClose }: { data: PrototypeData;
     // a stop the frame does not show widens the bounds (they are never narrowed)
     if (drawnIn(p, state.bbox) && drawn) {
       const at = { lat: p.lat!, lon: p.lon! }
-      if (growBounds(bounds, at, drawn.frame) !== bounds) setExtra((e) => [...e, at])
+      if (growBounds(bounds, at, drawn.frame, LABEL_MARGIN) !== bounds) setExtra((e) => [...e, at])
     }
   }
   const onMapClick = (e: MouseEvent<HTMLElement>) => {

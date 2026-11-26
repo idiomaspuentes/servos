@@ -259,7 +259,7 @@
   "ayudas.recorridoLinea": "Medido en línea recta, con un margen por las vueltas del camino.",
   "ayudas.recorridoBorrar": "Borrar el recorrido",
   "ayudas.recorridoSinPunto": "sin punto en el mapa",
-  "ayudas.recorridoLibro": "Lugares de todo el libro",
+  "ayudas.recorridoLibro": "+ Lugares de todo el libro",
   "ayudas.recorridoLibroBuscando": "Buscando los lugares del libro…",
   "ayudas.recorridoLibroNada": "No hay otros lugares en este libro.",
   "ayudas.recorridoResumen": "Recorrido: {lugares}",

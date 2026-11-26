@@ -66,7 +66,8 @@ describe('legsOf and totalOf', () => {
     expect(total.km).toBeGreaterThan(880)
     const close = totalOf(legsOf([tyre, tyreNear, joppa], bbox))
     expect(close.missing).toBe(0)
-    expect(close.foot!.low).toBeGreaterThanOrEqual(0)
+    const legs = legsOf([tyre, tyreNear, joppa], bbox)
+    expect(close.foot).toEqual(legs[1].days!.foot) // the «cerca» leg adds no days, only the Tyre → Joppa one counts
   })
 
   it('marks a leg with a place outside the basemap, or without a point, as off the map', () => {

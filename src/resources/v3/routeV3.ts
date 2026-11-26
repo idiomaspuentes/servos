@@ -135,6 +135,6 @@ export function inFrame(frame: Frame, p: LatLon, margin = 28): boolean {
 }
 
 /** The bounds with one more point when the frame does not show it; never loses a point. */
-export function growBounds(bounds: readonly LatLon[], stop: LatLon, frame: Frame): readonly LatLon[] {
-  return inFrame(frame, stop) ? bounds : [...bounds, stop]
+export function growBounds(bounds: readonly LatLon[], stop: LatLon, frame: Frame, margin = 28): readonly LatLon[] {
+  return inFrame(frame, stop, margin) ? bounds : [...bounds, stop]
 }
