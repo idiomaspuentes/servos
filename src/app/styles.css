@@ -1147,7 +1147,9 @@ button.search-hit .search-hit-place { color: var(--accent); }
 .publish-book.is-cambio .publish-book-state, .publish-book.is-nunca .publish-book-state { color: var(--accent); font-weight: 600; }
 .publish-version { display: flex; flex-direction: column; gap: 0.4rem; }
 .publish-go { margin-block-start: auto; }
-.door43-hosts { grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr)); }
+/* Each Door43 as wide as its name, so a long one («De prueba, en esta computadora») takes a row of its own on a phone. */
+.door43-hosts { display: flex; flex-wrap: wrap; }
+.door43-hosts > .choice { flex: 1 1 auto; }
 
 /* Reviewing a passage: four questions, the translation in the centre, the source a touch away */
 .passage-steps { grid-template-columns: repeat(4, minmax(0, 1fr)); }
