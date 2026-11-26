@@ -15,6 +15,7 @@ import {
   type Want,
 } from '@bt-synergy/language-pack-client'
 import { V3_ORIGINS } from '../online/packsServer'
+import { languageCatalogs } from './catalogNames'
 import { trustedKeys } from './keys'
 import { searchIndexV3 } from './search/searchIndex'
 
@@ -80,11 +81,11 @@ export function readerV3(lang: string): Promise<PackReader | null> {
   return reader
 }
 
-/** The languages with units active in format 3 on this device (not `common`, the originals' catalog). */
+/** The languages with units active in format 3 on this device (not `common` nor the shared `zxx-*` companions). */
 export async function languagesV3(): Promise<string[]> {
   const own = parts.get(await packsV3())
   const state = (await own?.store.getState()) as InstalledState | undefined
-  return Object.keys(state?.active ?? {}).filter((name) => name !== 'common')
+  return languageCatalogs(Object.keys(state?.active ?? {}))
 }
 
 /** A catalog file of the store, checked again, and the catalogs it requires (by id); empty when it is not there. */
