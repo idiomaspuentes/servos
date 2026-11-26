@@ -15,6 +15,7 @@
 import type { ImportReport, LanguagePackClient } from '@bt-synergy/language-pack-client'
 import { zipSource, type RowSource } from '@bt-synergy/language-pack-v3'
 import { describePack } from '../packs'
+import { isLanguageCatalog } from './catalogNames'
 import { installedSegmentsV3, packsV3 } from './client'
 
 /** What receiving a file came to. */
@@ -181,7 +182,7 @@ function addedBy(report: ImportReport, language?: string): FileOutcome {
   const books = [...new Set(report.activated.flatMap((k) => bookOf(k) ?? []))]
   const articles = report.activated.some((k) => /\/art:/.test(k))
   if ((report.missing.length || report.rejected.length) && !books.length && !articles) return { state: 'noEsPaquete' }
-  return { state: 'added', language: language ?? report.catalogs.find((c) => c.name !== 'common')?.name ?? '', books, articles }
+  return { state: 'added', language: language ?? report.catalogs.find((c) => isLanguageCatalog(c.name))?.name ?? '', books, articles }
 }
 
 /**
