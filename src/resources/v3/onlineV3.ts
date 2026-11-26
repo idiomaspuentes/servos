@@ -19,6 +19,7 @@
 import type { LanguagePackClient, PackReader, Progress as ProgressV3, Want } from '@bt-synergy/language-pack-client'
 import type { Progress } from '../online/downloads'
 import { BIBLE_ORDER } from '../reading'
+import { fetchBasemapV3 } from './basemapV3'
 import { planV3 } from './client'
 import { lexGroupsOf } from './companionsV3'
 
@@ -68,6 +69,8 @@ export function outcomeOf(e: unknown, signal?: AbortSignal): OutcomeV3 {
 export async function refreshV3(client: LanguagePackClient, lang: string, signal?: AbortSignal): Promise<OutcomeV3> {
   try {
     await client.refresh(lang, signal ? { signal } : {})
+    // A device that had the book before the map existed gets the basemap here, without installing again.
+    await fetchBasemapV3(client, lang, signal)
     return { kind: 'listo' }
   } catch (e) {
     if (!signal?.aborted && codeOf(e) === 'E_DOWNGRADE') return { kind: 'listo' }
@@ -189,6 +192,8 @@ export async function installV3(
       signal: o.signal,
       onProgress: (p) => o.onProgress(progressOf(p, o.planned)),
     })
+    // The basemap (6 KB) comes with the book, in the same step: it is not asked for apart.
+    await fetchBasemapV3(client, lang, o.signal)
     return { outcome: { kind: 'listo' }, waiting: report.waiting.map((w) => w.key), bytes: report.bytes }
   } catch (e) {
     return { outcome: outcomeOf(e, o.signal), waiting: [], bytes: 0 }
