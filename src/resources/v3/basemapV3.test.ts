@@ -48,7 +48,19 @@ describe('the basemap on the device', () => {
     expect(net.urls.filter((u) => u.includes('/complement/'))).toHaveLength(1)
   }, 60_000)
 
-  it('is null when the catalogs list none, and it asks only once', async () => {
+  it('two cards at once share the ask: neither says the map is missing while it is on its way', async () => {
+    const sample = await buildSample(1, { basemap: true })
+    const net = fakeFetch(sample)
+    const client = await device(sample, memoryStore(), net)
+    await client.refresh('es-419')
+    await client.install('es-419', { books: ['tit'] })
+    const [a, b] = await Promise.all([basemapV3('es-419'), basemapV3('es-419')])
+    expect(a?.basemap).toEqual(TEST_BASEMAP)
+    expect(b?.basemap).toEqual(TEST_BASEMAP)
+    expect(net.urls.filter((u) => u.includes('/complement/'))).toHaveLength(1)
+  }, 60_000)
+
+  it('is null when the catalogs list none, and asks the server for nothing', async () => {
     const sample = await buildSample()
     const net = fakeFetch(sample)
     const client = await device(sample, memoryStore(), net)

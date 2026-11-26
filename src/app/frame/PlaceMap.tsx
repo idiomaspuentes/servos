@@ -61,10 +61,11 @@ export function usePlaceMap(data: PrototypeData, article: string, verse: number)
   const here = useMapHere(data.language, 'xtopics')
   const where = `${data.book.id}|${data.chapter}|${verse}`
   const found = useLookup<PlaceFound | null>(here, data.language, `place|${article}|${where}`, async (reader) => {
+    // The place first, on the real basemap's box: most words are not places, and only a place waits for the basemap.
+    const word = await placeOfWord(reader, { kind: 'tw', path: article }, verseIdV3(data.book.id, data.chapter, verse), DEFAULT_BBOX)
+    if (!word) return null
     const base = await basemapV3(data.language)
-    const bbox = base?.basemap.bbox ?? DEFAULT_BBOX
-    const word = await placeOfWord(reader, { kind: 'tw', path: article }, verseIdV3(data.book.id, data.chapter, verse), bbox)
-    return word ? { ...word, base } : null
+    return { ...word, base }
   })
   const chapter = useLookup<PlaceAt[]>(Boolean(found), data.language, `chapter|${data.book.id}|${data.chapter}`, (reader) => chapterPlaces(reader, data.book.id, data.chapter))
   const state = useMemo(

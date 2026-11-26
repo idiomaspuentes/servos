@@ -28,8 +28,15 @@ export async function fetchBasemapV3(client: LanguagePackClient, lang: string, s
 const decoded = new Map<string, Basemap>()
 subscribeReadersV3(() => decoded.clear())
 
-/** The languages whose basemap was asked for this run when it was missing: once each, not at every card. */
-const asked = new Set<string>()
+/**
+ * The asks for a missing basemap this run, by language: once each, not at every card, and shared, so a second card
+ * that comes while the first ask is on its way waits for it instead of saying the map is not here. A failed ask is
+ * forgotten, so the next card tries again.
+ */
+const asked = new Map<string, Promise<boolean>>()
+/** How long an ask may take: a network that says it is online but answers nothing must not keep the card waiting. */
+const ASK_MS = 15_000
+subscribeReadersV3(() => asked.clear())
 
 /** For tests: forgets what was asked and decoded. */
 export function resetBasemapV3(): void {
@@ -58,10 +65,18 @@ async function readBasemap(lang: string): Promise<BasemapHere | null> {
 export async function basemapV3(lang: string): Promise<BasemapHere | null> {
   try {
     const here = await readBasemap(lang)
-    if (here || asked.has(lang) || (typeof navigator !== 'undefined' && navigator.onLine === false)) return here
-    asked.add(lang)
-    await fetchBasemapV3(await packsV3(), lang)
-    return await readBasemap(lang)
+    if (here || (typeof navigator !== 'undefined' && navigator.onLine === false)) return here
+    let ask = asked.get(lang)
+    if (!ask) {
+      ask = (async () => {
+        const client = await packsV3()
+        await fetchBasemapV3(client, lang, AbortSignal.timeout(ASK_MS))
+        return (await readBasemap(lang)) !== null
+      })()
+      asked.set(lang, ask)
+      void ask.then((ok) => ok || asked.delete(lang), () => asked.delete(lang))
+    }
+    return (await ask) ? await readBasemap(lang) : null
   } catch {
     return null
   }
