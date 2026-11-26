@@ -47,6 +47,21 @@
   /* Movement: short, easing out, so what is touched answers at once. */
   --ease: cubic-bezier(0.2, 0, 0, 1);
   --quick: 140ms;
+  /* The map of a place (drawMap's Theme, read by mapTheme.ts); drawMap writes literal colours, so it is drawn again when these change */
+  --map-sea: #dbe9f4;
+  --map-land: #f1ead9;
+  --map-coast: #9a8f78;
+  --map-lake: #dbe9f4;
+  --map-river: #6f9fc6;
+  --map-route: #b3402b;
+  --map-point: #222222;
+  --map-point-hollow: #222222;
+  --map-label: #222222;
+  --map-halo: #ffffff;
+  --map-cluster: #34495e;
+  --map-cluster-text: #ffffff;
+  --map-reference: #757575;
+  --map-reference-label: #6b6b6b;
   color-scheme: light;
 }
 
@@ -83,6 +98,21 @@
     --field-kicker: #e2b55c;
     --field-button: #98cf8b;
     --field-button-text: #0c1316;
+    /* the halo of the names is dark too, or the grey names get a white edge */
+    --map-sea: #10222c;
+    --map-land: #1d2b28;
+    --map-coast: #5b6f66;
+    --map-lake: #10222c;
+    --map-river: #4b7aa3;
+    --map-route: #e08a74;
+    --map-point: #f1ece0;
+    --map-point-hollow: #f1ece0;
+    --map-label: #e9e4da;
+    --map-halo: #0c1316;
+    --map-cluster: #98cf8b;
+    --map-cluster-text: #0c1316;
+    --map-reference: #a8b0b5;
+    --map-reference-label: #b5bcc0;
     color-scheme: dark;
   }
 }
@@ -115,6 +145,21 @@
   --field-kicker: #e2b55c;
   --field-button: #98cf8b;
   --field-button-text: #0c1316;
+  /* the halo of the names is dark too, or the grey names get a white edge */
+  --map-sea: #10222c;
+  --map-land: #1d2b28;
+  --map-coast: #5b6f66;
+  --map-lake: #10222c;
+  --map-river: #4b7aa3;
+  --map-route: #e08a74;
+  --map-point: #f1ece0;
+  --map-point-hollow: #f1ece0;
+  --map-label: #e9e4da;
+  --map-halo: #0c1316;
+  --map-cluster: #98cf8b;
+  --map-cluster-text: #0c1316;
+  --map-reference: #a8b0b5;
+  --map-reference-label: #b5bcc0;
   color-scheme: dark;
 }
 
@@ -155,6 +200,20 @@
   --field-button-text: #1f421f;
   /* What cannot be touched yet, and a box's hint: grey, but still read (6.4:1 on white) */
   --text-disabled: #5f5e66;
+  --map-sea: #dce9f7;
+  --map-land: #ffffff;
+  --map-coast: #3a3940;
+  --map-lake: #dce9f7;
+  --map-river: #1d5a9c;
+  --map-route: #8f2a14;
+  --map-point: #15141a;
+  --map-point-hollow: #15141a;
+  --map-label: #15141a;
+  --map-halo: #ffffff;
+  --map-cluster: #15141a;
+  --map-cluster-text: #ffffff;
+  --map-reference: #4a4952;
+  --map-reference-label: #34333b;
   color-scheme: light;
 }
 
