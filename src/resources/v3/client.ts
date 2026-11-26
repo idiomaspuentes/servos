@@ -14,6 +14,7 @@ import {
   type VerifiedCatalog,
   type Want,
 } from '@bt-synergy/language-pack-client'
+import type { Complement } from '@bt-synergy/language-pack-v3'
 import { V3_ORIGINS } from '../online/packsServer'
 import { languageCatalogs } from './catalogNames'
 import { trustedKeys } from './keys'
@@ -114,6 +115,23 @@ export async function catalogResourcesV3(lang: string): Promise<CatalogResource[
   const active = (await c.status(lang)).active
   if (!own || !active) return []
   return (await catalogsFrom(own, active.id)).flatMap((cat) => cat.catalog.resources)
+}
+
+/** The bytes of a stored file by its id (hex), and the complements the catalogs of a language list. Null for a client this module did not make. */
+export async function storedFileV3(c: LanguagePackClient, id: string): Promise<Uint8Array | undefined> {
+  return parts.get(c)?.store.get(id)
+}
+
+/**
+ * The complements (files that are not segments: the basemap) listed by the active catalog of a language and the
+ * catalogs it requires (the common one). Empty when nothing of the language is active or a catalog cannot be read.
+ */
+export async function complementsV3(lang: string): Promise<Complement[]> {
+  const c = await packsV3()
+  const own = parts.get(c)
+  const active = (await c.status(lang)).active
+  if (!own || !active) return []
+  return (await catalogsFrom(own, active.id)).flatMap((cat) => cat.catalog.complements ?? [])
 }
 
 /**

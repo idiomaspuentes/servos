@@ -528,6 +528,19 @@ declare module '@bt-synergy/language-pack-v3' {
   export const BOOKS: readonly string[]
   /** `LLCCCVVV`: `verseId('tit', 2, 11)` is 56002011. */
   export function verseId(book: string, chapter: number, verse: number): number
+  /** A complement of a catalog: a file that is not a segment. `id` is the sha256 of its bytes (32 bytes). */
+  export type Complement = { kind: string; lang?: string; id: Uint8Array; size: number; media: string; version: string; for?: string; license?: string }
+  export type BasemapPath = { layer: 1 | 2 | 3; points: [x: number, y: number][] }
+  /** The basemap complement as a model: `bbox` is `[west, south, east, north]` in degrees x 100, the points `[longitude, latitude]` x 100. */
+  export type Basemap = { bbox: [west: number, south: number, east: number, north: number]; paths: BasemapPath[] }
+  /** The most a basemap inflates to: 4 MiB. */
+  export const BASEMAP_MAX_BYTES: number
+  /** The basemap listed by `complements`: the one of kind `basemap`, version `"1"`, when exactly one is listed; else `undefined`. */
+  export function basemapOf<T extends { kind: string; version: string }>(complements: readonly T[] | undefined): T | undefined
+  /** Throws at the first defect (`E_INFLATE`, `E_LIMIT`, `E_BODY`). */
+  export function decodeBasemap(bytes: Uint8Array): Basemap
+  /** The bytes of a basemap complement (the tests make one). */
+  export function encodeBasemap(model: Basemap): Uint8Array
   /** A source of format 2.0 rows (a pack read as rows). */
   export type RowSource = { resources(lang: string): Promise<unknown[]> }
   export function zipSource(zip: Uint8Array, originals?: RowSource): Promise<RowSource & { language: string }>
@@ -611,6 +624,7 @@ declare module '@bt-synergy/language-pack-client' {
       resources: CatalogResource[]
       requires?: [catalog: string, revision: number, id: Uint8Array][]
       units: { id: string; needs?: string[]; segments: number[]; optional?: boolean }[]
+      complements?: import('@bt-synergy/language-pack-v3').Complement[]
     }
   }
   export function verifyCatalogFile(
@@ -659,6 +673,11 @@ declare module '@bt-synergy/language-pack-client' {
     updates: Update[]
     missingCommon?: RefreshReport['missingCommon']
   }
+  export type FetchComplementsReport = {
+    fetched: string[]
+    present: string[]
+    missing: { id: string; kind: string; reason: string }[]
+  }
   export type ImportReport = {
     catalogs: InstalledCatalog[]
     stored: string[]
@@ -683,6 +702,11 @@ declare module '@bt-synergy/language-pack-client' {
       o?: { signal?: AbortSignal; onProgress?: (p: Progress) => void; concurrency?: number },
     ): Promise<InstallReport>
     status(lang: string): Promise<Status>
+    /**
+     * Downloads the complements (the `basemap`) of the active catalogs of `lang` and the common catalog it requires, `kinds` only when
+     * given. A complement that fails is reported in `missing`, never thrown.
+     */
+    fetchComplements(lang: string, o?: { kinds?: string[]; signal?: AbortSignal }): Promise<FetchComplementsReport>
     prune(): Promise<{ removed: string[] }>
     verify(): Promise<{ bad: string[] }>
     importTransfer(bytes: Uint8Array, o?: { confirmDowngrade?: boolean }): Promise<ImportReport>
@@ -692,6 +716,8 @@ declare module '@bt-synergy/language-pack-client' {
       books?: string[]
       units?: string[]
       base?: Uint8Array[]
+      /** The complements of the catalogs in the store go too, unless `false`. */
+      complements?: boolean
     }): Promise<Uint8Array>
     indexProblems(): { segment?: string; message: string }[]
   }
@@ -701,6 +727,72 @@ declare module '@bt-synergy/language-pack-client' {
     trust: TrustPolicy
     index?: SearchIndex
   }): LanguagePackClient
+
+  /** A point in degrees. */
+  export type LatLon = { lat: number; lon: number }
+  export type Direction = 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW'
+  /** The great-circle distance (haversine, not rounded) and the bearing from `a` to `b`. */
+  export function distance(a: LatLon, b: LatLon): { km: number; bearing: number; direction: Direction }
+  /** A place in an answer: `lat` and `lon` when it has a point; `sure` 0 none, 1 doubtful, 2 probable, 3 sure; `form` 1 point, 2 area, 3 water, 4 height, 5 port. */
+  export type PlaceRef = { id: string; name: string; note?: string; lat?: number; lon?: number; sure: 0 | 1 | 2 | 3; form: 1 | 2 | 3 | 4 | 5 }
+  export type PlaceData = PlaceRef & {
+    /** The `tw:names/` articles joined to the place. */
+    tw: string[]
+    verses: number
+    born: { id: string; name: string }[]
+    died: { id: string; name: string }[]
+    events: { id: string; title: string }[]
+    sources: string[]
+  }
+  /** A place named in a verse or a passage, with the first verse of the passage that names it. */
+  export type PlaceAt = PlaceRef & { verse: number }
+  export function placeQuery(reader: PackReader, id: string): Promise<Answer<PlaceData | null>>
+  /** The places named in one verse (a verse id), every form. `data: null` when `xtopics` is not installed. */
+  export function placesOf(reader: PackReader, verse: number): Promise<Answer<PlaceAt[] | null>>
+  /** The places of `first`..`last` (verse ids), without the regions. */
+  export function passagePlaces(reader: PackReader, first: number, last?: number): Promise<Answer<PlaceAt[] | null>>
+
+  export type MapPoint = { id: string; lat: number; lon: number; sure: 1 | 2 | 3; form: 1 | 2 | 3 | 4 | 5; label: string; verses?: number; badge?: string; ref?: true }
+  export type Theme = {
+    sea: string
+    land: string
+    coast: string
+    lake: string
+    river: string
+    route: string
+    point: string
+    pointHollow: string
+    label: string
+    halo: string
+    cluster: string
+    clusterText: string
+    reference?: string
+    referenceLabel?: string
+  }
+  export const LIGHT_THEME: Theme
+  export const LIGHT_REFERENCE: { reference: string; referenceLabel: string }
+  /** The view of a map: the center in degrees and `scale` in pixels per degree of latitude. */
+  export type Frame = { lat: number; lon: number; scale: number; width: number; height: number }
+  export function project(f: Frame, lat: number, lon: number): [number, number]
+  /** The frame that fits the points (those with `ref` are ignored) with `margin` pixels around them. */
+  export function fit(points: readonly { lat: number; lon: number; ref?: true }[], width: number, height: number, margin?: number): Frame
+  export type DrawMapOptions = {
+    points: MapPoint[]
+    route?: string[]
+    basemap?: import('@bt-synergy/language-pack-v3').Basemap
+    width?: number
+    height?: number
+    frame?: Frame
+    theme?: Theme
+    dir?: 'ltr' | 'rtl'
+    /** What the screen reader says; required. */
+    summary: string
+    measure?: (text: string) => number
+    fontSize?: number
+    smooth?: number
+  }
+  /** The SVG text of a map, with no DOM and no network. */
+  export function drawMap(o: DrawMapOptions): string
 
   export type SearchKind = 'text' | 'note' | 'question' | 'link'
   export type SearchFilters = { books?: string[]; kinds?: SearchKind[]; limit?: number }

@@ -22,11 +22,11 @@ import { Sheet } from './Sheet'
 import { verseOpener } from './verseOpener'
 
 /**
- * Whether the map unit that answers (`xmap`, `map`) is on this device in format 3: a section without it is not shown
+ * Whether the map unit that answers (`xmap`, `map`, `xtopics` for the places) is on this device in format 3: a section without it is not shown
  * (nobody looked, which is not «nowhere»). Asks only the reader's installed state, no query. Asked again when the
  * readers are made anew (a book brought or received), not at every chapter the library reads.
  */
-export function useMapHere(language: string, unit: 'xmap' | 'map'): boolean {
+export function useMapHere(language: string, unit: 'xmap' | 'map' | 'xtopics'): boolean {
   const library = useSyncExternalStore(subscribeReadersV3, readersGenerationV3)
   const [here, setHere] = useState(false)
   useEffect(() => {

@@ -20,6 +20,7 @@ import { hasReferents, OriginalFacts, Referents } from './OriginalWord'
 import { SentenceDiagram } from './SentenceDiagram'
 import { inSight, keepPlace, litOf, pagedHelps, revealBelow, shortGloss } from './wordCard'
 import { ArticleSheet, articleIn, type OpenArticle } from './ArticleSheet'
+import { PlaceMap } from './PlaceMap'
 import { EnTodaLaBiblia } from './EnTodaLaBiblia'
 
 export type WordHelp =
@@ -759,6 +760,8 @@ export function WordHelpCard({
               return (
                 <>
                   <p className="word-help-quote">{here?.length ? <Scripture text={text}>{wordsOf(text, here)}</Scripture> : name}</p>
+                  {/* The place on a map, when the word is a place of this verse: between the quote and the article. */}
+                  <PlaceMap data={data} article={help.article} verse={touched.verse} dir={text.dir} />
                   {/* Its article, said with its name and kept to the item, not a row like «More on …» under it. */}
                   {data.words[help.article] && (
                     <button type="button" className="word-help-read" onClick={() => setArticle(articleIn(data, { kind: 'tw', path: help.article }))}>
