@@ -180,7 +180,7 @@ describe('routeMapSvg', () => {
 
   it('frames the bounds at the width given, so the same bounds fit again at another width', () => {
     const bounds = sheetBounds(joppa, [nineveh])
-    expect(draw([]).frame).toEqual(fit(bounds, 343, 280))
+    expect(draw([]).frame).toEqual(fit(bounds, 343, 280, 64))
     expect(fit(bounds, 600, 280).scale).not.toBe(fit(bounds, 343, 280).scale)
   })
 })

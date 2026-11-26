@@ -24,6 +24,9 @@ import { Sheet } from './Sheet'
 import { useBoxWidth, useThemeTick } from './useMapBox'
 
 /** The map is 280 px high in the sheet and stays at the top. */
+
+/** The room kept around the points of the sheet's map, in pixels, so the names beside the dots fit. */
+const LABEL_MARGIN = 64
 export const ROUTE_MAP_HEIGHT = 280
 
 /** A source of the places as the credit names it. */
@@ -125,7 +128,8 @@ export function routeMapSvg(o: {
     seen.add(p.id)
     points.push({ id: p.id, lat: p.lat!, lon: p.lon!, sure: 3, form: 1, label: p.name, badge: badges.get(p.id)! })
   }
-  const frame = fit(o.bounds, o.width, o.height)
+  // A wider margin than fit's 28 px: a name goes beside its dot, and a stop at the edge (Nineveh) would lose it.
+  const frame = fit(o.bounds, o.width, o.height, LABEL_MARGIN)
   const summary = o.stops.length
     ? o.t('ayudas.recorridoResumen', { lugares: o.stops.map((p) => p.name).join(', ') })
     : o.near.length
