@@ -3,26 +3,26 @@
  * names (a `tw` article joined to a `lug:` of `xtopics`), the card's help «palabra» shows its map between the quote and
  * «Leer sobre…»: a strip with no box of its own, drawn on this device by `drawMap` over the basemap, the place as a full
  * dot with its name and up to six places of the chapter in grey. «Ver el mapa grande ›» opens the chapter's places in a
- * sheet. Without the basemap only a quiet line says so; without a place, nothing.
+ * sheet (`RouteSheet.tsx`). Without the basemap only a quiet line says so; without a place, nothing.
  *
- * `usePlaceMap` asks, `PlaceMapView` and `PlaceSheetView` only show, and `placeMapSvg` is the drawing, pure.
+ * `usePlaceMap` asks, `PlaceMapView` only shows, and `placeMapSvg` is the drawing, pure.
  */
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { drawMap, type PlaceAt, type Theme } from '@bt-synergy/language-pack-client'
 import type { PrototypeData } from '../../prototype/data'
 import { basemapV3, type BasemapHere } from '../../resources/v3/basemapV3'
-import { chapterPlaces, citeOfVerse, mapFrame, mapPoints, neighbours, NEIGHBOURS_IN_CARD, placeOfWord, verseIdV3, type Bbox } from '../../resources/v3/placesV3'
+import { chapterPlaces, mapFrame, mapPoints, neighbours, NEIGHBOURS_IN_CARD, placeOfWord, verseIdV3, type Bbox } from '../../resources/v3/placesV3'
 import { useT, type T } from '../i18n/i18n'
 import { useLookup, useMapHere } from './acrossBooks'
 import { currentMapTheme, measureText } from './mapTheme'
-import { Sheet } from './Sheet'
+import { PlaceSheet } from './RouteSheet'
+import { useBoxWidth, useThemeTick } from './useMapBox'
 
 /** The real basemap's box (8 to 52 east, 22 to 43 north), for finding the place before the basemap is known to be here. */
 export const DEFAULT_BBOX: Bbox = [800, 2200, 5200, 4300]
-/** The card's strip is 180 px high; the sheet's map 360. */
+/** The card's strip is 180 px high. */
 export const CARD_HEIGHT = 180
-export const SHEET_HEIGHT = 360
 
 /** What is known of the place a word is. */
 export type PlaceFound = { place: PlaceAt; sources: string[]; base: BasemapHere | null }
@@ -76,23 +76,6 @@ export function usePlaceMap(data: PrototypeData, article: string, verse: number)
   return state
 }
 
-/** Counts up when the theme changes (the app's `data-theme`, or the system's scheme): the map is drawn again. */
-function useThemeTick(): number {
-  const [tick, setTick] = useState(0)
-  useEffect(() => {
-    const bump = () => setTick((n) => n + 1)
-    const watcher = new MutationObserver(bump)
-    watcher.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
-    const scheme = window.matchMedia?.('(prefers-color-scheme: dark)')
-    scheme?.addEventListener?.('change', bump)
-    return () => {
-      watcher.disconnect()
-      scheme?.removeEventListener?.('change', bump)
-    }
-  }, [])
-  return tick
-}
-
 /**
  * The SVG of a map to put in a box: drawn at the box's width (kept up to date), again when the theme or the language of
  * the app changes. Null until the box is measured and there is a basemap and a place. `setBox` goes on the box.
@@ -103,16 +86,8 @@ export function useMapSvg(o: { place: PlaceAt | null; near: readonly PlaceAt[]; 
 } {
   const t = useT()
   const [box, setBox] = useState<HTMLElement | null>(null)
-  const [width, setWidth] = useState(0)
+  const width = useBoxWidth(box)
   const tick = useThemeTick()
-  useLayoutEffect(() => {
-    if (!box) return
-    const measure = () => setWidth(Math.round(box.clientWidth))
-    measure()
-    const watcher = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure)
-    watcher?.observe(box)
-    return () => watcher?.disconnect()
-  }, [box])
   const { place, near, basemap, height, dir } = o
   const svg = useMemo(
     () => {
@@ -166,51 +141,6 @@ export function PlaceMapView({
   )
 }
 
-/** A source of the places as the credit names it. */
-export const sourceName = (key: string): string =>
-  key.startsWith('openbibleinfo/') ? 'OpenBible.info (CC BY 4.0)' : key.startsWith('robertrouse/') ? 'Theographic' : (key.split('/').pop() ?? key)
-
-/** The sheet's content: the chapter's map, the list of its places and the credit. */
-export function PlaceSheetView({
-  t,
-  state,
-  svg,
-  setBox,
-  drawn,
-}: {
-  t: T
-  state: PlaceMapState
-  svg: string | null
-  setBox?(el: HTMLElement | null): void
-  /** The places the map draws; one of the chapter's that it leaves out (too far, off the basemap) is said so. */
-  drawn?: ReadonlySet<string>
-}) {
-  const { place, sources, base } = state.found
-  const all = [place, ...(state.chapter ?? []).filter((p) => p.id !== place.id && p.sure > 0)]
-  const credited = (sources.length ? sources : ['openbibleinfo/Bible-Geocoding-Data']).map(sourceName).join(', ')
-  return (
-    <>
-      {base &&
-        (svg ? (
-          <div className="place-map-svg" ref={setBox} style={{ height: SHEET_HEIGHT }} dangerouslySetInnerHTML={{ __html: svg }} />
-        ) : (
-          <div className="place-map-svg is-waiting" ref={setBox} style={{ height: SHEET_HEIGHT }} />
-        ))}
-      {place.sure === 1 && <p className="quiet place-map-note">{t('ayudas.mapaDudoso')}</p>}
-      <h3>{t('ayudas.mapaLugares')}</h3>
-      <ul className="place-map-list">
-        {all.map((p) => (
-          <li key={p.id} className={p.id === place.id ? 'is-here' : undefined}>
-            {t('ayudas.mapaLugarEn', { lugar: p.name, cita: citeOfVerse(p.verse) })}
-            {base && drawn && p.id !== place.id && !drawn.has(p.id) && <span className="quiet"> · {t('ayudas.mapaFuera')}</span>}
-          </li>
-        ))}
-      </ul>
-      <p className="quiet place-map-credit">{t('ayudas.mapaCredito', { fuentes: credited })}</p>
-    </>
-  )
-}
-
 /**
  * The map of the place a word is, for its help «palabra». `article` is the key word's path (`bible/names/joppa`), `verse`
  * the verse of the word touched (the bridge text's numbering, which is `xtopics`'), `dir` the touched text's direction.
@@ -226,21 +156,7 @@ export function PlaceMap({ data, article, verse, dir }: { data: PrototypeData; a
   return (
     <>
       <PlaceMapView t={t} state={state} svg={ready ? card.svg : null} setBox={card.setBox} onBig={() => setBig(true)} />
-      {big && state && <PlaceSheet state={state} dir={dir} onClose={() => setBig(false)} />}
+      {big && state && <PlaceSheet data={data} state={state} dir={dir} onClose={() => setBig(false)} />}
     </>
-  )
-}
-
-/** The big sheet: the chapter's places, all those under 1,000 km, with the place touched marked. */
-function PlaceSheet({ state, dir, onClose }: { state: PlaceMapState; dir?: 'ltr' | 'rtl'; onClose(): void }) {
-  const t = useT()
-  const near = useMemo(() => neighbours(state.found.place, state.chapter ?? [], state.bbox, 1000), [state])
-  const sheet = useMapSvg({ place: state.found.place, near, basemap: state.found.base, height: SHEET_HEIGHT, ...(dir ? { dir } : {}) })
-  return (
-    <Sheet title={t('ayudas.mapaTitulo', { lugar: state.found.place.name })} onClose={onClose}>
-      <div dir={dir}>
-        <PlaceSheetView t={t} state={state} svg={sheet.svg} setBox={sheet.setBox} drawn={new Set(near.map((p) => p.id))} />
-      </div>
-    </Sheet>
   )
 }
